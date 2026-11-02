@@ -137,6 +137,23 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .result { text-align: center; display: flex; flex-direction: column; gap: 6px; align-items: center; }
 .result .num { font-family: var(--display); font-size: 64px; line-height: 1; font-variant-numeric: tabular-nums; }
 .result .sub { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.back { align-self: flex-start; }
+.hbtns { display: flex; gap: 8px; }
+.smallbtn.icon { font-size: 17px; line-height: 1; padding: 5px 12px; }
+.diffs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.diff {
+  font: 800 15px var(--body); color: var(--ink); cursor: pointer; padding: 9px 4px 8px;
+  background: #fff; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.diff small { font-size: 11px; font-weight: 600; color: var(--muted); }
+.diff[aria-checked="true"] { background: var(--cube); transform: translateY(2px); box-shadow: 0 2px 0 var(--ink); }
+.diff[aria-checked="true"] small { color: var(--ink); }
+.diff:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.xp {
+  font-family: var(--display); font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums;
+  background: var(--cube); border: 2px solid var(--ink); border-radius: 999px; padding: 5px 14px; margin-top: 4px;
+}
 .badge {
   font-weight: 800; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
   background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
@@ -158,8 +175,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   <div class="stat"><span class="big" id="hScore">0</span><span class="lbl">puntos</span></div>
   <div class="stat mid"><span class="big" id="hTime">0.0</span><span class="lbl">segundos</span></div>
   <div class="right">
-    <button class="smallbtn" id="btnQuit" type="button">Menú</button>
-    <span class="chip" id="hLevel">Nivel 1</span>
+    <div class="hbtns">
+      <button class="smallbtn" id="btnQuit" type="button">Menú</button>
+      <button class="smallbtn icon" id="btnRestart" type="button" aria-label="Reiniciar (R)" title="Reiniciar (R)">↻</button>
+    </div>
+    <span class="chip" id="hLevel">Normal · Nivel 1</span>
   </div>
 </div>
 
@@ -170,14 +190,20 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
 <div class="overlay" id="menu">
   <div class="card">
+    <button class="smallbtn back" id="btnBack" type="button">← Juegos</button>
     <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Lluvia</h1></div>
     <p class="intro">Llueven bloques. Cambiá de carril con las flechas y que no te toque ninguno. Cada bloque esquivado suma 1 y cada <b>moneda</b> suma 5.</p>
+    <div class="diffs" role="radiogroup" aria-label="Dificultad">
+      <button class="diff" id="dFacil" type="button" role="radio" data-d="facil" aria-checked="false">Fácil<small>XP ×1</small></button>
+      <button class="diff" id="dNormal" type="button" role="radio" data-d="normal" aria-checked="true">Normal<small>XP ×1,5</small></button>
+      <button class="diff" id="dDificil" type="button" role="radio" data-d="dificil" aria-checked="false">Difícil<small>XP ×2</small></button>
+    </div>
     <div class="go">
       <span class="best">Récord<b id="mBest">—</b></span>
       <button class="btn primary" id="btnPlay" type="button">Jugar</button>
     </div>
     <div class="foot">
-      <span>Teclado: <kbd>←</kbd> <kbd>→</kbd> o <kbd>A</kbd> <kbd>D</kbd></span>
+      <span>Teclado: <kbd>←</kbd> <kbd>→</kbd> o <kbd>A</kbd> <kbd>D</kbd> · <kbd>R</kbd> reinicia</span>
       <button class="smallbtn" id="btnMute" type="button">Sonido: sí</button>
     </div>
   </div>
@@ -190,15 +216,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="num" id="eNum">0</span>
       <span class="sub" id="eSub"></span>
       <span class="sub" id="eSub2"></span>
+      <span class="xp" id="eXP" hidden>+0 XP</span>
       <span class="badge" id="eBadge" hidden>Nuevo récord</span>
     </div>
     <div class="row">
-      <button class="btn" id="btnHome" type="button">Inicio</button>
+      <button class="btn" id="btnHome" type="button">← Juegos</button>
       <button class="btn primary" id="btnAgain" type="button">Otra vez</button>
     </div>
   </div>
 </div>
 
+<script src="cubo-comun.js"></script>
 <script>
 (() => {
   'use strict';
@@ -206,6 +234,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const ctx = cv.getContext('2d');
   const $ = id => document.getElementById(id);
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
 
   const LANES = 4;
   const TWEEN = 70;        // ms del saltito visual (la lógica cambia de carril al instante)
@@ -216,12 +245,30 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     ['#5cb0ff', '#2f7fe0'], ['#c08bff', '#8f55e0'],
   ];
   const TITLES = ['¡Plaf!', '¡Te dio!', '¡Auch!', '¡Bonk!'];
+  // la dificultad corre un "reloj efectivo" (t0 + t * rate) que decide velocidad y densidad:
+  // Difícil arranca donde Normal llega al minuto; Fácil avanza más lento y con todo más tranquilo
+  const DIFFS = {
+    facil:   { name: 'Fácil',   t0: 0,  rate: 0.6, vMul: 0.82, ivMul: 1.15, xp: 1 },
+    normal:  { name: 'Normal',  t0: 0,  rate: 1,   vMul: 1,    ivMul: 1,    xp: 1.5 },
+    dificil: { name: 'Difícil', t0: 60, rate: 1,   vMul: 1,    ivMul: 1,    xp: 2 },
+  };
+  const DIFF_IDS = Object.keys(DIFFS);
 
   // ---------- récords ----------
   const REC_KEY = 'cubo-lluvia-records';
   let rec = {};
   try { rec = JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { rec = {}; }
   const saveRec = () => { try { localStorage.setItem(REC_KEY, JSON.stringify(rec)); } catch (e) {} };
+  // el récord único de antes pasa a ser el de Normal
+  if (!rec.byDiff || typeof rec.byDiff !== 'object') rec.byDiff = rec.best ? { normal: rec.best } : {};
+  let diff = DIFFS[rec.diff] ? rec.diff : 'normal';
+  const fmtN = n => n.toLocaleString('es-AR');
+  function recText() { // el mejor de todas las dificultades; si empatan, gana la más difícil
+    let id = null;
+    for (const d of DIFF_IDS) if (rec.byDiff[d] && (!id || rec.byDiff[d] >= rec.byDiff[id])) id = d;
+    return id ? `${fmtN(rec.byDiff[id])} pts (${DIFFS[id].name})` : '';
+  }
+  if (recText()) CC?.anotarRecord('lluvia', recText());
 
   // ---------- sonido ----------
   let actx = null, muted = !!rec.muted;
@@ -264,10 +311,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let state = 'menu';       // menu | play | end
   let G = null, shake = 0, particles = [], floats = [], banner = null, rainT = 0;
 
-  function newRun(demo) {
+  function newRun(demo, d = 'normal') {
     const lane = Math.random() < 0.5 ? 1 : 2;
     G = {
-      demo, t: 0, lane, rl: lane, fromL: lane, tw0: -1e9, arc: 0, face: 1, landT: -1e9,
+      demo, diff: d, t: 0, lane, rl: lane, fromL: lane, tw0: -1e9, arc: 0, face: 1, landT: -1e9,
       bonkT: -1e9, bonkDir: 0, ghosts: [], blocks: [], coins: [], rows: 0, safe: lane,
       nextSpawn: 0.8, score: 0, dodged: 0, coinsN: 0, level: 1, done: false, deadT: 0, botNext: 0,
     };
@@ -276,9 +323,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   const speedAt = t => Math.min(1.6, 0.5 + 0.013 * t);        // en pisos por segundo
   const intervalAt = t => Math.max(0.34, 0.95 - 0.011 * t);    // segundos entre filas
+  const effT = () => DIFFS[G.diff].t0 + G.t * DIFFS[G.diff].rate;
+  const speedNow = () => speedAt(effT()) * DIFFS[G.diff].vMul;
+  const intervalNow = () => intervalAt(effT()) * DIFFS[G.diff].ivMul;
 
   function spawnRow() {
-    const t = G.t;
+    const t = effT();
     const p3 = Math.max(0, Math.min(0.3, (t - 35) * 0.005));
     const p2 = Math.min(0.55, 0.12 + t * 0.007);
     const r = Math.random(), n = r < p3 ? 3 : r < p3 + p2 ? 2 : 1;
@@ -309,32 +359,51 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (!G.demo) sfxMove(nl);
   }
 
+  // récord y XP de la partida en curso, al chocar o al cortarla con R
+  function settle() {
+    const D = DIFFS[G.diff], isRec = G.score > (rec.byDiff[G.diff] || 0);
+    if (isRec) { rec.byDiff[G.diff] = G.score; saveRec(); CC?.anotarRecord('lluvia', recText()); }
+    // 1 XP por segundo sobrevivido + 1 por moneda, por el multiplicador de la dificultad; el cartel de nivel lo muestra la librería
+    const xp = CC ? CC.sumarXP((Math.round(G.t) + G.coinsN) * D.xp).ganada : 0;
+    return { isRec, xp };
+  }
+
   function die(now, b) {
     G.done = true; G.deadT = now;
     burst(laneX(G.lane), FLOOR - cubeS() / 2, '#ffcc29', 14, 1);
     burst(laneX(b.lane), (b.y * FLOOR) + blockS() / 2, b.c[0], 10, 1);
     if (G.demo) return;
     shake = reduceMotion ? 0 : 10; sfxBonk();
-    const secs = G.t;
-    let isRec = false;
-    if (!rec.best || G.score > rec.best) { rec.best = G.score; isRec = G.score > 0; }
-    if (!rec.bestT || secs > rec.bestT) rec.bestT = secs;
-    saveRec();
+    const D = DIFFS[G.diff], { isRec, xp } = settle();
+    $('eXP').textContent = `+${xp} XP` + (D.xp > 1 ? ` (×${String(D.xp).replace('.', ',')})` : '');
+    $('eXP').hidden = !CC;
     $('eTitle').textContent = TITLES[Math.floor(Math.random() * TITLES.length)];
-    $('eNum').textContent = G.score;
-    $('eSub').textContent = `puntos · ${secs.toFixed(1)} s · nivel ${G.level}`;
-    $('eSub2').textContent = `${G.dodged} ${G.dodged === 1 ? 'bloque esquivado' : 'bloques esquivados'} · ${G.coinsN} ${G.coinsN === 1 ? 'moneda' : 'monedas'} · récord ${rec.best}`;
+    $('eNum').textContent = fmtN(G.score);
+    $('eSub').textContent = `puntos · ${G.t.toFixed(1)} s · nivel ${G.level} · ${D.name}`;
+    $('eSub2').textContent = `${G.dodged} ${G.dodged === 1 ? 'bloque esquivado' : 'bloques esquivados'} · ${G.coinsN} ${G.coinsN === 1 ? 'moneda' : 'monedas'} · récord en ${D.name} ${fmtN(rec.byDiff[G.diff] || 0)}`;
     $('eBadge').hidden = !isRec;
     setTimeout(() => { if (G && G.done && state === 'play') showEnd(); }, 700);
   }
 
   // ---------- pantallas ----------
   function renderMenu() {
-    $('mBest').textContent = rec.best ? rec.best : '—';
+    const best = rec.byDiff[diff];
+    $('mBest').textContent = best ? fmtN(best) : '—';
+    for (const b of document.querySelectorAll('.diff')) b.setAttribute('aria-checked', String(b.dataset.d === diff));
     $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
   }
+  function pickDiff(d) {
+    diff = d; rec.diff = d; saveRec(); renderMenu();
+  }
+  // R o ↻: partida nueva al instante; si cortás una en curso, se lleva la XP de lo jugado
+  function restart() {
+    let xp = 0;
+    if (state === 'play' && !G.demo && !G.done && G.t > 0.5) xp = settle().xp;
+    start();
+    if (xp > 0) banner = { text: `+${xp} XP`, t: performance.now() };
+  }
   function start() {
-    newRun(false);
+    newRun(false, diff);
     state = 'play';
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').classList.remove('off');
     banner = { text: '¡Esquivá!', t: performance.now() };
@@ -360,12 +429,23 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   addEventListener('keydown', e => {
     const k = e.key;
+    const left = k === 'ArrowLeft' || k === 'a' || k === 'A', right = k === 'ArrowRight' || k === 'd' || k === 'D';
+    if ((k === 'r' || k === 'R') && (state === 'play' || state === 'end')) { e.preventDefault(); if (!e.repeat) restart(); return; }
     if (state === 'play') {
-      if (k === 'ArrowLeft' || k === 'a' || k === 'A') { e.preventDefault(); if (!e.repeat) input(-1); }
-      else if (k === 'ArrowRight' || k === 'd' || k === 'D') { e.preventDefault(); if (!e.repeat) input(1); }
+      if (left) { e.preventDefault(); if (!e.repeat) input(-1); }
+      else if (right) { e.preventDefault(); if (!e.repeat) input(1); }
       else if (k === 'Escape') showMenu();
     } else if (state === 'menu') {
-      if ((k === 'Enter' || k === ' ') && document.activeElement === document.body) { e.preventDefault(); start(); }
+      const a = document.activeElement;
+      if (k === 'Escape' && CC) CC.volver();
+      else if (left || right) {
+        e.preventDefault();
+        const i = Math.max(0, Math.min(DIFF_IDS.length - 1, DIFF_IDS.indexOf(diff) + (left ? -1 : 1)));
+        pickDiff(DIFF_IDS[i]);
+        if (a && a.classList && a.classList.contains('diff')) document.querySelector(`.diff[data-d="${diff}"]`).focus();
+      }
+      else if (k === 'Enter' && a !== $('btnBack') && a !== $('btnMute')) { e.preventDefault(); start(); }
+      else if (k === ' ' && a === document.body) { e.preventDefault(); start(); }
     } else if (state === 'end') {
       if (k === 'Escape') showMenu();
       else if ((k === 'Enter' || k === ' ') && document.activeElement === document.body) { e.preventDefault(); start(); }
@@ -376,7 +456,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   cv.addEventListener('pointerdown', e => { if (state === 'play') { e.preventDefault(); input(e.clientX < W / 2 ? -1 : 1); } });
   $('btnPlay').addEventListener('click', start);
   $('btnQuit').addEventListener('click', showMenu);
-  $('btnHome').addEventListener('click', showMenu);
+  $('btnRestart').addEventListener('pointerdown', e => { e.preventDefault(); restart(); });
+  $('btnRestart').addEventListener('click', e => { if (e.detail === 0) restart(); }); // Enter/espacio con foco
+  for (const b of document.querySelectorAll('.diff')) b.addEventListener('click', () => pickDiff(b.dataset.d));
+  // sin la librería no hay pantalla de juegos: "← Juegos" se esconde en el inicio y vuelve al inicio en el fin
+  $('btnBack').hidden = !CC;
+  if (!CC) $('btnHome').textContent = 'Inicio';
+  $('btnBack').addEventListener('click', () => CC?.volver());
+  $('btnHome').addEventListener('click', () => CC ? CC.volver() : showMenu());
   $('btnAgain').addEventListener('click', start);
   $('btnMute').addEventListener('click', () => {
     muted = !muted; rec.muted = muted; saveRec(); renderMenu();
@@ -426,7 +513,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function bot(now) {
     if (now < G.botNext) return;
     G.botNext = now + 90 + Math.random() * 80;
-    const ahead = speedAt(G.t) * 0.38;
+    const ahead = speedNow() * 0.38;
     if (!danger(G.lane, ahead) || Math.random() < 0.03) return;
     const opts = [-1, 1].filter(d => G.lane + d >= 0 && G.lane + d < LANES && !danger(G.lane + d, ahead * 1.1));
     if (opts.length) { press(opts[Math.floor(Math.random() * opts.length)], now); return; }
@@ -436,7 +523,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   let hudCache = '';
   function update(now, dt) {
-    const v = speedAt(G.t);
+    const v = speedNow();
     rainT += dt * (G.done ? 0.3 : v);
     if (!G.done) {
       G.t += dt;
@@ -445,7 +532,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (G.nextSpawn <= 0) {
         spawnRow();
         const minGap = (blockS() + cubeS() * 1.7) / FLOOR / v;
-        G.nextSpawn += Math.max(intervalAt(G.t), minGap);
+        G.nextSpawn += Math.max(intervalNow(), minGap);
       }
       const bf = blockS() / FLOOR, sf = cubeS() / FLOOR, top = 1 - sf * 0.86;
       for (const b of G.blocks) b.y += v * dt;
@@ -490,11 +577,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (banner && now - banner.t > 1100) banner = null;
 
     if (state === 'play' || state === 'end') {
-      const sig = G.score + '|' + G.t.toFixed(1) + '|' + G.level;
+      const sig = G.score + '|' + G.t.toFixed(1) + '|' + G.level + '|' + G.diff;
       if (sig !== hudCache) {
         hudCache = sig;
-        $('hScore').textContent = G.score; $('hTime').textContent = G.t.toFixed(1);
-        $('hLevel').textContent = 'Nivel ' + G.level;
+        $('hScore').textContent = fmtN(G.score); $('hTime').textContent = G.t.toFixed(1);
+        $('hLevel').textContent = DIFFS[G.diff].name + ' · Nivel ' + G.level;
         $('hLevel').classList.toggle('hot', G.level >= 5);
       }
     }
@@ -626,6 +713,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const lt = (now - G.landT) / 140;
     const squash = dead ? 0.25 : lt >= 0 && lt < 1 ? Math.sin(Math.PI * lt) * 0.2 : 0;
     const wob = dead && !reduceMotion ? Math.sin(now / 35) * 0.06 : G.face * G.arc * 0.22;
+
+    if (CC) {
+      // personaje elegido; las estrellitas de mareado las dibuja la librería, así que muerto va sin aplastar
+      if (dead) { CC.dibujarCubo(ctx, cx, foot, s, { mirar: G.face, mareado: true, t: now }); return; }
+      ctx.save();
+      ctx.translate(cx, foot); ctx.rotate(wob);
+      ctx.scale((1 + squash) / stretch, stretch * (1 - squash));
+      CC.dibujarCubo(ctx, 0, 0, s, { mirar: G.face, mareado: false, t: now });
+      ctx.restore();
+      return;
+    }
 
     ctx.save();
     ctx.translate(cx, foot);

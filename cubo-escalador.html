@@ -1,4 +1,4 @@
-<title>Cubo Escalador</title>
+<title>Escalador</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,6 +63,10 @@ body {
   background: var(--paper); border: 2px solid var(--ink); border-radius: 999px;
   padding: 5px 12px; box-shadow: 0 3px 0 var(--ink); cursor: pointer;
 }
+.hbtns { display: flex; gap: 6px; }
+.foot .keys { order: 3; flex-basis: 100%; }
+@media (hover: none) { .foot .keys { display: none; } }
+#btnRestart { font-size: 16px; line-height: 1; padding: 4px 10px; }
 .smallbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 
 .pad {
@@ -91,19 +95,6 @@ body {
   background: rgba(29, 35, 64, .28);
   overflow-y: auto;
 }
-.more { display: flex; flex-direction: column; gap: 8px; }
-.more-title { font-weight: 800; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.games { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.game {
-  display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: var(--ink);
-  background: #fff; border: 2px solid var(--ink); border-radius: 12px; box-shadow: 0 3px 0 var(--ink);
-  padding: 8px 10px; min-width: 0;
-}
-.game:hover { background: #fff4cc; }
-.game:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
-.game:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-.game b { font-family: var(--display); font-weight: 400; font-size: 18px; }
-.game span { font-size: 12px; color: var(--muted); }
 .card {
   width: min(420px, 100%); margin: auto; background: var(--paper);
   border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink);
@@ -149,7 +140,7 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
   font-weight: 800; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
   background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
 }
-.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .btn {
   font: 800 16px var(--body); color: var(--ink); padding: 14px 10px; cursor: pointer;
   background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
@@ -185,7 +176,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   <div class="stat"><span class="big" id="hSteps">0</span><span class="lbl" id="hStepsLbl">escalones</span></div>
   <div class="stat mid"><span class="big" id="hTime">0.00</span><span class="lbl" id="hTimeLbl">segundos</span></div>
   <div class="right">
-    <button class="smallbtn" id="btnQuit" type="button">Menú</button>
+    <div class="hbtns">
+      <button class="smallbtn" id="btnRestart" type="button" aria-label="Reiniciar (R)" title="Reiniciar (R)">↻</button>
+      <button class="smallbtn" id="btnQuit" type="button">Menú</button>
+    </div>
     <span class="chip" id="hSpeed">0 esc/s</span>
   </div>
 </div>
@@ -199,15 +193,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
 <div class="overlay" id="menu">
   <div class="card">
-    <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Cubo Escalador</h1></div>
+    <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Escalador</h1></div>
     <p class="intro">Tocá la flecha del lado donde está el próximo escalón. Si le errás, el cubo queda mareado medio segundo.</p>
     <div class="modes" id="modes"></div>
-    <div class="more">
-      <span class="more-title">Más juegos con dos flechas</span>
-      <div class="games" id="games"></div>
-    </div>
     <div class="foot">
-      <span>Teclado: <kbd>←</kbd> <kbd>→</kbd> o <kbd>A</kbd> <kbd>D</kbd></span>
+      <button class="smallbtn" id="btnHome" type="button">← Juegos</button>
+      <span class="keys">Teclado: <kbd>←</kbd> <kbd>→</kbd> o <kbd>A</kbd> <kbd>D</kbd> · <kbd>R</kbd> reinicia</span>
       <button class="smallbtn" id="btnMute" type="button">Sonido: sí</button>
     </div>
   </div>
@@ -222,12 +213,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="badge" id="eBadge" hidden>Nuevo récord</span>
     </div>
     <div class="row">
+      <button class="btn" id="btnHome2" type="button">← Juegos</button>
       <button class="btn" id="btnModes" type="button">Modos</button>
       <button class="btn primary" id="btnAgain" type="button">Otra vez</button>
     </div>
   </div>
 </div>
 
+<script src="cubo-comun.js"></script>
 <script>
 (() => {
   'use strict';
@@ -271,13 +264,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     ['#c6b3ff', '#5a3fc8', '#e6dcff'], ['#ffe08a', '#b8890f', '#fff1c4'],
   ];
   const NEBULA = ['170,90,255', '255,90,170', '60,200,220', '90,120,255'];
-  // el build del sitio cambia estas URLs por los archivos locales
-  const GAMES = [
-    { name: 'Lluvia', desc: 'Esquivá lo que cae', url: 'https://claude.ai/artifact/PD7XSSyMrYj1LS6D68heH9' },
-    { name: 'Clasificador', desc: 'Cada cubo a su caja', url: 'https://claude.ai/artifact/WsuNKM3Hwdy44b4mnL7Vqs' },
-    { name: 'Equilibrio', desc: 'Que no te tire el viento', url: 'https://claude.ai/artifact/PQxgrHb4RC3JWBntopFU7t' },
-    { name: 'Ritmo', desc: 'Flechas a tiempo', url: 'https://claude.ai/artifact/TLiEM1EFnAMBgcmYA9FujE' },
-  ];
+  const CC = window.CuboComun; // perfil, XP y personaje compartidos (cubo-comun.js)
 
   // ---------- récords ----------
   const REC_KEY = 'cubo-escalador-records';
@@ -391,7 +378,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       sub = `escalones · ${(G.i / (TIME_LIMIT / 1000)).toFixed(1)} por segundo · récord ${rec.time}`;
       sfxWin();
     }
-    saveRec();
+    saveRec(); syncRecord();
+    const xp = giveXP(G.i);
+    if (xp) sub += ` · +${xp} XP`;
     $('eTitle').textContent = title; $('eNum').textContent = num; $('eSub').textContent = sub;
     $('eBadge').hidden = !isRec;
     setTimeout(() => { if (G && G.done && state === 'play') showEnd(); }, 450);
@@ -410,10 +399,21 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       box.appendChild(b);
     }
     $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
-    $('games').innerHTML = GAMES.map(g => {
-      const ext = /^https?:/.test(g.url) ? ' target="_blank" rel="noopener"' : '';
-      return `<a class="game" href="${g.url}"${ext}><b>${g.name}</b><span>${g.desc}</span></a>`;
-    }).join('');
+  }
+  // texto del récord que muestra la pantalla de juegos
+  function syncRecord() {
+    const t = rec.sprint ? fmtS(rec.sprint) + ' s' : rec.time ? rec.time + ' esc. en 30 s' : rec.free ? rec.free + ' esc.' : '';
+    if (CC && t) CC.anotarRecord('escalador', t);
+  }
+  const giveXP = steps => (CC && steps > 0 ? CC.sumarXP(steps / 2).ganada : 0);
+  const goHome = () => { if (CC) CC.volver(); else location.href = 'index.html'; };
+  // R / ↻: partida nueva al instante en el mismo modo; lo que llevabas suma XP igual
+  function restart() {
+    if (G && !G.demo && !G.done) {
+      if (G.mode === 'free' && G.i > (rec.free || 0)) { rec.free = G.i; saveRec(); syncRecord(); }
+      giveXP(G.i);
+    }
+    start(lastMode);
   }
   function start(mode) {
     lastMode = mode; rec.last = mode; saveRec();
@@ -426,6 +426,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showMenu() {
     if (G && !G.demo && G.mode === 'free' && G.i > (rec.free || 0)) { rec.free = G.i; saveRec(); }
+    if (G && !G.demo && !G.done) giveXP(G.i); // partida cortada desde el botón Menú
+    syncRecord();
     state = 'menu';
     newRun('free', true);
     renderModes();
@@ -449,12 +451,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (k === 'ArrowLeft' || k === 'a' || k === 'A') { e.preventDefault(); if (!e.repeat) input(-1); }
       else if (k === 'ArrowRight' || k === 'd' || k === 'D') { e.preventDefault(); if (!e.repeat) input(1); }
       else if (k === 'Escape') showMenu();
+      else if ((k === 'r' || k === 'R') && !e.repeat) restart();
     } else if (state === 'menu') {
       const m = Object.keys(MODES).find(id => MODES[id].key === k);
       if (m) start(m);
+      else if (k === 'Escape') goHome();
       else if (k === 'Enter' && document.activeElement === document.body) start(lastMode);
     } else if (state === 'end') {
       if (k === 'Escape') showMenu();
+      else if ((k === 'r' || k === 'R') && !e.repeat) restart();
       else if ((k === 'Enter' || k === ' ') && document.activeElement === document.body) { e.preventDefault(); start(lastMode); }
     }
   });
@@ -463,6 +468,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   cv.addEventListener('pointerdown', e => { if (state === 'play') { e.preventDefault(); input(e.clientX < W / 2 ? -1 : 1); } });
   $('btnQuit').addEventListener('click', showMenu);
   $('btnModes').addEventListener('click', showMenu);
+  $('btnHome').addEventListener('click', goHome);
+  $('btnRestart').addEventListener('pointerdown', e => { e.preventDefault(); restart(); });
+  $('btnRestart').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); restart(); } });
+  $('btnHome2').addEventListener('click', goHome);
   $('btnAgain').addEventListener('click', () => start(lastMode));
   $('btnMute').addEventListener('click', () => {
     muted = !muted; rec.muted = muted; saveRec(); renderModes();
@@ -666,7 +675,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const t = clamp01((now - G.tw0) / TWEEN), e = 1 - (1 - t) * (1 - t);
     const target = G.steps[G.i];
     G.rx = lerp(G.fromX, target.x, e); G.ry = lerp(G.fromY, G.i, e);
-    G.arc = t < 1 ? Math.sin(Math.PI * t) * 0.7 : 0;
+    G.arc = 0; // se desliza en línea recta al próximo escalón, sin saltito
     // cámara
     const k = 1 - Math.exp(-dt * 11);
     cam.x += (G.rx * U - cam.x) * k;
@@ -804,11 +813,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       ctx.globalAlpha = 1 - a; ctx.strokeStyle = '#fffaf0'; ctx.lineWidth = Math.max(2, U * 0.07 * (1 - a));
       ctx.beginPath(); ctx.ellipse(r.x * U, y, U * (0.4 + a * 0.6), U * (0.12 + a * 0.18), 0, 0, Math.PI * 2); ctx.stroke();
     }
-    // estela del salto
-    const s0 = U * 0.62;
+    // estela del deslizamiento
+    const s0 = U * 0.62, trail = CC ? CC.skin().cuerpo : '#ffcc29';
     for (const g of G.ghosts) {
       const a = (now - g.t) / 140;
-      ctx.globalAlpha = 0.35 * (1 - a); ctx.fillStyle = '#ffcc29';
+      ctx.globalAlpha = 0.35 * (1 - a); ctx.fillStyle = trail;
       rr(g.x * U - s0 / 2, -g.y * RISE * U - s0, s0, s0, s0 * 0.2); ctx.fill();
     }
     ctx.globalAlpha = 1;
@@ -834,18 +843,20 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const bt = clamp01((now - G.bonkT) / 160);
     const bonk = bt < 1 ? Math.sin(Math.PI * bt) * U * 0.22 * G.bonkDir : 0;
     const cx = G.rx * U + bonk;
-    const foot = -G.ry * RISE * U - G.arc * RISE * U;
-    const stretch = G.arc > 0 ? 1 + G.arc * 0.18 : 1;
-    const lt = (now - G.landT) / 140;
-    const squash = lt >= 0 && lt < 1 ? Math.sin(Math.PI * lt) * 0.22 : 0;
-    const tt = (now - G.turnT) / 170;
-    const spin = tt >= 0 && tt < 1 && !reduceMotion ? G.face * Math.PI * 2 * (1 - (1 - tt) * (1 - tt)) : 0;
-    const wob = stunned && !reduceMotion ? Math.sin(now / 35) * 0.08 : G.face * G.arc * 0.25 + spin;
+    const foot = -G.ry * RISE * U;
+    const lt = (now - G.landT) / 120;
+    const squash = lt >= 0 && lt < 1 ? Math.sin(Math.PI * lt) * 0.1 : 0;
+    const wob = stunned && !reduceMotion ? Math.sin(now / 35) * 0.08 : 0;
 
     ctx.save();
     ctx.translate(cx, foot);
-    if (spin) { ctx.translate(0, -s / 2); ctx.rotate(wob); ctx.translate(0, s / 2); } else ctx.rotate(wob);
-    ctx.scale((1 + squash) / stretch, stretch * (1 - squash));
+    ctx.rotate(wob);
+    ctx.scale(1 + squash, 1 - squash);
+    if (CC) {
+      CC.dibujarCubo(ctx, 0, 0, s, { mirar: G.face, mareado: stunned, t: now });
+      ctx.restore();
+      return;
+    }
     ctx.fillStyle = 'rgba(29,35,64,.2)'; rr(-s / 2 + 3, -s + 4, s, s, s * 0.2); ctx.fill();
     ctx.fillStyle = stunned ? '#c9d3e3' : '#ffcc29';
     ctx.strokeStyle = '#1d2340'; ctx.lineWidth = Math.max(2.5, U * 0.05);
