@@ -10,6 +10,7 @@ Juegos de navegador livianos que se juegan solo con dos flechas, izquierda y der
 | Lluvia | Movete entre carriles y esquivá los bloques que caen. |
 | Clasificador | Mandá cada cubo a la caja de su color. |
 | Equilibrio | Corregí la tabla para que no te tire el viento. |
+| Ritmo | Tocá cada flecha justo cuando llega a la línea, al ritmo de la música. |
 
 Controles: `←` `→` o `A` `D` en la compu; botones grandes o tocar cada mitad de la pantalla en el celular.
 

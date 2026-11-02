@@ -12,6 +12,8 @@ const GAMES = [
     desc: 'Mandá cada cubo a la caja de su color, cada vez más rápido.' },
   { src: 'modo-equilibrio.html', out: 'equilibrio.html', artifact: 'PQxgrHb4RC3JWBntopFU7t',
     desc: 'Mantené el equilibrio con izquierda y derecha para que no te tire el viento.' },
+  { src: 'modo-ritmo.html', out: 'ritmo.html', artifact: 'TLiEM1EFnAMBgcmYA9FujE',
+    desc: 'Tocá izquierda o derecha justo cuando la flecha llega a la línea, al ritmo de la música.' },
 ];
 
 const ICON = 'data:image/svg+xml,' + encodeURIComponent(
