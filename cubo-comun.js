@@ -578,27 +578,30 @@
     const st = document.createElement('style');
     st.id = 'cc-estilos';
     st.textContent = `
-.cc-difs{display:grid;grid-template-columns:repeat(var(--n,5),minmax(0,1fr));gap:6px;width:100%}
-.cc-dif{appearance:none;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:68px;min-width:0;
-  padding:8px 2px 7px;border:3px solid ${INK};border-radius:14px;background:${CREMA};color:${INK};box-shadow:0 4px 0 ${INK};
-  font-family:"Lilita One","Trebuchet MS",sans-serif;font-size:clamp(12px,3.5vw,15px);line-height:1;transition:transform .08s,box-shadow .08s,background .15s}
-.cc-dif small{font-family:"Rubik",system-ui,sans-serif;font-weight:700;font-size:10.5px;opacity:.75;white-space:nowrap}
-.cc-difs.compacto{gap:5px}
-.cc-difs.compacto .cc-dif{min-height:50px;padding:5px 2px;border-radius:12px;font-size:12px;box-shadow:0 3px 0 ${INK}}
-.cc-difs.compacto .cc-dif small{display:none}
-.cc-dif:active{transform:translateY(3px);box-shadow:0 1px 0 ${INK}}
-.cc-dif[aria-checked="true"]{background:#ffcc29}
+.cc-difs{display:grid;grid-template-columns:repeat(var(--n,5),minmax(0,1fr));gap:3px;width:100%;box-sizing:border-box;padding:4px;
+  background:#ece8dc;border:2.5px solid ${INK};border-radius:16px}
+.cc-dif{appearance:none;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:60px;min-width:0;
+  padding:7px 2px 6px;border:0;border-radius:11px;background:transparent;color:${INK};box-shadow:none;
+  font-family:"Lilita One","Trebuchet MS",sans-serif;font-size:clamp(12px,3.5vw,15px);line-height:1;transition:background .15s,transform .08s}
+.cc-dif small{font-family:"Rubik",system-ui,sans-serif;font-weight:700;font-size:10.5px;opacity:.7;white-space:nowrap}
+.cc-dif:hover{background:rgba(255,255,255,.65)}
+.cc-dif:active{transform:scale(.95)}
+.cc-dif[aria-checked="true"]{background:#ffcc29;box-shadow:inset 0 0 0 2.5px ${INK}}
 .cc-dif[data-d="extremo"]{color:#b3122a}
-.cc-dif[data-d="extremo"][aria-checked="true"]{background:#ff3b3b;color:${INK}}
+.cc-dif[data-d="extremo"][aria-checked="true"]{background:#ff6b6b;color:${INK}}
 .cc-dif[data-d="maestro"]{color:#5b2bbf}
 .cc-dif[data-d="maestro"][aria-checked="true"]{background:#b49bff;color:${INK}}
-.cc-teclas{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin:0;font:600 12px/1.2 "Rubik",system-ui,sans-serif;color:${INK}}
-.cc-teclas .g{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:center}
-.cc-teclas .t{font:800 10px/1 "Rubik",system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:3px 6px;border-radius:6px;background:${INK};color:${CREMA}}
+.cc-difs.compacto{padding:3px;border-radius:14px}
+.cc-difs.compacto .cc-dif{min-height:42px;padding:4px 2px;border-radius:10px;font-size:12px}
+.cc-difs.compacto .cc-dif small{display:none}
+/* leyenda de teclas: información, no botones (sin sombra, más tenue) */
+.cc-teclas{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin:0;font:600 12px/1.2 "Rubik",system-ui,sans-serif;color:${INK};opacity:.8}
+.cc-teclas .g{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
+.cc-teclas .t{font:800 9.5px/1 "Rubik",system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:3px 5px;border-radius:5px;background:${INK};color:${CREMA};margin-right:2px}
 .cc-teclas .g.menu .t{background:transparent;color:${INK};border:1.5px dashed ${INK}}
-.cc-teclas kbd{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border:2px solid ${INK};border-radius:6px;
-  background:#fff;box-shadow:0 2px 0 ${INK};font:800 12px/1 "Rubik",system-ui,sans-serif;color:${INK}}
-.cc-teclas .g.juego kbd.f{background:#ffcc29}
+.cc-teclas kbd{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 4px;border:1.5px solid ${INK};border-radius:5px;
+  background:transparent;box-shadow:none;font:800 11px/1 "Rubik",system-ui,sans-serif;color:${INK}}
+.cc-teclas .g.juego kbd.f{background:#ffe27a}
 @media (pointer:coarse){.cc-teclas{display:none}}
 #cc-avisos{zoom:var(--ui,1)}
 .cc-dif:focus-visible{outline:3px solid #5cb0ff;outline-offset:2px}
@@ -611,24 +614,51 @@
 .cc-aviso span{display:block;font-size:13px;font-weight:600;margin-top:2px}
 .cc-medalla{flex:none;width:40px;height:40px;border-radius:50%;border:3px solid ${INK};display:grid;place-items:center;
   font-family:"Lilita One","Trebuchet MS",sans-serif;font-size:18px;color:${INK}}
-#cc-rank .card{zoom:var(--ui,1)}
-#cc-rank{position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:center;background:rgba(29,35,64,.55);
-  padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));font-family:"Rubik",system-ui,sans-serif;color:${INK}}
-#cc-rank .card{width:100%;max-width:440px;max-height:min(640px,calc((100dvh - 32px) / var(--ui,1)));display:flex;flex-direction:column;background:${CREMA};
-  border:3px solid ${INK};border-radius:22px;box-shadow:0 6px 0 ${INK};overflow:hidden}
-#cc-rank header{display:flex;align-items:center;gap:10px;padding:14px 14px 8px 18px}
-#cc-rank h2{margin:0;flex:1;font:400 26px/1 "Lilita One","Trebuchet MS",sans-serif}
-#cc-rank .x{appearance:none;width:44px;height:44px;border-radius:12px;border:3px solid ${INK};background:#fff;font:700 20px/1 system-ui;color:${INK};cursor:pointer}
-#cc-rank .chips{display:flex;gap:6px;overflow-x:auto;padding:4px 18px 10px;scrollbar-width:none}
-#cc-rank .chip{appearance:none;flex:none;display:flex;align-items:center;gap:5px;min-height:36px;padding:4px 12px;border-radius:999px;border:2.5px solid ${INK};
-  background:#fff;color:${INK};font:700 13px "Rubik",system-ui,sans-serif;cursor:pointer}
-#cc-rank .chip[aria-pressed="true"]{background:#ffcc29}
-#cc-rank ol{list-style:none;margin:0;padding:0 10px;overflow-y:auto;flex:1;min-height:120px}
+#cc-rank{position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:center;background:rgba(29,35,64,.55);box-sizing:border-box;
+  padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px));font-family:"Rubik",system-ui,sans-serif;color:${INK}}
+@media (min-width:600px) and (min-height:560px){#cc-rank{align-items:center}}
+#cc-rank *{box-sizing:border-box}
+#cc-rank .cc-rk{zoom:var(--ui,1);width:100%;max-width:440px;max-height:min(680px,calc((100dvh - 24px) / var(--ui,1)));display:flex;flex-direction:column;
+  background:${CREMA};border:3px solid ${INK};border-radius:22px;box-shadow:0 6px 0 ${INK};overflow:hidden;animation:cc-sube .2s ease-out}
+@keyframes cc-sube{from{transform:translateY(16px);opacity:0}}
+#cc-rank header{display:flex;align-items:center;gap:8px;padding:14px 10px 10px 18px}
+#cc-rank header > div{flex:1;min-width:0}
+#cc-rank h2{margin:0;font:400 26px/1 "Lilita One","Trebuchet MS",sans-serif}
+#cc-rank header small{display:block;margin-top:3px;font-size:13px;font-weight:700;opacity:.6}
+#cc-rank .x{appearance:none;flex:none;width:42px;height:42px;border-radius:50%;border:0;background:transparent;font:700 20px/1 system-ui;color:${INK};cursor:pointer}
+#cc-rank .x:hover{background:rgba(29,35,64,.08)}
+#cc-rank .seg{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:3px;margin:0 14px 8px;padding:3px;background:#ece8dc;border:2.5px solid ${INK};border-radius:14px}
+#cc-rank .seg button{appearance:none;display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:38px;padding:4px 2px;border:0;border-radius:10px;
+  background:transparent;color:${INK};font:800 12.5px "Rubik",system-ui,sans-serif;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cc-rank .seg.difs button{flex-direction:column;gap:2px;min-height:46px;font-size:11px}
+#cc-rank .seg button:hover{background:rgba(255,255,255,.65)}
+#cc-rank .seg button[aria-pressed="true"]{background:#ffcc29;box-shadow:inset 0 0 0 2px ${INK}}
+#cc-rank .seg button[data-d="extremo"][aria-pressed="true"]{background:#ff6b6b}
+#cc-rank .seg button[data-d="maestro"][aria-pressed="true"]{background:#b49bff}
+#cc-rank ol{list-style:none;margin:0;padding:6px 10px 8px;overflow-y:auto;flex:1;min-height:150px;border-top:2px solid rgba(29,35,64,.1)}
 #cc-rank li{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:12px;font-weight:600}
-#cc-rank li.yo{background:#ffcc29;outline:2.5px solid ${INK}}
-#cc-rank li .p{width:30px;text-align:right;font:400 18px "Lilita One","Trebuchet MS",sans-serif}
+#cc-rank li.yo{background:#ffcc29;box-shadow:inset 0 0 0 2.5px ${INK}}
+#cc-rank li .p{flex:none;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;font:400 16px "Lilita One","Trebuchet MS",sans-serif}
+#cc-rank li .p.m1{background:#ffcc29;border:2.5px solid ${INK}}
+#cc-rank li .p.m2{background:#d7deea;border:2.5px solid ${INK}}
+#cc-rank li .p.m3{background:#e9b48a;border:2.5px solid ${INK}}
 #cc-rank li .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #cc-rank li .v{font-variant-numeric:tabular-nums;font-weight:800}
+#cc-rank li canvas{width:26px;height:30px;flex:none}
+#cc-rank li.msg{display:block;padding:26px 18px;text-align:center;font-weight:600;line-height:1.45}
+#cc-rank li.sep{display:block;padding:0;text-align:center;font-weight:800;opacity:.4;letter-spacing:.2em}
+#cc-rank .pie{padding:10px 14px 14px;border-top:2px dashed rgba(29,35,64,.22)}
+#cc-rank .yo-txt{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;min-height:32px}
+#cc-rank .yo-txt b{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+#cc-rank .link{appearance:none;flex:none;margin-left:auto;border:0;background:none;padding:6px 8px;border-radius:8px;font:800 13px "Rubik",system-ui,sans-serif;
+  color:${INK};text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+#cc-rank .link:hover{background:rgba(29,35,64,.08)}
+#cc-rank form{display:flex;gap:8px}
+#cc-rank input{flex:1;min-width:0;height:44px;border-radius:12px;border:2.5px solid ${INK};padding:0 12px;font:600 16px "Rubik",system-ui,sans-serif;color:${INK};background:#fff}
+#cc-rank form button{appearance:none;height:44px;padding:0 16px;border-radius:12px;border:2.5px solid ${INK};background:#ffcc29;color:${INK};
+  font:400 18px "Lilita One","Trebuchet MS",sans-serif;box-shadow:0 3px 0 ${INK};cursor:pointer}
+#cc-rank form button:active{transform:translateY(2px);box-shadow:0 1px 0 ${INK}}
+#cc-rank .ayuda{margin:8px 2px 0;font-size:12px;font-weight:600;opacity:.7;line-height:1.35}
 /* nombres de quien usa una legendaria: con el color de su personaje */
 .cc-leg{font-weight:800}
 .cc-leg-fantasma{color:#3f6fd1;text-shadow:0 0 8px rgba(120,170,255,.75)}
@@ -640,13 +670,6 @@
 .cc-leg-sombra{color:#5a2fc8;text-shadow:0 0 8px rgba(143,107,255,.85)}
 .cc-leg-dev{background:linear-gradient(90deg,#00b4c8,#ff3bd4);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 5px rgba(95,245,255,.9))}
 @media (prefers-reduced-motion:reduce){.cc-leg-glitch,.cc-leg-holograma{animation:none}}
-#cc-rank li canvas{width:26px;height:30px;flex:none}
-#cc-rank li.msg{display:block;padding:22px 18px;text-align:center;font-weight:600;line-height:1.4}
-#cc-rank form{display:flex;gap:8px;padding:12px 14px 14px;border-top:2.5px dashed rgba(29,35,64,.3)}
-#cc-rank input{flex:1;min-width:0;height:46px;border-radius:12px;border:3px solid ${INK};padding:0 12px;font:600 16px "Rubik",system-ui,sans-serif;color:${INK};background:#fff}
-#cc-rank form button{appearance:none;height:46px;padding:0 16px;border-radius:12px;border:3px solid ${INK};background:#62c6ff;color:${INK};
-  font:400 18px "Lilita One","Trebuchet MS",sans-serif;box-shadow:0 3px 0 ${INK};cursor:pointer}
-#cc-rank .ayuda{margin:0;padding:0 18px 12px;font-size:12px;font-weight:600;opacity:.8}
 `;
     document.head.appendChild(st);
   }
@@ -777,34 +800,57 @@
     estilos();
     const j = juego(o.juego) || JUEGOS[0];
     let tid = o.tabla && tablaDe(j.id, o.tabla) ? o.tabla : (j.tablas.find(t => t.dif === 'normal') || j.tablas[0]).id;
+    // Juegos con varios modos (Escalador): una fila de modos y otra de dificultades. Los demás: solo dificultades.
+    const modoDe = tb => (tb.id === tb.dif ? '' : tb.id.replace(/-(x|m)$/, ''));
+    const modos = [...new Set(j.tablas.map(modoDe))];
+    const conModos = modos.length > 1;
+    const nombreModo = m => (j.tablas.find(t => modoDe(t) === m && t.dif === 'normal') || j.tablas.find(t => modoDe(t) === m)).nombre.replace(/ (Extremo|Maestro)$/, '');
     const previo = document.activeElement;
     const box = document.createElement('div');
     box.id = 'cc-rank';
-    box.innerHTML = `<div class="card" role="dialog" aria-modal="true" aria-labelledby="cc-rank-t">
-      <header><h2 id="cc-rank-t">Ranking · ${j.nombre}</h2><button class="x" type="button" aria-label="Cerrar">✕</button></header>
-      <div class="chips" role="group" aria-label="Modo"></div><ol aria-live="polite"></ol>
-      <form><input name="a" maxlength="14" autocomplete="nickname" placeholder="Tu apodo (3 a 14 letras)" aria-label="Tu apodo"><button type="submit">Guardar</button></form>
-      <p class="ayuda"></p></div>`;
+    box.innerHTML = `<div class="cc-rk" role="dialog" aria-modal="true" aria-labelledby="cc-rank-t">
+      <header><div><h2 id="cc-rank-t">Ranking</h2><small>${j.nombre}</small></div><button class="x" type="button" aria-label="Cerrar">✕</button></header>
+      ${conModos ? '<div class="seg modos" role="group" aria-label="Modo"></div>' : ''}<div class="seg difs" role="group" aria-label="Dificultad"></div>
+      <ol aria-live="polite"></ol>
+      <div class="pie"><div class="yo-txt"></div>
+        <form><input name="a" maxlength="14" autocomplete="nickname" placeholder="Tu apodo (3 a 14 letras)" aria-label="Tu apodo"><button type="submit">Guardar</button></form>
+        <p class="ayuda"></p></div></div>`;
     document.body.appendChild(box);
     const $ = s => box.querySelector(s);
-    const chips = $('.chips'), ol = $('ol'), input = $('input'), ayuda = $('.ayuda');
-    input.value = leer().apodo;
-    const pintarAyuda = () => {
-      ayuda.textContent = leer().apodo ? 'Tu mejor marca de cada modo se sube sola al terminar la partida.'
-        : 'Poné un apodo para aparecer en el ranking. Tus récords se suben solos.';
-    };
-    pintarAyuda();
-    for (const tb of j.tablas) {
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'chip'; b.dataset.t = tb.id;
-      b.innerHTML = (tb.dif && (tb.dif !== 'normal' || tb.id === 'normal') ? iconoDif(tb.dif, 16) : '') + tb.nombre.replace(/ (Extremo|Maestro)$/, '');
-      b.addEventListener('click', () => { tid = tb.id; cargar(); });
-      chips.appendChild(b);
+    const segModos = $('.seg.modos'), segDifs = $('.seg.difs'), ol = $('ol'), input = $('input'), ayuda = $('.ayuda'), form = $('form'), yoTxt = $('.yo-txt');
+    let editando = false;
+    function pintarPie() {
+      const p = leer(), con = !!p.apodo && !editando;
+      form.hidden = con; yoTxt.hidden = !con;
+      if (con) {
+        yoTxt.innerHTML = 'Jugás como <b></b><button class="link" type="button">Cambiar apodo</button>';
+        const b = yoTxt.querySelector('b'); b.textContent = p.apodo; b.className = claseNombre(skin());
+        yoTxt.querySelector('.link').addEventListener('click', () => { editando = true; pintarPie(); input.focus(); });
+        ayuda.textContent = 'Tu mejor marca de cada modo se sube sola al terminar la partida.';
+      } else {
+        input.value = p.apodo;
+        ayuda.textContent = 'Poné un apodo para aparecer en el ranking. Tus récords se suben solos.';
+      }
     }
+    pintarPie();
+    function pintarSegs() {
+      const tb = tablaDe(j.id, tid), modo = modoDe(tb);
+      if (segModos) {
+        segModos.style.setProperty('--n', modos.length);
+        segModos.innerHTML = modos.map(m => `<button type="button" data-m="${m}" aria-pressed="${m === modo}">${nombreModo(m)}</button>`).join('');
+      }
+      const difs = DIFS.filter(d => j.tablas.some(t => modoDe(t) === modo && t.dif === d.id));
+      segDifs.style.setProperty('--n', difs.length);
+      segDifs.innerHTML = difs.map(d => `<button type="button" data-d="${d.id}" aria-pressed="${d.id === tb.dif}">${iconoDif(d.id, 18)}${d.nombre}</button>`).join('');
+    }
+    const tablaPara = (modo, dif) => j.tablas.find(t => modoDe(t) === modo && t.dif === dif) || j.tablas.find(t => modoDe(t) === modo && t.dif === 'normal')
+      || j.tablas.find(t => modoDe(t) === modo);
+    if (segModos) segModos.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; tid = tablaPara(b.dataset.m, tablaDe(j.id, tid).dif).id; cargar(); });
+    segDifs.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; tid = tablaPara(modoDe(tablaDe(j.id, tid)), b.dataset.d).id; cargar(); });
     const msg = t => { ol.innerHTML = `<li class="msg">${t}</li>`; };
     let pedido = 0;
     async function cargar() {
-      for (const b of chips.children) b.setAttribute('aria-pressed', String(b.dataset.t === tid));
+      pintarSegs();
       const tb = tablaDe(j.id, tid), mio = leer().mejores[j.id + ':' + tid];
       const tuyo = `Tu mejor marca: <strong>${formato(mio, tb)}</strong>`;
       if (!rankingActivo()) { msg(`El ranking online se está preparando.<br>${tuyo}`); return; }
@@ -820,18 +866,18 @@
         ol.innerHTML = '';
         const fila = f => {
           const li = document.createElement('li'); if (f.yo) li.className = 'yo';
-          li.innerHTML = `<span class="p">${f.puesto}</span><canvas width="52" height="60"></canvas><span class="n"></span><span class="v">${formato(f.valor, tb)}</span>`;
-          const n = li.querySelector('.n'), sk = SKINS.find(s => s.id === f.skin);
-          if (sk && sk.legendaria) { const t = document.createElement('span'); t.className = claseNombre(sk); t.textContent = f.apodo; n.appendChild(t); }
-          else n.textContent = f.apodo;
-          if (f.yo) n.append(' (vos)');
+          li.innerHTML = `<span class="p${f.puesto <= 3 ? ' m' + f.puesto : ''}">${f.puesto}</span><canvas width="52" height="60"></canvas><span class="n"></span><span class="v">${formato(f.valor, tb)}</span>`;
+          const nm = li.querySelector('.n'), sk = SKINS.find(s => s.id === f.skin);
+          if (sk && sk.legendaria) { const t = document.createElement('span'); t.className = claseNombre(sk); t.textContent = f.apodo; nm.appendChild(t); }
+          else nm.textContent = f.apodo;
+          if (f.yo) nm.append(' (vos)');
           const c = li.querySelector('canvas').getContext('2d'); c.scale(2, 2);
-          dibujarCubo(c, 13, 28, 18, { skin: SKINS.find(s => s.id === f.skin) || SKINS[0], t: 0, efecto: false });
+          dibujarCubo(c, 13, 28, 18, { skin: sk || SKINS[0], t: 0, efecto: false });
           ol.appendChild(li);
           return li;
         };
         lista.forEach(fila);
-        if (yo && yo.afuera) fila(yo);
+        if (yo && yo.afuera) { const sep = document.createElement('li'); sep.className = 'sep'; sep.textContent = '···'; ol.appendChild(sep); fila(yo); }
         const mia = ol.querySelector('.yo'); if (mia) mia.scrollIntoView({ block: 'nearest' });
       } catch (e) { if (n === pedido) msg(`No se pudo cargar el ranking. Probá de nuevo en un rato.<br>${tuyo}`); }
     }
@@ -840,11 +886,11 @@
     addEventListener('keydown', tecla, true);
     $('.x').addEventListener('click', cerrar);
     box.addEventListener('click', e => { if (e.target === box) cerrar(); });
-    $('form').addEventListener('submit', e => {
+    form.addEventListener('submit', e => {
       e.preventDefault();
       const r = ponerApodo(input.value);
       if (!r) { ayuda.textContent = 'El apodo tiene que tener entre 3 y 14 letras o números.'; input.focus(); return; }
-      input.value = leer().apodo; pintarAyuda(); input.blur();
+      editando = false; input.blur(); pintarPie();
       msg('Subiendo tus récords…');
       r.then(cargar, cargar);
     });

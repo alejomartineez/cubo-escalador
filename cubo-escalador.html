@@ -218,6 +218,18 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 @keyframes zoneFade { 0%, 100% { opacity: 0; } 12%, 80% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .zone.show { animation-name: zoneFade; } }
 @media (max-width: 380px) { .card { padding: 18px; } .mdesc { display: none; } }
+
+/* ---------- jerarquía: un solo protagonista por pantalla ---------- */
+/* principal: "Otra vez" (en el menú, los modos son la elección principal) */
+.card .btn.primary { border-width: 3px; box-shadow: 0 6px 0 var(--ink); font-family: var(--display); font-weight: 400; font-size: 24px; }
+/* secundario: Ranking */
+.card .btn:not(.primary):not(.ter), .card .smallbtn.sec { background: #fff; border-width: 2px; box-shadow: 0 2px 0 var(--ink); }
+.card .smallbtn.sec { padding: 7px 14px; font-size: 14px; }
+/* navegación y ajustes: solo texto */
+.card .ter { background: transparent !important; border-color: transparent !important; box-shadow: none !important; opacity: .72;
+  font: 800 14px var(--body) !important; padding: 8px 10px !important; }
+.card .ter:hover { opacity: 1; background: rgba(29, 35, 64, .07) !important; }
+.card .ter:active { transform: none; }
 </style>
 
 <canvas id="cv"></canvas>
@@ -254,10 +266,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     <p class="dif-h">Modo</p>
     <div class="modes" id="modes"></div>
     <div class="foot">
-      <button class="smallbtn" id="btnHome" type="button">← Juegos</button>
-      <button class="smallbtn" id="btnRank" type="button">Ranking</button>
+      <button class="smallbtn ter" id="btnHome" type="button">← Juegos</button>
+      <button class="smallbtn sec" id="btnRank" type="button">🏆 Ranking</button>
       <span class="keys" id="keys"></span>
-      <button class="smallbtn" id="btnMute" type="button">Sonido: sí</button>
+      <button class="smallbtn ter" id="btnMute" type="button">Sonido: sí</button>
     </div>
   </div>
 </div>
@@ -277,8 +289,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     <div class="end-dif"><span>Dificultad para la próxima</span><div id="difs2"></div></div>
     <div class="row">
       <button class="btn" id="btnRank2" type="button">🏆 Ranking</button>
-      <button class="btn" id="btnModes" type="button">☰ Modos</button>
-      <button class="btn" id="btnHome2" type="button">⌂ Juegos</button>
+      <button class="btn ter" id="btnModes" type="button">☰ Modos</button>
+      <button class="btn ter" id="btnHome2" type="button">⌂ Juegos</button>
     </div>
     <p class="keys" id="keys2"></p>
   </div>

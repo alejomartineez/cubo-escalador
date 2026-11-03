@@ -177,6 +177,22 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 @media (min-width: 820px) and (min-height: 600px) { .card { width: min(460px, 100%); gap: 12px; } }
 @media (max-width: 380px) { .card { padding: 18px; } }
 @media (max-height: 760px) { .card { gap: 11px; padding-block: 16px; } .demo { height: 100px; } }
+
+/* ---------- jerarquía de botones: un solo protagonista por pantalla ---------- */
+/* 1. principal (Jugar / Otra vez): el único amarillo, grande y con sombra alta */
+.card .btn.primary { background: var(--cube); border: 3px solid var(--ink); box-shadow: 0 6px 0 var(--ink); font-family: var(--display); font-weight: 400; font-size: 24px; letter-spacing: .01em; }
+.card .btn.primary:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
+/* 2. secundarios (Ranking): blancos, borde fino y sombra corta */
+.card .btn:not(.primary) { background: #fff; border-width: 2px; box-shadow: 0 2px 0 var(--ink); font-family: var(--body); font-weight: 800; font-size: 15px; }
+.card .btn:not(.primary):active { transform: translateY(2px); box-shadow: none; }
+/* 3. navegación y ajustes (← Juegos, ⌂ Juegos, Sonido): solo texto, sin caja */
+.card .ter { background: transparent !important; border-color: transparent !important; box-shadow: none !important; color: var(--ink);
+  font: 800 14px var(--body) !important; opacity: .72; padding: 8px 10px !important; min-height: 0; }
+.card .ter:hover { opacity: 1; background: rgba(29, 35, 64, .07) !important; }
+.card .ter:active { transform: none; }
+/* 4. teclas de la demo: muestran cómo se juega, no son botones */
+.card .key { box-shadow: none !important; border-style: dashed !important; border-width: 2px !important; background: rgba(255, 255, 255, .55) !important; }
+.card .key.on { background: var(--cube) !important; border-style: solid !important; transform: none !important; }
 </style>
 
 <canvas id="cv"></canvas>
@@ -186,7 +202,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   <div class="stat mid"><span class="big sm" id="hBest">—</span><span class="lbl">récord</span></div>
   <div class="right">
     <div class="hbtns">
-      <button class="smallbtn" id="btnQuit" type="button">← Juegos</button>
+      <button class="ter smallbtn" id="btnQuit" type="button">← Juegos</button>
       <button class="smallbtn icon" id="btnRestart" type="button" aria-label="Reiniciar (R)" title="Reiniciar (R)">↻</button>
     </div>
     <span class="chip" id="hDif">Normal</span>
@@ -202,7 +218,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
 <div class="overlay" id="menu">
   <div class="card">
-    <button class="smallbtn back" id="btnBack" type="button">← Juegos</button>
+    <button class="ter smallbtn back" id="btnBack" type="button">← Juegos</button>
     <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Serpiente</h1></div>
     <p class="intro"><b>◀</b> y <b>▶</b> doblan según hacia dónde va la serpiente. Comé frutas (las doradas valen 3) y no te choques.</p>
     <canvas class="demo" id="demo" role="img" aria-label="Demo: la serpiente dobla a su izquierda con ◀ y a su derecha con ▶"></canvas>
@@ -213,7 +229,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     </div>
     <div class="row">
       <button class="btn sec" id="btnRank" type="button">🏆 Ranking</button>
-      <button class="btn sec" id="btnMute" type="button">Sonido: sí</button>
+      <button class="ter btn sec" id="btnMute" type="button">Sonido: sí</button>
     </div>
     <div id="keysMenu"></div>
   </div>
@@ -237,7 +253,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     </div>
     <div class="row">
       <button class="btn sec" id="btnRank2" type="button">🏆 Ranking</button>
-      <button class="btn sec" id="btnHome" type="button">⌂ Juegos</button>
+      <button class="ter btn sec" id="btnHome" type="button">⌂ Juegos</button>
     </div>
     <div id="keysFin"></div>
   </div>

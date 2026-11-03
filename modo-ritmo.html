@@ -201,6 +201,22 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 @media (max-width: 380px) { .card { padding: 18px; } }
 @media (prefers-reduced-motion: reduce) { .logo, .life.low { animation: none; } }
+
+/* ---------- jerarquía de botones: un solo protagonista por pantalla ---------- */
+/* 1. principal (Jugar / Otra vez): el único amarillo, grande y con sombra alta */
+.card .btn.primary { background: var(--cube); border: 3px solid var(--ink); box-shadow: 0 6px 0 var(--ink); font-family: var(--display); font-weight: 400; font-size: 24px; letter-spacing: .01em; }
+.card .btn.primary:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
+/* 2. secundarios (Ranking): blancos, borde fino y sombra corta */
+.card .btn:not(.primary) { background: #fff; border-width: 2px; box-shadow: 0 2px 0 var(--ink); font-family: var(--body); font-weight: 800; font-size: 15px; }
+.card .btn:not(.primary):active { transform: translateY(2px); box-shadow: none; }
+/* 3. navegación y ajustes (← Juegos, ⌂ Juegos, Sonido): solo texto, sin caja */
+.card .ter { background: transparent !important; border-color: transparent !important; box-shadow: none !important; color: var(--ink);
+  font: 800 14px var(--body) !important; opacity: .72; padding: 8px 10px !important; min-height: 0; }
+.card .ter:hover { opacity: 1; background: rgba(29, 35, 64, .07) !important; }
+.card .ter:active { transform: none; }
+/* 4. teclas de la demo: muestran cómo se juega, no son botones */
+.card .key { box-shadow: none !important; border-style: dashed !important; border-width: 2px !important; background: rgba(255, 255, 255, .55) !important; }
+.card .key.on { background: var(--cube) !important; border-style: solid !important; transform: none !important; }
 </style>
 
 <canvas id="cv"></canvas>
@@ -229,8 +245,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 <div class="overlay" id="start">
   <div class="card menu">
     <div class="topbar">
-      <button class="smallbtn" id="btnBack" type="button" hidden>← Juegos</button>
-      <button class="smallbtn" id="btnMute" type="button" style="margin-left:auto">Sonido: sí</button>
+      <button class="ter smallbtn" id="btnBack" type="button" hidden>← Juegos</button>
+      <button class="ter smallbtn" id="btnMute" type="button" style="margin-left:auto">Sonido: sí</button>
     </div>
     <div class="col">
       <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Ritmo</h1></div>
@@ -261,7 +277,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     </div>
     <div class="foot">
       <span><kbd>Esc</kbd> sigue · <kbd>R</kbd> reinicia</span>
-      <button class="smallbtn" id="btnMute2" type="button">Sonido: sí</button>
+      <button class="ter smallbtn" id="btnMute2" type="button">Sonido: sí</button>
     </div>
   </div>
 </div>
@@ -287,7 +303,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     <div class="row">
       <button class="btn" id="btnRank2" type="button" hidden>🏆 Ranking</button>
       <button class="btn" id="btnHome" type="button">☰ Menú</button>
-      <button class="btn" id="btnGames2" type="button" hidden>⌂ Juegos</button>
+      <button class="ter btn" id="btnGames2" type="button" hidden>⌂ Juegos</button>
     </div>
     <div id="eKeys"><p class="hint kbhint"><kbd>R</kbd> o <kbd>Enter</kbd> otra vez · <kbd>Esc</kbd> menú</p></div>
   </div>

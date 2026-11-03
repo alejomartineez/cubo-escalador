@@ -185,6 +185,22 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 @media (pointer: coarse) { .teclas { display: none; } }
 @media (max-width: 380px) { .card { padding: 16px; gap: 12px; } .pad button { font-size: 15px; } .pad button svg { width: 30px; height: 30px; } }
 @media (max-height: 700px) and (pointer: coarse) { .card { gap: 11px; padding: 16px; } .result .num { font-size: 54px; } }
+
+/* ---------- jerarquía de botones: un solo protagonista por pantalla ---------- */
+/* 1. principal (Jugar / Otra vez): el único amarillo, grande y con sombra alta */
+.card .btn.primary { background: var(--cube); border: 3px solid var(--ink); box-shadow: 0 6px 0 var(--ink); font-family: var(--display); font-weight: 400; font-size: 24px; letter-spacing: .01em; }
+.card .btn.primary:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
+/* 2. secundarios (Ranking): blancos, borde fino y sombra corta */
+.card .btn:not(.primary) { background: #fff; border-width: 2px; box-shadow: 0 2px 0 var(--ink); font-family: var(--body); font-weight: 800; font-size: 15px; }
+.card .btn:not(.primary):active { transform: translateY(2px); box-shadow: none; }
+/* 3. navegación y ajustes (← Juegos, ⌂ Juegos, Sonido): solo texto, sin caja */
+.card .ter { background: transparent !important; border-color: transparent !important; box-shadow: none !important; color: var(--ink);
+  font: 800 14px var(--body) !important; opacity: .72; padding: 8px 10px !important; min-height: 0; }
+.card .ter:hover { opacity: 1; background: rgba(29, 35, 64, .07) !important; }
+.card .ter:active { transform: none; }
+/* 4. teclas de la demo: muestran cómo se juega, no son botones */
+.card .key { box-shadow: none !important; border-style: dashed !important; border-width: 2px !important; background: rgba(255, 255, 255, .55) !important; }
+.card .key.on { background: var(--cube) !important; border-style: solid !important; transform: none !important; }
 </style>
 
 <canvas id="cv"></canvas>
@@ -194,7 +210,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   <div class="stat mid"><div class="lives" id="hLives" aria-label="Vidas"></div><span class="lbl">vidas</span></div>
   <div class="right">
     <div class="hbtns">
-      <button class="smallbtn" id="btnQuit" type="button">← Juegos</button>
+      <button class="ter smallbtn" id="btnQuit" type="button">← Juegos</button>
       <button class="smallbtn icon" id="btnRestart" type="button" aria-label="Reiniciar (R)" title="Reiniciar (R)">↻</button>
     </div>
     <span class="chip" id="hLevel">Normal · Rival 1</span>
@@ -213,10 +229,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 <div class="overlay" id="menu">
   <div class="card">
     <div class="top">
-      <button class="smallbtn" id="btnBack" type="button">← Juegos</button>
+      <button class="ter smallbtn" id="btnBack" type="button">← Juegos</button>
       <span class="hbtns">
         <button class="smallbtn" id="btnRank" type="button">🏆 Ranking</button>
-        <button class="smallbtn" id="btnMute" type="button">Sonido: sí</button>
+        <button class="ter smallbtn" id="btnMute" type="button">Sonido: sí</button>
       </span>
     </div>
     <div class="brand">
@@ -264,7 +280,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     </div>
     <div class="row">
       <button class="btn small" id="btnRank2" type="button">🏆 Ranking</button>
-      <button class="btn small" id="btnHome" type="button">⌂ Juegos</button>
+      <button class="ter btn small" id="btnHome" type="button">⌂ Juegos</button>
     </div>
     <div class="teclas" id="eTeclas"></div>
   </div>

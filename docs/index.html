@@ -260,6 +260,19 @@ button { font: inherit; color: var(--ink); }
 
 button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
+/* ---------- jerarquía: Jugar es lo principal; flechas, "Todos" y pestañas, secundarios ---------- */
+.arrow, .all { box-shadow: 0 2px 0 var(--ink); border-width: 2.5px; }
+.all { background: transparent; border-color: transparent; box-shadow: none; }
+.all:hover { background: rgba(255, 255, 255, .35); }
+.icon-btn { box-shadow: 0 3px 0 var(--ink); border-width: 2.5px; }
+.play { box-shadow: 0 6px 0 var(--ink); font-size: 24px; }
+/* pestañas: una sola barra con la sección actual marcada, no cuatro botones sueltos */
+.tabs { gap: 2px; padding: 4px; margin: 0 auto calc(env(safe-area-inset-bottom, 0px) + 10px); width: min(560px, calc(100% - 32px));
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 20px; box-shadow: 0 4px 0 var(--ink); }
+.tab { height: 52px; border: 0; box-shadow: none; background: transparent; border-radius: 14px; }
+.tab[aria-current="page"] { background: var(--cube); box-shadow: inset 0 0 0 2.5px var(--ink); }
+.tab:active { transform: scale(.96); box-shadow: none; }
+
 /* en la compu todo un poco más grande (--ui lo calcula cubo-comun.js) */
 .top, .pager, .info, .tabs, .coach, .sheet .card { zoom: var(--ui, 1); }
 .stage { width: min(calc(480px * var(--ui, 1)), 100%); max-height: calc(330px * var(--ui, 1)); }
