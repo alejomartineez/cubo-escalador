@@ -309,3 +309,86 @@ returns json language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public.buscar_amigo(text) from public;
 grant execute on function public.buscar_amigo(text) to anon, authenticated;
+
+-- ---------- Retos 1v1 en vivo ----------
+-- Retás a un amigo por su código; la invitación queda guardada unos minutos por si abre el juego después.
+-- La partida en sí va por Supabase Realtime (broadcast) en la sala del reto: acá solo se guarda quién retó a quién.
+create table if not exists public.retos (
+  id     uuid primary key default gen_random_uuid(),
+  de     uuid not null references public.jugadores (id) on delete cascade,
+  para   uuid not null references public.jugadores (id) on delete cascade,
+  juego  text not null,
+  dif    text not null default 'normal',
+  sala   text not null,
+  estado text not null default 'pendiente' check (estado in ('pendiente', 'aceptado', 'rechazado', 'cancelado')),
+  creado timestamptz not null default now(),
+  vence  timestamptz not null default now() + interval '10 minutes'
+);
+create index if not exists retos_para on public.retos (para, vence);
+create index if not exists retos_de on public.retos (de, creado);
+alter table public.retos enable row level security;   -- nadie la lee directo: solo por las funciones de abajo
+
+create or replace function public.huella_de(p uuid) returns text language sql immutable as $$
+  select left(encode(sha256(convert_to(p::text, 'UTF8')), 'hex'), 12);
+$$;
+
+-- Retar a alguien por su código de amigo. Devuelve { id, sala, vence, huella } (huella: la del retado, para avisarle en vivo).
+create or replace function public.retar(p_jugador uuid, p_codigo text, p_juego text, p_dif text)
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  v_para uuid;
+  v_reto public.retos%rowtype;
+begin
+  if not exists (select 1 from public.jugadores where id = p_jugador) then return json_build_object('error', 'sin-apodo'); end if;
+  if coalesce(p_juego, '') not in ('pulseada', 'escalador') or coalesce(p_dif, '') !~ '^[a-z]{3,10}$' then return json_build_object('error', 'invalido'); end if;
+  select id into v_para from public.jugadores where codigo = upper(regexp_replace(coalesce(p_codigo, ''), '[^A-Za-z0-9]', '', 'g'));
+  if v_para is null or v_para = p_jugador then return json_build_object('error', 'no-existe'); end if;
+  -- para que nadie llene la tabla: como mucho 8 retos por minuto
+  if (select count(*) from public.retos where de = p_jugador and creado > now() - interval '1 minute') >= 8 then
+    return json_build_object('error', 'muchos');
+  end if;
+  delete from public.retos where vence < now() - interval '1 day';
+  update public.retos set estado = 'cancelado' where de = p_jugador and para = v_para and estado = 'pendiente';
+  insert into public.retos (de, para, juego, dif, sala)
+    values (p_jugador, v_para, p_juego, p_dif, replace(gen_random_uuid()::text, '-', ''))
+  returning * into v_reto;
+  return json_build_object('id', v_reto.id, 'sala', v_reto.sala, 'vence', v_reto.vence, 'huella', public.huella_de(v_para));
+end $$;
+revoke all on function public.retar(uuid, text, text, text) from public;
+grant execute on function public.retar(uuid, text, text, text) to anon, authenticated;
+
+-- Los retos que te llegaron y siguen en pie, con quién te retó.
+create or replace function public.mis_retos(p_jugador uuid)
+returns json language sql stable security definer set search_path = public as $$
+  select coalesce(json_agg(json_build_object(
+           'id', r.id, 'sala', r.sala, 'juego', r.juego, 'dif', r.dif, 'vence', r.vence,
+           'apodo', j.apodo, 'skin', j.skin, 'titulo', j.titulo, 'codigo', j.codigo, 'huella', public.huella_de(j.id))
+         order by r.creado desc), '[]'::json)
+  from public.retos r join public.jugadores j on j.id = r.de
+  where r.para = p_jugador and r.estado = 'pendiente' and r.vence > now();
+$$;
+revoke all on function public.mis_retos(uuid) from public;
+grant execute on function public.mis_retos(uuid) to anon, authenticated;
+
+-- Aceptar o rechazar (el retado), o cancelar (el que retó). Devuelve el estado que quedó, o null si el reto ya no está.
+create or replace function public.responder_reto(p_jugador uuid, p_id uuid, p_estado text)
+returns text language plpgsql security definer set search_path = public as $$
+declare v_estado text;
+begin
+  update public.retos set estado = p_estado
+  where id = p_id and estado = 'pendiente' and vence > now()
+    and ((p_estado in ('aceptado', 'rechazado') and para = p_jugador) or (p_estado = 'cancelado' and de = p_jugador))
+  returning estado into v_estado;
+  return v_estado;
+end $$;
+revoke all on function public.responder_reto(uuid, uuid, text) from public;
+grant execute on function public.responder_reto(uuid, uuid, text) to anon, authenticated;
+
+-- Cómo va un reto que mandaste o te llegó: 'pendiente' | 'aceptado' | 'rechazado' | 'cancelado' | 'vencido'.
+create or replace function public.ver_reto(p_jugador uuid, p_id uuid)
+returns text language sql stable security definer set search_path = public as $$
+  select case when estado = 'pendiente' and vence <= now() then 'vencido' else estado end
+  from public.retos where id = p_id and (de = p_jugador or para = p_jugador);
+$$;
+revoke all on function public.ver_reto(uuid, uuid) from public;
+grant execute on function public.ver_reto(uuid, uuid) to anon, authenticated;

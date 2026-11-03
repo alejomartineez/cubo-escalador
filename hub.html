@@ -42,6 +42,13 @@ button { font: inherit; color: var(--ink); }
 }
 .install svg { width: 20px; height: 20px; flex: none; }
 .install:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.amigos-btn {
+  position: relative; flex: none; display: flex; align-items: center; justify-content: center; gap: 6px; height: 52px; min-width: 52px; padding: 0 12px; cursor: pointer;
+  background: var(--cube); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink);
+  font: 400 17px var(--display); white-space: nowrap;
+}
+.amigos-btn svg { width: 24px; height: 24px; flex: none; }
+.amigos-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 .me {
   position: relative; display: flex; align-items: center; gap: 8px; cursor: pointer;
   background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink);
@@ -379,7 +386,14 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 .amigo .nm { flex: 1; min-width: 0; font-weight: 800; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .amigo .nm small { display: block; font-size: 11px; font-weight: 700; color: var(--muted); }
 .amigo .vs { height: 40px; padding: 0 12px; border-radius: 12px; border: 2.5px solid var(--ink); background: #ff5d7d; color: #fff; box-shadow: 0 3px 0 var(--ink); font-family: var(--display); font-size: 16px; cursor: pointer; }
+.amigo .retar { height: 40px; padding: 0 12px; border-radius: 12px; border: 2.5px solid var(--ink); background: var(--cube); box-shadow: 0 3px 0 var(--ink); font-family: var(--display); font-size: 16px; cursor: pointer; white-space: nowrap; }
+.amigo .retar:active, .amigo .vs:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.amigo .vs { background: #fff; color: var(--ink); }
 .amigo .quitar { width: 32px; height: 32px; border-radius: 10px; border: 0; background: transparent; font-size: 16px; color: var(--muted); cursor: pointer; }
+@media (max-width: 440px) {
+  .amigo { display: grid; grid-template-columns: 36px 1fr 1fr 32px; grid-template-areas: "c n n q" "r r v v"; }
+  .amigo canvas { grid-area: c; } .amigo .nm { grid-area: n; } .amigo .quitar { grid-area: q; } .amigo .retar { grid-area: r; } .amigo .vs { grid-area: v; }
+}
 .vacio-amigos { padding: 18px; text-align: center; border: 2.5px dashed rgba(29,35,64,.3); border-radius: 14px; font-size: 13px; font-weight: 600; color: var(--muted); line-height: 1.45; }
 .vs-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 6px; padding: 12px; border-radius: 16px; background: #2b2f4a; color: var(--paper); text-align: center; }
 .vs-top canvas { width: 56px; height: 62px; margin: 0 auto; display: block; }
@@ -408,6 +422,9 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 .logro.secreto .m { background: #8f6bff !important; border-color: var(--ink); color: var(--paper); }
 @media (max-height: 700px) { .info p { display: none; } .slide { gap: 8px; } }
 @media (max-height: 600px) { .tab { height: 48px; } .tab span { display: none; } }
+@media (max-width: 480px) { .amigos-btn span { display: none; } .amigos-btn { padding: 0; } }
+/* con el botón de amigos no entra el nombre en una línea: va en dos */
+@media (max-width: 420px) { .brand { white-space: normal; width: min-content; line-height: .95; } }
 @media (max-width: 400px) { .brand { font-size: 18px; } .bar { width: 64px; } .install span { display: none; } .all span { display: none; } }
 @media (max-width: 340px) { .brand { display: none; } }
 @media (prefers-reduced-motion: reduce) { body { transition: none; } .badge, .coach svg, .card { animation: none; } }
@@ -428,6 +445,9 @@ ol.pase li.lock .pr.pase::after { animation: none; }
           <span class="me-edit">Cambiar personaje</span>
         </span>
         <span class="badge" id="meBadge" hidden>¡Nuevo!</span>
+      </button>
+      <button class="amigos-btn" id="amigosBtn" type="button" aria-label="Amigos: agregar, comparar y retar a un 1v1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.2a6.5 6.5 0 0 1 3 5.8"/></svg><span>Amigos</span>
       </button>
     </div>
   </header>
@@ -524,17 +544,21 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="tJue">
     <div class="card-h"><h3 id="tJue">Ranking</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
     <div class="card-b">
-      <div class="seg" id="segRank" role="group" aria-label="Qué ver"><button type="button" data-r="rankings" aria-pressed="true">🏆 Rankings</button><button type="button" data-r="amigos" aria-pressed="false">👥 Amigos</button></div>
       <p class="tip" id="jueTip"></p><div class="juegos" id="juegos"></div>
-      <div id="panelAmigos" hidden>
-        <div style="display:grid;gap:12px">
-          <div class="mi-codigo"><span id="miCodigoTxt">Tu código de amigo</span><b id="miCodigo"></b><button class="mini" type="button" id="copiarCodigo">Copiar</button></div>
-          <form class="amigo-form" id="amigoForm" autocomplete="off"><input id="amigoCodigo" maxlength="7" placeholder="CÓDIGO DE TU AMIGO" spellcheck="false" autocapitalize="characters" aria-label="Código de tu amigo"><button type="submit">Agregar</button></form>
-          <p class="codigo-msg" id="amigoMsg" aria-live="polite"></p>
-          <div class="amigos" id="amigos"></div>
-          <p class="tip">Tocá <b>Versus</b> para comparar sus mejores marcas en cada juego. En cada ranking podés tocar <b>👥 Amigos</b> para competir solo con ellos.</p>
-        </div>
-      </div>
+    </div>
+  </div>
+</div>
+
+<!-- amigos -->
+<div class="sheet" id="sheetAmigos" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="tAmi">
+    <div class="card-h"><h3 id="tAmi">Amigos</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
+    <div class="card-b">
+      <div class="mi-codigo"><span id="miCodigoTxt">Tu código de amigo</span><b id="miCodigo"></b><button class="mini" type="button" id="copiarCodigo">Copiar</button></div>
+      <form class="amigo-form" id="amigoForm" autocomplete="off"><input id="amigoCodigo" maxlength="7" placeholder="CÓDIGO DE TU AMIGO" spellcheck="false" autocapitalize="characters" aria-label="Código de tu amigo"><button type="submit">Agregar</button></form>
+      <p class="codigo-msg" id="amigoMsg" aria-live="polite"></p>
+      <div class="amigos" id="amigos"></div>
+      <p class="tip"><b>Retar</b> lo invita a un 1v1 en vivo: juegan los dos a la vez y ven cómo va el otro. <b>Versus</b> compara sus mejores marcas en cada juego. En cada ranking podés tocar <b>👥 Amigos</b> para competir solo con ellos.</p>
     </div>
   </div>
 </div>
@@ -1227,15 +1251,15 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   }
 
   // elegir juego (ranking / todos)
-  let modoJuegos = 'ranking', vista = 'rankings';
-  function mostrarVista(v) {
-    vista = v;
-    for (const b of $('segRank').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.r === v));
-    $('panelAmigos').hidden = v !== 'amigos';
-    $('jueTip').hidden = $('juegos').hidden = v === 'amigos';
-    if (v === 'amigos') pintarAmigos(true);
+  let modoJuegos = 'ranking';
+
+  // amigos: su propia hoja, con el botón de arriba a la derecha
+  function abrirAmigos() {
+    $('amigoMsg').textContent = '';
+    pintarAmigos(true);
+    abrir('sheetAmigos');
   }
-  for (const b of $('segRank').querySelectorAll('button')) b.addEventListener('click', () => mostrarVista(b.dataset.r));
+  $('amigosBtn').addEventListener('click', abrirAmigos);
   function pintarAmigos(refrescar) {
     const p = CC.perfil();
     $('miCodigo').textContent = p.codigoAmigo ? p.codigoAmigo.slice(0, 3) + ' ' + p.codigoAmigo.slice(3) : '';
@@ -1247,19 +1271,23 @@ ol.pase li.lock .pr.pase::after { animation: none; }
     if (!p.amigos.length) box.innerHTML = '<div class="vacio-amigos">Todavía no agregaste a nadie.<br>Pedile a un amigo su código y ponelo arriba.</div>';
     for (const a of p.amigos) {
       const el = document.createElement('div'); el.className = 'amigo';
-      el.innerHTML = `<canvas width="72" height="80"></canvas><span class="nm"><span class="ap"></span><small></small></span><button class="vs" type="button">⚔️ Versus</button><button class="quitar" type="button" aria-label="Quitar amigo">✕</button>`;
+      el.innerHTML = `<canvas width="72" height="80"></canvas><span class="nm"><span class="ap"></span><small></small></span><button class="retar" type="button">⚔️ Retar</button><button class="vs" type="button">Versus</button><button class="quitar" type="button" aria-label="Quitar amigo">✕</button>`;
       const ap = el.querySelector('.ap'), sk = CC.SKINS.find(s => s.id === a.skin) || CC.SKINS[0];
       ap.textContent = a.apodo; ap.className = 'ap ' + CC.claseNombre(sk);
       el.querySelector('small').textContent = a.titulo || 'Amigo';
       const c = el.querySelector('canvas').getContext('2d'); c.scale(2, 2); CC.dibujarCubo(c, 18, 37, 22, { skin: sk, t: 900, efecto: false });
       el.querySelector('.vs').addEventListener('click', () => abrirVersus(a));
+      el.querySelector('.retar').addEventListener('click', () => {
+        if (window.CuboDuelo) window.CuboDuelo.elegirJuego(a);
+        else CC.avisar('<div><b>Sin conexión</b><span>Para retar a un amigo hace falta internet.</span></div>');
+      });
       el.querySelector('.quitar').addEventListener('click', () => {
         if (!confirm(`¿Quitar a ${a.apodo} de tus amigos?`)) return;
         CC.quitarAmigo(a.codigo); pintarAmigos();
       });
       box.appendChild(el);
     }
-    if (refrescar && p.amigos.length) CC.refrescarAmigos().then(() => { if (vista === 'amigos' && abierta && abierta.id === 'sheetJuegos') pintarAmigos(); });
+    if (refrescar && p.amigos.length) CC.refrescarAmigos().then(() => { if (abierta && abierta.id === 'sheetAmigos') pintarAmigos(); });
   }
   $('copiarCodigo').addEventListener('click', async () => {
     const c = CC.perfil().codigoAmigo;
@@ -1319,8 +1347,6 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   function abrirJuegos(modo) {
     modoJuegos = modo;
     const p = CC.perfil();
-    $('segRank').hidden = modo !== 'ranking';
-    mostrarVista(modo === 'ranking' ? vista : 'rankings');
     $('tJue').textContent = modo === 'ranking' ? 'Ranking' : 'Todos los juegos';
     $('jueTip').textContent = modo === 'ranking'
       ? (p.apodo ? `Jugás como ${p.apodo}. Elegí un juego para ver el ranking online.` : 'Elegí un juego para ver el ranking. Poné tu apodo para aparecer.')
@@ -1405,6 +1431,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   let inicio = +(guardado(SLIDE_KEY) || 0) || 0;
   const porHash = JUEGOS.findIndex(g => '#' + g.id === location.hash);
   if (porHash >= 0) inicio = porHash;
+  if (location.hash === '#amigos') { history.replaceState(null, '', location.pathname); setTimeout(abrirAmigos, 50); }   // al volver de un duelo
   pintarPerfil(); avatar(0);
   requestAnimationFrame(() => { todo(); ir(Math.min(Math.max(0, inicio), JUEGOS.length - 1), false); setTimeout(() => { listo = true; }, 400); });
   requestAnimationFrame(frame);
