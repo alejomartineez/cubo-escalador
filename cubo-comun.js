@@ -301,6 +301,9 @@
       vistos: Array.isArray(p.vistos) ? p.vistos : null,
       apodo: typeof p.apodo === 'string' ? p.apodo : '',
       id: typeof p.id === 'string' ? p.id : '',
+      clave: typeof p.clave === 'string' ? p.clave : '',
+      skinSubida: typeof p.skinSubida === 'string' ? p.skinSubida : '',
+      apodoPerdido: typeof p.apodoPerdido === 'string' ? p.apodoPerdido : '',
       pendientes: Array.isArray(p.pendientes) ? p.pendientes.slice(-40) : [],
     };
   }
@@ -350,6 +353,7 @@
     const s = SKINS.find(k => k.id === id);
     if (!s || !libre(s)) return false;
     datos.skin = id; guardar();
+    subirPendientes();   // el ranking muestra tu skin actual
     return true;
   }
   // Canjea un código. Devuelve { ok, skin } o { ok: false, msg }.
@@ -366,6 +370,7 @@
     datos = leer();
     if (datos.codigos.includes(id)) return { ok: true, skin: sk, ya: true };
     datos.codigos.push(id); datos.skin = id; guardar();
+    subirPendientes();
     avisar(`<canvas width="96" height="104" style="width:48px;height:52px;flex:none"></canvas><div><b>¡${sk.nombre}!</b><span>Personaje legendario desbloqueado</span></div>`, 4200);
     const cv = document.querySelector('#cc-avisos .cc-aviso:last-child canvas');
     if (cv) { const c = cv.getContext('2d'); c.scale(2, 2); dibujarCubo(c, 24, 46, 28, { skin: sk, t: 0, efecto: false }); }
@@ -509,10 +514,25 @@
     if (!subiendo) subiendo = subir().finally(() => { subiendo = null; });
     return subiendo;
   }
+  // Tu apodo y tu skin se guardan una sola vez en el servidor, y el ranking los muestra en todas tus filas.
+  const registrar = apodo => api('rpc/registrar_jugador', { method: 'POST', body: JSON.stringify({ p_jugador: datos.id, p_apodo: apodo, p_skin: skin().id }) });
+  async function asegurarJugador() {
+    datos = leer();
+    const sk = skin().id;
+    if (datos.clave && datos.skinSubida === sk) return;
+    const r = await registrar(datos.apodo);
+    datos = leer();
+    if (r && r.estado === 'ok') { datos.clave = r.clave; datos.skinSubida = sk; }
+    // el apodo ya era de otra persona (o de vos en otro dispositivo): hay que elegir otro o usar la clave
+    else if (r && r.estado === 'ocupado') { datos.apodoPerdido = datos.apodo; datos.apodo = ''; datos.clave = ''; }
+    guardar();
+  }
   async function subir() {
     datos = leer();
-    if (!rankingActivo() || !datos.apodo || !datos.pendientes.length || navigator.onLine === false) return;
+    if (!rankingActivo() || !datos.apodo || navigator.onLine === false) return;
     try {
+      await asegurarJugador();
+      if (!datos.apodo) return;
       while (true) {
         datos = leer();
         const x = datos.pendientes[0];
@@ -560,17 +580,51 @@
   function limpiarApodo(s) {
     return String(s || '').normalize('NFC').replace(/[^\p{L}\p{N} _.\-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 14);
   }
+  const sinRed = () => (!rankingActivo() || navigator.onLine === false ? { ok: false, msg: 'Necesitás internet para esto.' } : null);
+  function subirTodo() {
+    for (const [k, v] of Object.entries(datos.mejores)) { const [j, t] = k.split(':'); if (tablaDe(j, t)) encolar(j, t, v); }
+  }
+  // Elegir o cambiar el apodo. Cada apodo es de una sola persona: si ya lo tiene otra, no se puede.
+  // Devuelve false si el apodo no sirve, o una promesa con { ok, msg }.
   function ponerApodo(s) {
     const a = limpiarApodo(s);
     if (a.length < 3) return false;
-    datos = leer();
-    const cambio = a !== datos.apodo;
-    datos.apodo = a;
-    // Al estrenar o cambiar el apodo se suben todos tus récords.
-    if (cambio) for (const [k, v] of Object.entries(datos.mejores)) { const [j, t] = k.split(':'); if (tablaDe(j, t)) encolar(j, t, v); }
-    guardar();
-    return subirPendientes().then(() => true);
+    const err = sinRed();
+    if (err) return Promise.resolve(err);
+    return (async () => {
+      let r;
+      try { await subiendo; datos = leer(); r = await registrar(a); }
+      catch (e) { return { ok: false, msg: 'No se pudo guardar el apodo. Probá de nuevo en un rato.' }; }
+      if (r && r.estado === 'ocupado') return { ok: false, msg: `«${a}» ya es de otra persona. Elegí otro, o si es tuyo, entrá con tu clave.` };
+      if (!r || r.estado !== 'ok') return { ok: false, msg: 'El apodo tiene que tener entre 3 y 14 letras o números.' };
+      datos = leer();
+      datos.apodo = a; datos.clave = r.clave; datos.skinSubida = skin().id; datos.apodoPerdido = '';
+      subirTodo();   // al estrenar el apodo se suben todos tus récords
+      guardar();
+      await subirPendientes();
+      return { ok: true };
+    })();
   }
+  // Usar en este dispositivo el apodo que ya tenés en otro, con su clave. Lo de acá se suma a lo tuyo.
+  async function vincular(apodo, clave) {
+    const a = limpiarApodo(apodo);
+    if (a.length < 3 || !String(clave || '').trim()) return { ok: false, msg: 'Escribí tu apodo y tu clave.' };
+    const err = sinRed();
+    if (err) return err;
+    let r;
+    try {
+      await subiendo; datos = leer();
+      r = await api('rpc/vincular_jugador', { method: 'POST', body: JSON.stringify({ p_apodo: a, p_clave: clave, p_viejo: datos.id }) });
+    } catch (e) { return { ok: false, msg: 'No se pudo conectar. Probá de nuevo en un rato.' }; }
+    if (!r || !r.id) return { ok: false, msg: 'El apodo y la clave no coinciden.' };
+    datos = leer();
+    datos.id = r.id; datos.apodo = r.apodo; datos.clave = r.clave; datos.skinSubida = ''; datos.apodoPerdido = '';
+    subirTodo();
+    guardar();
+    await subirPendientes();
+    return { ok: true, apodo: r.apodo };
+  }
+  const claveLinda = c => (c && c.length === 8 ? c.slice(0, 4) + '-' + c.slice(4) : c);
 
   // ---------- estilos de lo que dibuja esta librería en la página ----------
   function estilos() {
@@ -672,7 +726,11 @@
 #cc-rank form button{appearance:none;height:44px;padding:0 16px;border-radius:12px;border:2.5px solid ${INK};background:#ffcc29;color:${INK};
   font:400 18px "Lilita One","Trebuchet MS",sans-serif;box-shadow:0 3px 0 ${INK};cursor:pointer}
 #cc-rank form button:active{transform:translateY(2px);box-shadow:0 1px 0 ${INK}}
-#cc-rank .ayuda{margin:8px 2px 0;font-size:12px;font-weight:600;opacity:.7;line-height:1.35}
+#cc-rank .ayuda{margin:8px 2px 0;font-size:12px;font-weight:600;opacity:.75;line-height:1.35}
+#cc-rank .ayuda .clave{font:800 15px ui-monospace,Consolas,monospace;letter-spacing:.08em;user-select:all;white-space:nowrap}
+#cc-rank .f-clave input[name="c"]{flex:0 0 8.6em;text-transform:uppercase;letter-spacing:.06em}
+#cc-rank form button:disabled,#cc-rank input:disabled{opacity:.6}
+#cc-rank .pie .otro{display:block;margin:4px 0 0 -6px;font-size:12px}
 /* nombres de quien usa una legendaria: con el color de su personaje */
 .cc-leg{font-weight:800}
 .cc-leg-fantasma{color:#3f6fd1;text-shadow:0 0 8px rgba(120,170,255,.75)}
@@ -859,25 +917,43 @@
       ${conModos ? '<div class="seg modos" role="group" aria-label="Modo"></div>' : ''}<div class="seg difs" role="group" aria-label="Dificultad"></div>
       <ol aria-live="polite"></ol>
       <div class="pie"><div class="yo-txt"></div>
-        <form><input name="a" maxlength="14" autocomplete="nickname" placeholder="Tu apodo (3 a 14 letras)" aria-label="Tu apodo"><button type="submit">Guardar</button></form>
-        <p class="ayuda"></p></div></div>`;
+        <form class="f-apodo"><input name="a" maxlength="14" autocomplete="nickname" placeholder="Tu apodo (3 a 14 letras)" aria-label="Tu apodo"><button type="submit">Guardar</button></form>
+        <form class="f-clave" hidden><input name="a" maxlength="14" autocomplete="nickname" placeholder="Tu apodo" aria-label="Tu apodo">
+          <input name="c" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Clave" aria-label="Tu clave"><button type="submit">Entrar</button></form>
+        <p class="ayuda"></p><button class="link otro" type="button"></button></div></div>`;
     document.body.appendChild(box);
     const $ = s => box.querySelector(s);
-    const segModos = $('.seg.modos'), segDifs = $('.seg.difs'), ol = $('ol'), input = $('input'), ayuda = $('.ayuda'), form = $('form'), yoTxt = $('.yo-txt');
-    let editando = false;
-    function pintarPie() {
+    const segModos = $('.seg.modos'), segDifs = $('.seg.difs'), ol = $('ol'), ayuda = $('.ayuda'), yoTxt = $('.yo-txt'), otro = $('.otro');
+    const form = $('.f-apodo'), input = form.querySelector('input'), formClave = $('.f-clave');
+    let editando = false, conClave = false, verClave = false;
+    // modos del pie: con apodo (y tu clave a mano), eligiendo apodo, o entrando con la clave de otro dispositivo
+    function pintarPie(aviso) {
       const p = leer(), con = !!p.apodo && !editando;
-      form.hidden = con; yoTxt.hidden = !con;
+      yoTxt.hidden = !con; form.hidden = con || conClave; formClave.hidden = con || !conClave;
       if (con) {
         yoTxt.innerHTML = 'Jugás como <b></b><button class="link" type="button">Cambiar apodo</button>';
         const b = yoTxt.querySelector('b'); b.textContent = p.apodo; b.className = claseNombre(skin());
-        yoTxt.querySelector('.link').addEventListener('click', () => { editando = true; pintarPie(); input.focus(); });
-        ayuda.textContent = 'Tu mejor marca de cada modo se sube sola al terminar la partida.';
+        yoTxt.querySelector('.link').addEventListener('click', () => { editando = true; verClave = false; pintarPie(); input.focus(); });
+        otro.textContent = verClave ? 'Ocultar clave' : 'Jugar en otro dispositivo';
+        if (verClave) {
+          ayuda.innerHTML = p.clave
+            ? `Tu clave es <b class="clave"></b>. En el otro celu o compu abrí un ranking, tocá «Ya tengo apodo» y poné tu apodo y esta clave. No se la pases a nadie.`
+            : 'Conectate a internet para ver tu clave.';
+          const c = ayuda.querySelector('.clave'); if (c) c.textContent = claveLinda(p.clave);
+        } else ayuda.textContent = aviso || 'Tu mejor marca de cada modo se sube sola al terminar la partida.';
       } else {
-        input.value = p.apodo;
-        ayuda.textContent = 'Poné un apodo para aparecer en el ranking. Tus récords se suben solos.';
+        if (!input.value) input.value = p.apodo || p.apodoPerdido;
+        otro.textContent = conClave ? 'Elegir un apodo nuevo' : 'Ya tengo apodo en otro dispositivo';
+        ayuda.textContent = aviso || (conClave ? 'La clave está en el ranking del dispositivo donde ya tenés tu apodo.'
+          : p.apodoPerdido ? `«${p.apodoPerdido}» ya es de otra persona. Si es tuyo, entrá con tu clave; si no, elegí otro.`
+          : 'Poné un apodo para aparecer en el ranking. Es solo tuyo y tus récords se suben solos.');
       }
     }
+    otro.addEventListener('click', () => {
+      if (leer().apodo && !editando) verClave = !verClave;
+      else { conClave = !conClave; const f = conClave ? formClave : form; setTimeout(() => f.querySelector('input').focus()); }
+      pintarPie();
+    });
     pintarPie();
     function pintarSegs() {
       const tb = tablaDe(j.id, tid), modo = modoDe(tb);
@@ -928,17 +1004,31 @@
       } catch (e) { if (n === pedido) msg(`No se pudo cargar el ranking. Probá de nuevo en un rato.<br>${tuyo}`); }
     }
     function cerrar() { box.remove(); removeEventListener('keydown', tecla, true); if (previo && previo.focus) previo.focus(); if (o.alCerrar) o.alCerrar(); }
-    function tecla(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); } else if (e.target !== input) e.stopPropagation(); }
+    function tecla(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); } else if (e.target.tagName !== 'INPUT') e.stopPropagation(); }
     addEventListener('keydown', tecla, true);
     $('.x').addEventListener('click', cerrar);
     box.addEventListener('click', e => { if (e.target === box) cerrar(); });
-    form.addEventListener('submit', e => {
+    const esperando = (f, si) => { for (const el of f.elements) el.disabled = si; };
+    form.addEventListener('submit', async e => {
       e.preventDefault();
       const r = ponerApodo(input.value);
       if (!r) { ayuda.textContent = 'El apodo tiene que tener entre 3 y 14 letras o números.'; input.focus(); return; }
+      esperando(form, true); ayuda.textContent = 'Guardando…';
+      const res = await r;
+      esperando(form, false);
+      if (!res.ok) { ayuda.textContent = res.msg; input.focus(); return; }
       editando = false; input.blur(); pintarPie();
-      msg('Subiendo tus récords…');
-      r.then(cargar, cargar);
+      cargar();
+    });
+    formClave.addEventListener('submit', async e => {
+      e.preventDefault();
+      esperando(formClave, true); ayuda.textContent = 'Revisando…';
+      const res = await vincular(formClave.elements.a.value, formClave.elements.c.value);
+      esperando(formClave, false);
+      if (!res.ok) { ayuda.textContent = res.msg; formClave.elements.c.focus(); return; }
+      conClave = false; editando = false; document.activeElement.blur && document.activeElement.blur();
+      pintarPie(`¡Listo! Ahora jugás como ${res.apodo} también en este dispositivo.`);
+      cargar();
     });
     cargar();
     $('.x').focus();
@@ -1508,7 +1598,7 @@
     SKINS, EFECTOS, DIFS, DURAS, JUEGOS, LOGROS, MEDALLAS, UMBRALES, canjear, marcar, leyendaTeclas, escalaUI,
     xpPara, nivelDe, perfil, skin, efecto, elegirSkin, elegirEfecto, libre, nuevos, marcarVistos,
     sumarXP, xpEscala, partida, importarRecord, anotarRecord, revisarLogros, tieneLogro,
-    claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, limpiarApodo, rankingActivo, subirPendientes,
+    claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
     avisar, vibrar, volver, dibujarCubo,
   };
 })();

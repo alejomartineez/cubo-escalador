@@ -307,6 +307,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   const STUN = 500;        // ms de mareo al errar
   const STUN_X = 1000;     // en Extremo
+  const ROMPE = { extremo: 2000, maestro: 1600 }; // ms que aguanta el escalón donde estás parado antes de romperse
   const VISTA = { normal: Infinity, extremo: 4, maestro: 3 }; // escalones que se ven por delante
   // Lava: arranca 6 escalones abajo y sube cada vez más rápido (escalones por segundo, y aceleración).
   const LAVA = { normal: [2.2, 0.11], extremo: [3, 0.13], maestro: [3.6, 0.15] };
@@ -326,8 +327,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const LOCAL = { normal: '', extremo: 'X', maestro: 'M' };
   const NOTAS = {
     normal: 'Mareo de medio segundo y ves todos los escalones.',
-    extremo: 'Mareo de 1 segundo y solo ves 4 escalones adelante. XP ×3.',
-    maestro: 'Solo ves 3 escalones adelante y un error termina la partida. XP ×4.',
+    extremo: 'Mareo de 1 segundo, ves 4 escalones y si te quedás quieto 2 s, el escalón se rompe. XP ×3.',
+    maestro: 'Ves 3 escalones, un error termina la partida y el escalón se rompe a los 1,6 s. XP ×4.',
   };
   const ZONES = [
     ['#ff7a95', '#d94a6c'], ['#ffad4d', '#d9801c'], ['#3fdca8', '#16a676'],
@@ -413,6 +414,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       started: false, t0: 0, endT: 0, done: false, stunUntil: 0, bonkDir: 0, bonkT: -1e9,
       rx: 0, ry: 0, arc: 0, fromX: 0, fromY: 0, tw0: -1e9, face: 1, combo: 0, errors: 0, moves: [], botNext: 0,
       lastDir: 0, turnT: -1e9, landT: -1e9, landI: -1, rings: [], ghosts: [], zone: 0,
+      pisado: 0, crujido: 0, cae: null,   // cuándo llegaste al escalón actual, último crujido y el escalón que se cayó
     };
     shooting = [];
     $('zone').classList.remove('show');
@@ -433,13 +435,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (!G || G.done || now < G.stunUntil) return;
     const next = G.steps[G.i + 1];
     if (!next) return;
-    if (!G.started) { G.started = true; G.t0 = now; }
+    if (!G.started) { G.started = true; G.t0 = now; G.pisado = now; }
     G.face = d;
     if (next.dir === d) {
       const turn = G.lastDir !== 0 && d !== G.lastDir;
       G.ghosts.push({ x: G.rx, y: G.ry, t: now });
       G.fromX = G.rx; G.fromY = G.ry; G.tw0 = now;
-      G.i++; G.combo++; G.moves.push(now);
+      G.i++; G.combo++; G.moves.push(now); G.pisado = now;
       G.lastDir = d; G.landT = now + TWEEN; G.landI = G.i;
       dust(next.x, G.i, zoneOf(G.i)[0], turn ? 12 : 5, turn ? -d : 0);
       if (turn) { G.turnT = now; G.rings.push({ x: next.x, i: G.i, t: now }); }
@@ -509,9 +511,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (G.done) return;
     G.done = true; G.endT = now;
     const valor = G.i;
-    let title = por === 'lava' ? '¡Te alcanzó la lava!' : '¡Un error y afuera!', num, sub, isRec = false, r = null;
+    let title = por === 'lava' ? '¡Te alcanzó la lava!' : por === 'derrumbe' ? '¡Se rompió el escalón!' : '¡Un error y afuera!', num, sub, isRec = false, r = null;
     if (G.mode === 'sprint') {
-      num = G.i + ' / ' + SPRINT_GOAL; sub = 'En Maestro el Sprint tiene que salir perfecto.';
+      num = G.i + ' / ' + SPRINT_GOAL;
+      sub = por === 'derrumbe' ? 'No te quedes quieto: el escalón se rompe.' : 'En Maestro el Sprint tiene que salir perfecto.';
       if (CC && G.i > 0) CC.sumarXP(G.i / 6);
     } else {
       num = valor;
@@ -523,6 +526,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (!isRec && anterior) sub += ` · récord ${anterior}`;
     }
     if (por === 'lava') { beep(110, 0.5, 'sawtooth', 0.07, 0.5); beep(70, 0.6, 'square', 0.05); }
+    if (por === 'derrumbe') { beep(160, 0.4, 'sawtooth', 0.06, 0.35); beep(90, 0.5, 'square', 0.04, 0.5); }
     shake = reduceMotion ? 0 : 12;
     pintarFin(title, num, sub, isRec, r);
     setTimeout(() => { if (G && G.done && state === 'play') showEnd(); }, 900);
@@ -885,6 +889,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (cerca < 4 && now - (G.rugido || 0) > 650) { G.rugido = now; beep(65 + cerca * 10, 0.25, 'sawtooth', 0.03, 0.8); }
     }
 
+    // Extremo y Maestro: el escalón donde estás se rompe si te quedás quieto (cruje cada vez más rápido antes)
+    if (G.x && !G.demo && G.started && !G.done) {
+      const q = (now - G.pisado) / ROMPE[G.dif];
+      if (q >= 1) { G.cae = { i: G.i, t: now }; perder(now, 'derrumbe'); }
+      else if (q > 0.5 && now - G.crujido > (q > 0.8 ? 150 : 300)) { G.crujido = now; beep(170 + q * 260, 0.05, 'square', 0.025); }
+    }
+
     if (state === 'play' || state === 'end') {
       let steps = String(G.i), time, speed = G.moves.length;
       const el = G.done ? G.endT - G.t0 : G.started ? now - G.t0 : 0;
@@ -944,9 +955,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     for (let i = iHi; i >= iLo; i--) {
       ctx.globalAlpha = 1;
       if (G.x) { const lejos = i - G.i - VISTA[G.dif]; if (lejos >= 2) continue; if (lejos > 0) ctx.globalAlpha = 0.3; }
-      const st = G.steps[i], x = st.x * U - sw / 2;
+      const st = G.steps[i];
       const lt = i === G.landI ? (now - G.landT) / 180 : -1;
-      const y = -i * RISE * U + (lt >= 0 && lt < 1 ? Math.sin(Math.PI * lt) * U * 0.08 : 0);
+      // el escalón donde estás parado en Extremo/Maestro: se agrieta, tiembla y al final se cae
+      const roto = G.cae && G.cae.i === i ? 1 : G.x && !G.demo && G.started && !G.done && i === G.i ? clamp01((now - G.pisado) / ROMPE[G.dif]) : 0;
+      const tiembla = roto > 0.6 && !reduceMotion ? (Math.random() - 0.5) * U * 0.07 * roto : 0;
+      const cae = G.cae && G.cae.i === i ? U * 9 * ((now - G.cae.t) / 1000) ** 2 : 0;
+      const x = st.x * U - sw / 2 + tiembla;
+      const y = -i * RISE * U + (lt >= 0 && lt < 1 ? Math.sin(Math.PI * lt) * U * 0.08 : 0) + cae;
       const isGoal = G.mode === 'sprint' && !G.demo && i === SPRINT_GOAL;
       const [c1, c2] = zoneOf(i);
       ctx.fillStyle = 'rgba(29,35,64,.18)'; rr(x + U * 0.05, y + U * 0.08, sw, sh, srad); ctx.fill();
@@ -969,6 +985,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (lt >= 0 && lt < 1) {
         ctx.fillStyle = `rgba(255,255,255,${0.55 * (1 - lt)})`; rr(x, y, sw, sh, srad); ctx.fill();
       }
+      if (roto > 0.3) grietas(x, y, sw, sh, roto);
       if (i > 0 && i % 10 === 0 && !isGoal) {
         ctx.fillStyle = 'rgba(255,255,255,.95)';
         ctx.font = `${Math.round(U * 0.22)}px "Lilita One", "Trebuchet MS", sans-serif`;
@@ -1063,13 +1080,30 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     ctx.globalAlpha = 1;
   }
 
+  // Grietas sobre un escalón que se está rompiendo: aparecen de a una y el escalón se oscurece.
+  const GRIETAS = [
+    [[0.5, 0], [0.44, 0.35], [0.53, 0.62], [0.47, 1]],
+    [[0.22, 0], [0.28, 0.4], [0.2, 0.72], [0.25, 1]],
+    [[0.78, 0], [0.72, 0.45], [0.81, 1]],
+  ];
+  function grietas(x, y, sw, sh, q) {
+    ctx.fillStyle = `rgba(29,35,64,${0.3 * q})`; rr(x, y, sw, sh, U * 0.08); ctx.fill();
+    ctx.strokeStyle = 'rgba(29,35,64,.8)'; ctx.lineWidth = Math.max(1.5, U * 0.03); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const n = q > 0.8 ? 3 : q > 0.55 ? 2 : 1;
+    for (const g of GRIETAS.slice(0, n)) {
+      ctx.beginPath();
+      g.forEach(([gx, gy], k) => (k ? ctx.lineTo : ctx.moveTo).call(ctx, x + gx * sw, y + gy * sh));
+      ctx.stroke();
+    }
+  }
+
   function drawCube(now) {
     const stunned = now < G.stunUntil;
     const s = U * 0.62;
     const bt = clamp01((now - G.bonkT) / 160);
     const bonk = bt < 1 ? Math.sin(Math.PI * bt) * U * 0.22 * G.bonkDir : 0;
     const cx = G.rx * U + bonk;
-    const foot = -G.ry * RISE * U;
+    const foot = -G.ry * RISE * U + (G.cae ? U * 9 * ((now - G.cae.t) / 1000) ** 2 : 0);   // se cae con el escalón roto
     const lt = (now - G.landT) / 120;
     const squash = lt >= 0 && lt < 1 ? Math.sin(Math.PI * lt) * 0.1 : 0;
     const wob = stunned && !reduceMotion ? Math.sin(now / 35) * 0.08 : 0;

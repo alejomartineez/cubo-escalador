@@ -110,3 +110,144 @@ insert into public.limites (tabla, minimo, maximo, orden) values
   ('esqui:facil', null, 30000, 'mayor'), ('esqui:normal', null, 20000, 'mayor'), ('esqui:dificil', null, 15000, 'mayor'), ('esqui:extremo', null, 12000, 'mayor'), ('esqui:maestro', null, 10000, 'mayor'),
   ('pulseada:facil', null, 35, 'mayor'), ('pulseada:normal', null, 28, 'mayor'), ('pulseada:dificil', null, 25, 'mayor'), ('pulseada:extremo', null, 22, 'mayor'), ('pulseada:maestro', null, 20, 'mayor')
 on conflict (tabla) do update set minimo = excluded.minimo, maximo = excluded.maximo, orden = excluded.orden;
+
+-- ---------- Un jugador, un apodo y una skin ----------
+-- Cada apodo es de una sola persona para siempre (nadie más lo puede usar), y el ranking muestra
+-- el apodo y la skin actuales de cada uno en todas sus filas. Para jugar con el mismo apodo en otro
+-- dispositivo se usa la clave que el juego te muestra.
+create table if not exists public.jugadores (
+  id     uuid primary key,
+  apodo  text not null check (char_length(apodo) between 3 and 14),
+  skin   text not null default 'clasico',
+  clave  text not null,
+  creado timestamptz not null default now()
+);
+create unique index if not exists jugadores_apodo on public.jugadores (lower(apodo));
+alter table public.jugadores enable row level security;
+
+-- 8 letras y números, sin los que se confunden entre sí (0 y O, 1, I y L)
+create or replace function public.nueva_clave() returns text language sql volatile as $$
+  select string_agg(substr('ABCDEFGHJKMNPQRSTUVWXYZ23456789', 1 + floor(random() * 31)::int, 1), '') from generate_series(1, 8);
+$$;
+revoke all on function public.nueva_clave() from public, anon, authenticated;
+
+-- Pasa los puntajes de un jugador a otro, quedándose con la mejor marca de cada tabla, y borra al primero.
+create or replace function public.juntar_jugadores(p_origen uuid, p_destino uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if p_origen is null or p_destino is null or p_origen = p_destino then return; end if;
+  insert into public.puntajes as p (tabla, jugador, apodo, valor, skin, creado)
+    select x.tabla, p_destino, x.apodo, x.valor, x.skin, x.creado from public.puntajes x where x.jugador = p_origen
+  on conflict (tabla, jugador) do update set
+    valor  = case when coalesce((select orden from public.limites l where l.tabla = excluded.tabla), 'mayor') = 'menor'
+                  then least(p.valor, excluded.valor) else greatest(p.valor, excluded.valor) end,
+    creado = case when (coalesce((select orden from public.limites l where l.tabla = excluded.tabla), 'mayor') = 'menor' and excluded.valor < p.valor)
+                    or (coalesce((select orden from public.limites l where l.tabla = excluded.tabla), 'mayor') = 'mayor' and excluded.valor > p.valor)
+                  then excluded.creado else p.creado end;
+  delete from public.puntajes where jugador = p_origen;
+  delete from public.jugadores where id = p_origen;
+end $$;
+revoke all on function public.juntar_jugadores(uuid, uuid) from public, anon, authenticated;
+
+-- Pasar lo que ya había: los que compartían apodo son la misma persona en dos dispositivos,
+-- así que se juntan en el más antiguo. Después cada uno queda con su último apodo y skin.
+do $$
+declare r record;
+begin
+  for r in
+    with ult as (select distinct on (jugador) jugador, apodo from public.puntajes order by jugador, creado desc),
+         ini as (select jugador, min(creado) c from public.puntajes group by jugador),
+         g as (select u.jugador, first_value(u.jugador) over (partition by lower(u.apodo) order by i.c) as duenio
+               from ult u join ini i using (jugador))
+    select jugador, duenio from g
+    where jugador <> duenio and not exists (select 1 from public.jugadores j where j.id = g.jugador)
+  loop
+    perform public.juntar_jugadores(r.jugador, r.duenio);
+  end loop;
+  insert into public.jugadores (id, apodo, skin, clave)
+    select distinct on (jugador) jugador, apodo, skin, public.nueva_clave() from public.puntajes order by jugador, creado desc
+  on conflict do nothing;
+end $$;
+
+-- El ranking toma el apodo y la skin del jugador, no los de cada fila.
+create or replace view public.ranking as
+  select p.tabla, j.apodo, p.valor, j.skin, p.creado,
+         left(encode(sha256(convert_to(p.jugador::text, 'UTF8')), 'hex'), 12) as huella
+  from public.puntajes p join public.jugadores j on j.id = p.jugador;
+grant select on public.ranking to anon, authenticated;
+
+-- Elegir o cambiar el apodo, y avisar la skin actual. Devuelve { estado: 'ok' | 'ocupado' | 'invalido', clave }.
+create or replace function public.registrar_jugador(p_jugador uuid, p_apodo text, p_skin text)
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  v_apodo text := btrim(p_apodo);
+  v_clave text;
+begin
+  if p_jugador is null or v_apodo is null or char_length(v_apodo) not between 3 and 14 then
+    return json_build_object('estado', 'invalido');
+  end if;
+  if exists (select 1 from public.jugadores where lower(apodo) = lower(v_apodo) and id <> p_jugador) then
+    return json_build_object('estado', 'ocupado');
+  end if;
+  insert into public.jugadores as j (id, apodo, skin, clave)
+    values (p_jugador, v_apodo, left(coalesce(p_skin, 'clasico'), 20), public.nueva_clave())
+  on conflict (id) do update set apodo = excluded.apodo, skin = excluded.skin
+  returning j.clave into v_clave;
+  update public.puntajes set apodo = v_apodo where jugador = p_jugador and apodo <> v_apodo;
+  return json_build_object('estado', 'ok', 'clave', v_clave);
+exception when unique_violation then
+  return json_build_object('estado', 'ocupado');
+end $$;
+revoke all on function public.registrar_jugador(uuid, text, text) from public;
+grant execute on function public.registrar_jugador(uuid, text, text) to anon, authenticated;
+
+-- Usar tu apodo en otro dispositivo: con el apodo y la clave te devuelve tu id de jugador.
+-- Lo que este dispositivo ya había subido con otro apodo (p_viejo) se junta con lo tuyo.
+create or replace function public.vincular_jugador(p_apodo text, p_clave text, p_viejo uuid)
+returns json language plpgsql security definer set search_path = public as $$
+declare j public.jugadores%rowtype;
+begin
+  select * into j from public.jugadores
+  where lower(apodo) = lower(btrim(p_apodo)) and clave = upper(regexp_replace(coalesce(p_clave, ''), '[^A-Za-z0-9]', '', 'g'));
+  if not found then perform pg_sleep(1); return null; end if;   -- la espera frena a quien prueba claves al azar
+  perform public.juntar_jugadores(p_viejo, j.id);
+  return json_build_object('id', j.id, 'apodo', j.apodo, 'clave', j.clave);
+end $$;
+revoke all on function public.vincular_jugador(text, text, uuid) from public;
+grant execute on function public.vincular_jugador(text, text, uuid) to anon, authenticated;
+
+-- Subir una marca. Hace falta un apodo registrado (los juegos viejos que todavía mandan el apodo lo registran si está libre).
+create or replace function public.enviar_puntaje(p_tabla text, p_jugador uuid, p_apodo text, p_valor double precision, p_skin text)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  lim public.limites%rowtype;
+  v_orden text := 'mayor';
+  v_apodo text;
+begin
+  if p_tabla !~ '^[a-z]+:[a-z0-9-]+$' or p_valor is null or p_valor <= 0 or p_valor > 100000000 then
+    return;
+  end if;
+  select apodo into v_apodo from public.jugadores where id = p_jugador;
+  if not found then
+    if (public.registrar_jugador(p_jugador, p_apodo, p_skin) ->> 'estado') <> 'ok' then return; end if;
+    select apodo into v_apodo from public.jugadores where id = p_jugador;
+  elsif p_skin is not null then
+    update public.jugadores set skin = left(p_skin, 20) where id = p_jugador and skin <> left(p_skin, 20);
+  end if;
+  select * into lim from public.limites where tabla = p_tabla;
+  if found then
+    v_orden := lim.orden;
+    if (lim.minimo is not null and p_valor < lim.minimo) or (lim.maximo is not null and p_valor > lim.maximo) then
+      return;
+    end if;
+  end if;
+
+  insert into public.puntajes as p (tabla, jugador, apodo, valor, skin)
+  values (p_tabla, p_jugador, v_apodo, p_valor, left(coalesce(p_skin, 'clasico'), 20))
+  on conflict (tabla, jugador) do update set
+    apodo = excluded.apodo,
+    valor = case when (v_orden = 'menor' and excluded.valor < p.valor) or (v_orden = 'mayor' and excluded.valor > p.valor)
+                 then excluded.valor else p.valor end,
+    creado = case when (v_orden = 'menor' and excluded.valor < p.valor) or (v_orden = 'mayor' and excluded.valor > p.valor)
+                  then now() else p.creado end;
+end $$;
