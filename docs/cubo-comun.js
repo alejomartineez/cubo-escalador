@@ -144,6 +144,8 @@
       pista: 'Hecha a pedido para un solo jugador.' },
     { id: 'benja', nombre: 'Benja', legendaria: true, exclusiva: true, codigo: true, cuerpo: '#f4c9a1', extra: 'benja', glow: '#6f8fe8', sinBoca: true,
       pista: 'Hecha a pedido para un solo jugador.' },
+    { id: 'fabri', nombre: 'Piloto', legendaria: true, exclusiva: true, codigo: true, cuerpo: '#e8202a', ojo: '#ffffff', extra: 'piloto', glow: '#ff3b3b',
+      sinBoca: true, sinCachetes: true, pista: 'Hecha a pedido para un solo jugador.' },
     // muerte: al perder se parte en pedazos con una onda expansiva (ver morir). radio: esquinas casi rectas.
     { id: 'geo', nombre: 'Geo', legendaria: true, codigo: true, cuerpo: '#ffb52e', extra: 'geo', glow: '#5ff5ff', radio: 0.07, muerte: 'pedazos',
       sinOjos: true, sinBoca: true, sinCachetes: true, pista: 'Se consigue con un código.' },
@@ -158,6 +160,7 @@
     '586d6eb5df7242531b10f2f102171007645ef9a21b08272eab5ffd8acc409a88': ['fx:alas'],
     'b1f396b676c2285c8ceb19b6406265dd4afae29521f9253a86de66a025bfca04': ['sonrisa'],   // exclusiva de nacho
     '7f0da2349fd57b88ad0f54b7fc15ea2d9b11aa216e5e5d0fb23bd47bc7963cbb': ['benja'],     // exclusiva de benja
+    'c7172f65f15346f70813f760fa9e60ed081e629e30727a8dc10cbe1c8108c5ce': ['fabri'],     // exclusiva de fabri
     'b96e9678392994a52ed4be7e7282ee2f6cbc80679de2c7410b85c9526afe9e23': ['geo'],
   };
 
@@ -3197,6 +3200,46 @@
         // boca seria, casi recta
         ctx.strokeStyle = '#b5546a'; ctx.lineWidth = Math.max(2, s * 0.05);
         ctx.beginPath(); ctx.moveTo(look - s * 0.09, -s * 0.3); ctx.quadraticCurveTo(look, -s * 0.32, look + s * 0.09, -s * 0.3); ctx.stroke();
+      },
+    },
+    // ---- Piloto (exclusiva de fabri): casco de Fórmula 1 con visor tornasolado, mentonera y alerón ----
+    piloto: {
+      piel(ctx, s, sk, t, look) {
+        const lw = Math.max(1.5, s * 0.04), dx = look * 0.4;
+        // franja blanca por el medio del casco, con filetes amarillos
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.moveTo(-s * 0.13 + dx, -s); ctx.lineTo(s * 0.13 + dx, -s); ctx.lineTo(s * 0.24 + dx, -s * 0.76); ctx.lineTo(-s * 0.24 + dx, -s * 0.76); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = Math.max(1, s * 0.03);
+        ctx.beginPath(); ctx.moveTo(-s * 0.17 + dx, -s); ctx.lineTo(-s * 0.29 + dx, -s * 0.76); ctx.moveTo(s * 0.17 + dx, -s); ctx.lineTo(s * 0.29 + dx, -s * 0.76); ctx.stroke();
+        // bandera a cuadros arriba del visor
+        const q = s * 0.046;
+        for (let i = 0; i < 20; i++) for (let j = 0; j < 2; j++) {
+          ctx.fillStyle = (i + j) % 2 ? '#ffffff' : INK;
+          ctx.fillRect(-s / 2 + i * q, -s * 0.8 + j * q, q, q);
+        }
+        // visor oscuro tornasolado
+        const vy = -s * 0.71, vh = s * 0.31;
+        const g = ctx.createLinearGradient(0, vy, 0, vy + vh);
+        g.addColorStop(0, '#161a3a'); g.addColorStop(0.65, '#3a2a6e'); g.addColorStop(1, '#d0567c');
+        ctx.fillStyle = g; rr(ctx, -s * 0.47 + dx, vy, s * 0.94, vh, s * 0.1); ctx.fill();
+        ctx.save(); rr(ctx, -s * 0.47 + dx, vy, s * 0.94, vh, s * 0.1); ctx.clip();
+        ctx.fillStyle = 'rgba(255,255,255,.18)';
+        ctx.beginPath(); ctx.moveTo(-s * 0.1 + dx, vy); ctx.lineTo(s * 0.12 + dx, vy); ctx.lineTo(-s * 0.08 + dx, vy + vh); ctx.lineTo(-s * 0.3 + dx, vy + vh); ctx.closePath(); ctx.fill();
+        ctx.restore();
+        ctx.strokeStyle = INK; ctx.lineWidth = lw; rr(ctx, -s * 0.47 + dx, vy, s * 0.94, vh, s * 0.1); ctx.stroke();
+        // mentonera con las ventilaciones
+        ctx.fillStyle = '#23262f'; ctx.fillRect(-s / 2, -s * 0.24, s, s * 0.24);
+        ctx.strokeStyle = INK; ctx.beginPath(); ctx.moveTo(-s / 2, -s * 0.24); ctx.lineTo(s / 2, -s * 0.24); ctx.stroke();
+        ctx.fillStyle = '#8a92a6';
+        for (const side of [-1, 1]) for (let k = 0; k < 3; k++) { rr(ctx, side * s * 0.16 + dx - s * 0.07, -s * 0.19 + k * s * 0.05, s * 0.14, s * 0.025, s * 0.012); ctx.fill(); }
+      },
+      encima(ctx, s, sk, t, look, mirar) {
+        // alerón chiquito arriba, del lado de atrás
+        const atras = mirar > 0 ? -1 : 1, x = atras * s * 0.14;
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.5, s * 0.04); ctx.fillStyle = '#23262f';
+        for (const k of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x + k * s * 0.09, -s * 1.03); ctx.lineTo(x + k * s * 0.09, -s * 0.98); ctx.stroke(); }
+        rr(ctx, x - s * 0.18, -s * 1.1, s * 0.36, s * 0.07, s * 0.03); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#ffd23f'; rr(ctx, x - s * 0.14, -s * 1.085, s * 0.28, s * 0.02, s * 0.01); ctx.fill();
       },
     },
     // ---- Geo: cubo naranja de esquinas rectas, borde celeste y cara de cuadrados ----

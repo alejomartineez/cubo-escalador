@@ -1,5 +1,5 @@
 // Generado por build.mjs
-const CACHE = 'cubo-a1e83f6a2d';
+const CACHE = 'cubo-010e81512d';
 const ARCHIVOS = ["./","index.html","escalador.html","lluvia.html","clasificador.html","equilibrio.html","ritmo.html","voley.html","paseo.html","cohete.html","esqui.html","pulseada.html","cubo-comun.js","cubo-duelo.js","icono-180.png","icono-192.png","icono-512.png","manifest.webmanifest"];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));
