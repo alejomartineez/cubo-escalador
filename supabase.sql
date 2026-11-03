@@ -1,5 +1,6 @@
 -- Ranking online de Cubo Escalador.
--- Pegalo entero en Supabase → SQL Editor → New query → Run. Se puede correr más de una vez.
+-- Supabase → SQL Editor → New query → pegar → Run. La primera vez va entero; después, solo la parte nueva
+-- (cada parte empieza con un título "-- ---------- ... ----------" y se puede correr más de una vez).
 
 create table if not exists public.puntajes (
   tabla   text not null,
@@ -392,3 +393,211 @@ returns text language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public.ver_reto(uuid, uuid) from public;
 grant execute on function public.ver_reto(uuid, uuid) to anon, authenticated;
+
+-- ---------- Solicitudes de amistad ----------
+-- Poner el código de alguien ya no lo hace tu amigo: le llega una solicitud que acepta o rechaza.
+-- Son amigos (de los dos lados) cuando la acepta, o si los dos se agregaron. Solo los amigos se pueden retar a un 1v1.
+-- Una fila por pedido (de → para). 'rechazada' queda guardada para que no te llegue de nuevo; el que la mandó la sigue viendo pendiente.
+create table if not exists public.amistades (
+  de     uuid not null references public.jugadores (id) on delete cascade,
+  para   uuid not null references public.jugadores (id) on delete cascade,
+  estado text not null default 'pendiente' check (estado in ('pendiente', 'aceptada', 'rechazada')),
+  creado timestamptz not null default now(),
+  primary key (de, para),
+  check (de <> para)
+);
+create index if not exists amistades_para on public.amistades (para, estado);
+alter table public.amistades enable row level security;   -- nadie la lee directo: solo por las funciones de abajo
+
+create or replace function public.son_amigos(a uuid, b uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.amistades where estado = 'aceptada' and ((de = a and para = b) or (de = b and para = a)));
+$$;
+revoke all on function public.son_amigos(uuid, uuid) from public, anon, authenticated;
+
+create or replace function public.id_de_codigo(p_codigo text) returns uuid language sql stable security definer set search_path = public as $$
+  select id from public.jugadores where codigo = upper(regexp_replace(coalesce(p_codigo, ''), '[^A-Za-z0-9]', '', 'g'));
+$$;
+revoke all on function public.id_de_codigo(text) from public, anon, authenticated;
+
+-- Lo que se muestra de otro jugador en la hoja de Amigos.
+create or replace function public.amigo_json(j public.jugadores) returns json language sql stable set search_path = public as $$
+  select json_build_object('codigo', j.codigo, 'apodo', j.apodo, 'skin', j.skin, 'titulo', j.titulo, 'huella', public.huella_de(j.id));
+$$;
+revoke all on function public.amigo_json(public.jugadores) from public, anon, authenticated;
+
+-- El pedido en sí (los dos jugadores ya existen). Devuelve 'amigos' o 'pendiente'.
+create or replace function public.pedir_amistad_a(p_de uuid, p_para uuid)
+returns text language plpgsql security definer set search_path = public as $$
+begin
+  if public.son_amigos(p_de, p_para) then return 'amigos'; end if;
+  -- el otro ya te había pedido (o se lo habías rechazado y ahora lo agregás vos): quedan amigos
+  update public.amistades set estado = 'aceptada' where de = p_para and para = p_de;
+  if found then
+    delete from public.amistades where de = p_de and para = p_para;
+    return 'amigos';
+  end if;
+  insert into public.amistades (de, para) values (p_de, p_para) on conflict do nothing;
+  return 'pendiente';
+end $$;
+revoke all on function public.pedir_amistad_a(uuid, uuid) from public, anon, authenticated;
+
+-- Tus amigos, las solicitudes que te llegaron y las que mandaste (las rechazadas se ven como pendientes).
+create or replace function public.mis_amigos(p_jugador uuid)
+returns json language sql stable security definer set search_path = public as $$
+  select json_build_object(
+    'amigos', coalesce((select json_agg(public.amigo_json(j) order by lower(j.apodo))
+      from public.amistades a join public.jugadores j on j.id = case when a.de = p_jugador then a.para else a.de end
+      where a.estado = 'aceptada' and (a.de = p_jugador or a.para = p_jugador)), '[]'::json),
+    'recibidas', coalesce((select json_agg(public.amigo_json(j) order by a.creado desc)
+      from public.amistades a join public.jugadores j on j.id = a.de
+      where a.para = p_jugador and a.estado = 'pendiente'), '[]'::json),
+    'enviadas', coalesce((select json_agg(public.amigo_json(j) order by a.creado desc)
+      from public.amistades a join public.jugadores j on j.id = a.para
+      where a.de = p_jugador and a.estado <> 'aceptada'), '[]'::json));
+$$;
+revoke all on function public.mis_amigos(uuid) from public;
+grant execute on function public.mis_amigos(uuid) to anon, authenticated;
+
+-- Mandar una solicitud por código. Devuelve { estado: 'pendiente' | 'amigos', amigo } o { error }.
+create or replace function public.pedir_amistad(p_jugador uuid, p_codigo text)
+returns json language plpgsql security definer set search_path = public as $$
+declare o public.jugadores%rowtype;
+begin
+  if not exists (select 1 from public.jugadores where id = p_jugador) then return json_build_object('error', 'sin-apodo'); end if;
+  select * into o from public.jugadores where id = public.id_de_codigo(p_codigo);
+  if not found then return json_build_object('error', 'no-existe'); end if;
+  if o.id = p_jugador then return json_build_object('error', 'propio'); end if;
+  -- para que nadie llene la tabla: 10 solicitudes nuevas por minuto y 50 sin contestar
+  if not exists (select 1 from public.amistades where (de = p_jugador and para = o.id) or (de = o.id and para = p_jugador))
+     and ((select count(*) from public.amistades where de = p_jugador and creado > now() - interval '1 minute') >= 10
+       or (select count(*) from public.amistades where de = p_jugador and estado <> 'aceptada') >= 50) then
+    return json_build_object('error', 'muchos');
+  end if;
+  return json_build_object('estado', public.pedir_amistad_a(p_jugador, o.id), 'amigo', public.amigo_json(o));
+end $$;
+revoke all on function public.pedir_amistad(uuid, text) from public;
+grant execute on function public.pedir_amistad(uuid, text) to anon, authenticated;
+
+-- Aceptar o rechazar una solicitud que te llegó. Devuelve 'amigos', 'rechazada' o null si ya no estaba.
+create or replace function public.responder_amistad(p_jugador uuid, p_codigo text, p_acepto boolean)
+returns text language plpgsql security definer set search_path = public as $$
+begin
+  update public.amistades set estado = case when p_acepto then 'aceptada' else 'rechazada' end
+  where de = public.id_de_codigo(p_codigo) and para = p_jugador and estado = 'pendiente';
+  if not found then return null; end if;
+  return case when p_acepto then 'amigos' else 'rechazada' end;
+end $$;
+revoke all on function public.responder_amistad(uuid, text, boolean) from public;
+grant execute on function public.responder_amistad(uuid, text, boolean) to anon, authenticated;
+
+-- Dejar de ser amigos o cancelar una solicitud que mandaste. También se caen los retos pendientes entre los dos.
+create or replace function public.quitar_amistad(p_jugador uuid, p_codigo text)
+returns void language plpgsql security definer set search_path = public as $$
+declare v_otro uuid := public.id_de_codigo(p_codigo);
+begin
+  if v_otro is null then return; end if;
+  delete from public.amistades where (de = p_jugador and para = v_otro) or (de = v_otro and para = p_jugador and estado = 'aceptada');
+  update public.retos set estado = 'cancelado'
+  where estado = 'pendiente' and ((de = p_jugador and para = v_otro) or (de = v_otro and para = p_jugador));
+end $$;
+revoke all on function public.quitar_amistad(uuid, text) from public;
+grant execute on function public.quitar_amistad(uuid, text) to anon, authenticated;
+
+-- Pasar los amigos que cada dispositivo tenía guardados de antes (cuando agregar era directo).
+-- Cada uno queda como solicitud tuya; si el otro también te tenía, quedan amigos sin que nadie tenga que aceptar.
+-- El juego la llama una vez por dispositivo con los códigos que tenía. Devuelve lo mismo que mis_amigos.
+create or replace function public.migrar_amigos(p_jugador uuid, p_codigos text[])
+returns json language plpgsql security definer set search_path = public as $$
+declare v_otro uuid;
+begin
+  if not exists (select 1 from public.jugadores where id = p_jugador) then return json_build_object('error', 'sin-apodo'); end if;
+  for v_otro in select distinct public.id_de_codigo(c) from unnest((coalesce(p_codigos, '{}'))[1:50]) c loop
+    exit when (select count(*) from public.amistades where de = p_jugador and estado <> 'aceptada') >= 50;
+    if v_otro is not null and v_otro <> p_jugador then perform public.pedir_amistad_a(p_jugador, v_otro); end if;
+  end loop;
+  return public.mis_amigos(p_jugador);
+end $$;
+revoke all on function public.migrar_amigos(uuid, text[]) from public;
+grant execute on function public.migrar_amigos(uuid, text[]) to anon, authenticated;
+
+-- Retar solo a un amigo aceptado (lo revisa el servidor: un reto a alguien que no es tu amigo no se guarda).
+create or replace function public.retar(p_jugador uuid, p_codigo text, p_juego text, p_dif text)
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  v_para uuid;
+  v_reto public.retos%rowtype;
+begin
+  if not exists (select 1 from public.jugadores where id = p_jugador) then return json_build_object('error', 'sin-apodo'); end if;
+  if coalesce(p_juego, '') not in ('pulseada', 'escalador') or coalesce(p_dif, '') !~ '^[a-z]{3,10}$' then return json_build_object('error', 'invalido'); end if;
+  v_para := public.id_de_codigo(p_codigo);
+  if v_para is null or v_para = p_jugador then return json_build_object('error', 'no-existe'); end if;
+  if not public.son_amigos(p_jugador, v_para) then return json_build_object('error', 'no-amigos'); end if;
+  -- para que nadie llene la tabla: como mucho 8 retos por minuto
+  if (select count(*) from public.retos where de = p_jugador and creado > now() - interval '1 minute') >= 8 then
+    return json_build_object('error', 'muchos');
+  end if;
+  delete from public.retos where vence < now() - interval '1 day';
+  update public.retos set estado = 'cancelado' where de = p_jugador and para = v_para and estado = 'pendiente';
+  insert into public.retos (de, para, juego, dif, sala)
+    values (p_jugador, v_para, p_juego, p_dif, replace(gen_random_uuid()::text, '-', ''))
+  returning * into v_reto;
+  return json_build_object('id', v_reto.id, 'sala', v_reto.sala, 'vence', v_reto.vence, 'huella', public.huella_de(v_para));
+end $$;
+
+-- Los retos que te llegaron y siguen en pie, solo de amigos (si dejaron de serlo, ya no aparecen).
+create or replace function public.mis_retos(p_jugador uuid)
+returns json language sql stable security definer set search_path = public as $$
+  select coalesce(json_agg(json_build_object(
+           'id', r.id, 'sala', r.sala, 'juego', r.juego, 'dif', r.dif, 'vence', r.vence,
+           'apodo', j.apodo, 'skin', j.skin, 'titulo', j.titulo, 'codigo', j.codigo, 'huella', public.huella_de(j.id))
+         order by r.creado desc), '[]'::json)
+  from public.retos r join public.jugadores j on j.id = r.de
+  where r.para = p_jugador and r.estado = 'pendiente' and r.vence > now() and public.son_amigos(r.de, r.para);
+$$;
+
+-- Para aceptar un reto también tienen que seguir siendo amigos.
+create or replace function public.responder_reto(p_jugador uuid, p_id uuid, p_estado text)
+returns text language plpgsql security definer set search_path = public as $$
+declare v_estado text;
+begin
+  update public.retos set estado = p_estado
+  where id = p_id and estado = 'pendiente' and vence > now()
+    and ((p_estado = 'aceptado' and para = p_jugador and public.son_amigos(de, para))
+      or (p_estado = 'rechazado' and para = p_jugador) or (p_estado = 'cancelado' and de = p_jugador))
+  returning estado into v_estado;
+  return v_estado;
+end $$;
+
+-- Al usar tu apodo en otro dispositivo, las amistades del id viejo también pasan al tuyo.
+create or replace function public.juntar_jugadores(p_origen uuid, p_destino uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if p_origen is null or p_destino is null or p_origen = p_destino then return; end if;
+  insert into public.puntajes as p (tabla, jugador, apodo, valor, skin, creado)
+    select x.tabla, p_destino, x.apodo, x.valor, x.skin, x.creado from public.puntajes x where x.jugador = p_origen
+  on conflict (tabla, jugador) do update set
+    valor  = case when coalesce((select orden from public.limites l where l.tabla = excluded.tabla), 'mayor') = 'menor'
+                  then least(p.valor, excluded.valor) else greatest(p.valor, excluded.valor) end,
+    creado = case when (coalesce((select orden from public.limites l where l.tabla = excluded.tabla), 'mayor') = 'menor' and excluded.valor < p.valor)
+                    or (coalesce((select orden from public.limites l where l.tabla = excluded.tabla), 'mayor') = 'mayor' and excluded.valor > p.valor)
+                  then excluded.creado else p.creado end;
+  delete from public.puntajes where jugador = p_origen;
+
+  insert into public.amistades as a (de, para, estado, creado)
+    select case when x.de = p_origen then p_destino else x.de end, case when x.para = p_origen then p_destino else x.para end, x.estado, x.creado
+    from public.amistades x
+    where (x.de = p_origen or x.para = p_origen)
+      and (case when x.de = p_origen then p_destino else x.de end) <> (case when x.para = p_origen then p_destino else x.para end)
+  on conflict (de, para) do update set estado = case when 'aceptada' in (a.estado, excluded.estado) then 'aceptada' else a.estado end;
+  -- pedidos cruzados entre los mismos dos: son amigos; y sobra cualquier otra fila entre dos que ya son amigos
+  update public.amistades a set estado = 'aceptada'
+  where (a.de = p_destino or a.para = p_destino) and a.estado = 'pendiente'
+    and exists (select 1 from public.amistades b where b.de = a.para and b.para = a.de and b.estado = 'pendiente');
+  delete from public.amistades a
+  where (a.de = p_destino or a.para = p_destino)
+    and exists (select 1 from public.amistades b where b.de = a.para and b.para = a.de and b.estado = 'aceptada'
+                and (a.estado <> 'aceptada' or a.de > a.para));
+
+  delete from public.jugadores where id = p_origen;   -- se lleva las filas viejas de amistades y retos
+end $$;
+revoke all on function public.juntar_jugadores(uuid, uuid) from public, anon, authenticated;

@@ -1,7 +1,8 @@
 // Duelos 1v1 en vivo entre amigos (necesita cubo-comun.js antes).
 // La invitación queda en la tabla `retos` de Supabase (ver supabase.sql) y se avisa al instante por Realtime:
 // cada jugador escucha su canal `cubo-j-<huella>` mientras tiene el sitio abierto, y la partida va por `cubo-s-<sala>`.
-// Si el SQL de retos todavía no está, igual anda en vivo (sin guardar la invitación) entre amigos que se agregaron.
+// Solo se retan amigos aceptados, y eso lo revisa el servidor: el aviso en vivo solo hace que se pregunte `mis_retos`,
+// que trae nada más los retos de amigos. Por el mismo canal llegan los avisos de solicitudes de amistad.
 (() => {
   'use strict';
   const CC = window.CuboComun;
@@ -235,6 +236,10 @@
       capa({ titulo: 'Primero, tu apodo', texto: 'Para retar a alguien necesitás un apodo (y tu código de amigo). Ponelo en cualquier ranking.', botones: [{ txt: 'Listo', si: true, accion: cerrarCapa }] });
       return;
     }
+    if (!p.amigos.some(a => a.codigo === amigo.codigo)) {
+      capa({ titulo: 'Todavía no', rival: amigo, texto: `Para retar a ${esc(amigo.apodo)} tiene que aceptar tu solicitud de amistad.`, botones: [{ txt: 'OK', si: true, accion: cerrarCapa }] });
+      return;
+    }
     const el = capa({ titulo: 'Retar a ' + amigo.apodo, rival: amigo, nota: 'Le llega la invitación al toque si tiene el juego abierto, y si no cuando entre (dura 10 minutos).',
       html: '<div class="cd-juegos"></div>', botones: [{ txt: 'Cancelar', accion: cerrarCapa }], alCerrar: () => {} });
     const box = el.querySelector('.cd-juegos');
@@ -253,21 +258,22 @@
     const mia = await huella();
     let r;
     try {
-      r = sinTabla ? null : await rpc('retar', { p_jugador: p.id, p_codigo: amigo.codigo, p_juego: juego, p_dif: 'normal' });
+      if (sinTabla) throw Object.assign(new Error('falta-sql'), { faltaSql: true });
+      r = await rpc('retar', { p_jugador: p.id, p_codigo: amigo.codigo, p_juego: juego, p_dif: 'normal' });
     } catch (e) {
-      if (!e.faltaSql) { capa({ titulo: 'No se pudo', texto: 'No hay conexión. Probá de nuevo en un rato.', botones: [{ txt: 'OK', si: true, accion: cerrarCapa }] }); return; }
-      faltaTabla();
-    }
-    if (r && r.error) {
-      const msg = { 'sin-apodo': 'Tu apodo todavía no se subió. Esperá unos segundos y probá de nuevo.', 'no-existe': 'No encontramos a tu amigo. Quizás cambió de código.',
-        muchos: 'Mandaste muchos retos seguidos. Esperá un minuto.' }[r.error] || 'No se pudo mandar el reto.';
-      capa({ titulo: 'Uy', texto: msg, botones: [{ txt: 'OK', si: true, accion: cerrarCapa }] });
-      if (r.error === 'sin-apodo') CC.subirPendientes();
+      if (e.faltaSql) faltaTabla();
+      capa({ titulo: 'No se pudo', texto: e.faltaSql ? 'Los retos se están preparando. Probá de nuevo en un rato.' : 'No hay conexión. Probá de nuevo en un rato.',
+        botones: [{ txt: 'OK', si: true, accion: cerrarCapa }] });
       return;
     }
-    if (!r) {   // sin la tabla: el reto vive solo en vivo
-      const hex = [...crypto.getRandomValues(new Uint8Array(12))].map(b => b.toString(16).padStart(2, '0')).join('');
-      r = { id: crypto.randomUUID ? crypto.randomUUID() : hex, sala: hex, vence: new Date(Date.now() + 10 * 60000).toISOString(), huella: amigo.huella };
+    if (!r || r.error) {
+      const msg = { 'sin-apodo': 'Tu apodo todavía no se subió. Esperá unos segundos y probá de nuevo.', 'no-existe': 'No encontramos a tu amigo. Quizás cambió de código.',
+        'no-amigos': `${esc(amigo.apodo)} ya no está en tus amigos (o todavía no aceptó tu solicitud).`,
+        muchos: 'Mandaste muchos retos seguidos. Esperá un minuto.' }[r && r.error] || 'No se pudo mandar el reto.';
+      capa({ titulo: 'Uy', texto: msg, botones: [{ txt: 'OK', si: true, accion: cerrarCapa }] });
+      if (r && r.error === 'sin-apodo') CC.subirPendientes();
+      if (r && r.error === 'no-amigos') CC.refrescarAmigos(true);
+      return;
     }
     const reto = { id: r.id, sala: r.sala, juego, dif: 'normal', vence: r.vence, huella: r.huella || amigo.huella,
       rival: { apodo: amigo.apodo, skin: amigo.skin, huella: r.huella || amigo.huella, codigo: amigo.codigo } };
@@ -392,9 +398,12 @@
   // Lo que te llega a tu canal personal
   function alMensajePropio(ev, d) {
     if (ev === 'reto') {
-      // con la tabla, la invitación se confirma en el servidor; sin ella, solo se acepta de un amigo agregado
-      if (!sinTabla) revisar();
-      else if (d.de && CC.perfil().amigos.some(a => a.huella === d.de.huella)) encolar({ ...d, apodo: d.de.apodo, skin: d.de.skin, huella: d.de.huella, codigo: d.de.codigo });
+      // lo que diga el mensaje no importa: se le pregunta al servidor, que solo devuelve retos de amigos
+      revisar();
+    } else if (ev === 'amistad') {
+      // te mandaron, aceptaron o sacaron una solicitud: se trae la lista (si llegan muchos seguidos, una sola vez)
+      clearTimeout(tAmistad);
+      tAmistad = setTimeout(() => CC.refrescarAmigos(true), 800);
     } else if (ev === 'cancelo') sacar(d.id);
     else if (ev === 'acepto' || ev === 'rechazo') {
       if (esperando && esperando.id === d.id) { esperando.responder(ev === 'acepto' ? 'aceptado' : 'rechazado'); return; }
@@ -406,7 +415,7 @@
         botones: [{ txt: '¡Vamos!', si: true, accion: () => irAJugar(reto, 'host') }, { txt: 'Ahora no', accion: cerrarCapa }] });
     }
   }
-  let ultimaRevision = 0;
+  let ultimaRevision = 0, tAmistad = null;
   async function revisar() {
     const p = CC.perfil();
     if (sinTabla || !p.apodo || !p.id || enDuelo || navigator.onLine === false) return;

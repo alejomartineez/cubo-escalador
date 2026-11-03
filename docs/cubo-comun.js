@@ -387,6 +387,7 @@
     try { p = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
     if (!p || typeof p !== 'object') p = {};
     const obj = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+    const gente = v => (Array.isArray(v) ? v.filter(a => a && typeof a.codigo === 'string' && typeof a.huella === 'string').slice(0, 100) : []);
     return {
       xp: Math.max(0, +p.xp || 0),
       skin: typeof p.skin === 'string' ? p.skin : 'clasico',
@@ -409,7 +410,13 @@
       titulo: typeof p.titulo === 'string' ? p.titulo : 'novato',
       marco: typeof p.marco === 'string' ? p.marco : '',
       codigoAmigo: typeof p.codigoAmigo === 'string' ? p.codigoAmigo : '',
-      amigos: Array.isArray(p.amigos) ? p.amigos.filter(a => a && typeof a.codigo === 'string' && typeof a.huella === 'string').slice(0, 50) : [],
+      // amigos aceptados y solicitudes: copia de lo que tiene el servidor. Sin amigosServidor, `amigos` es la lista vieja
+      // de este dispositivo (de cuando agregar era directo) y se sube una vez con migrar_amigos.
+      amigos: gente(p.amigos),
+      recibidas: gente(p.recibidas),
+      enviadas: gente(p.enviadas),
+      recibidasVistas: Array.isArray(p.recibidasVistas) ? p.recibidasVistas.filter(c => typeof c === 'string').slice(-100) : [],
+      amigosServidor: p.amigosServidor === true,
       pendientes: Array.isArray(p.pendientes) ? p.pendientes.slice(-40) : [],
     };
   }
@@ -479,6 +486,7 @@
       logros: { ...datos.logros }, extremo: { ...datos.extremo }, maestro: { ...datos.maestro }, marcas: { ...datos.marcas },
       codigos: [...datos.codigos], apodo: datos.apodo, id: datos.id, titulo: titulo(), marco: marco(),
       codigoAmigo: datos.codigoAmigo, amigos: datos.amigos.map(a => ({ ...a })),
+      recibidas: datos.recibidas.map(a => ({ ...a })), enviadas: datos.enviadas.map(a => ({ ...a })),
     };
   }
   function elegirSkin(id) {
@@ -753,6 +761,7 @@
       subirTodo();   // al estrenar el apodo se suben todos tus récords
       guardar();
       await subirPendientes();
+      refrescarAmigos(true);   // si tenías amigos guardados de antes, ahora se pueden subir
       return { ok: true };
     })();
   }
@@ -773,44 +782,111 @@
     subirTodo();
     guardar();
     await subirPendientes();
+    refrescarAmigos(true);   // los amigos de tu apodo (el servidor ya juntó los de este dispositivo)
     return { ok: true, apodo: r.apodo };
   }
   const claveLinda = c => (c && c.length === 8 ? c.slice(0, 4) + '-' + c.slice(4) : c);
 
   // ---------- amigos ----------
-  // Cada jugador con apodo tiene un código de amigo (6 letras). Los amigos se guardan en este dispositivo.
+  // Cada jugador con apodo tiene un código de amigo (6 letras). Poner el código de alguien le manda una solicitud:
+  // son amigos cuando la acepta (o si los dos se agregaron). Quién es amigo de quién lo guarda el servidor (supabase.sql)
+  // y acá queda una copia. Solo los amigos aceptados se retan, tienen versus y salen en el ranking de amigos.
   const limpiarCodigo = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const buscarAmigo = c => api('rpc/buscar_amigo', { method: 'POST', body: JSON.stringify({ p_codigo: c }) });
+  const persona = a => ({ codigo: a.codigo, apodo: a.apodo, huella: a.huella, skin: a.skin, titulo: a.titulo || '' });
+  const rpcAmigos = (nombre, cuerpo) => api('rpc/' + nombre, { method: 'POST', body: JSON.stringify({ p_jugador: leer().id, ...cuerpo }) });
+  // Le avisa al otro al instante (si tiene el juego abierto) que hay novedades; cubo-duelo.js lo escucha.
+  function avisarAmistad(h) {
+    if (!h || !rankingActivo()) return;
+    fetch(RANKING.url.replace(/\/$/, '') + '/realtime/v1/api/broadcast', {
+      method: 'POST', headers: { apikey: RANKING.clave, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ topic: 'cubo-j-' + h, event: 'amistad', payload: {} }] }),
+    }).catch(() => {});
+  }
+  function guardarAmistades(r) {
+    datos = leer();
+    datos.amigos = r.amigos.map(persona); datos.recibidas = (r.recibidas || []).map(persona); datos.enviadas = (r.enviadas || []).map(persona);
+    datos.amigosServidor = true;
+    guardar();
+    dispatchEvent(new CustomEvent('cubo-amigos'));
+  }
+  // Trae del servidor tus amigos y solicitudes. La primera vez sube los amigos viejos de este dispositivo.
+  let refrescando = null, ultimoRefresco = 0;
+  function refrescarAmigos(forzar) {
+    if (refrescando) return forzar ? refrescando.then(() => refrescarAmigos(true)) : refrescando;
+    if (!forzar && Date.now() - ultimoRefresco < 20000) return Promise.resolve(leer().amigos);
+    refrescando = (async () => {
+      datos = leer();
+      if (sinRed() || !datos.apodo) return datos.amigos;
+      ultimoRefresco = Date.now();
+      try {
+        if (!datos.codigoAmigo) await subirPendientes();   // el jugador tiene que estar registrado
+        datos = leer();
+        const r = datos.amigosServidor ? await rpcAmigos('mis_amigos', {})
+          : await rpcAmigos('migrar_amigos', { p_codigos: datos.amigos.map(a => a.codigo) });
+        if (r && Array.isArray(r.amigos)) guardarAmistades(r);
+      } catch (e) { /* sin conexión o falta el SQL nuevo: queda la copia de este dispositivo */ }
+      return leer().amigos;
+    })().finally(() => { refrescando = null; });
+    return refrescando;
+  }
+  // Manda una solicitud. Devuelve { ok, estado: 'pendiente' | 'amigos', amigo } o { ok: false, msg }.
   async function agregarAmigo(codigo) {
     const c = limpiarCodigo(codigo);
     if (c.length !== 6) return { ok: false, msg: 'El código de amigo tiene 6 letras y números.' };
     const err = sinRed();
     if (err) return err;
     datos = leer();
+    if (!datos.apodo) return { ok: false, msg: 'Para agregar amigos primero elegí un apodo en cualquier ranking.' };
     if (c === datos.codigoAmigo) return { ok: false, msg: 'Ese es tu propio código. Pasáselo a tus amigos.' };
-    if (datos.amigos.some(a => a.codigo === c)) return { ok: false, msg: 'Ya lo tenés en tus amigos.' };
+    if (datos.amigosServidor && datos.amigos.some(a => a.codigo === c)) return { ok: false, msg: 'Ya es tu amigo.' };
+    if (datos.enviadas.some(a => a.codigo === c)) return { ok: false, msg: 'Ya le mandaste una solicitud. Falta que la acepte.' };
     let r;
-    try { r = await buscarAmigo(c); } catch (e) { return { ok: false, msg: 'No se pudo conectar. Probá de nuevo en un rato.' }; }
-    if (!r || !r.huella) return { ok: false, msg: 'No hay nadie con ese código.' };
+    try {
+      if (!datos.codigoAmigo) await subirPendientes();
+      r = await rpcAmigos('pedir_amistad', { p_codigo: c });
+    } catch (e) {
+      return { ok: false, msg: e.message === 'ranking 404' ? 'Los amigos se están actualizando. Probá de nuevo en un rato.' : 'No se pudo conectar. Probá de nuevo en un rato.' };
+    }
+    if (!r || r.error || !r.amigo) {
+      const msg = { 'no-existe': 'No hay nadie con ese código.', propio: 'Ese es tu propio código. Pasáselo a tus amigos.',
+        muchos: 'Mandaste muchas solicitudes seguidas. Esperá un rato.', 'sin-apodo': 'Tu apodo todavía no se subió. Probá de nuevo en unos segundos.' }[r && r.error];
+      return { ok: false, msg: msg || 'No se pudo mandar la solicitud.' };
+    }
+    avisarAmistad(r.amigo.huella);
+    await refrescarAmigos(true);
+    return { ok: true, estado: r.estado, amigo: persona(r.amigo) };
+  }
+  // Aceptar o rechazar una solicitud que te llegó. Devuelve { ok, estado: 'amigos' | 'rechazada' | null } o { ok: false, msg }.
+  async function responderSolicitud(codigo, acepto) {
+    const err = sinRed();
+    if (err) return err;
+    const a = leer().recibidas.find(x => x.codigo === codigo);
+    let r;
+    try { r = await rpcAmigos('responder_amistad', { p_codigo: codigo, p_acepto: !!acepto }); }
+    catch (e) { return { ok: false, msg: 'No se pudo conectar. Probá de nuevo en un rato.' }; }
+    if (r === 'amigos' && a) avisarAmistad(a.huella);
+    await refrescarAmigos(true);
+    return { ok: true, estado: r };
+  }
+  // Dejar de ser amigos, o cancelar una solicitud que mandaste.
+  async function quitarAmigo(codigo) {
     datos = leer();
-    const a = { codigo: c, apodo: r.apodo, huella: r.huella, skin: r.skin, titulo: r.titulo || '' };
-    datos.amigos.push(a); guardar();
-    return { ok: true, amigo: a };
+    if (datos.amigosServidor) { const err = sinRed(); if (err) return err; }
+    const a = [...datos.amigos, ...datos.enviadas].find(x => x.codigo === codigo);
+    datos.amigos = datos.amigos.filter(x => x.codigo !== codigo); datos.enviadas = datos.enviadas.filter(x => x.codigo !== codigo);
+    guardar();
+    if (!datos.amigosServidor) return { ok: true };   // todavía no se subió: alcanza con sacarlo de acá
+    try { await rpcAmigos('quitar_amistad', { p_codigo: codigo }); }
+    catch (e) { await refrescarAmigos(true); return { ok: false, msg: 'No se pudo conectar. Probá de nuevo en un rato.' }; }
+    if (a) avisarAmistad(a.huella);
+    return { ok: true };
   }
-  function quitarAmigo(codigo) {
-    datos = leer(); datos.amigos = datos.amigos.filter(a => a.codigo !== codigo); guardar();
-  }
-  // Trae el apodo, la skin y el título actuales de cada amigo.
-  async function refrescarAmigos() {
-    if (sinRed()) return leer().amigos;
-    const lista = leer().amigos;
-    const nuevos = await Promise.all(lista.map(a => buscarAmigo(a.codigo).then(r => (r ? { ...a, apodo: r.apodo, skin: r.skin, titulo: r.titulo || '' } : a), () => a)));
-    datos = leer();
-    datos.amigos = datos.amigos.map(a => nuevos.find(n => n.codigo === a.codigo) || a); guardar();
-    return datos.amigos;
-  }
+  // Solicitudes que te llegaron y todavía no viste (el aviso del botón de Amigos).
+  const solicitudesNuevas = () => { const d = leer(); return d.recibidas.filter(a => !d.recibidasVistas.includes(a.codigo)).length; };
+  function marcarSolicitudesVistas() { datos = leer(); datos.recibidasVistas = datos.recibidas.map(a => a.codigo); guardar(); }
   // Versus: tu mejor marca contra la de un amigo en cada modo que jugaron los dos.
   async function versus(amigo) {
+    if (!leer().amigos.some(a => a.huella === amigo.huella)) throw new Error('no es tu amigo');
     const mia = await huella();
     const filas = await api(`ranking?huella=in.(${mia},${amigo.huella})&select=tabla,valor,huella`);
     const mejores = leer().mejores, porTabla = {};
@@ -3905,6 +3981,7 @@
   window.CuboComun = {
     SKINS, EFECTOS, TITULOS, PASE_MAX, DIFS, DURAS, JUEGOS, LOGROS, MEDALLAS, UMBRALES, canjear, marcar, leyendaTeclas, escalaUI,
     titulo, elegirTitulo, pase, MARCOS, marco, elegirMarco, agregarAmigo, quitarAmigo, refrescarAmigos, versus,
+    responderSolicitud, solicitudesNuevas, marcarSolicitudesVistas,
     xpPara, nivelDe, perfil, skin, efecto, elegirSkin, elegirEfecto, libre, nuevos, marcarVistos,
     sumarXP, xpEscala, partida, importarRecord, anotarRecord, revisarLogros, tieneLogro,
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
