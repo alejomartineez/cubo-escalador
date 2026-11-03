@@ -473,11 +473,82 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 @media (max-width: 400px) { .brand { font-size: 18px; } .bar { width: 64px; } .install span { display: none; } .all span { display: none; } }
 @media (max-width: 340px) { .brand { display: none; } }
 @media (prefers-reduced-motion: reduce) { body { transition: none; } .badge, .coach svg, .card { animation: none; } }
+
+/* ---------- portada: lo primero que se ve al entrar. El cubo de la carga salta hasta acá ---------- */
+.portada {
+  position: fixed; inset: 0; z-index: 30; overflow: hidden; display: flex; flex-direction: column; align-items: center;
+  background: radial-gradient(120% 70% at 50% 108%, #b9ecff 0, #8fdcff 40%, transparent 70%), #62c6ff;
+  padding: max(18px, env(safe-area-inset-top, 0px)) var(--gy) calc(env(safe-area-inset-bottom, 0px) + 16px) var(--gx);
+}
+.portada.chau { animation: pt-chau .45s cubic-bezier(.5, 0, .75, 0) forwards; pointer-events: none; }
+@keyframes pt-chau { to { transform: translateY(-100%); } }
+.pt-nube { position: absolute; width: 120px; height: 34px; border-radius: 99px; background: rgba(255,255,255,.75); animation: pt-nube 38s linear infinite; }
+.pt-nube::before, .pt-nube::after { content: ""; position: absolute; border-radius: 50%; background: inherit; }
+.pt-nube::before { width: 52px; height: 46px; left: 18px; top: -24px; }
+.pt-nube::after { width: 62px; height: 56px; left: 48px; top: -32px; }
+.pt-nube:nth-child(1) { top: 13%; left: -20%; animation-duration: 46s; }
+.pt-nube:nth-child(2) { top: 34%; left: -20%; transform: scale(.7); animation-duration: 34s; animation-delay: -20s; }
+.pt-nube:nth-child(3) { top: 70%; left: -20%; transform: scale(.85); animation-duration: 52s; animation-delay: -36s; opacity: .8; }
+@keyframes pt-nube { to { left: 110%; } }
+.pt-centro { position: relative; flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; zoom: var(--ui, 1); }
+.pt-titulo {
+  margin: 0; font-family: var(--display); font-weight: 400; text-align: center; line-height: .88; font-size: clamp(54px, 17vw, 84px);
+  color: var(--paper); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 6px 0 var(--ink);
+}
+.pt-titulo span { display: block; color: var(--cube); transform: rotate(-3deg); }
+.pt-sub { margin: 8px 0 0; padding: 4px 12px; border-radius: 99px; background: var(--ink); color: var(--paper); font-weight: 800; font-size: 13px; letter-spacing: .04em; }
+.pt-heroe { position: relative; width: 240px; height: 200px; flex: none; margin: -4px 0 -6px; }
+.pt-heroe canvas { display: block; width: 100%; height: 100%; cursor: pointer; }
+.pt-nivel { position: absolute; right: 8px; top: 34px; padding: 3px 9px 2px; border-radius: 10px; transform: rotate(8deg);
+  background: var(--accent); color: var(--paper); border: 2.5px solid var(--ink); box-shadow: 0 3px 0 var(--ink); font: 400 15px/1 var(--display); }
+.pt-botones { display: grid; gap: 12px; width: min(300px, 100%); }
+.pt-jugar, .pt-op {
+  display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; color: var(--ink);
+  border: 3px solid var(--ink); border-radius: 18px; font-family: var(--display); font-weight: 400;
+}
+.pt-jugar { height: 68px; font-size: 32px; background: var(--cube); box-shadow: 0 7px 0 var(--ink); }
+.pt-jugar svg { width: 26px; height: 26px; }
+.pt-op { height: 52px; font-size: 21px; background: var(--paper); box-shadow: 0 5px 0 var(--ink); }
+.pt-op svg { width: 22px; height: 22px; }
+.pt-jugar:hover { background: #ffd94f; }
+.pt-op:hover { background: #fff; }
+.pt-jugar:active { transform: translateY(5px); box-shadow: 0 2px 0 var(--ink); }
+.pt-op:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.pt-redes { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; zoom: var(--ui, 1); }
+.pt-redes small { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--ink); opacity: .75; }
+.pt-redes div { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.pt-red {
+  display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 16px 0 8px; border-radius: 99px; text-decoration: none; color: var(--ink);
+  background: var(--paper); border: 3px solid var(--ink); box-shadow: 0 4px 0 var(--ink); font-weight: 800; font-size: 15px;
+}
+.pt-red i { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; color: #fff; border: 2px solid var(--ink); }
+.pt-red i svg { width: 18px; height: 18px; }
+.pt-red.instagram i { background: radial-gradient(circle at 30% 107%, #fdf497 0, #fd5949 45%, #d6249f 60%, #285aeb 90%); }
+.pt-red:hover { background: #fff4c7; }
+.pt-red:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.pt-red:focus-visible, .pt-jugar:focus-visible, .pt-op:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+/* entrada: el título, los botones y las redes aparecen recién cuando el cubo aterriza */
+.portada .pt-titulo, .portada .pt-sub, .portada .pt-botones > *, .portada .pt-redes { animation: pt-pop .5s cubic-bezier(.2, 1.4, .4, 1) both; }
+.portada .pt-sub { animation-delay: .08s; }
+.portada .pt-botones > :first-child { animation-delay: .16s; }
+.portada .pt-botones > :last-child { animation-delay: .24s; }
+.portada .pt-redes { animation-delay: .34s; }
+.portada.espera .pt-titulo, .portada.espera .pt-sub, .portada.espera .pt-botones > *, .portada.espera .pt-redes, .portada.espera .pt-nivel { animation: none; opacity: 0; }
+@keyframes pt-pop { from { opacity: 0; transform: translateY(18px) scale(.9); } }
+button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-align: left; }
+#sheetOpciones { z-index: 40; }
+.opcion { display: grid; gap: 6px; }
+.opcion b { font-size: 15px; }
+.opcion span { font-size: 12.5px; font-weight: 600; color: var(--muted); line-height: 1.35; }
+.creditos { padding: 10px 12px; border: 2.5px dashed rgba(29,35,64,.3); border-radius: 14px; font-size: 13px; font-weight: 600; color: var(--muted); line-height: 1.45; }
+.creditos a { color: var(--ink); font-weight: 800; }
+@media (max-height: 640px) { .pt-heroe { width: 200px; height: 150px; } .pt-titulo { font-size: clamp(44px, 13vw, 64px); } .pt-jugar { height: 58px; font-size: 28px; } }
+@media (prefers-reduced-motion: reduce) { .pt-nube, .portada .pt-titulo, .portada .pt-sub, .portada .pt-botones > *, .portada .pt-redes, .portada.chau { animation: none; } }
 </style>
 
 <div class="app">
   <header class="top">
-    <span class="brand">Cubo Escalador</span>
+    <button class="brand" id="brand" type="button" aria-label="Cubo Escalador: volver a la pantalla de inicio">Cubo Escalador</button>
     <div class="top-r">
       <button class="install" id="install" type="button" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M5 20h14"/></svg><span>Instalar</span>
@@ -611,6 +682,54 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 <div class="coach" id="coach" hidden>
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5A6.5 6.5 0 0 1 11.5 21h-.6a6 6 0 0 1-4.6-2.2L3.6 15.4a1.6 1.6 0 0 1 2.4-2.1L9 16"/></svg>
   <span id="coachTxt">Deslizá para ver los 10 juegos</span>
+</div>
+
+<!-- portada: aparece al entrar (una vez por visita). Se vuelve tocando el nombre de arriba a la izquierda -->
+<div class="portada espera" id="portada" hidden>
+  <i class="pt-nube" aria-hidden="true"></i><i class="pt-nube" aria-hidden="true"></i><i class="pt-nube" aria-hidden="true"></i>
+  <div class="pt-centro">
+    <h1 class="pt-titulo">Cubo<span>Escalador</span></h1>
+    <p class="pt-sub" id="ptSub">Juegos con solo dos flechas</p>
+    <div class="pt-heroe">
+      <canvas id="ptCubo" width="480" height="400" aria-label="Tu personaje"></canvas>
+      <span class="pt-nivel" id="ptNivel">Nivel 1</span>
+    </div>
+    <div class="pt-botones">
+      <button class="pt-jugar" id="ptJugar" type="button">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Jugar</button>
+      <button class="pt-op" id="ptOpciones" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>Opciones</button>
+    </div>
+  </div>
+  <footer class="pt-redes">
+    <small>Seguime</small>
+    <div id="ptRedes"></div>
+  </footer>
+</div>
+
+<!-- opciones (desde la portada) -->
+<div class="sheet" id="sheetOpciones" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="tOpc">
+    <div class="card-h"><h3 id="tOpc">Opciones</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
+    <div class="card-b">
+      <div class="opcion">
+        <b>Sonido</b>
+        <div class="seg" role="group" aria-label="Sonido" data-opcion="sonido"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div>
+        <span>Vale para todos los juegos. Adentro de cada uno lo podés cambiar igual.</span>
+      </div>
+      <div class="opcion">
+        <b>Vibración</b>
+        <div class="seg" role="group" aria-label="Vibración" data-opcion="vibrar"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div>
+        <span>En el celu, cuando tocás, chocás o ganás algo.</span>
+      </div>
+      <div class="opcion">
+        <b>Esta pantalla al entrar</b>
+        <div class="seg" role="group" aria-label="Pantalla de inicio al entrar" data-opcion="portada"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div>
+        <span>Si la sacás, entrás directo a los juegos. Para volver a verla tocá "Cubo Escalador" arriba.</span>
+      </div>
+      <p class="creditos">Hecho por <a href="https://www.instagram.com/alejomartineez_/" target="_blank" rel="noopener">@alejomartineez_</a>. Música de Ritmo: Juhani Junkala (CC0).</p>
+    </div>
+  </div>
 </div>
 
 <script src="cubo-comun.js"></script>
@@ -945,7 +1064,8 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   if (!guardado('cubo-hub-coach')) {
     $('coachTxt').textContent = tactil ? `Deslizá para ver los ${JUEGOS.length} juegos` : `Usá ← → para ver los ${JUEGOS.length} juegos`;
     $('coach').hidden = false;
-    setTimeout(ocultarCoach, 7000);
+    // los 7 segundos cuentan desde que se cierra la portada
+    setTimeout(function esperar() { if (!$('portada').hidden) setTimeout(esperar, 500); else setTimeout(ocultarCoach, 7000); });
   }
 
   // ---------- perfil ----------
@@ -1393,6 +1513,10 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   addEventListener('keydown', e => {
     if (document.getElementById('cc-rank')) return;
     if (abierta) { if (e.key === 'Escape') cerrar(); return; }
+    if (!portada.hidden) {
+      if ((e.key === 'Enter' || e.key === ' ') && document.activeElement === document.body) { e.preventDefault(); cerrarPortada(); }
+      return;
+    }
     const s = slides.children[actual];
     if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { e.preventDefault(); flash(s.querySelector('[data-ir="-1"]')); combinacion(-1); ir(actual - 1); }
     else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { e.preventDefault(); flash(s.querySelector('[data-ir="1"]')); combinacion(1); ir(actual + 1); }
@@ -1428,7 +1552,8 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   }
   function frame(now) {
     if (!document.hidden) {
-      if (!reduceMotion) { if (!abierta) dibujar(actual, now); avatar(now); }
+      if (!portada.hidden) pintarHeroe(now);
+      else if (!reduceMotion) { if (!abierta) dibujar(actual, now); avatar(now); }
       if (abierta && abierta.id === 'sheetPase' && !reduceMotion) animarPase(now);
       if (abierta && abierta.id === 'sheetPersonaje') {
         const c = $('big').getContext('2d'); c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, 112, 120);
@@ -1448,7 +1573,142 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   addEventListener('resize', () => { todo(); slides.scrollLeft = actual * slides.clientWidth; });
   addEventListener('pageshow', pintarPerfil); // al volver de un juego con "atrás"
 
+  // ---------- portada ----------
+  // Lo primero que se ve al entrar (una vez por visita). El cubo de la pantalla de carga salta hasta acá:
+  // build.mjs llama a window.alSalirCarga en vez de desvanecer la carga.
+  const REDES = [
+    { id: 'instagram', red: 'Instagram', nombre: '@alejomartineez_', url: 'https://www.instagram.com/alejomartineez_/',
+      ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1.2" fill="currentColor" stroke="none"/></svg>' },
+  ];
+  // dónde guarda cada juego su "Sonido: sí/no" (Opciones lo cambia en todos)
+  const SONIDO_KEYS = ['cubo-escalador-records', 'cubo-lluvia-records', 'cubo-clasificador-records', 'cubo-equilibrio-records', 'cubo-ritmo-records',
+    'cubo-voley', 'cubo-paseo', 'cubo-cohete-records', 'cubo-esqui', 'cubo-pulseada-records'];
+  const portada = $('portada'), ptCv = $('ptCubo');
+  const sesion = (k, v) => { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch (e) {} return null; };
+  let aterrizo = Infinity, saltito = -1e9;   // cuándo cayó el cubo en la portada y cuándo lo tocaron
+  // el cubo de la portada, apoyado en su escalón (en px de CSS del canvas)
+  const geoHeroe = (w, h) => ({ lado: Math.round(h * 0.42), pie: Math.round(h * 0.8), x: w / 2 });
+
+  $('ptSub').textContent = `${JUEGOS.length} juegos · solo dos flechas`;
+  $('ptRedes').innerHTML = REDES.map(r => `<a class="pt-red ${r.id}" href="${r.url}" target="_blank" rel="noopener" aria-label="${r.red}: ${r.nombre}"><i>${r.ico}</i>${r.nombre}</a>`).join('');
+
+  function pintarHeroe(now) {
+    const [c, w, h] = tam(ptCv), g = geoHeroe(w, h);
+    c.clearRect(0, 0, w, h);
+    const ew = g.lado * 1.9, eh = Math.round(h * 0.13);
+    c.fillStyle = 'rgba(29,35,64,.16)'; c.beginPath(); c.ellipse(g.x, g.pie + eh + 5, ew * 0.52, 5, 0, 0, Math.PI * 2); c.fill();
+    rr(c, g.x - ew / 2, g.pie, ew, eh, 9); c.fillStyle = PAPER; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
+    rr(c, g.x - ew / 2 + 8, g.pie + 5, ew - 16, 4, 2); c.fillStyle = 'rgba(29,35,64,.12)'; c.fill();
+    if (now < aterrizo) return;   // todavía está volando: es el cubo de la carga
+    const dt = now - aterrizo;
+    // al caer se aplasta y rebota un poco; después salta tranquilo, como en la carga
+    const golpe = !reduceMotion && dt < 450 ? Math.sin(dt / 450 * Math.PI * 1.5) * Math.max(0, 1 - dt / 450) : 0;
+    const p = (now - saltito) / 520, brinco = p < 1 ? Math.sin(p * Math.PI) * g.lado * 0.7 : 0;
+    const salto = reduceMotion ? 0 : bob(now, 520) * g.lado * 0.12 * Math.min(1, dt / 700) + brinco;
+    c.save(); c.translate(g.x, g.pie - salto); c.scale(1 + golpe * 0.3, 1 - golpe * 0.28);
+    if (p < 1) c.rotate(Math.sin(p * Math.PI * 2) * 0.15);
+    CC.dibujarCubo(c, 0, 0, g.lado, { t: reduceMotion ? 900 : now, mirar: reduceMotion ? 0 : Math.sin(now / 900) });
+    c.restore();
+    // polvareda
+    if (!reduceMotion && dt < 650) {
+      const q = dt / 650;
+      for (let i = 0; i < 6; i++) {
+        const lado = i < 3 ? -1 : 1, n = i % 3 + 1;
+        c.fillStyle = `rgba(255,255,255,${(1 - q) * 0.95})`; c.strokeStyle = `rgba(29,35,64,${(1 - q) * 0.5})`; c.lineWidth = 2;
+        c.beginPath(); c.arc(g.x + lado * (g.lado * 0.45 + q * g.lado * 0.32 * n), g.pie - 4 - n * 5 * q, (1 - q) * 6 + 3, 0, Math.PI * 2); c.fill(); c.stroke();
+      }
+    }
+  }
+  // centro y lado del cubo de la portada, en px de la pantalla (para que el de la carga caiga justo ahí)
+  function destinoHeroe() {
+    const r = ptCv.getBoundingClientRect(), w = ptCv.clientWidth, h = ptCv.clientHeight, z = r.width / Math.max(1, w), g = geoHeroe(w, h);
+    return { x: r.left + g.x * z, y: r.top + (g.pie - g.lado / 2) * z, lado: g.lado * z };
+  }
+  function aterrizar() {
+    aterrizo = performance.now();
+    portada.classList.remove('espera');
+  }
+  function mostrarPortada(vuelo) {
+    $('ptNivel').textContent = `Nivel ${CC.perfil().nivel}`;
+    portada.classList.remove('chau'); portada.classList.add('espera');
+    portada.hidden = false;
+    aterrizo = Infinity;
+    if (!vuelo) aterrizar();
+  }
+  function cerrarPortada() {
+    if (portada.hidden || portada.classList.contains('chau')) return;
+    sesion('cubo-portada-vista', '1');
+    if (reduceMotion) { portada.hidden = true; return; }
+    portada.classList.add('chau');
+    portada.addEventListener('animationend', function fin(e) {
+      if (e.target !== portada) return;
+      portada.removeEventListener('animationend', fin);
+      portada.hidden = true; portada.classList.remove('chau');
+    });
+  }
+  // La carga: el cubo baja a la barra, se agacha y salta en arco hasta su escalón en la portada.
+  window.alSalirCarga = carga => {
+    if (portada.hidden) return false;
+    const cubo = carga.querySelector('i');
+    carga.style.pointerEvents = 'none';
+    if (!cubo || reduceMotion || !cubo.animate) { carga.classList.add('fuera'); setTimeout(() => carga.remove(), 400); aterrizar(); return true; }
+    const m = getComputedStyle(cubo).transform, desde = m === 'none' ? 'none' : m;
+    const l0 = cubo.offsetWidth, cx = cubo.offsetLeft + l0 / 2, cy = cubo.offsetTop + cubo.offsetHeight / 2;
+    const d = destinoHeroe(), k = d.lado / l0, dx = d.x - cx, dy = d.y - cy;
+    const y0 = -l0 * 0.6, alto = Math.min(y0, dy) - Math.max(90, innerHeight * 0.14);
+    const yc = 2 * alto - (y0 + dy) / 2;   // control de la curva para que el punto más alto quede en `alto`
+    const marcos = [
+      { transform: desde, easing: 'ease-in' },
+      { offset: 0.16, transform: 'translate(0px, 4px) scale(1.3, .68)', easing: 'ease-out' },
+      { offset: 0.26, transform: `translate(0px, ${y0}px) scale(.82, 1.22)`, easing: 'linear' },
+    ];
+    for (let i = 1, N = 14; i <= N; i++) {
+      const t = i / N, u = 1 - t;
+      marcos.push({ offset: 0.26 + 0.74 * t, easing: 'linear',
+        transform: `translate(${dx * t}px, ${u * u * y0 + 2 * u * t * yc + t * t * dy}px) rotate(${-360 * t}deg) scale(${1 + (k - 1) * t})` });
+    }
+    cubo.style.animation = 'none';
+    const vuelo = cubo.animate(marcos, { duration: 1150, fill: 'forwards' });
+    for (const el of carga.querySelectorAll('s, b')) el.animate([{}, { transform: 'translateY(34px)', opacity: 0 }], { duration: 260, delay: 120, easing: 'ease-in', fill: 'forwards' });
+    carga.animate([{}, { backgroundColor: 'rgba(98, 198, 255, 0)' }], { duration: 450, delay: 260, fill: 'forwards' });
+    // con la pestaña en segundo plano la animación no avanza: a los 1,8 s aterriza igual
+    const fin = () => { if (!carga.isConnected) return; carga.remove(); aterrizar(); };
+    vuelo.onfinish = fin; setTimeout(fin, 1800);
+    return true;
+  };
+  $('ptJugar').addEventListener('click', cerrarPortada);
+  $('ptCubo').addEventListener('click', () => { if (performance.now() - saltito > 520) { saltito = performance.now(); CC.vibrar(10); } });
+  $('brand').addEventListener('click', () => mostrarPortada(false));
+
+  // ---------- opciones ----------
+  const leerJSON = k => { try { const o = JSON.parse(localStorage.getItem(k)); return o && typeof o === 'object' ? o : null; } catch (e) { return null; } };
+  const OPCIONES = {
+    sonido: {
+      ver: () => !SONIDO_KEYS.every(k => (leerJSON(k) || {}).muted),
+      // un juego que nunca abriste ya arranca con sonido: solo hace falta guardarlo si lo apagás
+      poner: si => SONIDO_KEYS.forEach(k => { const o = leerJSON(k); if (o || !si) guardado(k, JSON.stringify({ ...(o || {}), muted: !si })); }),
+    },
+    vibrar: { ver: () => guardado('cubo-vibrar') !== '0', poner: si => guardado('cubo-vibrar', si ? '1' : '0') },
+    portada: { ver: () => guardado('cubo-portada') !== '0', poner: si => guardado('cubo-portada', si ? '1' : '0') },
+  };
+  function pintarOpciones() {
+    for (const g of document.querySelectorAll('[data-opcion]')) {
+      const si = OPCIONES[g.dataset.opcion].ver();
+      for (const b of g.children) b.setAttribute('aria-pressed', String((b.dataset.v === '1') === si));
+    }
+  }
+  for (const g of document.querySelectorAll('[data-opcion]')) {
+    g.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      OPCIONES[g.dataset.opcion].poner(b.dataset.v === '1');
+      pintarOpciones();
+      if (g.dataset.opcion === 'vibrar') CC.vibrar(30);
+    });
+  }
+  $('ptOpciones').addEventListener('click', () => { pintarOpciones(); abrir('sheetOpciones'); });
+
   // ---------- arranque ----------
+  if (guardado('cubo-portada') !== '0' && !sesion('cubo-portada-vista') && !location.hash) mostrarPortada(!!$('cargando'));
   let inicio = +(guardado(SLIDE_KEY) || 0) || 0;
   const porHash = JUEGOS.findIndex(g => '#' + g.id === location.hash);
   if (porHash >= 0) inicio = porHash;
@@ -1460,7 +1720,8 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 </script>
 
 <script>(function(){var el=document.getElementById('cargando');if(!el)return;
-function fuera(){if(!el)return;el.classList.add('fuera');var e=el;el=null;setTimeout(function(){e.remove()},400)}
+function fuera(){if(!el)return;var e=el;el=null;try{if(typeof window.alSalirCarga==='function'&&window.alSalirCarga(e))return}catch(x){}
+e.classList.add('fuera');setTimeout(function(){e.remove()},400)}
 var l=document.querySelector('link[data-fuentes]'),esperas=[];
 if(l)esperas.push(new Promise(function(r){if(l.sheet)r();l.addEventListener('load',r);l.addEventListener('error',r)}).then(function(){return document.fonts&&document.fonts.ready}));
 Promise.race([Promise.all(esperas),new Promise(function(r){setTimeout(r,2500)})]).then(function(){setTimeout(fuera,60)});})();</script>

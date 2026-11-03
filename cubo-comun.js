@@ -3895,7 +3895,9 @@
   }
 
   // Chrome bloquea (y avisa en consola) la vibración antes del primer toque del usuario.
+  // Se apaga desde Opciones en la portada (cubo-vibrar = '0').
   function vibrar(ms = 12) {
+    try { if (localStorage.getItem('cubo-vibrar') === '0') return; } catch (e) {}
     try { if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(ms); } catch (e) {}
   }
   function volver() { location.href = 'index.html'; }

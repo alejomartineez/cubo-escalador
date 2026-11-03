@@ -31,8 +31,10 @@ background:#62c6ff;transition:opacity .3s ease,visibility .3s}
 @keyframes cc-barra{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
 @media (prefers-reduced-motion:reduce){#cargando i,#cargando s::after{animation:none}}`;
 const CARGA_HTML = '<div id="cargando" aria-hidden="true"><i></i><s></s><b>Cargando…</b></div>';
+// Si la página define window.alSalirCarga(el) y devuelve true, ella se encarga de sacarla (el hub: el cubo salta a la portada).
 const CARGA_JS = `<script>(function(){var el=document.getElementById('cargando');if(!el)return;
-function fuera(){if(!el)return;el.classList.add('fuera');var e=el;el=null;setTimeout(function(){e.remove()},400)}
+function fuera(){if(!el)return;var e=el;el=null;try{if(typeof window.alSalirCarga==='function'&&window.alSalirCarga(e))return}catch(x){}
+e.classList.add('fuera');setTimeout(function(){e.remove()},400)}
 var l=document.querySelector('link[data-fuentes]'),esperas=[];
 if(l)esperas.push(new Promise(function(r){if(l.sheet)r();l.addEventListener('load',r);l.addEventListener('error',r)}).then(function(){return document.fonts&&document.fonts.ready}));
 Promise.race([Promise.all(esperas),new Promise(function(r){setTimeout(r,2500)})]).then(function(){setTimeout(fuera,60)});})();</script>`;
