@@ -114,7 +114,7 @@
   ];
   // Códigos (se guarda solo el hash: sha256('cubo:' + CÓDIGO en mayúsculas, sin espacios ni guiones)).
   const CODIGOS = {
-    '17e8e8ae058bd488c12616cbae5b9b9c1e98e999d02a48f0d6525c6883c3dc58': 'dev',
+    '21ac801523d41ca2afdae55295d358cec55e7b078b52c4cb30635342c2e5469c': 'dev',
     '84c0cefa4e4958365252de6bce1d43f433b042cc385b04b95f8a25017d803b2f': 'holograma',
     'f84cf38b4df650d7c292d2a23967e20fe305e40099116526a7e6dd642ba675ff': 'sombra',
   };
