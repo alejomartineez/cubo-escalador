@@ -96,7 +96,7 @@ ${CARGA_JS}
 for (const a of ASSETS) { copyFileSync(a, `docs/${a}`); salida.push(a); console.log(`docs/${a}`); }
 
 // canciones de Ritmo: no van a la caché del arranque; se bajan cuando las jugás y ahí quedan guardadas
-if (existsSync('musica')) { mkdirSync('docs/musica'); for (const f of readdirSync('musica')) copyFileSync(`musica/${f}`, `docs/musica/${f}`); }
+if (existsSync('musica')) { mkdirSync('docs/musica'); for (const f of readdirSync('musica').filter(f => /\.(mp3|json)$/.test(f))) copyFileSync(`musica/${f}`, `docs/musica/${f}`); }
 
 // imágenes para compartir el link (las dibuja og.mjs). No van a la caché del service worker: solo las piden las redes.
 mkdirSync('docs/og');

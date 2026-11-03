@@ -14,7 +14,7 @@ La pantalla principal muestra un juego por slide. Todos los juegos suman XP al m
 | Lluvia | Movete entre carriles y esquivá los bloques que caen. |
 | Clasificador | Mandá cada cubo a la caja de su color. |
 | Equilibrio | Corregí la tabla para que no te tire el viento. |
-| Ritmo | Tocá el lado de cada nota justo cuando llega a la línea. Modo Infinito (el BPM sube) y modo Canciones: 3 temas CC0 de Juhani Junkala con la partitura sacada del audio y estrellas por precisión. Tiene un calibrador (aparece la primera vez y queda en el menú) que mide cuánto te adelantás o atrasás y lo corrige. |
+| Ritmo | Tocá el lado de cada nota justo cuando llega a la línea. Modo Infinito (el BPM sube) y modo Canciones: 3 temas CC0 de Juhani Junkala con la partitura sacada del audio y estrellas por precisión. Tiene un calibrador en dos pruebas, como Clone Hero o Rhythm Quest (aparece la primera vez y queda en el menú): con el sonido mide cuánto te adelantás o atrasás, y con la imagen si tu pantalla o tus auriculares tienen demora, y corre las notas para que coincidan. Al terminar una partida, si tocaste corrido para un lado, ofrece corregirlo. |
 | Vóley | Movete y devolvé la pelota a rivales cada vez mejores. |
 | Paseo | Alterná las flechas para caminar con tu mascota sin que se escape. |
 | Serpiente | Doblás a la izquierda o a la derecha según hacia dónde vas. |
@@ -42,7 +42,7 @@ Controles: `←` `→` o `A` `D` en la compu, `R` reinicia; botones grandes y �
 - `supabase.sql`: tablas y función del ranking. Se corre una vez en el SQL Editor de Supabase.
 - `build.mjs`: arma `docs/` con las páginas, el manifest, los íconos y el service worker para jugar sin conexión.
 - `paginas.mjs`: la lista de páginas con su descripción (la que aparece al compartir el link).
-- `musica/`: las canciones de Ritmo (mp3) y `canciones.json` con BPM, desfase y la fuerza de cada semicorchea (de ahí sale la partitura de cada dificultad).
+- `musica/`: las canciones de Ritmo (mp3) y `canciones.json` con BPM, desfase y la fuerza de cada semicorchea (de ahí sale la partitura de cada dificultad). `canciones.json` sale del audio con `python musica/analizar.py` (necesita numpy y ffmpeg): correrlo cada vez que se cambia o se suma una canción.
 - `og.mjs` y `og/`: las imágenes que se ven al compartir el link (una por juego), dibujadas con Chrome a partir de `og/plantilla.html`.
 
 ## Cómo actualizar el sitio

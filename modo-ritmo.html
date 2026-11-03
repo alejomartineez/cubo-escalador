@@ -159,8 +159,12 @@ body {
 .credito { margin: -4px 0 0; text-align: center; font: 600 11px var(--body); color: var(--muted); }
 /* calibrador */
 .cal-vis { display: grid; justify-items: center; gap: 16px; padding: 6px 0; }
-#cPulse { width: 84px; height: 84px; border-radius: 50%; background: var(--paper); border: 4px solid var(--ink); box-shadow: 0 5px 0 var(--ink); transition: background .08s; }
-#cPulse.on { background: var(--cube); }
+.cal-oido { display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%; font-size: 40px; background: var(--paper); border: 4px solid var(--ink); box-shadow: 0 5px 0 var(--ink); }
+#cPista { width: 120px; height: 150px; }
+.cal-pasos { margin: 0; padding-left: 22px; display: grid; gap: 10px; font: 600 15px/1.4 var(--body); }
+.cal-nota { margin: -6px 0 0; text-align: center; font: 600 12px/1.35 var(--body); color: var(--muted); }
+#cTxt b { color: var(--ink); }
+.ajuste { margin: 2px 0 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; font: 600 14px var(--body); }
 .cal-bar { position: relative; width: 100%; height: 44px; border-radius: 12px; background: #ece8dc; border: 2.5px solid var(--ink); overflow: hidden; }
 .cal-bar .cero { position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; margin-left: -1.5px; background: var(--ink); }
 .cal-bar .lbl-a, .cal-bar .lbl-t { position: absolute; bottom: 6px; font: 800 11px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
@@ -300,10 +304,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 <div class="overlay" id="calib" hidden>
   <div class="card">
     <div class="result">
-      <h2>Calibrar</h2>
-      <span class="sub" id="cTxt">Tocá ◀ o ▶ cada vez que suene el clic y se prenda el círculo. Los primeros 4 son para agarrar el ritmo.</span>
+      <h2 id="cTit">Calibrar</h2>
+      <span class="sub" id="cTxt"></span>
     </div>
-    <div class="cal-vis"><i id="cPulse"></i><div class="cal-bar"><span class="cero"></span><span class="lbl-a">Antes</span><span class="lbl-t">Tarde</span><div id="cDots"></div></div></div>
+    <ol class="cal-pasos" id="cPasos">
+      <li><b>🎧 Sonido.</b> Vas a escuchar 16 clics. Sin mirar la pantalla, tocá ◀ o ▶ justo con cada uno.</li>
+      <li><b>👀 Imagen.</b> Sin sonido, bajan 16 baldosas. Tocá ◀ o ▶ justo cuando cada una pisa la línea.</li>
+    </ol>
+    <div class="cal-vis" id="cVis" hidden><span class="cal-oido" id="cOido" aria-hidden="true">🎧</span><canvas id="cPista" width="120" height="150" aria-hidden="true" hidden></canvas><div class="cal-bar"><span class="cero"></span><span class="lbl-a">Antes</span><span class="lbl-t">Tarde</span><div id="cDots"></div></div>
+      <p class="cal-nota">Cada punto es un toque tuyo. Lo ideal es que caigan sobre la raya del medio; los grises son de práctica.</p></div>
     <p class="cal-res" id="cRes" aria-live="polite"></p>
     <div class="row">
       <button class="btn" id="cSkip" type="button">Saltear</button>
@@ -342,6 +351,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         <span class="badge xp" id="eXP" hidden></span>
       </div>
       <ul class="logros" id="eLogros" hidden></ul>
+      <p class="ajuste" id="eAjuste" hidden><span id="eAjTxt"></span><button class="ter smallbtn" id="btnAjuste" type="button">Corregir</button></p>
     </div>
     <button class="btn primary big" id="btnAgain" type="button">↻ Otra vez <kbd class="kbhint">R</kbd></button>
     <div class="difend" id="eDif" hidden>
@@ -470,8 +480,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const r = await fetch('musica/' + c.id + '.mp3');
     if (!r.ok) throw new Error('canción ' + r.status);
     const ab = await r.arrayBuffer();
-    bufs[c.id] = await new Promise((ok, no) => actx.decodeAudioData(ab, ok, no));
-    return bufs[c.id];
+    const b = await new Promise((ok, no) => actx.decodeAudioData(ab, ok, no));
+    // los mp3 arrancan con sonido en la primera muestra; si este navegador deja el silencio del encoder
+    // adelante, se mide y se saltea para que la grilla de canciones.json siga valiendo
+    const d = b.getChannelData(0), tope = Math.min(d.length, Math.round(b.sampleRate * 0.1));
+    let i = 0; while (i < tope && Math.abs(d[i]) < 0.02) i++;
+    b.pad = i < tope ? i / b.sampleRate : 0;
+    return (bufs[c.id] = b);
   }
   fetch('musica/canciones.json').then(r => r.json()).then(x => { CANCIONES = x; renderModo(); }).catch(() => {});
   const fmt = n => n.toLocaleString('es-AR');
@@ -599,6 +614,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       score: 0, combo: 0, maxCombo: 0, shownRaf: -1, life: 100, perfect: 0, good: 0, miss: 0, shownLevel: 0, shownBpm: 0,
       lastLane: Math.random() < 0.5 ? -1 : 1, lastT: -9, run: 1, pi: 4, rhythm: null, lastDbl: -9,
       face: 1, hitP: -1e9, missP: -1e9, ghostP: { [-1]: -1e9, [1]: -1e9 },
+      errs: [], // cuánto antes (-) o después (+) de cada nota tocaste, para el ajuste fino del final
     };
     G.shownBpm = bpmAt(G.D, 0);
     const c = modo === 'cancion' && cancionSel();
@@ -713,7 +729,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const d = Math.abs(t - n.t);
       if (d <= bd) { bd = d; best = n; }
     }
-    if (best) { judge(best, bd <= WIN_PERFECT ? 'perfect' : bd <= WIN_GOOD ? 'good' : 'miss'); return; }
+    if (best) {
+      if (bd <= WIN_GOOD) G.errs.push(t - best.t);
+      judge(best, bd <= WIN_PERFECT ? 'perfect' : bd <= WIN_GOOD ? 'good' : 'miss'); return;
+    }
     // toque al aire: durante el conteo es gratis, después cuesta un poquito de vida
     const first = G.bars[G.intro];
     if (!first || t < first.t0 - WIN_MISS) return;
@@ -760,10 +779,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (G.notes.length > 80) G.notes = G.notes.filter(n => !n.res || n.t > now - 1);
   }
 
-  function watchLevel(now) {
+  function watchLevel(now, juez) {
     if (G.cancion) { // el cielo va cambiando a lo largo de la canción
       G.shownLevel = Math.max(0, Math.min(5, Math.floor((now - G.firstT) / (G.finT - G.firstT) * 6)));
-      if (now > G.finT + 0.5 && !G.over) terminarCancion();
+      if (Math.min(now, juez) > G.finT + 0.5 && !G.over) terminarCancion(); // ya se juzgó la última nota
       return;
     }
     const b = barAt(now);
@@ -806,8 +825,29 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const logros = r ? r.logros : [];
     $('eLogros').hidden = !logros.length;
     $('eLogros').replaceChildren(...logros.map(n => Object.assign(document.createElement('li'), { textContent: 'Logro: ' + n })));
+    mostrarAjuste();
     setTimeout(() => { if (state === 'over') showEnd(); }, 1100);
   }
+
+  // ajuste fino como el de osu!: si en la partida tocaste corrido para un lado, se ofrece correr el juicio
+  // (sonido e imagen juntos, así las notas se siguen viendo igual)
+  let ajustePend = 0;
+  function mostrarAjuste() {
+    const v = G.errs.slice().sort((a, b) => a - b), med = v.length >= 20 ? v[Math.floor(v.length / 2)] : 0;
+    ajustePend = Math.abs(med) >= 0.012 ? med : 0;
+    $('eAjuste').hidden = !ajustePend;
+    $('eAjTxt').textContent = `En promedio tocaste ${msTxt(med)}.`;
+    $('btnAjuste').hidden = false;
+  }
+  $('btnAjuste').addEventListener('click', () => {
+    if (!ajustePend) return;
+    rec.desfase = tope((+rec.desfase || 0) + ajustePend);
+    if (typeof rec.desfaseVis === 'number') rec.desfaseVis += ajustePend;
+    saveRec(); ajustePend = 0;
+    $('eAjTxt').textContent = 'Listo, quedó corregido para la próxima.';
+    $('btnAjuste').hidden = true;
+    $('btnAgain').focus({ preventScroll: true });
+  });
 
   // guarda récords y suma la XP de la partida (al perder, al cortarla con R o al salir)
   // CC.partida ya multiplica la XP por dificultad y suma el bonus por récord
@@ -859,6 +899,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const logros = r ? r.logros : [];
     $('eLogros').hidden = !logros.length;
     $('eLogros').replaceChildren(...logros.map(n => Object.assign(document.createElement('li'), { textContent: 'Logro: ' + n })));
+    mostrarAjuste();
   }
   function terminarCancion() {
     G.over = true; state = 'over';
@@ -1003,7 +1044,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let cargando = false;
   function start() {
     if (!ensureAudio() || cargando) return;
-    if (!rec.calibrado && !rec.calSalteado) { abrirCalib(true); return; } // la primera vez, antes de jugar
+    if (rec.calibrado !== 2 && rec.calSalteado !== 2) { abrirCalib(true); return; } // la primera vez, antes de jugar
     const c = modo === 'cancion' && cancionSel();
     if (c && !bufs[c.id]) { // la canción se baja una vez y después queda guardada
       cargando = true;
@@ -1021,11 +1062,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('hDiff').classList.toggle('ext', G.diff === 'extremo');
     $('hDiff').classList.toggle('mae', G.diff === 'maestro');
     if (G.cancion) { // la canción arranca para que su primer golpe caiga justo después de la cuenta
-      const c = G.cancion, src = actx.createBufferSource();
-      src.buffer = bufs[c.id]; src.loop = true; src.loopStart = 0; src.loopEnd = c.beats * 60 / c.bpm;
+      const c = G.cancion, src = actx.createBufferSource(), pad = bufs[c.id].pad, largo = c.beats * 60 / c.bpm;
+      src.buffer = bufs[c.id]; src.loop = true; src.loopStart = pad; src.loopEnd = pad + largo;
       src.connect(bus);
-      const t = G.firstT - c.offset;
-      src.start(t); src.stop(t + VUELTAS * src.loopEnd + 0.1);
+      const t = G.firstT - c.offset - pad;
+      src.start(t); src.stop(t + pad + VUELTAS * largo + 0.1);
       banner = { text: '🎵 ' + c.nombre, t: performance.now() };
     }
     blur(); schedule();
@@ -1059,67 +1100,132 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
 
   // ---------- calibrador ----------
-  // Suena un metrónomo y tocás con él. Lo que te adelantás o atrasás (la mediana) se descuenta en cada toque.
-  const CAL_BPM = 100, CAL_N = 16, CAL_DESDE = 4;
+  // Como en Clone Hero o Rhythm Quest, en dos pasos. Sonido: suena un metrónomo sin nada que mirar y tocás con él;
+  // lo que te adelantás o atrasás (la mediana) se descuenta en cada toque. Imagen: caen baldosas en silencio y
+  // tocás cuando pisan la línea; si con la imagen tocás distinto que con el sonido (pantallas o auriculares con
+  // demora), las notas se dibujan corridas esa diferencia para que lo que ves y lo que oís lleguen juntos.
+  const CAL_BPM = 100, CAL_N = 16, CAL_DESDE = 4, CAL_CAE = 2; // CAL_CAE: tiempos que tarda en bajar una baldosa
+  const CAL_TOPE = 0.3;
   let cal = null;
-  const desfase = () => Math.max(-0.25, Math.min(0.25, +rec.desfase || 0));
+  const tope = x => Math.max(-CAL_TOPE, Math.min(CAL_TOPE, +x || 0));
+  const desfase = () => tope(rec.desfase);
+  const corrImagen = () => (typeof rec.desfaseVis === 'number' ? tope(desfase() - rec.desfaseVis) : 0);
+  const msTxt = d => { const ms = Math.round(d * 1000); return Math.abs(ms) < 10 ? 'justo a tiempo' : `${Math.abs(ms)} ms ${ms > 0 ? 'tarde' : 'antes'}`; };
+  const pista = $('cPista'), pctx = pista.getContext('2d');
   function abrirCalib(antesDeJugar) {
     if (!ensureAudio()) return;
     state = 'calib';
-    const per = 60 / CAL_BPM;
-    cal = { antes: antesDeJugar, t0: actx.currentTime + 1.2, toques: [], fin: false };
-    for (let k = 0; k < CAL_N; k++) voice(cal.t0 + k * per, k % 4 ? 1320 : 1760, 'square', 0.06, 0.06, 0, master);
+    // primero una pantalla que explica para qué es y qué hay que hacer; las pruebas arrancan con «Empezar»
+    cal = { antes: antesDeJugar, fase: 'intro', fin: true, ok: false };
     $('start').hidden = true; $('end').hidden = true; $('calib').hidden = false;
-    $('cDots').innerHTML = ''; $('cRes').textContent = '';
+    $('cTit').textContent = 'Calibrar';
+    $('cTxt').textContent = 'Cada celu, compu y auricular tarda un poquito distinto en mostrar la imagen y en hacer sonar la música. ' +
+      'Con dos pruebas cortas medimos esa demora y la corregimos, así las notas te quedan a tiempo.';
+    $('cPasos').hidden = false; $('cVis').hidden = true; $('cRes').textContent = '';
     $('cSkip').hidden = false; $('cSkip').textContent = antesDeJugar ? 'Saltear y jugar' : 'Cancelar';
-    $('cAgain').hidden = true; $('cOk').hidden = true;
+    $('cAgain').hidden = true; $('cOk').hidden = false; $('cOk').textContent = 'Empezar';
+    setTimeout(() => $('cOk').focus({ preventScroll: true }), 50);
     requestAnimationFrame(pulsoCalib);
+  }
+  function faseCalib(fase) {
+    const per = 60 / CAL_BPM, sonido = fase === 'sonido';
+    Object.assign(cal, { fase, t0: actx.currentTime + (sonido ? 1.2 : per * CAL_CAE + 0.6), toques: [], fin: false, ok: false });
+    if (sonido) for (let k = 0; k < CAL_N; k++) voice(cal.t0 + k * per, k % 4 ? 1320 : 1760, 'square', 0.06, 0.06, 0, master);
+    $('cTit').textContent = sonido ? 'Prueba 1 de 2 · Sonido' : 'Prueba 2 de 2 · Imagen';
+    $('cTxt').innerHTML = sonido
+      ? 'Mirá para otro lado y tocá ◀ o ▶ (o la pantalla) <b>justo cuando suena cada clic</b>. Los 4 primeros son de práctica.'
+      : 'No va a sonar nada. Tocá ◀ o ▶ (o la pantalla) <b>justo cuando cada baldosa pisa la línea</b>. Las 4 primeras, grises, son de práctica.';
+    $('cPasos').hidden = true; $('cVis').hidden = false;
+    $('cOido').hidden = !sonido; pista.hidden = sonido;
+    if (!sonido) {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      pista.width = 120 * dpr; pista.height = 150 * dpr; pctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    $('cDots').innerHTML = ''; $('cRes').textContent = '';
+    $('cSkip').hidden = false; $('cSkip').textContent = cal.antes ? 'Saltear y jugar' : 'Cancelar';
+    $('cAgain').hidden = true; $('cOk').hidden = true;
   }
   function pulsoCalib(p) {
     if (state !== 'calib' || !cal) return;
-    const x = (songAt(p) - cal.t0) / (60 / CAL_BPM), fase = x < 0 ? 1 : x - Math.floor(x);
-    const on = x >= -0.02 && x < CAL_N && fase < 0.18;
-    $('cPulse').classList.toggle('on', on);
-    $('cPulse').style.transform = on && !reduceMotion ? `scale(${1.25 - fase})` : '';
+    const per = 60 / CAL_BPM, now = songAt(p), x = (now - cal.t0) / per;
+    if (cal.fase === 'imagen') dibujarPista(now, per);
     if (!cal.fin && x > CAL_N + 0.4) terminarCalib();
     requestAnimationFrame(pulsoCalib);
+  }
+  // baldosas que caen en la columna del paso Imagen, con el mismo reloj que las notas del juego
+  function dibujarPista(now, per) {
+    const lineaY = 122, alto = lineaY - 14;
+    pctx.clearRect(0, 0, 120, 150);
+    pctx.fillStyle = '#ece8dc'; pctx.beginPath(); pctx.roundRect(22, 0, 76, 150, 12); pctx.fill();
+    pctx.fillStyle = '#1d2340'; pctx.fillRect(14, lineaY - 2, 92, 4);
+    for (let k = 0; k < CAL_N; k++) {
+      const falta = (cal.t0 + k * per - now) / (per * CAL_CAE);
+      if (falta > 1.1 || falta < -0.25) continue;
+      const y = lineaY - falta * alto;
+      pctx.globalAlpha = falta < 0 ? Math.max(0, 1 + falta * 4) : 1;
+      pctx.fillStyle = k < CAL_DESDE ? '#c3c9da' : LANE_COL[1][0];
+      pctx.strokeStyle = '#1d2340'; pctx.lineWidth = 3;
+      pctx.beginPath(); pctx.roundRect(36, y - 15, 48, 30, 8); pctx.fill(); pctx.stroke();
+    }
+    pctx.globalAlpha = 1;
   }
   function tocarCalib(p) {
     if (!cal || cal.fin) return;
     const per = 60 / CAL_BPM, t = songAt(p), k = Math.round((t - cal.t0) / per);
     if (k < 0 || k >= CAL_N) return;
     const d = t - (cal.t0 + k * per);
-    if (Math.abs(d) > 0.3) return;
+    if (Math.abs(d) > CAL_TOPE) return;
     if (k >= CAL_DESDE) cal.toques.push(d);
     const dot = document.createElement('span');
     dot.className = 'cal-dot' + (k < CAL_DESDE ? ' prueba' : '');
-    dot.style.left = (50 + d / 0.3 * 50) + '%';
+    dot.style.left = (50 + d / CAL_TOPE * 50) + '%';
     $('cDots').appendChild(dot);
   }
   function terminarCalib() {
     cal.fin = true;
     const v = cal.toques.slice().sort((a, b) => a - b);
     if (v.length < 6) {
-      $('cRes').textContent = 'No llegué a medir bien. Probá de nuevo tocando con cada clic.';
+      $('cRes').textContent = cal.fase === 'sonido' ? 'No llegué a medir bien. Probá de nuevo tocando con cada clic.'
+        : 'No llegué a medir bien. Probá de nuevo tocando cuando cada baldosa pisa la línea.';
       $('cAgain').hidden = false; return;
     }
-    const med = v[Math.floor(v.length / 2)], ms = Math.round(med * 1000);
-    rec.desfase = med; rec.calibrado = 1; saveRec();
-    $('cRes').textContent = Math.abs(ms) < 10 ? '¡Clavado! Tocás justo a tiempo.' : `Tocás ${Math.abs(ms)} ms ${ms > 0 ? 'tarde' : 'antes'}. Ya quedó corregido.`;
+    const med = v[Math.floor(v.length / 2)];
+    if (cal.fase === 'sonido') {
+      // el sonido ya queda guardado; la imagen se vuelve a medir contra este valor
+      rec.desfase = med; delete rec.desfaseVis; saveRec();
+      cal.ok = true;
+      $('cRes').textContent = `¡Bien! Con el sonido tocás ${msTxt(med)}. Falta la prueba con la imagen.`;
+      $('cAgain').hidden = false; $('cOk').hidden = false; $('cOk').textContent = 'Seguir';
+      setTimeout(() => $('cOk').focus({ preventScroll: true }), 50);
+      return;
+    }
+    rec.desfaseVis = med; rec.calibrado = 2; saveRec();
+    cal.ok = true;
+    const dif = Math.round(corrImagen() * 1000);
+    $('cRes').textContent = `Sonido: ${msTxt(desfase())} · imagen: ${msTxt(med)}. ` +
+      (Math.abs(dif) < 15 ? 'Ya quedó corregido.' : `Las notas se van a dibujar ${Math.abs(dif)} ms ${dif > 0 ? 'más tarde' : 'antes'} para que coincidan con la música.`);
     $('cSkip').hidden = true; $('cAgain').hidden = false; $('cOk').hidden = false;
     $('cOk').textContent = cal.antes ? '¡A jugar!' : 'Listo';
     setTimeout(() => $('cOk').focus({ preventScroll: true }), 50);
   }
   function cerrarCalib(saltear) {
-    if (saltear && !rec.calibrado) { rec.calSalteado = 1; saveRec(); }
+    if (saltear && rec.calibrado !== 2) { rec.calSalteado = 2; saveRec(); }
     const antes = cal && cal.antes;
     cal = null; $('calib').hidden = true;
     if (antes) start(); else showStart();
   }
   $('btnCalib').addEventListener('click', () => abrirCalib(false));
   $('cSkip').addEventListener('click', () => cerrarCalib(true));
-  $('cOk').addEventListener('click', () => cerrarCalib(false));
-  $('cAgain').addEventListener('click', () => abrirCalib(cal ? cal.antes : false));
+  // el botón principal va avanzando: Empezar → Seguir (después del sonido) → Listo
+  function avanzarCalib() {
+    if (!cal) return;
+    if (cal.fase === 'intro') faseCalib('sonido');
+    else if (cal.fase === 'sonido' && cal.ok) faseCalib('imagen');
+    else if (cal.ok) cerrarCalib(false);
+  }
+  $('cOk').addEventListener('click', avanzarCalib);
+  // Repetir: vuelve a hacer la prueba que se acaba de hacer; si ya salieron las dos, arranca de nuevo con el sonido
+  $('cAgain').addEventListener('click', () => { if (cal && !(cal.fase === 'imagen' && cal.ok)) faseCalib(cal.fase); else faseCalib('sonido'); });
   $('calib').addEventListener('pointerdown', e => { if (!e.target.closest('button')) { e.preventDefault(); tocarCalib(stamp(e)); } });
 
   // ---------- entrada ----------
@@ -1133,9 +1239,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // Enter/Espacio juegan y Esc vuelve a Juegos. En el menú ← → también arrancan (el conteo da tiempo).
     if (document.getElementById('cc-rank')) return; // el ranking abierto maneja sus teclas
     if (state === 'calib') {
-      if (L || R || k === ' ') { e.preventDefault(); if (!e.repeat) tocarCalib(stamp(e)); }
+      const enPausa = cal && cal.fin; // entre pruebas: Enter avanza y los botones andan con Enter y Espacio
+      if (enPausa && (k === 'Enter' || k === ' ')) { if (!isBtn(document.activeElement)) { e.preventDefault(); avanzarCalib(); } }
+      else if (L || R || k === ' ') { e.preventDefault(); if (!e.repeat) tocarCalib(stamp(e)); }
       else if (k === 'Escape') cerrarCalib(true);
-      else if (k === 'Enter' && cal && cal.fin && rec.calibrado) { e.preventDefault(); cerrarCalib(false); }
       return;
     }
     if ((k === 'r' || k === 'R') && state !== 'start') { if (!e.repeat) restart(); return; }
@@ -1246,12 +1353,16 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function frame(p) {
     const dt = Math.min(0.05, (p - lastP) / 1000); lastP = p;
     let now = p / 1000;
+    let juez = now;
     if (G && actx) {
-      if (state !== 'pause') G.vis = Math.max(G.vis, songAt(p));
-      now = G.vis;
+      // dos relojes: el del juicio (lo que oís, corrido por tu desfase) y el de la imagen (las notas pisan
+      // la línea cuando, mirándolas, tocarías a tiempo)
+      const s = songAt(p);
+      if (state !== 'pause') G.vis = Math.max(G.vis, s - corrImagen());
+      now = G.vis; juez = s - desfase();
     }
     if (state === 'play') {
-      schedule(); checkMisses(now); watchLevel(now);
+      schedule(); checkMisses(juez); watchLevel(now, juez);
       // la ayuda se va justo antes de que asomen las primeras notas
       if (!$('tip').hidden && G.bars.length && beatAt(now) > G.intro * 4 - G.D.ver - 0.5) hideTip();
     }
