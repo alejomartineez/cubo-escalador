@@ -122,8 +122,9 @@
     // Premios de cada juego: se ganan con el logro más difícil de ese juego.
     { id: 'turbo', nombre: 'Turbo', logro: 'escalador-10', cuerpo: '#2f86ff', extra: 'turbo' },
     { id: 'paraguas', nombre: 'Paraguas', logro: 'lluvia-4', cuerpo: '#8fd8ff', extra: 'paraguas' },
-    { id: 'caja', nombre: 'Cajita', logro: 'clasificador-4', cuerpo: '#dba268', extra: 'caja' },
-    { id: 'equilibrista', nombre: 'Equilibrista', logro: 'equilibrio-4', cuerpo: '#c7a6ff', extra: 'equilibrista' },
+    // `antes`: el logro que lo daba antes, de un juego que ya no está (quien lo ganó así lo sigue teniendo).
+    { id: 'caja', nombre: 'Cajita', logro: 'ritmo-4', antes: 'clasificador-4', cuerpo: '#dba268', extra: 'caja' },
+    { id: 'equilibrista', nombre: 'Equilibrista', logro: 'zigzag-4', antes: 'equilibrio-4', cuerpo: '#c7a6ff', extra: 'equilibrista' },
     { id: 'playero', nombre: 'Playero', logro: 'voley-4', cuerpo: '#f0ae7c', extra: 'playero' },
     { id: 'esquiador', nombre: 'Esquiador', logro: 'esqui-4', cuerpo: '#fdf4ee', extra: 'esquiador' },
     { id: 'luchador', nombre: 'Luchador', logro: 'pulseada-4', cuerpo: '#ffc79a', extra: 'luchador', sinCachetes: true },
@@ -142,7 +143,7 @@
       pista: 'Solo la tiene quien hizo el juego.' },
     { id: 'sonrisa', nombre: 'Sonrisa de metal', legendaria: true, exclusiva: true, codigo: true, cuerpo: '#3a3550', extra: 'sonrisa', glow: '#ffb070', sinBoca: true, sinCachetes: true,
       pista: 'Hecha a pedido para un solo jugador.' },
-    { id: 'benja', nombre: 'Benja', legendaria: true, exclusiva: true, codigo: true, cuerpo: '#f4c9a1', extra: 'benja', glow: '#6f8fe8', sinBoca: true,
+    { id: 'benja', nombre: 'McLovin', legendaria: true, exclusiva: true, codigo: true, cuerpo: '#f4c9a1', extra: 'benja', glow: '#6f8fe8', sinBoca: true,
       pista: 'Hecha a pedido para un solo jugador.' },
     { id: 'fabri', nombre: 'Piloto', legendaria: true, exclusiva: true, codigo: true, cuerpo: '#e8202a', ojo: '#ffffff', extra: 'piloto', glow: '#ff3b3b',
       sinBoca: true, sinCachetes: true, pista: 'Hecha a pedido para un solo jugador.' },
@@ -181,8 +182,8 @@
     { id: 'halo', nombre: 'Halo', logro: 'maestro3' },
     // Premios de juegos
     { id: 'notas', nombre: 'Notas musicales', logro: 'ritmo-4' },
-    { id: 'huellitas', nombre: 'Huellitas', logro: 'paseo-4' },
-    { id: 'estela', nombre: 'Estela espacial', logro: 'cohete-4' },
+    { id: 'huellitas', nombre: 'Huellitas', logro: 'voley-4', antes: 'paseo-4' },
+    { id: 'estela', nombre: 'Estela espacial', logro: 'zigzag-4', antes: 'cohete-4' },
     // Premios grandes del camino de nivel
     { id: 'nieve', nombre: 'Nieve', pase: true, nivel: 31 },
     { id: 'ki', nombre: 'Aura de ki', pase: true, nivel: 38 },
@@ -256,12 +257,9 @@
       { id: 'lava-m', nombre: 'Lava Maestro', orden: 'mayor', formato: 'num', unidad: 'esc.', dif: 'maestro' },
     ] },
     { id: 'lluvia', nombre: 'Lluvia', archivo: 'lluvia.html', color: '#3fc1c9', tablas: tablasDif('mayor', 'num', 'pts') },
-    { id: 'clasificador', nombre: 'Clasificador', archivo: 'clasificador.html', color: '#ffad4d', tablas: tablasDif('mayor', 'num', 'cubos') },
-    { id: 'equilibrio', nombre: 'Equilibrio', archivo: 'equilibrio.html', color: '#6be0b5', tablas: tablasDif('mayor', 'num', 'm') },
     { id: 'ritmo', nombre: 'Ritmo', archivo: 'ritmo.html', color: '#8f6bff', tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'voley', nombre: 'Vóley', archivo: 'voley.html', color: '#ff7a59', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
-    { id: 'paseo', nombre: 'Paseo', archivo: 'paseo.html', color: '#e98fd0', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
-    { id: 'cohete', nombre: 'Cohete', archivo: 'cohete.html', color: '#ff5d7d', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
+    { id: 'zigzag', nombre: 'Zigzag', archivo: 'zigzag.html', color: '#ff6fae', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
     { id: 'esqui', nombre: 'Esquí', archivo: 'esqui.html', color: '#5b8cff', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
     { id: 'pulseada', nombre: 'Pulseada', archivo: 'pulseada.html', color: '#f5b84a', nuevo: true, tablas: tablasDif('mayor', 'num', 'rivales') },
   ];
@@ -286,12 +284,9 @@
   // Cuentan las partidas en Normal o más difícil.
   const UMBRALES = {
     lluvia: [100, 300, 700, 1500],
-    clasificador: [15, 35, 65, 100],
-    equilibrio: [40, 100, 200, 350],
     ritmo: [5000, 25000, 70000, 160000],
     voley: [5, 12, 20, 32],
-    paseo: [100, 250, 500, 1000],
-    cohete: [200, 800, 2000, 4500],
+    zigzag: [100, 300, 650, 1200],
     esqui: [250, 1000, 2500, 5000],
     pulseada: [2, 5, 9, 14],
   };
@@ -442,7 +437,7 @@
   // Un código guarda el id de la skin, o 'fx:<id>' si es un efecto (algunos ids se repiten entre skins y efectos).
   const claveCodigo = item => (item.codigo === true ? item.id : item.codigo);
   const libre = (item, p = datos) => (item.codigo ? p.codigos.includes(claveCodigo(item))
-    : item.logro ? !!p.logros[item.logro] : nivelDe(p.xp).nivel >= (item.nivel || 1));
+    : item.logro ? !!(p.logros[item.logro] || (item.antes && p.logros[item.antes])) : nivelDe(p.xp).nivel >= (item.nivel || 1));
   // Lo desbloqueado que todavía no se vio en la pantalla de personajes, para marcarlo como nuevo.
   function nuevos() {
     datos = leer();
@@ -1027,6 +1022,12 @@
 #cc-rank form button:disabled,#cc-rank input:disabled{opacity:.6}
 #cc-rank form button:disabled{cursor:not-allowed;box-shadow:none;transform:none}
 #cc-rank .pie .otro{display:block;margin:10px 0 0;font-size:12px}
+#cc-rank .cc-ap .pie{border-top:0;padding-top:2px}
+#cc-rank .cc-ap canvas{display:block;width:66px;height:60px;margin:0 auto 4px}
+#cc-rank .cc-ap .intro{margin:0 2px 12px;font-size:14px;font-weight:600;line-height:1.4;text-align:center}
+#cc-rank .cc-ap .botones{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+#cc-rank .cc-ap .botones .link{margin:0;font-size:12px}
+#cc-rank .cc-ap .botones .no{margin-left:auto}
 #cc-rank button:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
 /* nombres de quien usa una legendaria: con el color de su personaje */
 .cc-leg{font-weight:800}
@@ -1341,6 +1342,80 @@
     cargar();
     $('.x').focus();
     return cerrar;
+  }
+
+  // ---------- apodo la primera vez ----------
+  // La primera vez que alguien entra a jugar sin apodo, se le pregunta cómo se llama: así sale en el ranking sin tener
+  // que encontrar el botón adentro del ranking. Se pregunta una sola vez por dispositivo (aunque toque «Ahora no»);
+  // después se puede poner o cambiar en cualquier ranking. Los juegos lo muestran solos al cargar (ver abajo); el hub, al tocar Jugar.
+  const PEDIDO_KEY = 'cubo-apodo-pedido';
+  function pedirApodo() {
+    if (leer().apodo || !rankingActivo() || navigator.onLine === false || document.getElementById('cc-rank')) return false;
+    try { if (localStorage.getItem(PEDIDO_KEY)) return false; localStorage.setItem(PEDIDO_KEY, '1'); } catch (e) { return false; }
+    estilos();
+    const previo = document.activeElement;
+    const box = document.createElement('div');
+    box.id = 'cc-rank';   // el mismo id que el ranking: los juegos ya ignoran sus teclas mientras está abierto
+    box.innerHTML = `<div class="cc-rk cc-ap" role="dialog" aria-modal="true" aria-labelledby="cc-ap-t">
+      <header><div><h2 id="cc-ap-t">¿Cómo te llamás?</h2><small>Tu nombre en el ranking</small></div><button class="x" type="button" aria-label="Cerrar">✕</button></header>
+      <div class="pie"><canvas width="132" height="120" aria-hidden="true"></canvas>
+        <p class="intro">Elegí un apodo y tus récords se suben solos al ranking de cada juego. Es solo tuyo: nadie más lo puede usar.</p>
+        <form class="f-apodo"><input name="a" maxlength="14" autocomplete="nickname" placeholder="Tu apodo (3 a 14 letras)" aria-label="Tu apodo"><button type="submit">Listo</button></form>
+        <form class="f-clave" hidden><input name="a" maxlength="14" autocomplete="nickname" placeholder="Tu apodo" aria-label="Tu apodo">
+          <input name="c" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Clave" aria-label="Tu clave"><button type="submit">Entrar</button></form>
+        <p class="ayuda" aria-live="polite"></p>
+        <div class="botones"><button class="link otro" type="button">Ya tengo apodo en otro dispositivo</button><button class="link no" type="button">Ahora no</button></div></div></div>`;
+    document.body.appendChild(box);
+    const $ = q => box.querySelector(q);
+    const form = $('.f-apodo'), input = form.querySelector('input'), formClave = $('.f-clave'), ayuda = $('.ayuda'), otro = $('.otro');
+    const cv = $('canvas').getContext('2d'); cv.scale(2, 2);
+    dibujarCubo(cv, 33, 54, 38, { mirar: 0, t: 0, efecto: false });
+    const ayudaBase = 'Después lo podés cambiar desde cualquier ranking.';
+    ayuda.textContent = ayudaBase;
+    let conClave = false;
+    otro.addEventListener('click', () => {
+      conClave = !conClave;
+      form.hidden = conClave; formClave.hidden = !conClave;
+      otro.textContent = conClave ? 'Elegir un apodo nuevo' : 'Ya tengo apodo en otro dispositivo';
+      ayuda.textContent = conClave ? 'La clave está en el ranking del dispositivo donde ya tenés tu apodo («Jugar en otro dispositivo»).' : ayudaBase;
+      setTimeout(() => (conClave ? formClave : form).querySelector('input').focus());
+    });
+    function cerrar() { box.remove(); removeEventListener('keydown', tecla, true); if (previo && previo.focus) previo.focus(); }
+    function tecla(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); } else if (e.target.tagName !== 'INPUT') e.stopPropagation(); }
+    addEventListener('keydown', tecla, true);
+    $('.x').addEventListener('click', cerrar);
+    $('.no').addEventListener('click', cerrar);
+    const esperando = (f, si) => { for (const el of f.elements) el.disabled = si; };
+    const listo = a => {
+      box.querySelector('.cc-ap').innerHTML = `<header><div><h2>¡Hola, <span></span>!</h2><small>Ya estás en el ranking</small></div></header>`;
+      box.querySelector('h2 span').textContent = a;
+      setTimeout(cerrar, 1300);
+    };
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const r = ponerApodo(input.value);
+      if (!r) { ayuda.textContent = 'El apodo tiene que tener entre 3 y 14 letras o números.'; input.focus(); return; }
+      esperando(form, true); ayuda.textContent = 'Guardando…';
+      const res = await r;
+      esperando(form, false);
+      if (!res.ok) { ayuda.textContent = res.msg; input.focus(); return; }
+      listo(leer().apodo);
+    });
+    formClave.addEventListener('submit', async e => {
+      e.preventDefault();
+      esperando(formClave, true); ayuda.textContent = 'Revisando…';
+      const res = await vincular(formClave.elements.a.value, formClave.elements.c.value);
+      esperando(formClave, false);
+      if (!res.ok) { ayuda.textContent = res.msg; formClave.elements.c.focus(); return; }
+      listo(res.apodo);
+    });
+    setTimeout(() => input.focus({ preventScroll: true }), 50);
+    return true;
+  }
+  // En los juegos se pregunta solo, cuando terminan de cargar. El hub (que tiene portada) lo llama al tocar Jugar.
+  // Solo en las páginas del sitio (las que tienen pantalla de carga): no en la plantilla de imágenes para compartir.
+  if (document.getElementById('cargando')) {
+    addEventListener('load', () => setTimeout(() => { if (!document.getElementById('portada')) pedirApodo(); }, 700));
   }
 
   // ---------- dibujo ----------
@@ -4289,7 +4364,7 @@
     xpPara, nivelDe, perfil, skin, efecto, elegirSkin, elegirEfecto, libre, nuevos, marcarVistos,
     sumarXP, xpEscala, partida, importarRecord, anotarRecord, revisarLogros, tieneLogro,
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
-    avisar, vibrar, volver, dibujarCubo, morir, sombra,
+    avisar, vibrar, volver, dibujarCubo, morir, sombra, pedirApodo,
   };
   // Duelos 1v1 (cubo-duelo.js): usa la misma conexión a Supabase y escucha las invitaciones en todas las páginas.
   window.CuboComun.RANKING = RANKING;

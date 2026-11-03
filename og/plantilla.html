@@ -14,8 +14,7 @@
   const CC = window.CuboComun, INK = '#1d2340', CREMA = '#fffaf0';
   const q = new URLSearchParams(location.search), id = q.get('id') || 'hub';
   const hub = id === 'hub', juego = CC.JUEGOS.find(j => j.id === id);
-  const SKIN_DE = { escalador: 'clasico', lluvia: 'abeja', clasificador: 'robot', equilibrio: 'ninja', ritmo: 'dj', voley: 'gorra',
-    paseo: 'gato', cohete: 'astronauta', esqui: 'pinguino', pulseada: 'vaquero' };
+  const SKIN_DE = { escalador: 'clasico', lluvia: 'abeja', ritmo: 'dj', voley: 'gorra', zigzag: 'ninja', esqui: 'pinguino', pulseada: 'vaquero' };
   const sk = n => CC.SKINS.find(s => s.id === n);
   const color = hub ? '#62c6ff' : juego.color;
   await document.fonts.load('80px "Lilita One"'); await document.fonts.load('800 30px Rubik'); await document.fonts.load('600 30px Rubik');
@@ -53,7 +52,7 @@
     if (l) lineas.push(l); return lineas;
   };
   const titulo = hub ? 'TwoFingers' : juego.nombre;
-  const desc = hub ? '10 juegos que se juegan con dos flechas. Subí de nivel, desbloqueá personajes y competí en el ranking.' : (q.get('d') || '');
+  const desc = hub ? `${CC.JUEGOS.length} juegos que se juegan con dos flechas. Subí de nivel, desbloqueá personajes y competí en el ranking.` : (q.get('d') || '');
   x.textBaseline = 'alphabetic'; x.fillStyle = INK;
   if (!hub) marca(64, 58);
   let tam = hub ? 92 : 120;

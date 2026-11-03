@@ -649,3 +649,10 @@ begin
 end $$;
 revoke all on function public.sombra_de_amigo(uuid, text, text, text) from public;
 grant execute on function public.sombra_de_amigo(uuid, text, text, text) to anon, authenticated;
+
+-- ---------- Zigzag ----------
+-- Topes del juego nuevo (metros). Clasificador, Equilibrio, Paseo y Cohete ya no están: sus filas quedan pero nadie sube más.
+insert into public.limites (tabla, minimo, maximo, orden) values
+  ('zigzag:facil', null, 20000, 'mayor'), ('zigzag:normal', null, 20000, 'mayor'), ('zigzag:dificil', null, 20000, 'mayor'),
+  ('zigzag:extremo', null, 20000, 'mayor'), ('zigzag:maestro', null, 20000, 'mayor')
+on conflict (tabla) do update set minimo = excluded.minimo, maximo = excluded.maximo, orden = excluded.orden;
