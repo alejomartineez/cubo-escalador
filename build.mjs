@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import { deflateSync } from 'node:zlib';
 
 import { PAGES, idDe } from './paginas.mjs';
-const ASSETS = ['cubo-comun.js'];
+const ASSETS = ['cubo-comun.js', 'cubo-duelo.js'];
 const NOMBRE = 'Cubo Escalador';
 const SITIO = 'https://alejomartineez.github.io/cubo-escalador/';   // los links para compartir tienen que ser completos
 

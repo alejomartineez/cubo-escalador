@@ -2908,4 +2908,11 @@
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
     avisar, vibrar, volver, dibujarCubo,
   };
+  // Duelos 1v1 (cubo-duelo.js): usa la misma conexión a Supabase y escucha las invitaciones en todas las páginas.
+  window.CuboComun.RANKING = RANKING;
+  const cargarDuelo = () => {
+    if (!rankingActivo() || window.CuboDuelo || document.querySelector('script[src$="cubo-duelo.js"]')) return;
+    const s = document.createElement('script'); s.src = 'cubo-duelo.js'; s.async = true; document.head.appendChild(s);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cargarDuelo); else cargarDuelo();
 })();
