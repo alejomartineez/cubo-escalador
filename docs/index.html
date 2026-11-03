@@ -324,7 +324,8 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
 .formas-box::before { content: "Formas"; position: absolute; top: -10px; left: 14px; padding: 0 8px; background: #fff6ea; font-size: 11px; font-weight: 800; color: #c25a00; text-transform: uppercase; letter-spacing: .08em; }
 .item.titulo { min-height: 64px; justify-content: center; padding: 10px 6px; }
 .item.titulo span { font-family: var(--display); font-weight: 400; font-size: 15px; line-height: 1.1; text-align: center; }
-.seg.tres { grid-template-columns: repeat(3, 1fr); }
+.seg.tres { grid-template-columns: repeat(4, auto); }
+.seg.tres button { font-size: 13px; padding: 0 2px; }
 
 /* pase de batalla */
 .pase-b { gap: 12px; }
@@ -507,6 +508,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
         <button type="button" data-seg="skins" aria-pressed="true">Personajes</button>
         <button type="button" data-seg="efectos" aria-pressed="false">Efectos</button>
         <button type="button" data-seg="titulos" aria-pressed="false">Títulos</button>
+        <button type="button" data-seg="brillos" aria-pressed="false">Brillos</button>
       </div>
       <div class="grid" id="items"></div>
       <form class="codigo" id="codigoForm" autocomplete="off">
@@ -1007,6 +1009,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
     box.innerHTML = '';
     for (const b of document.querySelectorAll('[data-seg]')) b.setAttribute('aria-pressed', String(b.dataset.seg === seg));
     if (seg === 'titulos') { pintarTitulos(p, box); return; }
+    if (seg === 'brillos') { pintarMarcos(p, box); return; }
     const lista = seg === 'skins' ? CC.SKINS : CC.EFECTOS;
     let conTitulo = false, conPase = false;
     const formasDe = it => (it.formas || []).map(id => lista.find(x => x.id === id)).filter(Boolean);
@@ -1063,6 +1066,25 @@ ol.pase li.lock .pr.pase::after { animation: none; }
         }
         box.appendChild(fb);
       }
+    }
+  }
+  // brillos de nivel: se suman a cualquier personaje
+  function pintarMarcos(p, box) {
+    const h = document.createElement('p'); h.className = 'tip'; h.style.gridColumn = '1 / -1';
+    h.textContent = 'Un brillo alrededor de tu personaje, sea cual sea. Sube de rango con tu nivel: bronce, plata, oro, platino, diamante y cósmico.';
+    box.appendChild(h);
+    for (const it of CC.MARCOS) {
+      const libre = CC.libre(it), b = document.createElement('button');
+      b.type = 'button'; b.className = 'item' + (libre ? '' : ' lock') + (it.pase ? ' pase' : '');
+      b.setAttribute('aria-pressed', String(p.marco && p.marco.id === it.id));
+      b.innerHTML = `<canvas width="120" height="128"></canvas><span></span>${libre ? '' : `<small>Pase · nivel ${it.nivel}</small>`}`;
+      b.querySelector('span').textContent = it.nombre;
+      it._cv = b.querySelector('canvas');
+      b.addEventListener('click', () => {
+        if (!libre) { CC.avisar(`<div><b>Brillo ${it.nombre}</b><span>Se gana en el nivel ${it.nivel} del pase.</span></div>`, 2600); return; }
+        if (CC.elegirMarco(it.id)) { CC.vibrar(10); pintarPersonaje(); }
+      });
+      box.appendChild(b);
     }
   }
   function pintarTitulos(p, box) {
@@ -1129,7 +1151,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
     const k = w / 48;
     if (x.tipo === 'skin') CC.dibujarCubo(c, w / 2, h - 7 * k, 24 * k, { skin: x.it, t, efecto: false });
     else if (x.tipo === 'marco') CC.dibujarCubo(c, w / 2, h - 8 * k, 24 * k, { t, efecto: 'ninguno', marco: x.it.id });
-    else CC.dibujarCubo(c, w / 2, h - 9 * k, 20 * k, { t, efecto: x.it.id });
+    else CC.dibujarCubo(c, w / 2, h - 9 * k, 20 * k, { t, efecto: x.it.id, marco: false });
   };
   const elegido = (p, x) => x.tipo === 'skin' ? p.skin.id === x.it.id : x.tipo === 'efecto' ? p.efecto.id === x.it.id
     : x.tipo === 'marco' ? p.marco && p.marco.id === x.it.id : p.titulo.id === x.it.id;
@@ -1407,11 +1429,12 @@ ol.pase li.lock .pr.pase::after { animation: none; }
         const c = $('big').getContext('2d'); c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, 112, 120);
         const risa = now - cosquilla < 300 ? Math.sin((now - cosquilla) / 300 * Math.PI) * 10 : 0;
         CC.dibujarCubo(c, 56 + (risa ? Math.sin(now / 25) * 2 : 0), 104 - bob(now) * (reduceMotion ? 0 : 8) - risa, 52, { t: now, mirar: Math.sin(now / 900) });
-        for (const it of (seg === 'skins' ? CC.SKINS : seg === 'efectos' ? CC.EFECTOS : [])) {
+        for (const it of (seg === 'skins' ? CC.SKINS : seg === 'efectos' ? CC.EFECTOS : seg === 'brillos' ? CC.MARCOS : [])) {
           if (!it._cv) continue;
           const k = it._cv.getContext('2d'); k.setTransform(2, 0, 0, 2, 0, 0); k.clearRect(0, 0, 60, 64);
           if (seg === 'skins') CC.dibujarCubo(k, 30, 58, 30, { skin: it, t: reduceMotion ? 0 : now, efecto: false, brillo: CC.libre(it) });
-          else CC.dibujarCubo(k, 30, 56, 26, { t: reduceMotion ? 900 : now, efecto: it.id });
+          else if (seg === 'brillos') CC.dibujarCubo(k, 30, 58, 30, { t: reduceMotion ? 900 : now, efecto: 'ninguno', marco: it.id });
+          else CC.dibujarCubo(k, 30, 56, 26, { t: reduceMotion ? 900 : now, efecto: it.id, marco: false });
         }
       }
     }

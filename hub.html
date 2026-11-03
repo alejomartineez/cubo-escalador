@@ -279,7 +279,7 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
 .formas-box::before { content: "Formas"; position: absolute; top: -10px; left: 14px; padding: 0 8px; background: #fff6ea; font-size: 11px; font-weight: 800; color: #c25a00; text-transform: uppercase; letter-spacing: .08em; }
 .item.titulo { min-height: 64px; justify-content: center; padding: 10px 6px; }
 .item.titulo span { font-family: var(--display); font-weight: 400; font-size: 15px; line-height: 1.1; text-align: center; }
-.seg.tres { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.seg.tres { grid-template-columns: repeat(4, auto); }
 .seg.tres button { font-size: 13px; padding: 0 2px; }
 
 /* pase de batalla */
@@ -1106,7 +1106,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
     const k = w / 48;
     if (x.tipo === 'skin') CC.dibujarCubo(c, w / 2, h - 7 * k, 24 * k, { skin: x.it, t, efecto: false });
     else if (x.tipo === 'marco') CC.dibujarCubo(c, w / 2, h - 8 * k, 24 * k, { t, efecto: 'ninguno', marco: x.it.id });
-    else CC.dibujarCubo(c, w / 2, h - 9 * k, 20 * k, { t, efecto: x.it.id });
+    else CC.dibujarCubo(c, w / 2, h - 9 * k, 20 * k, { t, efecto: x.it.id, marco: false });
   };
   const elegido = (p, x) => x.tipo === 'skin' ? p.skin.id === x.it.id : x.tipo === 'efecto' ? p.efecto.id === x.it.id
     : x.tipo === 'marco' ? p.marco && p.marco.id === x.it.id : p.titulo.id === x.it.id;
@@ -1389,7 +1389,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
           const k = it._cv.getContext('2d'); k.setTransform(2, 0, 0, 2, 0, 0); k.clearRect(0, 0, 60, 64);
           if (seg === 'skins') CC.dibujarCubo(k, 30, 58, 30, { skin: it, t: reduceMotion ? 0 : now, efecto: false, brillo: CC.libre(it) });
           else if (seg === 'brillos') CC.dibujarCubo(k, 30, 58, 30, { t: reduceMotion ? 900 : now, efecto: 'ninguno', marco: it.id });
-          else CC.dibujarCubo(k, 30, 56, 26, { t: reduceMotion ? 900 : now, efecto: it.id });
+          else CC.dibujarCubo(k, 30, 56, 26, { t: reduceMotion ? 900 : now, efecto: it.id, marco: false });
         }
       }
     }

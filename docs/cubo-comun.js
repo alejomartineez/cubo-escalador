@@ -110,6 +110,15 @@
     { id: 'guerrero-carmesi', nombre: 'Bestia carmesí', pase: true, nivel: 42, de: 'guerrero', cuerpo: '#c8233a', extra: 'guerreroCarmesi' },
     { id: 'guerrero-celeste', nombre: 'Celeste divino', pase: true, nivel: 46, de: 'guerrero', cuerpo: '#9fd8ff', extra: 'guerreroCeleste' },
     { id: 'guerrero-plateado', nombre: 'Instinto plateado', pase: true, nivel: 49, de: 'guerrero', cuerpo: '#e6ebf5', extra: 'guerreroPlateado', glow: '#d9e6ff' },
+    // Pase 51-100: exclusivas del pase. Brillan las de nivel 74 en adelante.
+    { id: 'astronomo', nombre: 'Astrónomo', pase: true, nivel: 55, cuerpo: '#26336e', ojo: CREMA, extra: 'astronomo' },
+    { id: 'pulpo', nombre: 'Pulpo', pase: true, nivel: 62, cuerpo: '#d66fd0', extra: 'pulpo' },
+    { id: 'samurai', nombre: 'Samurái', pase: true, nivel: 68, cuerpo: '#f6cfa4', extra: 'samurai', sinCachetes: true },
+    { id: 'robotx', nombre: 'Mecha', pase: true, nivel: 74, cuerpo: '#eef1f6', extra: 'mecha', glow: '#ffb24d', sinOjos: true, sinBoca: true, sinCachetes: true },
+    { id: 'cosmico', nombre: 'Cósmico', pase: true, nivel: 80, cuerpo: '#170e3a', ojo: CREMA, extra: 'cosmico', glow: '#9f7bff' },
+    { id: 'dragonrey', nombre: 'Dragón real', pase: true, nivel: 86, cuerpo: '#f6c232', extra: 'dragonRey', glow: '#ffcf4d' },
+    { id: 'fenixazul', nombre: 'Fénix de hielo', pase: true, nivel: 92, cuerpo: '#8fd8ff', ojo: '#123a66', extra: 'fenixAzul', glow: '#7fe3ff', sinBoca: true },
+    { id: 'leyenda', nombre: 'Leyenda', pase: true, nivel: 100, cuerpo: '#fff3fb', extra: 'leyenda', glow: '#ffffff' },
     // Premios de cada juego: se ganan con el logro más difícil de ese juego.
     { id: 'turbo', nombre: 'Turbo', logro: 'escalador-10', cuerpo: '#2f86ff', extra: 'turbo' },
     { id: 'paraguas', nombre: 'Paraguas', logro: 'lluvia-4', cuerpo: '#8fd8ff', extra: 'paraguas' },
@@ -169,6 +178,14 @@
     { id: 'nieve', nombre: 'Nieve', pase: true, nivel: 31 },
     { id: 'ki', nombre: 'Aura de ki', pase: true, nivel: 38 },
     { id: 'fuegos', nombre: 'Fuegos artificiales', pase: true, nivel: 45 },
+    { id: 'hojas', nombre: 'Hojas al viento', pase: true, nivel: 52 },
+    { id: 'burbujasx', nombre: 'Burbujas de jabón', pase: true, nivel: 58 },
+    { id: 'relampago', nombre: 'Electricidad', pase: true, nivel: 64 },
+    { id: 'petalos', nombre: 'Pétalos', pase: true, nivel: 70 },
+    { id: 'galaxiafx', nombre: 'Espiral galáctica', pase: true, nivel: 77 },
+    { id: 'pixeles', nombre: 'Pixeles', pase: true, nivel: 83 },
+    { id: 'corona', nombre: 'Corona de luz', pase: true, nivel: 89 },
+    { id: 'supernova', nombre: 'Supernova', pase: true, nivel: 96 },
     // Legendarios
     { id: 'aurora', nombre: 'Aurora', legendaria: true, codigo: 'fx:aurora',
       pista: 'Se consigue con un código.' },
@@ -1434,6 +1451,442 @@
     ctx.restore();
   }
 
+  // ---------- pase 51-100: ayudas de dibujo ----------
+  // Número pseudoazar estable entre 0 y 1 (mismo a y b → mismo resultado).
+  const ruido = (a, b) => { const r = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return r - Math.floor(r); };
+  // ¿Ese punto taparía la cara? (para mandar atrás las partículas que pasarían por adelante de la cara)
+  const tapaCara = (x, y, s) => Math.abs(x) < s * 0.52 && y > -s * 1.02 && y < -s * 0.15;
+  // Punto a una fracción u (0..1, da la vuelta) del contorno de un rectángulo redondeado, en sentido horario.
+  function puntoRR(u, x, y, w, h, r) {
+    const lw = w - 2 * r, lh = h - 2 * r, arco = Math.PI * r / 2;
+    let d = (((u % 1) + 1) % 1) * (2 * lw + 2 * lh + 4 * arco);
+    const tramos = [
+      [lw, k => [x + r + k, y]],
+      [arco, k => { const a = -Math.PI / 2 + k / r; return [x + w - r + Math.cos(a) * r, y + r + Math.sin(a) * r]; }],
+      [lh, k => [x + w, y + r + k]],
+      [arco, k => { const a = k / r; return [x + w - r + Math.cos(a) * r, y + h - r + Math.sin(a) * r]; }],
+      [lw, k => [x + w - r - k, y + h]],
+      [arco, k => { const a = Math.PI / 2 + k / r; return [x + r + Math.cos(a) * r, y + h - r + Math.sin(a) * r]; }],
+      [lh, k => [x, y + h - r - k]],
+      [arco, k => { const a = Math.PI + k / r; return [x + r + Math.cos(a) * r, y + r + Math.sin(a) * r]; }],
+    ];
+    for (const [L, f] of tramos) { if (d <= L) return f(d); d -= L; }
+    return [x + r, y];
+  }
+  // Gradiente transparente con una franja de luz en p (0..1 a lo largo de x0,y0 → x1,y1). Fuera de 0..1 no se ve.
+  function franjaDeLuz(ctx, x0, y0, x1, y1, p, ancho, rgb, alfa) {
+    const g = ctx.createLinearGradient(x0, y0, x1, y1), a = q => alfa * Math.max(0, 1 - Math.abs(q - p) / ancho);
+    for (const q of [0, p - ancho, p, p + ancho, 1].filter(q => q >= 0 && q <= 1).sort((m, n) => m - n)) g.addColorStop(q, `rgba(${rgb},${a(q)})`);
+    return g;
+  }
+
+  // Pulpo: tentáculo que se afina y se enrula, con ventosas del lado de adentro de la curva.
+  // (x0, y0) = base, a0 = hacia dónde sale, curl = cuánto se enrula (el signo dice para qué lado), onda = meneo.
+  function tentaculo(ctx, x0, y0, a0, largo, ancho, curl, onda, color) {
+    const N = 16, ejes = [];
+    let x = x0, y = y0;
+    for (let i = 0; i <= N; i++) {
+      const u = i / N, a = a0 + curl * u * u + onda * Math.sin(u * Math.PI), w = ancho * (1 - u * 0.8) / 2;
+      ejes.push([x, y, -Math.sin(a), Math.cos(a), w]);
+      x += Math.cos(a) * largo / N; y += Math.sin(a) * largo / N;
+    }
+    ctx.fillStyle = color; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.2, ancho * 0.26);
+    ctx.beginPath();
+    ejes.forEach(([px, py, nx, ny, w], i) => (i ? ctx.lineTo(px - nx * w, py - ny * w) : ctx.moveTo(px - nx * w, py - ny * w)));
+    for (let i = N; i >= 0; i--) { const [px, py, nx, ny, w] = ejes[i]; ctx.lineTo(px + nx * w, py + ny * w); }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    const lado = Math.sign(curl) || 1;
+    ctx.fillStyle = '#ffd9f2'; ctx.strokeStyle = 'rgba(29,35,64,.45)'; ctx.lineWidth = Math.max(0.6, ancho * 0.06);
+    for (const i of [3, 6, 9, 12]) {
+      const [px, py, nx, ny, w] = ejes[i];
+      ctx.beginPath(); ctx.arc(px + nx * w * 0.42 * lado, py + ny * w * 0.42 * lado, w * 0.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+  }
+
+  // Cósmico: un lucero que da vueltas alrededor del cubo con su colita. capa 0 = mitad de atrás, 1 = la de adelante.
+  function orbitaCosmica(ctx, s, t, capa) {
+    const pos = a => [Math.cos(a) * s * 0.8, -s * 0.44 + Math.sin(a) * s * 0.28 - Math.cos(a) * s * 0.1];
+    ctx.strokeStyle = 'rgba(190,160,255,.55)'; ctx.lineWidth = Math.max(1, s * 0.022); ctx.setLineDash([s * 0.05, s * 0.07]);
+    ctx.beginPath();
+    for (let i = 0; i <= 24; i++) { const [x, y] = pos((capa ? 0 : Math.PI) + i / 24 * Math.PI); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.stroke(); ctx.setLineDash([]);
+    const a = t / 1100;
+    for (let k = 6; k >= 0; k--) {
+      const b = a - k * 0.12;
+      if ((Math.sin(b) > 0) !== (capa === 1)) continue;
+      const [x, y] = pos(b);
+      ctx.globalAlpha = k ? 0.6 * (1 - k / 7) : 1; ctx.fillStyle = k ? '#c9a8ff' : '#fff2a8';
+      ctx.beginPath(); ctx.arc(x, y, s * (k ? 0.06 * (1 - k / 9) : 0.085), 0, Math.PI * 2);
+      if (k) { ctx.fill(); continue; }
+      ctx.save(); ctx.shadowColor = '#ffe27a'; ctx.shadowBlur = s * 0.3; ctx.fill(); ctx.restore();
+      ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1, s * 0.028); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Hojas al viento: cruzan de izquierda a derecha dando vueltas. capa 0 = detrás, 1 = adelante (solo por los costados).
+  function hojasAlViento(ctx, s, t, capa) {
+    if (capa === 0) {
+      // rachitas de viento
+      ctx.strokeStyle = 'rgba(90,150,120,.4)'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.lineCap = 'round';
+      for (let k = 0; k < 2; k++) {
+        const f = fase(t, 1900, k * 0.5), x = (f * 3 - 1.5) * s, y = -s * (0.5 + k * 0.7);
+        ctx.globalAlpha = Math.sin(f * Math.PI);
+        ctx.beginPath(); ctx.moveTo(x - s * 0.55, y); ctx.bezierCurveTo(x - s * 0.25, y - s * 0.1, x - s * 0.05, y + s * 0.08, x + s * 0.2, y - s * 0.02);
+        ctx.quadraticCurveTo(x + s * 0.34, y - s * 0.1, x + s * 0.26, y - s * 0.16); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+    const cols = ['#5cbf4a', '#ffb02e', '#ff7a3d', '#e0503a', '#9ccf3a', '#ffcf3a', '#ff8a3d', '#4fae5a'];
+    for (let k = 0; k < 8; k++) {
+      const f = fase(t, 2400 + (k * 373) % 900, k * 0.37);
+      const x = (f * 2.9 - 1.45) * s, y = -s * (0.25 + ((k * 0.53) % 1) * 1.3) + Math.sin(f * 7 + k) * s * 0.14;
+      if ((k % 2 === 1 && !tapaCara(x, y, s)) !== (capa === 1)) continue;
+      ctx.globalAlpha = Math.min(1, f * 6, (1 - f) * 6);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(f * 9 + k); ctx.scale(1, 0.35 + 0.65 * Math.abs(Math.cos(t / 260 + k)));
+      const r = s * 0.18;
+      ctx.fillStyle = cols[k]; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1, s * 0.03);
+      ctx.beginPath(); ctx.moveTo(-r, 0); ctx.quadraticCurveTo(0, -r * 0.75, r, 0); ctx.quadraticCurveTo(0, r * 0.75, -r, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(29,35,64,.45)'; ctx.lineWidth = Math.max(0.7, s * 0.015);
+      ctx.beginPath(); ctx.moveTo(-r * 1.25, 0); ctx.lineTo(r * 0.7, 0); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Burbujas de jabón tornasoladas que flotan por los costados y revientan arriba.
+  function burbujasDeJabon(ctx, s, t, capa) {
+    for (let k = 0; k < 6; k++) {
+      const per = 3600 + (k * 410) % 900, f = fase(t, per, k / 6), side = k % 2 ? 1 : -1;
+      const x = side * s * (0.62 + 0.28 * ((k * 0.37) % 1)) + Math.sin(t / 600 + k) * s * 0.08;
+      const y = -s * (0.05 + f * 1.85), r = s * (0.13 + 0.07 * ((k * 0.61) % 1));
+      if ((!tapaCara(x, y, s)) !== (capa === 1)) continue;
+      if (f > 0.9) {
+        // ¡plop! gotitas que salen
+        const u = (f - 0.9) / 0.1;
+        ctx.globalAlpha = 1 - u; ctx.strokeStyle = 'rgba(120,200,255,.9)'; ctx.lineWidth = Math.max(1, s * 0.025);
+        for (let i = 0; i < 6; i++) {
+          const a = i * Math.PI / 3 + k;
+          ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * r * (0.6 + u), y + Math.sin(a) * r * (0.6 + u)); ctx.lineTo(x + Math.cos(a) * r * (0.9 + u * 1.2), y + Math.sin(a) * r * (0.9 + u * 1.2)); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        continue;
+      }
+      const wob = Math.sin(t / 180 + k * 2) * 0.05;
+      ctx.save(); ctx.translate(x, y); ctx.scale(1 + wob, 1 - wob);
+      ctx.globalAlpha = Math.min(1, f * 8);
+      const g = ctx.createRadialGradient(0, 0, r * 0.4, 0, 0, r);
+      g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.8, 'rgba(210,235,255,.18)'); g.addColorStop(1, 'rgba(255,190,240,.35)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+      // borde tornasolado que va cambiando de color
+      const h = t / 9 + k * 60, a = t / 700 + k;
+      const tor = ctx.createLinearGradient(Math.cos(a) * r, Math.sin(a) * r, -Math.cos(a) * r, -Math.sin(a) * r);
+      tor.addColorStop(0, `hsl(${h % 360},95%,68%)`); tor.addColorStop(0.5, `hsl(${(h + 120) % 360},95%,68%)`); tor.addColorStop(1, `hsl(${(h + 240) % 360},95%,68%)`);
+      ctx.strokeStyle = 'rgba(29,35,64,.35)'; ctx.lineWidth = Math.max(2.2, s * 0.055); ctx.stroke();
+      ctx.strokeStyle = tor; ctx.lineWidth = Math.max(1.4, s * 0.035); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = Math.max(1, s * 0.025);
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.68, Math.PI * 1.1, Math.PI * 1.45); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(r * 0.3, -r * 0.42, Math.max(0.8, r * 0.1), 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Electricidad: arquitos que chisporrotean pegados al contorno del cubo. capa 0 = resplandor detrás.
+  function electricidad(ctx, s, t, capa) {
+    if (capa === 0) {
+      const p = 0.5 + 0.5 * Math.sin(t / 90) * Math.sin(t / 37);
+      const g = ctx.createRadialGradient(0, -s * 0.5, s * 0.4, 0, -s * 0.5, s * 1.0);
+      g.addColorStop(0, 'rgba(80,170,255,0)'); g.addColorStop(0.55, `rgba(80,170,255,${0.2 + 0.15 * p})`); g.addColorStop(1, 'rgba(80,170,255,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, -s * 0.5, s, 0, Math.PI * 2); ctx.fill();
+      return;
+    }
+    const d = s * 0.07, X = -s / 2 - d, Y = -s - d, W = s + 2 * d, R = s * 0.2 + d, tick = Math.floor(t / 70);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (let j = 0; j < 5; j++) {
+      // cada arco vive unos cuadros y salta a otro lado del contorno (nunca al borde de abajo, que va contra el piso)
+      const vida = Math.floor((tick + j * 3) / 5), largo = 0.05 + 0.05 * ruido(vida, j + 9);
+      let u0 = ruido(vida, j);
+      if (puntoRR(u0 + largo / 2, X, Y, W, W, R)[1] > -s * 0.2) u0 += 0.5;
+      if (ruido(tick, j + 20) < 0.15) continue;
+      const pts = [];
+      for (let i = 0; i <= 6; i++) {
+        const v = i / 6, [px, py] = puntoRR(u0 + largo * v, X, Y, W, W, R), dx = px, dy = py + s * 0.5, n = Math.hypot(dx, dy) || 1;
+        const sal = (i === 0 || i === 6 ? 0 : (ruido(tick * 7 + i, j) - 0.3) * s * 0.16) + Math.sin(v * Math.PI) * s * 0.08;
+        pts.push([px + dx / n * sal, py + dy / n * sal]);
+      }
+      for (const [col, ancho] of [['rgba(40,90,255,.5)', Math.max(3, s * 0.11)], ['#5fe0ff', Math.max(1.8, s * 0.055)], ['#ffffff', Math.max(1, s * 0.022)]]) {
+        ctx.strokeStyle = col; ctx.lineWidth = ancho;
+        ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke();
+      }
+      // chispitas en las puntas
+      ctx.fillStyle = '#fff8a0';
+      for (const [px, py] of [pts[0], pts[6]]) {
+        const a = ruido(tick, j * 3 + px) * Math.PI * 2, r = s * 0.08 * ruido(tick + 1, j);
+        ctx.beginPath(); ctx.arc(px + Math.cos(a) * r, py + Math.sin(a) * r, Math.max(1, s * 0.028), 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  }
+
+  // Pétalos que bajan girando en remolino alrededor del cubo. capa 0 = detrás, 1 = adelante (sin tapar la cara).
+  function petalosRemolino(ctx, s, t, capa) {
+    const cols = ['#ffc1d9', '#ff9ec4', '#ffe0ec', '#ffb3d1'];
+    for (let k = 0; k < 10; k++) {
+      const f = fase(t, 3400, k / 10), a = t / 950 + k * 2.39, R = s * (0.66 + 0.16 * Math.sin(k * 1.7));
+      const x = Math.cos(a) * R, y = -s * (1.8 - f * 1.75) + Math.sin(t / 400 + k) * s * 0.03;
+      if ((Math.sin(a) > 0 && !tapaCara(x, y, s)) !== (capa === 1)) continue;
+      ctx.globalAlpha = Math.min(1, f * 7, (1 - f) * 7) * (capa ? 1 : 0.85);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(f * 8 + k); ctx.scale(0.4 + 0.6 * Math.abs(Math.cos(t / 300 + k * 1.3)), 1);
+      const r = s * 0.13;
+      ctx.fillStyle = cols[k % 4]; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(0.9, s * 0.022);
+      ctx.beginPath(); ctx.moveTo(0, r * 0.9); ctx.quadraticCurveTo(-r, 0, -r * 0.4, -r); ctx.lineTo(0, -r * 0.7); ctx.lineTo(r * 0.4, -r);
+      ctx.quadraticCurveTo(r, 0, 0, r * 0.9); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Espiral galáctica: tres brazos de estrellitas que giran despacio detrás del cubo.
+  function espiralGalactica(ctx, s, t) {
+    const cy = -s * 0.5, giro = t / 2400;
+    ctx.save(); ctx.translate(0, cy); ctx.scale(1, 0.8);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 1.3);
+    g.addColorStop(0, 'rgba(255,240,200,.95)'); g.addColorStop(0.28, 'rgba(200,130,255,.5)'); g.addColorStop(0.65, 'rgba(90,70,210,.22)'); g.addColorStop(1, 'rgba(40,30,120,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, s * 1.3, 0, Math.PI * 2); ctx.fill();
+    const cols = ['#fff3c4', '#ffb3e6', '#c08bff', '#7fd6ff'];
+    for (let k = 0; k < 3; k++) {
+      // el brazo: trazo suave y encima las estrellitas
+      ctx.strokeStyle = 'rgba(170,120,255,.35)'; ctx.lineWidth = Math.max(3, s * 0.16); ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (let i = 0; i <= 26; i++) { const u = i / 26, a = giro + k * 2.094 + u * 3.6, r = s * (0.18 + u * 1.08); i ? ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r) : ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
+      ctx.stroke();
+      for (let i = 0; i <= 26; i++) {
+        const u = i / 26, a = giro + k * 2.094 + u * 3.6 + Math.sin(i * 3.1 + k) * 0.08, r = s * (0.18 + u * 1.08);
+        ctx.globalAlpha = 1 - u * 0.45; ctx.fillStyle = cols[Math.min(3, Math.floor(u * 4))];
+        ctx.beginPath(); ctx.arc(Math.cos(a) * r, Math.sin(a) * r, Math.max(0.8, s * 0.07 * (1 - u * 0.6) * (i % 3 ? 0.7 : 1)), 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+    // estrellas sueltas que titilan
+    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = 'rgba(29,35,64,.55)'; ctx.lineWidth = Math.max(0.6, s * 0.012);
+    for (let k = 0; k < 6; k++) {
+      const a = giro * 0.6 + k * 1.05, r = s * (0.9 + 0.3 * ((k * 0.7) % 1)), tw = 0.5 + 0.5 * Math.sin(t / 260 + k * 2);
+      estrella(ctx, Math.cos(a) * r, Math.sin(a) * r, s * 0.06 * tw + 0.8, 4); ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Pixeles: cuadraditos de 8 bits que se juntan arriba del cubo formando un dibujo, se quedan y se desarman.
+  const PIXELES = [
+    { filas: ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'], col: '#ff4f6d', luz: '#ffa3b4' },   // corazón
+    { filas: ['...X...', '..XXX..', '.XXXXX.', 'XXXXXXX', '..XXX..', '..XXX..'], col: '#35cf72', luz: '#a6f2c4' },   // flecha para arriba
+    { filas: ['...X...', '..XXX..', 'XXXXXXX', '.XXXXX.', '.XX.XX.', 'X.....X'], col: '#ffcf2e', luz: '#fff2a6' },   // estrella
+  ];
+  function pixelesFx(ctx, s, t) {
+    const per = 3400, f = fase(t, per), n = Math.floor(t / per), dib = PIXELES[((n % 3) + 3) % 3];
+    const p = Math.max(2, s * 0.085), cy = -s * 1.5, borde = Math.max(0.7, p * 0.16), w = dib.filas[0].length, h = dib.filas.length;
+    const lleno = (c, r) => r >= 0 && dib.filas[r][c] === 'X';
+    const fuera = (x, y, cx, cy2) => (tapaCara(x, y, s) ? [x, cy2 - (y - cy2)] : [x, y]);
+    const celdas = [];
+    dib.filas.forEach((fila, r) => [...fila].forEach((ch, c) => { if (ch === 'X') celdas.push([c, r]); }));
+    const pos = celdas.map(([c, r], i) => {
+      const tx = (c - (w - 1) / 2) * p, ty = cy + (r - (h - 1) / 2) * p, sem = n * 31 + i;
+      const a = ruido(sem, 1) * Math.PI * 2, R = s * (0.8 + 0.5 * ruido(sem, 2));
+      const [sx, sy] = fuera(tx + Math.cos(a) * R, ty + Math.sin(a) * R * 0.75, 0, cy);
+      const b = ruido(sem, 3) * Math.PI * 2, R2 = s * (0.9 + 0.6 * ruido(sem, 4));
+      const [ex, ey] = fuera(tx + Math.cos(b) * R2, ty + Math.sin(b) * R2 * 0.75 - s * 0.2, 0, cy);
+      const d = ruido(sem, 5) * 0.1;
+      if (f < 0.32) {
+        const u = Math.min(1, Math.max(0, (f - d) / 0.22)), e = 1 - Math.pow(1 - u, 3);
+        return [sx + (tx - sx) * e, sy + (ty - sy) * e, Math.min(1, u * 3), c, r];
+      }
+      if (f < 0.7) return [tx, ty + Math.sin(t / 200) * s * 0.02, 1, c, r];
+      const u = Math.min(1, Math.max(0, (f - 0.7 - d * 0.5) / 0.25)), e = u * u;
+      return [tx + (ex - tx) * e, ty + (ey - ty) * e, 1 - u, c, r];
+    });
+    // primero el borde de tinta de todos (así el dibujo armado queda con un solo contorno), después los colores
+    for (const [x, y, al] of pos) { ctx.globalAlpha = al; ctx.fillStyle = INK; ctx.fillRect(x - p / 2 - borde, y - p / 2 - borde, p + borde * 2, p + borde * 2); }
+    for (const [x, y, al, c, r] of pos) {
+      ctx.globalAlpha = al; ctx.fillStyle = lleno(c, r - 1) ? dib.col : dib.luz; ctx.fillRect(x - p / 2, y - p / 2, p, p);
+    }
+    // brillito que recorre el dibujo armado
+    if (f > 0.34 && f < 0.68) {
+      const i = Math.floor((f - 0.34) / 0.34 * pos.length) % pos.length, [x, y] = pos[i];
+      ctx.globalAlpha = 0.9; ctx.fillStyle = '#ffffff'; ctx.fillRect(x - p / 2, y - p / 2, p, p);
+    }
+    // pixeles sueltos que suben por los costados
+    for (let k = 0; k < 6; k++) {
+      const g = fase(t, 1800 + k * 170, k / 6), side = k % 2 ? 1 : -1, x = side * s * (0.64 + 0.16 * ruido(k, 7)), y = -s * (0.1 + g * 1.2), q = p * 0.8;
+      ctx.globalAlpha = Math.min(1, g * 5, (1 - g) * 3);
+      ctx.fillStyle = INK; ctx.fillRect(x - q / 2 - borde, y - q / 2 - borde, q + borde * 2, q + borde * 2);
+      ctx.fillStyle = ARCO[k % ARCO.length]; ctx.fillRect(x - q / 2, y - q / 2, q, q);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Corona de luz: aro dorado que flota arriba con puntas de luz y cuentas que corren. capa 0 = mitad de atrás.
+  function coronaDeLuz(ctx, s, t, capa) {
+    const cy = -s * 1.36 + Math.sin(t / 700) * s * 0.03, rx = s * 0.5, ry = s * 0.13;
+    const desde = capa ? 0 : Math.PI, hasta = desde + Math.PI;
+    ctx.save();
+    ctx.shadowColor = '#ffe680'; ctx.shadowBlur = s * 0.3;
+    for (let k = 0; k < 9; k++) {
+      const a = t / 2000 + k * Math.PI * 2 / 9;
+      if ((Math.sin(a) > 0) !== !!capa) continue;
+      const x = Math.cos(a) * rx, y = cy + Math.sin(a) * ry, alto = s * (0.26 + 0.08 * Math.sin(t / 260 + k * 1.3)), w = s * 0.07;
+      const g = ctx.createLinearGradient(0, y, 0, y - alto); g.addColorStop(0, 'rgba(255,196,30,1)'); g.addColorStop(0.5, 'rgba(255,220,90,.85)'); g.addColorStop(1, 'rgba(255,240,170,0)');
+      ctx.globalAlpha = capa ? 1 : 0.75; ctx.fillStyle = g;
+      ctx.beginPath(); ctx.moveTo(x - w, y); ctx.quadraticCurveTo(x - w * 0.3, y - alto * 0.5, x, y - alto); ctx.quadraticCurveTo(x + w * 0.3, y - alto * 0.5, x + w, y); ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    for (const [col, ancho] of [['rgba(190,120,0,.85)', Math.max(3.5, s * 0.115)], ['#ffc928', Math.max(2.2, s * 0.075)], ['#fffbe0', Math.max(1, s * 0.028)]]) {
+      ctx.strokeStyle = col; ctx.lineWidth = ancho; ctx.beginPath(); ctx.ellipse(0, cy, rx, ry, 0, desde, hasta); ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+    ctx.fillStyle = '#ffffff';
+    for (let k = 0; k < 5; k++) {
+      const a = t / 650 + k * Math.PI * 2 / 5;
+      if ((Math.sin(a) > 0) !== !!capa) continue;
+      ctx.beginPath(); ctx.arc(Math.cos(a) * rx, cy + Math.sin(a) * ry, Math.max(1.2, s * 0.04), 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Supernova: se carga, explota con rayos y una onda expansiva por el piso, y vuelve a empezar.
+  // capa 0 = núcleo, rayos y mitad de atrás de la onda; 1 = mitad de adelante y chispas que no tapan la cara.
+  function supernova(ctx, s, t, capa) {
+    const per = 2600, f = fase(t, per), n = Math.floor(t / per), cy = -s * 0.5;
+    const carga = f < 0.3, u = carga ? 0 : (f - 0.3) / 0.7, e = 1 - Math.pow(1 - u, 3);
+    if (capa === 0) {
+      const rN = carga ? s * (0.55 + 0.4 * f / 0.3) : s * (0.95 - 0.4 * u);
+      const g = ctx.createRadialGradient(0, cy, 0, 0, cy, rN * 1.3);
+      g.addColorStop(0, 'rgba(255,255,240,.95)'); g.addColorStop(0.45, 'rgba(255,190,80,.6)'); g.addColorStop(1, 'rgba(255,80,200,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, cy, rN * 1.3, 0, Math.PI * 2); ctx.fill();
+      if (!carga) {
+        const cols = ['#ffffff', '#ffd23f', '#ff8a3d', '#ff5dc8'];
+        ctx.globalAlpha = Math.pow(1 - u, 1.2);
+        for (let k = 0; k < 16; k++) {
+          const a = k * Math.PI / 8 + n * 0.7, L = s * (0.55 + (k % 2 ? 0.85 : 1.35) * e), w = k % 2 ? 0.07 : 0.1;
+          ctx.fillStyle = cols[k % 4];
+          ctx.beginPath(); ctx.moveTo(Math.cos(a - w) * s * 0.4, cy + Math.sin(a - w) * s * 0.4); ctx.lineTo(Math.cos(a) * L, cy + Math.sin(a) * L);
+          ctx.lineTo(Math.cos(a + w) * s * 0.4, cy + Math.sin(a + w) * s * 0.4); ctx.closePath(); ctx.fill();
+        }
+        if (u < 0.15) { ctx.globalAlpha = 1 - u / 0.15; ctx.fillStyle = '#fffbe6'; ctx.beginPath(); ctx.arc(0, cy, s * 1.3, 0, Math.PI * 2); ctx.fill(); }
+        ctx.globalAlpha = 1;
+      }
+    }
+    if (!carga) {
+      const rx = s * (0.5 + 1.3 * e), ry = rx * 0.28, desde = capa ? 0 : Math.PI;
+      ctx.globalAlpha = 1 - u;
+      for (const [col, ancho] of [['#ff8a3d', Math.max(2, s * 0.12 * (1 - u * 0.6))], ['#fff3c4', Math.max(1, s * 0.045 * (1 - u * 0.6))]]) {
+        ctx.strokeStyle = col; ctx.lineWidth = ancho; ctx.beginPath(); ctx.ellipse(0, -s * 0.06, rx, ry, 0, desde, desde + Math.PI); ctx.stroke();
+      }
+      for (let k = 0; k < 12; k++) {
+        const a = k * Math.PI / 6 + n * 1.3 + ruido(n, k) * 0.4, r = s * (0.55 + 1.2 * e * (0.7 + 0.3 * ruido(k, n)));
+        const x = Math.cos(a) * r, y = cy + Math.sin(a) * r * 0.9;
+        if ((!tapaCara(x, y, s)) !== (capa === 1)) continue;
+        ctx.fillStyle = ['#fff3b0', '#ffb02e', '#ff5dc8'][k % 3]; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(0.8, s * 0.02);
+        estrella(ctx, x, y, s * 0.07 * (1 - u * 0.5) + 0.8, 4); ctx.fill(); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    } else if (capa === 1) {
+      // partículas que se juntan antes de explotar
+      const v = f / 0.3;
+      for (let k = 0; k < 10; k++) {
+        const a = k * 0.628 + n, r = s * (1.4 - 0.8 * v), x = Math.cos(a) * r, y = cy + Math.sin(a) * r * 0.9;
+        if (tapaCara(x, y, s)) continue;
+        ctx.globalAlpha = v; ctx.fillStyle = k % 2 ? '#ffd23f' : '#ffffff'; ctx.strokeStyle = 'rgba(29,35,64,.6)'; ctx.lineWidth = Math.max(0.7, s * 0.015);
+        ctx.beginPath(); ctx.arc(x, y, Math.max(1, s * 0.04), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // Brillos de nivel: un borde de color pegado por dentro al contorno del cubo, más un detalle según el rango.
+  // Mismo origen que los efectos (base del cubo en 0,0; el cubo va de -s/2 a s/2 y de -s a 0).
+  // Se llama después de pintar el cuerpo y su contorno, antes de la cara.
+  function marcoNivel(ctx, id, s, t) {
+    if (!id || id === 'ninguno') return;
+    const lw = Math.max(2, s * 0.08), b = Math.max(2, s * 0.075), R = s * 0.2, iR = lw / 2 + b / 2;
+    const borde = d => rr(ctx, -s / 2 + d, -s + d, s - 2 * d, s - 2 * d, Math.max(0.5, R - d));
+    const pasada = (estilo, ancho, d = iR - 0.4) => { borde(d); ctx.strokeStyle = estilo; ctx.lineWidth = ancho; ctx.stroke(); };
+    const diag = (...cs) => { const g = ctx.createLinearGradient(-s / 2, -s, s / 2, 0); cs.forEach((c, i) => g.addColorStop(i / (cs.length - 1), c)); return g; };
+    const esquina = (sx, sy) => [sx * (s / 2 - R + (R - iR) * 0.7071), -s / 2 + sy * (s / 2 - R + (R - iR) * 0.7071)];
+    const enBorde = (u, d = iR) => puntoRR(u, -s / 2 + d, -s + d, s - 2 * d, s - 2 * d, Math.max(0.5, R - d));
+    const brillo = (x, y, r, color, tinta = INK) => {
+      ctx.fillStyle = color; ctx.strokeStyle = tinta; ctx.lineWidth = Math.max(0.8, s * 0.018); estrella(ctx, x, y, r, 4); ctx.fill(); ctx.stroke();
+    };
+    // filete de tinta por dentro, para que se lea como marco (va antes de los brillos)
+    const filete = () => pasada('rgba(29,35,64,.5)', Math.max(0.8, s * 0.02), lw / 2 + b);
+    ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    if (id === 'bronce') {
+      // bronce cálido con dos destellos que se turnan
+      pasada(diag('#f7c08c', '#c77d3e', '#8f5428', '#e6a46a'), b); filete();
+      for (const [k, sx, sy] of [[0, -1, -1], [1, 1, 1]]) {
+        const a = Math.max(0, Math.sin(t / 520 + k * Math.PI)), [x, y] = esquina(sx, sy);
+        ctx.globalAlpha = 0.35 + 0.65 * a; brillo(x, y, s * (0.04 + 0.08 * a) + 1, '#fff1dc');
+      }
+    } else if (id === 'plata') {
+      // plata con un brillo que barre en diagonal cada tanto
+      pasada(diag('#f4f7fb', '#b4bfd0', '#8d99ad', '#e3e9f2'), b);
+      pasada(franjaDeLuz(ctx, -s / 2, -s, s / 2, 0, fase(t, 2600) * 1.8 - 0.4, 0.14, '255,255,255', 1), b); filete();
+    } else if (id === 'oro') {
+      // oro con brillo lento y destellos en las cuatro esquinas, uno detrás del otro
+      pasada(diag('#fff1a6', '#ffc928', '#d99400', '#ffe066'), b);
+      pasada(franjaDeLuz(ctx, -s / 2, -s, s / 2, 0, fase(t, 3200) * 1.8 - 0.4, 0.12, '255,255,235', 0.95), b); filete();
+      [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sy], k) => {
+        const a = 0.5 + 0.5 * Math.sin(t / 300 - k * Math.PI / 2), [x, y] = esquina(sx, sy);
+        brillo(x, y, s * (0.05 + 0.07 * a) + 1, '#fffbe0');
+      });
+    } else if (id === 'platino') {
+      // platino con un reflejo celeste que gira y tres puntitos que dan la vuelta por afuera
+      pasada(diag('#ffffff', '#cdd6e6', '#aab6cc', '#eef3fa'), b);
+      const a = t / 1400, gx = Math.cos(a) * s * 0.7, gy = Math.sin(a) * s * 0.7;
+      const g = ctx.createLinearGradient(-gx, -s / 2 - gy, gx, -s / 2 + gy);
+      g.addColorStop(0, 'rgba(140,205,255,0)'); g.addColorStop(0.5, 'rgba(140,205,255,.95)'); g.addColorStop(1, 'rgba(140,205,255,0)');
+      pasada(g, b); filete();
+      const d = -(lw / 2 + s * 0.07);
+      for (let k = 0; k < 3; k++) {
+        for (let c = 3; c >= 0; c--) {
+          const [x, y] = enBorde(t / 3200 + k / 3 - c * 0.014, d);
+          ctx.globalAlpha = c ? 0.55 * (1 - c / 4) : 1; ctx.fillStyle = c ? '#a9dcff' : '#f2f9ff';
+          ctx.beginPath(); ctx.arc(x, y, Math.max(c ? 0.8 : 1.4, s * (c ? 0.03 : 0.045)), 0, Math.PI * 2); ctx.fill();
+          if (!c) { ctx.strokeStyle = 'rgba(29,35,64,.8)'; ctx.lineWidth = Math.max(0.7, s * 0.015); ctx.stroke(); }
+        }
+      }
+      ctx.globalAlpha = 1;
+    } else if (id === 'diamante') {
+      // cian tallado en facetas, con halo por fuera y destellos de cristal que aparecen en el borde
+      ctx.save(); ctx.shadowColor = '#7fe3ff'; ctx.shadowBlur = s * 0.25; pasada('rgba(127,227,255,.8)', Math.max(1, s * 0.03), -(lw / 2 + s * 0.02)); ctx.restore();
+      pasada('#1fa9dc', b);
+      ctx.lineCap = 'butt';
+      ctx.setLineDash([s * 0.1, s * 0.08]); ctx.lineDashOffset = -t / 220; pasada('#aef0ff', b * 0.8);
+      ctx.setLineDash([s * 0.03, s * 0.15]); ctx.lineDashOffset = -t / 220 - s * 0.035; pasada('#ffffff', b * 0.45);
+      ctx.setLineDash([]); ctx.lineCap = 'round'; filete();
+      for (let k = 0; k < 3; k++) {
+        const fk = fase(t, 900, k / 3), nk = Math.floor(t / 900 + k / 3), [x, y] = enBorde(ruido(nk, k)), a = Math.sin(fk * Math.PI);
+        brillo(x, y, s * 0.13 * a + 0.6, '#ffffff', '#1a6f9c');
+      }
+    } else if (id === 'cosmico') {
+      // arcoíris que gira, halo que cambia de color y estrellitas que se van a la deriva
+      const h = (t / 8) % 360;
+      ctx.save(); ctx.shadowColor = `hsl(${h},100%,70%)`; ctx.shadowBlur = s * 0.3; pasada(`hsla(${h},100%,72%,.85)`, Math.max(1, s * 0.035), -(lw / 2 + s * 0.025)); ctx.restore();
+      let g;
+      if (ctx.createConicGradient) { g = ctx.createConicGradient(t / 700, 0, -s / 2); for (let i = 0; i <= 6; i++) g.addColorStop(i / 6, `hsl(${(i * 60) % 360},100%,64%)`); }
+      else g = diag(...[0, 1, 2, 3, 4, 5].map(i => `hsl(${(i * 60 + t / 8) % 360},100%,64%)`));
+      pasada(g, b);
+      ctx.setLineDash([s * 0.02, s * 0.12]); ctx.lineDashOffset = t / 90; pasada('rgba(255,255,255,.9)', b * 0.4); ctx.setLineDash([]); filete();
+      const d = -(lw / 2 + s * 0.04);
+      for (let k = 0; k < 8; k++) {
+        const f = fase(t, 2600 + k * 290, k * 0.37), [x0, y0] = enBorde(k / 8 + 0.03 * Math.sin(k), d);
+        const dx = x0, dy = y0 + s / 2, n = Math.hypot(dx, dy) || 1, a = Math.sin(f * Math.PI);
+        ctx.globalAlpha = a; brillo(x0 + dx / n * f * s * 0.3, y0 + dy / n * f * s * 0.3 - f * s * 0.15, s * 0.065 * a + 0.8, ARCO[k % ARCO.length]);
+      }
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
+
   // Efectos que van detrás del cubo
   function efectoDetras(ctx, id, s, t) {
     if (id === 'arcoiris') {
@@ -1579,6 +2032,24 @@
       ctx.strokeStyle = 'rgba(150,235,255,.95)'; ctx.lineWidth = Math.max(1.2, s * 0.035); ctx.stroke();
       lenguasDeEnergia(ctx, s, t, 0.7, 0.72, 'rgba(95,224,255,.7)', 1.7);
       lenguasDeEnergia(ctx, s, t, 0.58, 0.5, 'rgba(255,255,255,.88)', 3.1);
+    } else if (id === 'hojas') {
+      // hojas que cruza el viento (las de adelante van en efectoDelante, solo por los costados)
+      hojasAlViento(ctx, s, t, 0);
+    } else if (id === 'burbujasx') {
+      burbujasDeJabon(ctx, s, t, 0);
+    } else if (id === 'relampago') {
+      // resplandor eléctrico que titila (los arcos van adelante)
+      electricidad(ctx, s, t, 0);
+    } else if (id === 'petalos') {
+      petalosRemolino(ctx, s, t, 0);
+    } else if (id === 'galaxiafx') {
+      espiralGalactica(ctx, s, t);
+    } else if (id === 'corona') {
+      // mitad de atrás del aro de luz
+      coronaDeLuz(ctx, s, t, 0);
+    } else if (id === 'supernova') {
+      // núcleo, rayos y mitad de atrás de la onda
+      supernova(ctx, s, t, 0);
     }
   }
   // Efectos que van delante del cubo
@@ -1733,6 +2204,21 @@
         }
       }
       ctx.globalAlpha = 1;
+    } else if (id === 'hojas') {
+      hojasAlViento(ctx, s, t, 1);
+    } else if (id === 'burbujasx') {
+      burbujasDeJabon(ctx, s, t, 1);
+    } else if (id === 'relampago') {
+      // arquitos pegados al contorno del cubo
+      electricidad(ctx, s, t, 1);
+    } else if (id === 'petalos') {
+      petalosRemolino(ctx, s, t, 1);
+    } else if (id === 'pixeles') {
+      pixelesFx(ctx, s, t);
+    } else if (id === 'corona') {
+      coronaDeLuz(ctx, s, t, 1);
+    } else if (id === 'supernova') {
+      supernova(ctx, s, t, 1);
     }
   }
 
@@ -2748,6 +3234,401 @@
         guerreroCara(ctx, s, look, mirar, '#b49cff', 0.03);
       },
     },
+    // ---- pase 51-100 ----
+    astronomo: {
+      detras(ctx, s, sk, t) {
+        // telescopio de bronce en su trípode, al costado: se inclina despacio y la lente brilla cada tanto
+        const mx = s * 0.68, my = -s * 0.44, a = -0.72 + 0.08 * Math.sin(t / 1400);
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.5, s * 0.045);
+        ctx.beginPath(); for (const dx of [-0.16, 0.02, 0.18]) { ctx.moveTo(mx, my); ctx.lineTo(mx + dx * s, 0); } ctx.stroke();
+        ctx.save(); ctx.translate(mx, my); ctx.rotate(a);
+        ctx.lineWidth = Math.max(1.2, s * 0.035);
+        const g = ctx.createLinearGradient(0, -s * 0.1, 0, s * 0.1); g.addColorStop(0, '#ffe08a'); g.addColorStop(0.5, '#e0a53a'); g.addColorStop(1, '#a8701e');
+        ctx.fillStyle = g;
+        rr(ctx, -s * 0.34, -s * 0.045, s * 0.14, s * 0.09, s * 0.03); ctx.fill(); ctx.stroke();   // ocular
+        rr(ctx, -s * 0.22, -s * 0.08, s * 0.46, s * 0.16, s * 0.05); ctx.fill(); ctx.stroke();    // tubo
+        rr(ctx, s * 0.22, -s * 0.11, s * 0.16, s * 0.22, s * 0.05); ctx.fill(); ctx.stroke();     // boca
+        ctx.strokeStyle = 'rgba(122,74,20,.8)'; ctx.lineWidth = Math.max(1, s * 0.025);
+        ctx.beginPath(); ctx.moveTo(s * 0.02, -s * 0.08); ctx.lineTo(s * 0.02, s * 0.08); ctx.stroke();
+        ctx.fillStyle = '#9fe8ff'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1, s * 0.025);
+        ctx.beginPath(); ctx.ellipse(s * 0.38, 0, s * 0.03, s * 0.09, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        const brillo = Math.max(0, Math.sin(t / 700)) ** 6;
+        if (brillo > 0.05) { ctx.globalAlpha = brillo; ctx.fillStyle = '#fff'; estrella(ctx, s * 0.43, -s * 0.05, s * (0.05 + 0.08 * brillo), 4); ctx.fill(); ctx.globalAlpha = 1; }
+        ctx.restore();
+        ctx.fillStyle = '#a8701e'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1, s * 0.03);
+        ctx.beginPath(); ctx.arc(mx, my, s * 0.05, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      },
+      piel(ctx, s, sk, t) {
+        // constelación abajo a la izquierda y estrellitas que titilan
+        const pts = [[-0.4, -0.12], [-0.27, -0.2], [-0.14, -0.1], [-0.04, -0.17]];
+        ctx.strokeStyle = 'rgba(255,250,240,.4)'; ctx.lineWidth = Math.max(0.8, s * 0.018);
+        ctx.beginPath(); pts.forEach(([x, y], k) => (k ? ctx.lineTo(x * s, y * s) : ctx.moveTo(x * s, y * s))); ctx.stroke();
+        ctx.fillStyle = '#ffe9a0';
+        pts.forEach(([x, y], k) => { ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t / 350 + k * 1.9); ctx.beginPath(); ctx.arc(x * s, y * s, s * 0.028 + 0.4, 0, Math.PI * 2); ctx.fill(); });
+        for (const [x, y, k] of [[0.36, -0.16, 0], [0.42, -0.74, 1], [-0.42, -0.72, 2], [0.18, -0.1, 3]]) {
+          ctx.globalAlpha = 0.35 + 0.65 * Math.abs(Math.sin(t / 420 + k * 1.3)); estrella(ctx, x * s, y * s, s * 0.04, 4); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      },
+      encima(ctx, s, sk, t) {
+        // gorro con estrellas, banda de bronce y una estrella de pompón que se hamaca
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.5, s * 0.05);
+        ctx.fillStyle = '#4659d6';
+        ctx.beginPath(); ctx.moveTo(-s * 0.46, -s * 0.96); ctx.bezierCurveTo(-s * 0.46, -s * 1.42, s * 0.46, -s * 1.42, s * 0.46, -s * 0.96); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#ffe14d';
+        for (const [x, y, r, k] of [[-0.22, -1.13, 0.065, 0], [0.13, -1.2, 0.055, 1], [0.29, -1.05, 0.045, 2]]) {
+          estrella(ctx, x * s, y * s, s * r * (0.75 + 0.25 * Math.sin(t / 300 + k * 2)) + 0.6, 5); ctx.fill();
+        }
+        ctx.fillStyle = '#e8b04a'; rr(ctx, -s * 0.52, -s * 1.04, s * 1.04, s * 0.14, s * 0.06); ctx.fill(); ctx.stroke();
+        ctx.save(); ctx.translate(0, -s * 1.36); ctx.rotate(Math.sin(t / 500) * 0.15);
+        ctx.fillStyle = '#ffe14d'; ctx.lineWidth = Math.max(1.2, s * 0.035); estrella(ctx, 0, 0, s * 0.13, 5); ctx.fill(); ctx.stroke();
+        ctx.restore();
+      },
+    },
+    pulpo: {
+      detras(ctx, s, sk, t) {
+        // dos tentáculos de atrás que saludan a los costados
+        for (const side of [-1, 1]) {
+          tentaculo(ctx, side * s * 0.4, -s * 0.5, side > 0 ? -0.35 : Math.PI + 0.35, s * 0.5, s * 0.16, -side * 2.4, side * Math.sin(t / 420 + side) * 0.45, sk.cuerpo);
+        }
+      },
+      piel(ctx, s) {
+        // manchitas en la cabeza y panza más clara
+        ctx.fillStyle = 'rgba(150,50,160,.35)';
+        for (const [x, y, r] of [[-0.3, -0.86, 0.07], [0.06, -0.92, 0.05], [0.33, -0.8, 0.065], [-0.42, -0.6, 0.04], [0.43, -0.5, 0.035]]) {
+          ctx.beginPath(); ctx.arc(x * s, y * s, r * s, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.fillStyle = 'rgba(255,214,240,.45)'; ctx.beginPath(); ctx.ellipse(0, 0, s * 0.42, s * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+      },
+      encima(ctx, s, sk, t) {
+        // cuatro tentáculos de adelante: salen de abajo, van por el piso hacia afuera y se enrulan para arriba
+        for (const side of [-1, 1]) {
+          for (const [x0, a0, largo, curl, k] of [[0.34, 0.12, 0.56, 3.6, 0], [0.1, 0.5, 0.36, 3.4, 1]]) {
+            const onda = Math.sin(t / 380 + side * 2 + k * 1.7) * 0.25;
+            tentaculo(ctx, side * s * x0, -s * 0.14, side > 0 ? a0 : Math.PI - a0, s * largo, s * 0.15, -side * curl, side * onda, sk.cuerpo);
+          }
+        }
+      },
+    },
+    samurai: {
+      piel(ctx, s) {
+        // peto laqueado con cordones dorados
+        ctx.fillStyle = '#b5162f'; ctx.fillRect(-s / 2, -s * 0.2, s, s * 0.2);
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.2, s * 0.035);
+        ctx.beginPath(); ctx.moveTo(-s / 2, -s * 0.2); ctx.lineTo(s / 2, -s * 0.2); ctx.stroke();
+        ctx.strokeStyle = 'rgba(70,0,15,.6)'; ctx.lineWidth = Math.max(1, s * 0.02);
+        ctx.beginPath(); ctx.moveTo(-s / 2, -s * 0.1); ctx.lineTo(s / 2, -s * 0.1); ctx.stroke();
+        ctx.fillStyle = '#f2c14e';
+        for (let k = -3; k <= 3; k++) for (const y of [-0.17, -0.07]) ctx.fillRect(k * s * 0.13 - s * 0.012, y * s, s * 0.024, s * 0.05);
+      },
+      encima(ctx, s, sk, t, look) {
+        // mirada tranquila: párpados a media asta que parpadean despacio
+        const cierre = fase(t, 4600) > 0.965 ? 1 : 0.5;
+        for (const side of [-1, 1]) {
+          const x = side * s * 0.2 + look, y0 = -s * 0.67, y1 = y0 + s * 0.21 * cierre;
+          ctx.fillStyle = sk.cuerpo; ctx.fillRect(x - s * 0.075, y0, s * 0.15, y1 - y0);
+          ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.2, s * 0.035);
+          ctx.beginPath(); ctx.moveTo(x - s * 0.075, y1); ctx.quadraticCurveTo(x, y1 + s * 0.02, x + s * 0.075, y1); ctx.stroke();
+        }
+        // hombreras de placas
+        for (const side of [-1, 1]) {
+          ctx.save(); ctx.translate(side * s * 0.56, -s * 0.42); ctx.rotate(side * 0.12);
+          for (let k = 0; k < 3; k++) {
+            ctx.fillStyle = k % 2 ? '#a50f28' : '#d2203c'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.2, s * 0.04);
+            rr(ctx, -s * 0.13, -s * 0.18 + k * s * 0.12, s * 0.26, s * 0.13, s * 0.03); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#f2c14e';
+            for (const dx of [-0.06, 0.06]) { ctx.beginPath(); ctx.arc(dx * s, -s * 0.115 + k * s * 0.12, s * 0.018 + 0.3, 0, Math.PI * 2); ctx.fill(); }
+          }
+          ctx.restore();
+        }
+        // casco: bóveda roja laqueada con placas
+        const rojo = ctx.createLinearGradient(0, -s * 1.3, 0, -s * 0.84); rojo.addColorStop(0, '#ef3b55'); rojo.addColorStop(1, '#a50f28');
+        ctx.fillStyle = rojo; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.5, s * 0.05);
+        ctx.beginPath(); ctx.moveTo(-s * 0.54, -s * 0.86); ctx.bezierCurveTo(-s * 0.54, -s * 1.38, s * 0.54, -s * 1.38, s * 0.54, -s * 0.86); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = 'rgba(90,0,20,.55)'; ctx.lineWidth = Math.max(1, s * 0.025);
+        for (const x of [-0.3, 0.3]) { ctx.beginPath(); ctx.moveTo(x * s, -s * 0.88); ctx.quadraticCurveTo(x * s * 0.8, -s * 1.12, x * s * 0.3, -s * 1.22); ctx.stroke(); }
+        ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = Math.max(1, s * 0.035);
+        ctx.beginPath(); ctx.arc(-s * 0.02, -s * 0.88, s * 0.36, Math.PI * 1.17, Math.PI * 1.38); ctx.stroke();
+        // alas del casco dobladas hacia atrás
+        for (const side of [-1, 1]) {
+          ctx.fillStyle = '#d2203c'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.2, s * 0.04);
+          ctx.beginPath(); ctx.moveTo(side * s * 0.54, -s * 0.94); ctx.lineTo(side * s * 0.76, -s * 1.04); ctx.lineTo(side * s * 0.72, -s * 0.76); ctx.lineTo(side * s * 0.54, -s * 0.78); ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#f2c14e'; ctx.beginPath(); ctx.arc(side * s * 0.65, -s * 0.87, s * 0.025 + 0.3, 0, Math.PI * 2); ctx.fill();
+        }
+        // visera negra con filete dorado
+        ctx.fillStyle = '#2a1f2e'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.5, s * 0.045);
+        rr(ctx, -s * 0.6, -s * 0.92, s * 1.2, s * 0.13, s * 0.05); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = '#f2c14e'; ctx.lineWidth = Math.max(1, s * 0.022);
+        ctx.beginPath(); ctx.moveTo(-s * 0.52, -s * 0.83); ctx.lineTo(s * 0.52, -s * 0.83); ctx.stroke();
+        // emblema: dos hojas doradas cortas y un disco con brillo
+        const cy = -s * 0.98;
+        ctx.fillStyle = '#f2c14e'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.2, s * 0.035);
+        for (const side of [-1, 1]) {
+          ctx.beginPath(); ctx.moveTo(side * s * 0.04, cy + s * 0.02); ctx.quadraticCurveTo(side * s * 0.2, cy - s * 0.08, side * s * 0.3, cy - s * 0.34);
+          ctx.quadraticCurveTo(side * s * 0.12, cy - s * 0.18, 0, cy - s * 0.06); ctx.closePath(); ctx.fill(); ctx.stroke();
+        }
+        ctx.beginPath(); ctx.arc(0, cy, s * 0.075, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#d2203c'; ctx.beginPath(); ctx.arc(0, cy, s * 0.032, 0, Math.PI * 2); ctx.fill();
+        const a = Math.max(0, Math.sin(t / 650)) ** 4;
+        if (a > 0.05) { ctx.globalAlpha = a; ctx.fillStyle = '#fff'; estrella(ctx, s * 0.24, cy - s * 0.28, s * (0.04 + 0.07 * a), 4); ctx.fill(); ctx.globalAlpha = 1; }
+      },
+    },
+    mecha: {
+      piel(ctx, s) {
+        // placas naranjas arriba y en el mentón, costuras y remaches
+        ctx.fillStyle = '#ff8a1f'; ctx.fillRect(-s / 2, -s, s, s * 0.2); ctx.fillRect(-s / 2, -s * 0.18, s, s * 0.18);
+        ctx.fillStyle = '#ffb05c'; ctx.fillRect(-s / 2, -s * 0.18, s, s * 0.04);
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.2, s * 0.035);
+        ctx.beginPath(); ctx.moveTo(-s / 2, -s * 0.8); ctx.lineTo(s / 2, -s * 0.8); ctx.moveTo(-s / 2, -s * 0.18); ctx.lineTo(s / 2, -s * 0.18); ctx.stroke();
+        ctx.strokeStyle = 'rgba(29,35,64,.28)'; ctx.lineWidth = Math.max(1, s * 0.02);
+        ctx.beginPath(); for (const side of [-1, 1]) { ctx.moveTo(side * s * 0.43, -s * 0.8); ctx.lineTo(side * s * 0.43, -s * 0.18); } ctx.stroke();
+        ctx.fillStyle = 'rgba(29,35,64,.45)';
+        for (const [x, y] of [[-0.36, -0.09], [0.36, -0.09], [-0.2, -0.09], [0.2, -0.09]]) { ctx.beginPath(); ctx.arc(x * s, y * s, s * 0.022 + 0.3, 0, Math.PI * 2); ctx.fill(); }
+      },
+      encima(ctx, s, sk, t, look) {
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.5, s * 0.045);
+        // orejeras
+        for (const side of [-1, 1]) {
+          ctx.fillStyle = '#ff8a1f'; rr(ctx, side * s * 0.53 - s * 0.075, -s * 0.72, s * 0.15, s * 0.32, s * 0.05); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#c7cedb'; ctx.lineWidth = Math.max(1, s * 0.025);
+          ctx.beginPath(); ctx.arc(side * s * 0.53, -s * 0.56, s * 0.04, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.lineWidth = Math.max(1.5, s * 0.045);
+        }
+        // antena con luz que late
+        ctx.beginPath(); ctx.moveTo(s * 0.24, -s * 1.02); ctx.lineTo(s * 0.3, -s * 1.3); ctx.stroke();
+        ctx.fillStyle = '#c7cedb'; rr(ctx, s * 0.14, -s * 1.08, s * 0.2, s * 0.09, s * 0.03); ctx.fill(); ctx.stroke();
+        const p = 0.5 + 0.5 * Math.sin(t / 300);
+        ctx.beginPath(); ctx.arc(s * 0.3, -s * 1.35, s * 0.075, 0, Math.PI * 2);
+        ctx.save(); ctx.shadowColor = '#ffb24d'; ctx.shadowBlur = s * 0.3 * p; ctx.fillStyle = p > 0.5 ? '#ffd27a' : '#ff8a1f'; ctx.fill(); ctx.restore(); ctx.stroke();
+        // visor
+        ctx.fillStyle = '#1d2340'; rr(ctx, -s * 0.4, -s * 0.73, s * 0.8, s * 0.31, s * 0.1); ctx.fill(); ctx.stroke();
+        // ojos que brillan (parpadean cada tanto) y barrido del escáner
+        const parp = fase(t, 3400) > 0.96 ? 0.25 : 1, ey = -s * 0.575;
+        ctx.save(); ctx.shadowColor = '#ffb24d'; ctx.shadowBlur = s * 0.22; ctx.fillStyle = '#ffd98a';
+        for (const side of [-1, 1]) { const h = s * 0.12 * parp; rr(ctx, side * s * 0.18 + look * 1.3 - s * 0.09, ey - h / 2, s * 0.18, h, Math.min(h / 2, s * 0.05)); ctx.fill(); }
+        ctx.restore();
+        const f = fase(t, 2200);
+        if (f < 0.5) { ctx.fillStyle = 'rgba(255,210,140,.3)'; ctx.fillRect(-s * 0.36 + f * 2 * s * 0.68, -s * 0.71, s * 0.04, s * 0.27); }
+        // rejilla de la boca
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.2, s * 0.032);
+        ctx.beginPath(); for (const x of [-0.1, 0, 0.1]) { ctx.moveTo(x * s + look, -s * 0.34); ctx.lineTo(x * s + look, -s * 0.25); } ctx.stroke();
+      },
+    },
+    cosmico: {
+      detras(ctx, s, sk, t) { orbitaCosmica(ctx, s, t, 0); },
+      piel(ctx, s, sk, t) {
+        // nubes de nebulosa que se mueven adentro y estrellas que pasan despacio
+        ctx.globalCompositeOperation = 'lighter';
+        for (const [c, k] of [['255,70,190', 0], ['70,190,255', 1], ['150,90,255', 2], ['255,150,80', 3]]) {
+          const x = Math.sin(t / 1900 + k * 1.7) * s * 0.3, y = -s * 0.5 + Math.cos(t / 2300 + k * 2.3) * s * 0.3, r = s * (0.38 + 0.08 * Math.sin(t / 900 + k));
+          const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${c},.6)`); g.addColorStop(1, `rgba(${c},0)`);
+          ctx.fillStyle = g; ctx.fillRect(-s / 2, -s, s, s);
+        }
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = CREMA;
+        for (let k = 0; k < 9; k++) {
+          const x = (fase(t, 9000 + k * 700, k * 0.37) - 0.5) * s * 1.1, y = -s * (0.08 + ((k * 0.61) % 1) * 0.86);
+          ctx.globalAlpha = 0.5 + 0.5 * Math.sin(t / 300 + k * 2); ctx.beginPath(); ctx.arc(x, y, s * (k % 3 ? 0.018 : 0.03) + 0.3, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      },
+      encima(ctx, s, sk, t) { orbitaCosmica(ctx, s, t, 1); },
+    },
+    dragonRey: {
+      detras(ctx, s, sk, t) {
+        // colita con punta de flecha
+        const w = Math.sin(t / 380) * s * 0.06, ex = s * 0.8 + w, ey = -s * 0.5;
+        ctx.lineCap = 'round';
+        for (const [c, a] of [[INK, 0.14], ['#e9a417', 0.08]]) {
+          ctx.strokeStyle = c; ctx.lineWidth = Math.max(c === INK ? 4 : 2, s * a);
+          ctx.beginPath(); ctx.moveTo(s * 0.3, -s * 0.1); ctx.quadraticCurveTo(s * 0.88, -s * 0.06, ex, ey); ctx.stroke();
+        }
+        ctx.save(); ctx.translate(ex, ey); ctx.rotate(Math.atan2(ey + s * 0.06, ex - s * 0.88) + Math.PI / 2);
+        ctx.fillStyle = '#ffd84a'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.2, s * 0.035);
+        ctx.beginPath(); ctx.moveTo(0, -s * 0.17); ctx.lineTo(s * 0.1, s * 0.02); ctx.lineTo(0, -s * 0.02); ctx.lineTo(-s * 0.1, s * 0.02); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.restore();
+        // alitas doradas que aletean
+        const ale = Math.sin(t / 240) * 0.18;
+        for (const side of [-1, 1]) {
+          ctx.save(); ctx.translate(side * s * 0.42, -s * 0.7); ctx.rotate(side * (-0.25 + ale)); ctx.scale(side, 1);
+          ctx.fillStyle = '#f0b42a'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.5, s * 0.045);
+          ctx.beginPath(); ctx.moveTo(0, s * 0.12); ctx.quadraticCurveTo(s * 0.2, -s * 0.3, s * 0.56, -s * 0.38);
+          ctx.quadraticCurveTo(s * 0.48, -s * 0.2, s * 0.58, -s * 0.06); ctx.quadraticCurveTo(s * 0.44, -s * 0.06, s * 0.42, s * 0.06);
+          ctx.quadraticCurveTo(s * 0.28, 0, s * 0.22, s * 0.14); ctx.quadraticCurveTo(s * 0.12, s * 0.08, 0, s * 0.12); ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.strokeStyle = 'rgba(150,90,10,.85)'; ctx.lineWidth = Math.max(1, s * 0.028);
+          ctx.beginPath(); for (const [x, y] of [[0.54, -0.36], [0.56, -0.07], [0.4, 0.05]]) { ctx.moveTo(s * 0.04, s * 0.06); ctx.lineTo(x * s, y * s); } ctx.stroke();
+          ctx.restore();
+        }
+      },
+      piel(ctx, s, sk, t) {
+        // oro con escamas (dejan la cara limpia) y un reflejo que cruza
+        const g = ctx.createLinearGradient(0, -s, 0, 0); g.addColorStop(0, '#ffe680'); g.addColorStop(1, '#eba416');
+        ctx.fillStyle = g; ctx.fillRect(-s / 2, -s, s, s);
+        ctx.strokeStyle = 'rgba(170,100,10,.5)'; ctx.lineWidth = Math.max(1, s * 0.022);
+        for (let f = 0; f < 8; f++) {
+          const y = -s * (0.95 - f * 0.125);
+          for (let c = -4; c <= 4; c++) {
+            const x = (c + (f % 2) * 0.5) * s * 0.15;
+            if (Math.abs(x) < s * 0.4 && y > -s * 0.8 && y < -s * 0.16) continue;
+            ctx.beginPath(); ctx.arc(x, y, s * 0.075, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+          }
+        }
+        const x = -s + fase(t, 3000) * s * 2.6;
+        ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.moveTo(x, -s); ctx.lineTo(x + s * 0.12, -s); ctx.lineTo(x - s * 0.22, 0); ctx.lineTo(x - s * 0.34, 0); ctx.closePath(); ctx.fill();
+      },
+      encima(ctx, s, sk, t, look) {
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.5, s * 0.045);
+        // cuernos que se curvan hacia afuera
+        ctx.fillStyle = '#fff4d6';
+        for (const side of [-1, 1]) {
+          ctx.beginPath(); ctx.moveTo(side * s * 0.24, -s * 0.97);
+          ctx.quadraticCurveTo(side * s * 0.34, -s * 1.28, side * s * 0.62, -s * 1.36);
+          ctx.quadraticCurveTo(side * s * 0.46, -s * 1.18, side * s * 0.46, -s * 0.97); ctx.closePath(); ctx.fill(); ctx.stroke();
+        }
+        // coronita con gemas y un destello
+        const cy = -s * 0.98;
+        ctx.fillStyle = '#ffd23a';
+        ctx.beginPath(); ctx.moveTo(-s * 0.2, cy); ctx.lineTo(-s * 0.22, cy - s * 0.24); ctx.lineTo(-s * 0.1, cy - s * 0.13); ctx.lineTo(0, cy - s * 0.3);
+        ctx.lineTo(s * 0.1, cy - s * 0.13); ctx.lineTo(s * 0.22, cy - s * 0.24); ctx.lineTo(s * 0.2, cy); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#ff3b5c'; ctx.beginPath(); ctx.arc(0, cy - s * 0.08, s * 0.045, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#5cb0ff'; for (const side of [-1, 1]) { ctx.beginPath(); ctx.arc(side * s * 0.13, cy - s * 0.06, s * 0.028, 0, Math.PI * 2); ctx.fill(); }
+        const a = Math.max(0, Math.sin(t / 450));
+        if (a > 0.1) { ctx.globalAlpha = a; ctx.fillStyle = '#fff'; estrella(ctx, 0, cy - s * 0.33, s * (0.05 + 0.06 * a), 4); ctx.fill(); ctx.globalAlpha = 1; }
+        // fosas de la nariz
+        ctx.fillStyle = 'rgba(120,70,0,.6)';
+        for (const side of [-1, 1]) { ctx.beginPath(); ctx.ellipse(look + side * s * 0.05, -s * 0.43, s * 0.022, s * 0.016, 0, 0, Math.PI * 2); ctx.fill(); }
+      },
+    },
+    fenixAzul: {
+      detras(ctx, s, sk, t) {
+        // llamas frías detrás
+        const cs = ['rgba(60,130,255,.85)', 'rgba(127,227,255,.9)', 'rgba(235,252,255,.95)'];
+        for (let k = 0; k < 4; k++) {
+          const x = (k - 1.5) * s * 0.3, h = s * (1.25 + 0.18 * Math.sin(t / 110 + k * 2.1)) * (k % 3 ? 1 : 0.85), lean = Math.sin(t / 200 + k) * s * 0.04;
+          cs.forEach((c, i) => {
+            const w = s * (0.2 - i * 0.05), hh = h * (1 - i * 0.22);
+            ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x - w, -s * 0.3); ctx.quadraticCurveTo(x - w, -hh * 0.75, x + lean, -hh);
+            ctx.quadraticCurveTo(x + w, -hh * 0.75, x + w, -s * 0.3); ctx.closePath(); ctx.fill();
+          });
+        }
+        // alas de plumas de cristal
+        const ale = Math.sin(t / 200) * 0.2;
+        for (const side of [-1, 1]) {
+          ctx.save(); ctx.translate(side * s * 0.42, -s * 0.62); ctx.scale(side, 1); ctx.rotate(ale);
+          for (const [ang, L, W] of [[0.35, 0.46, 0.1], [-0.08, 0.62, 0.11], [-0.5, 0.72, 0.12], [-0.95, 0.62, 0.11]]) {
+            ctx.save(); ctx.rotate(ang);
+            ctx.fillStyle = '#d4f6ff'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L * s * 0.35, -W * s); ctx.lineTo(L * s, 0); ctx.lineTo(L * s * 0.35, W * s); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#7fc8f0'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L * s, 0); ctx.lineTo(L * s * 0.35, W * s); ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.2, s * 0.035);
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L * s * 0.35, -W * s); ctx.lineTo(L * s, 0); ctx.lineTo(L * s * 0.35, W * s); ctx.closePath(); ctx.stroke();
+            ctx.restore();
+          }
+          ctx.restore();
+        }
+      },
+      piel(ctx, s) {
+        // hielo: de blanco a azul, facetas y plumitas en V en el pecho
+        const g = ctx.createLinearGradient(0, -s, 0, 0); g.addColorStop(0, '#eafcff'); g.addColorStop(0.55, '#8fd8ff'); g.addColorStop(1, '#3f8fe6');
+        ctx.fillStyle = g; ctx.fillRect(-s / 2, -s, s, s);
+        ctx.fillStyle = 'rgba(255,255,255,.45)';
+        ctx.beginPath(); ctx.moveTo(-s / 2, -s * 0.7); ctx.lineTo(-s * 0.2, -s); ctx.lineTo(-s / 2, -s); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(30,90,180,.25)';
+        ctx.beginPath(); ctx.moveTo(s / 2, -s * 0.35); ctx.lineTo(s * 0.15, 0); ctx.lineTo(s / 2, 0); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = Math.max(1, s * 0.025);
+        for (const [x, y] of [[-0.2, -0.13], [0, -0.09], [0.2, -0.13]]) { ctx.beginPath(); ctx.moveTo(x * s - s * 0.06, y * s - s * 0.04); ctx.lineTo(x * s, y * s); ctx.lineTo(x * s + s * 0.06, y * s - s * 0.04); ctx.stroke(); }
+      },
+      encima(ctx, s, sk, t, look) {
+        // cresta de cristales que titilan como llamas
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.2, s * 0.035);
+        for (const [x, h, w, k] of [[-0.27, 0.3, 0.09, 0], [0.27, 0.3, 0.09, 1], [-0.13, 0.42, 0.1, 2], [0.13, 0.42, 0.1, 3], [0, 0.56, 0.11, 4]]) {
+          const hh = s * h * (1 + 0.1 * Math.sin(t / 130 + k * 1.7)), bx = x * s, by = -s * 0.97, lean = x * s * 0.35, ww = w * s;
+          ctx.fillStyle = '#e4faff'; ctx.beginPath(); ctx.moveTo(bx - ww, by); ctx.lineTo(bx - ww * 0.8, by - hh * 0.55); ctx.lineTo(bx + lean, by - hh); ctx.lineTo(bx + ww * 0.8, by - hh * 0.55); ctx.lineTo(bx + ww, by); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#8fd0f5'; ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + lean, by - hh); ctx.lineTo(bx + ww * 0.8, by - hh * 0.55); ctx.lineTo(bx + ww, by); ctx.closePath(); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(bx - ww, by); ctx.lineTo(bx - ww * 0.8, by - hh * 0.55); ctx.lineTo(bx + lean, by - hh); ctx.lineTo(bx + ww * 0.8, by - hh * 0.55); ctx.lineTo(bx + ww, by); ctx.stroke();
+        }
+        // piquito
+        ctx.fillStyle = '#ffcf5a'; ctx.lineWidth = Math.max(1.2, s * 0.035);
+        ctx.beginPath(); ctx.moveTo(look - s * 0.075, -s * 0.44); ctx.lineTo(look + s * 0.075, -s * 0.44); ctx.lineTo(look, -s * 0.3); ctx.closePath(); ctx.fill(); ctx.stroke();
+        // escarcha que sube por los costados
+        for (let k = 0; k < 4; k++) {
+          const f = fase(t, 1300, k / 4), x = (k % 2 ? 1 : -1) * s * (0.55 + 0.12 * Math.sin(k * 2.7 + t / 500)), y = -s * (0.25 + f * 1.1);
+          ctx.globalAlpha = Math.min(1, f * 5) * (1 - f); ctx.fillStyle = '#f2fdff'; ctx.strokeStyle = '#3f8fe6'; ctx.lineWidth = Math.max(0.8, s * 0.018);
+          estrella(ctx, x, y, s * 0.06 + 0.8, 4); ctx.fill(); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      },
+    },
+    leyenda: {
+      detras(ctx, s, sk, t) {
+        // rayos de luz de colores que giran detrás
+        const cy = -s * 0.55, giro = t / 4000;
+        const halo = ctx.createRadialGradient(0, cy, s * 0.2, 0, cy, s * 1.25);
+        halo.addColorStop(0, 'rgba(255,250,220,.9)'); halo.addColorStop(0.5, 'rgba(255,225,150,.35)'); halo.addColorStop(1, 'rgba(255,225,150,0)');
+        ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(0, cy, s * 1.25, 0, Math.PI * 2); ctx.fill();
+        for (let k = 0; k < 16; k++) {
+          const a = giro + k * Math.PI / 8, L = s * (k % 2 ? 0.95 : 1.3) * (1 + 0.06 * Math.sin(t / 300 + k)), w = k % 2 ? 0.1 : 0.14, hue = (k * 45 + t / 15) % 360;
+          const g = ctx.createLinearGradient(0, cy, Math.cos(a) * L, cy + Math.sin(a) * L);
+          g.addColorStop(0, `hsla(${hue},100%,66%,1)`); g.addColorStop(0.65, `hsla(${hue},100%,66%,.75)`); g.addColorStop(1, `hsla(${hue},100%,70%,0)`);
+          ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(Math.cos(a - w) * s * 0.35, cy + Math.sin(a - w) * s * 0.35); ctx.lineTo(Math.cos(a) * L, cy + Math.sin(a) * L);
+          ctx.lineTo(Math.cos(a + w) * s * 0.35, cy + Math.sin(a + w) * s * 0.35); ctx.closePath(); ctx.fill();
+        }
+        // capita violeta con borde dorado y puntas de golondrina
+        const w1 = Math.sin(t / 300) * s * 0.04, w2 = Math.sin(t / 300 + 1.4) * s * 0.04;
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.5, s * 0.045); ctx.fillStyle = '#6a2fd0';
+        ctx.beginPath(); ctx.moveTo(-s * 0.4, -s * 0.8);
+        ctx.quadraticCurveTo(-s * 0.66, -s * 0.42, -s * 0.84 + w1, -s * 0.02); ctx.lineTo(-s * 0.68, -s * 0.14 + w2 * 0.5); ctx.lineTo(-s * 0.56, 0);
+        ctx.lineTo(s * 0.56, 0); ctx.lineTo(s * 0.68, -s * 0.14 + w1 * 0.5); ctx.lineTo(s * 0.84 + w2, -s * 0.02);
+        ctx.quadraticCurveTo(s * 0.66, -s * 0.42, s * 0.4, -s * 0.8); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = '#ffd23a'; ctx.lineWidth = Math.max(1, s * 0.028);
+        for (const [side, w] of [[-1, w1], [1, w2]]) {
+          ctx.beginPath(); ctx.moveTo(side * s * 0.43, -s * 0.74); ctx.quadraticCurveTo(side * s * 0.62, -s * 0.42, side * s * 0.78 + w, -s * 0.07); ctx.stroke();
+        }
+      },
+      piel(ctx, s, sk, t) {
+        // prisma: colores que corren en diagonal y un brillo que cruza
+        const g = ctx.createLinearGradient(-s / 2, -s, s / 2, 0);
+        for (let i = 0; i <= 6; i++) g.addColorStop(i / 6, `hsl(${(t / 12 + i * 55) % 360},90%,80%)`);
+        ctx.fillStyle = g; ctx.fillRect(-s / 2, -s, s, s);
+        const x = -s + fase(t, 2200) * s * 2.6;
+        ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.moveTo(x, -s); ctx.lineTo(x + s * 0.16, -s); ctx.lineTo(x - s * 0.2, 0); ctx.lineTo(x - s * 0.36, 0); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#fff';
+        for (const [px, py, k] of [[-0.34, -0.2, 0], [0.36, -0.78, 1], [0.32, -0.14, 2]]) {
+          const a = 0.5 + 0.5 * Math.sin(t / 240 + k * 2.1); ctx.globalAlpha = a; estrella(ctx, px * s, py * s, s * (0.03 + 0.04 * a), 4); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      },
+      encima(ctx, s, sk, t) {
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.2, s * 0.035);
+        // broches de la capa
+        ctx.fillStyle = '#ffd23a';
+        for (const side of [-1, 1]) { ctx.beginPath(); ctx.arc(side * s * 0.43, -s * 0.76, s * 0.06, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+        // corona radiante que flota apenas
+        const cy = -s * 0.97 + Math.sin(t / 600) * s * 0.02;
+        ctx.lineCap = 'round';
+        for (let k = 0; k < 7; k++) {
+          const a = -Math.PI / 2 + (k - 3) * 0.33, p = 0.5 + 0.5 * Math.sin(t / 250 + k), r0 = s * 0.44, r1 = s * (0.54 + 0.09 * p), oy = cy - s * 0.1;
+          ctx.globalAlpha = 0.45 + 0.55 * p; ctx.strokeStyle = '#ffb800'; ctx.lineWidth = Math.max(1.2, s * 0.035);
+          ctx.beginPath(); ctx.moveTo(Math.cos(a) * r0, oy + Math.sin(a) * r0); ctx.lineTo(Math.cos(a) * r1, oy + Math.sin(a) * r1); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        const g = ctx.createLinearGradient(0, cy - s * 0.4, 0, cy); g.addColorStop(0, '#fff3a0'); g.addColorStop(1, '#f5a300');
+        ctx.beginPath(); ctx.moveTo(-s * 0.34, cy + s * 0.02);
+        for (const [x, y] of [[-0.4, -0.3], [-0.2, -0.13], [0, -0.4], [0.2, -0.13], [0.4, -0.3], [0.34, 0.02]]) ctx.lineTo(x * s, cy + y * s);
+        ctx.closePath();
+        ctx.save(); ctx.shadowColor = '#ffe27a'; ctx.shadowBlur = s * 0.35; ctx.fillStyle = g; ctx.fill(); ctx.restore();
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.5, s * 0.045); ctx.stroke();
+        ctx.fillStyle = '#fffbe6'; ctx.lineWidth = Math.max(1, s * 0.025);
+        for (const [x, y] of [[-0.4, -0.3], [0, -0.4], [0.4, -0.3]]) { ctx.beginPath(); ctx.arc(x * s, cy + y * s, s * 0.05, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+        [-0.2, 0, 0.2].forEach((x, k) => {
+          ctx.fillStyle = `hsl(${(t / 6 + k * 120) % 360},95%,60%)`; ctx.beginPath(); ctx.arc(x * s, cy - s * 0.06, s * 0.04, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        });
+        // destellos alrededor
+        for (const [px, py, k] of [[-0.72, -1.12, 0], [0.74, -0.92, 1], [-0.7, -0.34, 2], [0.72, -0.24, 3]]) {
+          const a = 0.5 + 0.5 * Math.sin(t / 280 + k * 1.7);
+          ctx.fillStyle = '#ffffff'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(0.8, s * 0.02);
+          estrella(ctx, px * s, py * s, s * (0.04 + 0.07 * a) + 0.8, 4); ctx.fill(); ctx.stroke();
+        }
+      },
+    },
   });
 
   // Dibuja el cubo con la base apoyada en (x, pie). `lado` es el tamaño del cubo en px.
@@ -2755,6 +3636,8 @@
   function dibujarCubo(ctx, x, pie, s, o = {}) {
     const sk = o.skin || skin();
     const fx = o.efecto === false ? null : o.efecto || efecto().id;
+    // brillo de nivel: las vistas previas (efecto: false) no lo llevan; marco: id muestra uno en particular
+    const mc = o.marco === false || o.efecto === false ? null : (o.marco || (marco() || {}).id);
     const t = o.t ?? performance.now();
     const mareado = !!o.mareado, mirar = Math.max(-1, Math.min(1, o.mirar || 0));
     const lw = Math.max(2, s * 0.08);
@@ -2809,6 +3692,7 @@
     ctx.strokeStyle = INK; ctx.lineWidth = lw;
     rr(ctx, -s / 2, -s, s, s, s * 0.2); ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,.45)'; rr(ctx, -s * 0.36, -s * 0.9, s * 0.72, s * 0.12, s * 0.06); ctx.fill();
+    if (mc && mc !== 'ninguno') { ctx.save(); marcoNivel(ctx, mc, s, t); ctx.restore(); }
 
     // cara
     const ex = s * 0.2, ey = -s * 0.56, ojo = mareado ? INK : parte.ojo || sk.ojo || INK;
