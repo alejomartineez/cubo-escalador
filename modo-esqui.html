@@ -64,6 +64,10 @@ body {
   display: flex; align-items: center; gap: 4px;
 }
 .chip.hot { background: var(--cube); }
+/* sombra: verde si vas adelante, rosa si vas atrás */
+.sombrachip { background: #e6e2d6; }
+.sombrachip.adelante { background: #8ff0c8; }
+.sombrachip.atras { background: #ffb3c2; }
 .smallbtn {
   pointer-events: auto; font: 800 13px var(--body); color: var(--ink);
   background: var(--paper); border: 2px solid var(--ink); border-radius: 999px;
@@ -163,6 +167,7 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .logros { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
 .logros span { font-weight: 800; font-size: 12px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 3px 10px; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row .sombra { grid-column: 1 / -1; }
 .btn {
   font: 800 16px var(--body); color: var(--ink); padding: 14px 10px; cursor: pointer;
   background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
@@ -205,6 +210,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <button class="smallbtn icon" id="btnRestart" type="button" aria-label="Reiniciar (R)" title="Reiniciar (R)">↻</button>
     </div>
     <span class="chip" id="hDif"></span>
+    <span class="chip sombrachip" id="hSombra" hidden></span>
   </div>
 </div>
 
@@ -232,6 +238,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <div class="row">
         <button class="btn" id="btnRank" type="button">🏆 Ranking</button>
         <button class="ter btn" id="btnMute" type="button">Sonido: sí</button>
+        <button class="ter btn sombra" id="btnSombra" type="button" hidden title="Un cubo transparente baja como en tu mejor partida">Sombra: sí</button>
       </div>
       <p class="teclas" id="mTeclas"></p>
     </div>
@@ -413,6 +420,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       gates: [], obst: [], deco: [], trail: [], side: Math.random() < 0.5 ? -1 : 1,
       genY: 0, decoY: -40, done: false, deadT: 0, settled: false, r: null, lastDir: 0, sprayT: 0,
       tipo: 'comun', trLeft: PRIMER_TRAMO, ultimoEv: null, eventos: 0,
+      graba: null, sombra: null,   // la curva de esta partida (segundos → metros) y la sombra contra la que bajás
     };
     camX = 0; camY = 0;
     particles = []; floats = []; banner = null;
@@ -490,6 +498,37 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   const nextGate = () => G.gates.find(g => g.state === 0);
 
+  // ---------- sombra (cubo-comun.js, CC.sombra) ----------
+  // Se graba cuántos metros llevabas en cada momento. Tu mejor partida grabada de esa dificultad queda como sombra:
+  // un cubo transparente que baja por el medio de las puertas de esta pista, a su ritmo, y se queda donde se cayó.
+  const conSombra = !!(CC && CC.sombra);
+  function prepararSombra() {
+    if (!conSombra || G.demo) return;
+    G.graba = CC.sombra.grabar({ cada: 250 });
+    G.sombra = CC.sombra.activa('esqui') ? CC.sombra.cargar('esqui', G.dif) : null;
+  }
+  const metrosSombra = () => G.sombra.valorEn(G.t * 1000, true);
+  // x de la sombra: el centro de las puertas de esta pista a esa altura
+  function xSombra(y) {
+    let a = null;
+    for (const g of G.gates) { if (g.y > y) return a ? a.cx + (g.cx - a.cx) * (y - a.y) / ((g.y - a.y) || 1) : g.cx * Math.min(1, y / g.y); a = g; }
+    return a ? a.cx : 0;
+  }
+  function drawSombra(now) {
+    const y = metrosSombra(), [sx, sy, k] = P(xSombra(y), y);
+    if (sy < -80 || sy > H + 80) return;
+    const s = Math.max(20, PPM * 2.2 * k), cayo = G.t * 1000 > G.sombra.fin;
+    ctx.save(); ctx.globalAlpha = 0.4;
+    drawSkis(ctx, sx, sy, 0, s / 2, cayo ? 0.6 : 0);
+    ctx.translate(sx, sy + s * 0.12);
+    CC.dibujarCubo(ctx, 0, 0, s, { skin: CC.skin(), efecto: false, mareado: cayo, t: now });
+    ctx.restore();
+  }
+  function textoSombra() {
+    const d = Math.round((G.done ? G.final : G.y) - metrosSombra());
+    return { txt: 'Sombra ' + (d > 0 ? '+' : d < 0 ? '−' : '±') + fmtN(Math.abs(d)) + ' m', adelante: d > 0, atras: d < 0 };
+  }
+
   // ---------- partida ----------
   function settle() { // fin de partida (o cortada con R / Esc): una sola llamada a la librería
     if (G.settled || G.demo) return G.r;
@@ -510,10 +549,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     CC?.morir();   // personajes con muerte propia (Geo se parte en pedazos)
     shake = reduceMotion ? 0 : 12; sfxCrash(); CC?.vibrar(60);
     const r = settle();
+    let linea = '';
+    if (G.graba && G.final > 0) {
+      G.graba.marca(G.t * 1000, G.final);
+      const nueva = CC.sombra.guardar('esqui', G.dif, G.graba, G.final), S = G.sombra;
+      if (S) { const d = G.final - S.max; linea = d > 0 ? `Le ganaste a tu sombra por ${fmtN(d)} m` : d < 0 ? `Tu sombra llegó ${fmtN(-d)} m más lejos` : 'Empate con tu sombra'; }
+      else if (nueva) linea = 'Ya tenés sombra para la próxima';
+    }
     $('eTitle').textContent = TITLES[Math.floor(Math.random() * TITLES.length)];
     $('eNum').textContent = fmtN(G.y) + ' m';
     $('eSub').textContent = `${G.D.nombre} · ${G.passed} ${G.passed === 1 ? 'puerta' : 'puertas'} · racha máx. ${G.bestStreak} · ${G.t.toFixed(0)} s`;
-    $('eSub2').textContent = r && !r.record && r.textoAnterior ? `Tu récord en ${G.D.nombre}: ${r.textoAnterior}` : '';
+    $('eSub2').textContent = [r && !r.record && r.textoAnterior ? `Tu récord en ${G.D.nombre}: ${r.textoAnterior}` : '', linea].filter(Boolean).join(' · ');
     $('eXP').hidden = !r; if (r) $('eXP').textContent = `+${r.xp} XP`;
     $('eBadge').hidden = !(r && r.record); if (r) $('eBadge').textContent = r.primera ? 'Primer récord' : 'Nuevo récord';
     const lg = r && r.logros && r.logros.length ? r.logros : [];
@@ -532,6 +578,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
     $('mBest').textContent = txt;
     $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+    $('btnSombra').hidden = !conSombra;
+    if (conSombra) $('btnSombra').textContent = 'Sombra: ' + (CC.sombra.activa('esqui') ? 'sí' : 'no');
   }
   function restart() {
     if (state === 'play' && G && !G.demo && !G.done && G.y > 30) {
@@ -545,6 +593,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function start() {
     resize();
     newRun(false, difId());
+    prepararSombra();
+    $('hSombra').hidden = !G.sombra; $('hSombra').textContent = 'Sombra ±0 m'; $('hSombra').className = 'chip sombrachip';
     state = 'play';
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').classList.remove('off');
     hudCache = '';
@@ -639,6 +689,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   $('btnHome').addEventListener('click', () => CC ? CC.volver() : showMenu());
   $('btnAgain').addEventListener('click', start);
   $('btnRank').addEventListener('click', openRank);
+  $('btnSombra').addEventListener('click', () => { CC.sombra.elegir('esqui', !CC.sombra.activa('esqui')); renderMenu(); });
   $('btnRank2').addEventListener('click', openRank);
   $('btnMute').addEventListener('click', () => {
     muted = !muted; pref.muted = muted; savePref(); renderMenu();
@@ -772,6 +823,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         if (!G.done) G.t += dt;
         let left = dt;
         while (left > 0) { const h = Math.min(1 / 120, left); step(h, now); left -= h; if (G.done) break; }
+        if (G.graba && !G.done) G.graba.marca(G.t * 1000, G.y);
       }
     } else {
       for (let k = 0; k < 4; k++) step(dt / 4, now); // deslizarse un poquito después de caerse
@@ -792,7 +844,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
     if (state === 'play' || state === 'end') {
       const meters = G.done ? G.final : G.y; // después de caerse se sigue deslizando, pero no suma
-      const sig = Math.floor(meters) + '|' + G.lives + '|' + G.streak + '|' + G.dif;
+      const som = G.sombra && G.count <= 0 ? textoSombra() : null;
+      const sig = Math.floor(meters) + '|' + G.lives + '|' + G.streak + '|' + G.dif + '|' + (som ? som.txt : '');
       if (sig !== hudCache) {
         hudCache = sig;
         $('hScore').textContent = fmtN(meters);
@@ -803,6 +856,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         $('hLives').setAttribute('aria-label', `${G.lives} ${G.lives === 1 ? 'vida' : 'vidas'}`);
         $('hDif').innerHTML = (CC ? CC.iconoDif(G.dif, 20) : '') + G.D.nombre;
         $('hDif').classList.toggle('hot', G.streak >= 10);
+        if (som) {
+          $('hSombra').textContent = som.txt;
+          $('hSombra').classList.toggle('adelante', som.adelante); $('hSombra').classList.toggle('atras', som.atras);
+        }
       }
       const d = state === 'play' ? heldDir() : 0;
       $('bL').classList.toggle('on', d < 0); $('bR').classList.toggle('on', d > 0);
@@ -992,6 +1049,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       ctx.fillStyle = CREMA; ctx.font = `${Math.round(m * 0.85)}px "Lilita One", "Trebuchet MS", sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('SALIDA', (lx + rx) / 2, ly - m * 3.27);
     } });
+    if (G.sombra && state !== 'menu') { const ys = metrosSombra(); items.push({ y: ys - 0.01, f: () => drawSombra(now) }); }
     items.push({ y: G.y, f: () => drawSkier(now) });
     items.sort((a, b) => a.y - b.y);
     for (const it of items) it.f();

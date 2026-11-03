@@ -808,8 +808,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     start();
     if (xp > 0) banner = { text: `+${xp} XP`, t: performance.now() };
   }
+  // marca de "hasta acá llegaste la otra vez": una barrita arriba que se llena hasta tu récord (cubo-comun.js)
+  let marca = null;
+  function ponerMarca(on) {
+    if (marca) { marca.quitar(); marca = null; }
+    if (on && CC && CC.sombra && G && !G.demo) marca = CC.sombra.marca('cohete', G.diff);
+  }
   function start() {
     newRun(false, diffNow());
+    ponerMarca(true);
     state = 'play';
     clearInput();
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false;
@@ -828,6 +835,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showMenu() {
     if (state === 'play' && G && !G.demo && !G.done && G.t > 1) settle();
+    ponerMarca(false);
     state = 'menu';
     clearInput(); engine(0);
     newRun(true);
@@ -838,6 +846,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showEnd() {
     state = 'end';
+    ponerMarca(false);
     renderAgain();
     $('end').hidden = false; $('pad').classList.add('off');
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
@@ -1126,6 +1135,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (sig !== hudCache) {
         hudCache = sig;
         $('hScore').textContent = fmtN(G.score);
+        if (marca) marca.ver(G.score);
         $('hAlt').innerHTML = `${fmtN(m)} m · <span class="st">★</span> ${G.starsN}`;
         const tot = DIFFS[G.diff].vidas;
         $('hLives').innerHTML = '<span class="hv">' + '♥'.repeat(Math.max(0, G.lives)) + '</span><span class="hx">' + '♥'.repeat(tot - Math.max(0, G.lives)) + '</span>';

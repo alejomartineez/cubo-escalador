@@ -45,14 +45,14 @@
   const marca = (mx, my) => {
     x.fillStyle = '#ffcc29'; x.strokeStyle = INK; x.lineWidth = 4; rr(mx, my, 44, 44, 11); x.fill(); x.stroke();
     x.fillStyle = INK; rr(mx + 12, my + 12, 6, 12, 3); x.fill(); rr(mx + 26, my + 12, 6, 12, 3); x.fill();
-    x.font = '800 26px Rubik'; x.textBaseline = 'middle'; x.fillText('Cubo Escalador', mx + 60, my + 23);
+    x.font = '800 26px Rubik'; x.textBaseline = 'middle'; x.fillText('TwoFingers', mx + 60, my + 23);
   };
   const envolver = (txt, maxW) => {
     const lineas = []; let l = '';
     for (const p of txt.split(' ')) { const prueba = l ? l + ' ' + p : p; if (x.measureText(prueba).width > maxW && l) { lineas.push(l); l = p; } else l = prueba; }
     if (l) lineas.push(l); return lineas;
   };
-  const titulo = hub ? 'Cubo Escalador' : juego.nombre;
+  const titulo = hub ? 'TwoFingers' : juego.nombre;
   const desc = hub ? '10 juegos que se juegan con dos flechas. Subí de nivel, desbloqueá personajes y competí en el ranking.' : (q.get('d') || '');
   x.textBaseline = 'alphabetic'; x.fillStyle = INK;
   if (!hub) marca(64, 58);

@@ -6,23 +6,23 @@
 <meta name="description" content="Cada flecha prende un propulsor. Esquivá asteroides y no te estrelles.">
 <link rel="canonical" href="https://alejomartineez.github.io/cubo-escalador/cohete.html">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Cubo Escalador">
+<meta property="og:site_name" content="TwoFingers">
 <meta property="og:locale" content="es_AR">
 <meta property="og:url" content="https://alejomartineez.github.io/cubo-escalador/cohete.html">
-<meta property="og:title" content="Cohete · Cubo Escalador">
+<meta property="og:title" content="Cohete · TwoFingers">
 <meta property="og:description" content="Cada flecha prende un propulsor. Esquivá asteroides y no te estrelles.">
 <meta property="og:image" content="https://alejomartineez.github.io/cubo-escalador/og/cohete.png">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Cohete · Cubo Escalador">
+<meta property="og:image:alt" content="Cohete · TwoFingers">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Cohete · Cubo Escalador">
+<meta name="twitter:title" content="Cohete · TwoFingers">
 <meta name="twitter:description" content="Cada flecha prende un propulsor. Esquivá asteroides y no te estrelles.">
 <meta name="twitter:image" content="https://alejomartineez.github.io/cubo-escalador/og/cohete.png">
 <meta name="theme-color" content="#62c6ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Cubo Escalador">
+<meta name="apple-mobile-web-app-title" content="TwoFingers">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%226%22%20fill%3D%22%23ffcc29%22%20stroke%3D%22%231d2340%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2210%22%20y%3D%2210%22%20width%3D%224%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%231d2340%22%2F%3E%3Crect%20x%3D%2218%22%20y%3D%2210%22%20width%3D%224%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%231d2340%22%2F%3E%3C%2Fsvg%3E">
 <link rel="apple-touch-icon" href="icono-180.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -853,8 +853,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     start();
     if (xp > 0) banner = { text: `+${xp} XP`, t: performance.now() };
   }
+  // marca de "hasta acá llegaste la otra vez": una barrita arriba que se llena hasta tu récord (cubo-comun.js)
+  let marca = null;
+  function ponerMarca(on) {
+    if (marca) { marca.quitar(); marca = null; }
+    if (on && CC && CC.sombra && G && !G.demo) marca = CC.sombra.marca('cohete', G.diff);
+  }
   function start() {
     newRun(false, diffNow());
+    ponerMarca(true);
     state = 'play';
     clearInput();
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false;
@@ -873,6 +880,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showMenu() {
     if (state === 'play' && G && !G.demo && !G.done && G.t > 1) settle();
+    ponerMarca(false);
     state = 'menu';
     clearInput(); engine(0);
     newRun(true);
@@ -883,6 +891,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showEnd() {
     state = 'end';
+    ponerMarca(false);
     renderAgain();
     $('end').hidden = false; $('pad').classList.add('off');
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
@@ -1171,6 +1180,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (sig !== hudCache) {
         hudCache = sig;
         $('hScore').textContent = fmtN(G.score);
+        if (marca) marca.ver(G.score);
         $('hAlt').innerHTML = `${fmtN(m)} m · <span class="st">★</span> ${G.starsN}`;
         const tot = DIFFS[G.diff].vidas;
         $('hLives').innerHTML = '<span class="hv">' + '♥'.repeat(Math.max(0, G.lives)) + '</span><span class="hx">' + '♥'.repeat(tot - Math.max(0, G.lives)) + '</span>';

@@ -1,4 +1,4 @@
-// Cubo Escalador: lo que comparten todos los juegos.
+// TwoFingers: lo que comparten todos los juegos.
 // Perfil (nivel, XP, personaje, efecto, logros, récords), ranking online, dificultades y el dibujo del cubo.
 //
 // Uso desde un juego (cargá este archivo antes del script del juego):
@@ -951,6 +951,10 @@
 .cc-teclas .g.juego kbd.f{background:#ffe27a}
 @media (pointer:coarse){.cc-teclas{display:none}}
 #cc-avisos{zoom:var(--ui,1)}
+.cc-marca{position:fixed;left:0;right:0;top:0;height:9px;background:rgba(29,35,64,.4);border-bottom:2.5px solid ${INK};z-index:50;pointer-events:none}
+.cc-marca i{position:absolute;left:0;top:0;bottom:0;width:0;background:#fffaf0;border-right:2.5px solid ${INK}}
+.cc-marca span{position:absolute;right:2px;top:6px;font-size:19px;line-height:1}
+.cc-marca.paso{background:#ffcc29}.cc-marca.paso i{background:#ffcc29}
 .cc-dif:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
 .cc-difs-nota{grid-column:1/-1;margin:2px 0 0;font:600 12px/1.35 "Rubik",system-ui,sans-serif;color:inherit;opacity:.85;text-align:center;min-height:16px}
 #cc-avisos{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 76px);transform:translateX(-50%);z-index:9999;
@@ -3970,6 +3974,210 @@
     }
   }
 
+  // ---------- sombra ----------
+  // La sombra es tu mejor partida como curva de progreso (tiempo → escalones, metros o puntos), no las teclas:
+  // los niveles salen distintos cada vez, pero la curva sirve igual. Formato pensado para subirse al servidor:
+  //   "1:" + puntos separados por coma; cada punto es el delta de ms en base 36 y, si el valor no subió de a 1,
+  //   "~" + el delta del valor (base 36, puede ser negativo). Ej.: "1:4b,3k,3f~2". Tope SOMBRA_MAX caracteres.
+  //   const g = CC.sombra.grabar({ cada: 0 });  g.marca(ms, valor) cada vez que querás (guarda solo si cambió)
+  //   CC.sombra.guardar('escalador', 'sprint', g, valor)   → true si quedó como sombra (la primera o un récord)
+  //   const s = CC.sombra.cargar('escalador', 'sprint');   s.valorEn(ms), s.tiempoPara(valor), s.fin, s.max, s.valor
+  //   CC.sombra.activa('escalador') / CC.sombra.elegir('escalador', false)   → el interruptor del menú
+  const SOMBRA_V = 1, SOMBRA_MAX = 2000, SOMBRAS = 'cubo-sombras', SOMBRA_NO = 'cubo-sombra-no';
+  function codificarSombra(pts) {   // pts: [[ms, valor], ...] con ms crecientes desde 0
+    let d = [];
+    for (let k = 0, t = 0, v = 0; k < pts.length; k++) {
+      d.push([Math.max(0, Math.round(pts[k][0] - t)), Math.round(pts[k][1] - v)]);
+      t += d[d.length - 1][0]; v += d[d.length - 1][1];
+    }
+    const texto = () => SOMBRA_V + ':' + d.map(([dt, dv]) => dt.toString(36) + (dv === 1 ? '' : '~' + dv.toString(36))).join(',');
+    let s = texto();
+    // si no entra, se junta de a pares (las puntas quedan exactas)
+    while (s.length > SOMBRA_MAX && d.length > 1) {
+      const n = [];
+      for (let k = 0; k < d.length; k += 2) n.push(d[k + 1] ? [d[k][0] + d[k + 1][0], d[k][1] + d[k + 1][1]] : d[k]);
+      d = n; s = texto();
+    }
+    return s;
+  }
+  function decodificarSombra(s) {
+    if (typeof s !== 'string' || s.length > SOMBRA_MAX + 50 || !s.startsWith(SOMBRA_V + ':')) return null;
+    const pts = [];
+    let t = 0, v = 0;
+    for (const p of s.slice(2).split(',')) {
+      const [a, b] = p.split('~'), dt = parseInt(a, 36), dv = b == null ? 1 : parseInt(b, 36);
+      if (!(dt >= 0) || !isFinite(dv)) return null;
+      t += dt; v += dv; pts.push([t, v]);
+    }
+    return pts.length ? pts : null;
+  }
+  // Una sombra cargada: búsquedas binarias sobre la curva.
+  function curvaSombra(pts, extra = {}) {
+    const fin = pts[pts.length - 1][0];
+    const max = Math.max(...pts.map(p => p[1]));
+    return {
+      ...extra, puntos: pts, fin, max,
+      // valor que tenía la sombra a los `ms`; con suave, interpolado entre puntos (para cosas continuas como metros)
+      valorEn(ms, suave) {
+        if (ms < pts[0][0]) return suave && pts[0][0] > 0 ? pts[0][1] * Math.max(0, ms) / pts[0][0] : 0;
+        let lo = 0, hi = pts.length - 1;
+        while (lo < hi) { const m = (lo + hi + 1) >> 1; if (pts[m][0] <= ms) lo = m; else hi = m - 1; }
+        if (!suave || lo === pts.length - 1) return pts[lo][1];
+        const [t0, v0] = pts[lo], [t1, v1] = pts[lo + 1];
+        return v0 + (v1 - v0) * (ms - t0) / ((t1 - t0) || 1);
+      },
+      // primer ms en que la sombra llegó a `valor` (Infinity si nunca llegó)
+      tiempoPara(valor) {
+        if (valor <= 0) return 0;
+        for (let k = 0; k < pts.length; k++) if (pts[k][1] >= valor) return pts[k][0];
+        return Infinity;
+      },
+    };
+  }
+  // Sube al servidor las sombras nuevas (las marcadas con `subir`), solo si tenés apodo. Así tus amigos pueden correr contra vos.
+  let subiendoSombras = false;
+  async function subirSombras() {
+    const p = leer();
+    if (subiendoSombras || !p.apodo || !rankingActivo() || navigator.onLine === false) return;
+    subiendoSombras = true;
+    try {
+      for (const [clave, x] of Object.entries(leerSombras())) {
+        if (!x || !x.subir) continue;
+        const [jid, tid] = clave.split(':');
+        const ok = await api('rpc/subir_sombra', { method: 'POST', body: JSON.stringify({ p_jugador: p.id, p_juego: jid, p_tabla: tid, p_valor: x.valor, p_curva: x.s }) });
+        const todas = leerSombras();   // si mientras tanto hiciste otra sombra, esa queda para la próxima
+        if (ok === true && todas[clave] && todas[clave].s === x.s) { delete todas[clave].subir; try { localStorage.setItem(SOMBRAS, JSON.stringify(todas)); } catch (e) {} }
+      }
+    } catch (e) {}
+    subiendoSombras = false;
+  }
+  addEventListener('online', () => subirSombras());
+  setTimeout(() => subirSombras(), 2500);
+  // Baja la sombra de un amigo aceptado (el servidor lo revisa). → curva o null si no tiene en esa tabla.
+  async function sombraDeAmigo(codigo, jid, tid) {
+    const r = await api('rpc/sombra_de_amigo', { method: 'POST', body: JSON.stringify({ p_jugador: leer().id, p_codigo: codigo, p_juego: jid, p_tabla: tid }) });
+    const pts = r && decodificarSombra(r.curva);
+    return pts ? curvaSombra(pts, { valor: +r.valor }) : null;
+  }
+  // Ventana para elegir contra qué amigo correr. opciones: [{ tabla, nombre }] (un botón por tabla en cada amigo).
+  // alElegir(sombra, amigo, tabla) recibe la curva ya bajada; amigo trae apodo, codigo y skin (objeto de SKINS).
+  function elegirSombraAmigo(o) {
+    estilos();
+    const p = leer(), previo = document.activeElement;
+    const box = document.createElement('div');
+    box.id = 'cc-rank';
+    box.innerHTML = `<div class="cc-rk" role="dialog" aria-modal="true" aria-labelledby="cc-sa-t">
+      <header><div><h2 id="cc-sa-t">Sombra de un amigo</h2><small></small></div><button class="x" type="button" aria-label="Cerrar">✕</button></header>
+      <ol aria-live="polite"></ol><div class="pie"><p class="ayuda">Bajás su mejor partida y corrés contra ella. Solo se ven las de amigos aceptados.</p></div></div>`;
+    document.body.appendChild(box);
+    const ol = box.querySelector('ol'), ayuda = box.querySelector('.ayuda');
+    box.querySelector('small').textContent = o.titulo || (juego(o.juego) || {}).nombre || '';
+    function cerrar() { box.remove(); removeEventListener('keydown', tecla, true); if (previo && previo.focus) previo.focus(); }
+    function tecla(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); } else e.stopPropagation(); }
+    addEventListener('keydown', tecla, true);
+    box.querySelector('.x').addEventListener('click', cerrar);
+    box.addEventListener('click', e => { if (e.target === box) cerrar(); });
+    const msg = t => { ol.innerHTML = '<li class="msg"></li>'; ol.firstChild.textContent = t; };
+    if (sinRed()) return msg(sinRed().msg);
+    if (!p.apodo) return msg('Poné un apodo en el Ranking y sumá amigos para correr contra sus sombras.');
+    if (!p.amigos.length) return msg('Todavía no tenés amigos aceptados. Sumalos desde la portada, en Amigos.');
+    for (const a of p.amigos) {
+      const li = document.createElement('li');
+      li.innerHTML = '<span class="n"></span>' + o.opciones.map((x, k) => `<button class="link" type="button" data-k="${k}"></button>`).join('');
+      li.querySelector('.n').textContent = a.apodo;
+      li.querySelectorAll('button').forEach(b => { b.textContent = o.opciones[+b.dataset.k].nombre; b.style.marginLeft = '0'; });
+      li.addEventListener('click', async e => {
+        const b = e.target.closest('button'); if (!b) return;
+        const op = o.opciones[+b.dataset.k];
+        ayuda.textContent = 'Bajando la sombra de ' + a.apodo + '…';
+        try {
+          const S = await sombraDeAmigo(a.codigo, o.juego, op.tabla);
+          if (!S) { ayuda.textContent = `${a.apodo} todavía no tiene sombra en ${op.nombre}${o.detalle ? ' (' + o.detalle + ')' : ''}.`; return; }
+          cerrar();
+          o.alElegir(S, { apodo: a.apodo, codigo: a.codigo, skin: SKINS.find(s => s.id === a.skin) || SKINS[0] }, op.tabla);
+        } catch (err) { ayuda.textContent = 'No se pudo bajar la sombra. Probá de nuevo.'; }
+      });
+      ol.appendChild(li);
+    }
+    const b = ol.querySelector('button'); if (b) b.focus();
+  }
+  function leerSombras() { try { const o = JSON.parse(localStorage.getItem(SOMBRAS)); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
+  const sombra = {
+    VERSION: SOMBRA_V, MAX: SOMBRA_MAX, codificar: codificarSombra, decodificar: decodificarSombra,
+    // cada: ms mínimos entre puntos (para juegos donde el valor cambia en cada cuadro)
+    grabar(o = {}) {
+      const pts = [], cada = o.cada || 0;
+      let pendiente = null;   // el último cambio que no se guardó por `cada`
+      const poner = (ms, v) => { pts.push([Math.max(0, Math.round(ms)), v]); pendiente = null; };
+      return {
+        puntos: pts,
+        marca(ms, valor) {
+          valor = Math.round(valor);
+          if (pendiente && ms - pts[pts.length - 1][0] >= cada) poner(...pendiente);
+          const u = pts[pts.length - 1];
+          if ((pendiente || u || [0, 0])[1] === valor) return;
+          if (u && ms - u[0] < cada) pendiente = [ms, valor]; else poner(ms, valor);
+        },
+        // cierra la curva (guardar() lo llama solo)
+        cerrar() { if (pendiente) poner(...pendiente); },
+      };
+    },
+    guardar(jid, tid, g, valor) {
+      const pts = g && (g.puntos || g);
+      if (!Array.isArray(pts) || !pts.length || !(+valor > 0)) return false;
+      if (g.cerrar) g.cerrar();
+      const todas = leerSombras(), clave = jid + ':' + tid, vieja = todas[clave];
+      if (vieja && !mejor(tablaDe(jid, tid), +valor, vieja.valor)) return false;
+      todas[clave] = { s: codificarSombra(pts), valor: +valor, fecha: Date.now(), subir: 1 };
+      try { localStorage.setItem(SOMBRAS, JSON.stringify(todas)); } catch (e) { return false; }
+      subirSombras();
+      return true;
+    },
+    cargar(jid, tid) {
+      const x = leerSombras()[jid + ':' + tid], pts = x && decodificarSombra(x.s);
+      return pts ? curvaSombra(pts, { valor: x.valor, fecha: x.fecha, texto: x.s }) : null;
+    },
+    desde: (s, extra) => { const pts = decodificarSombra(s); return pts ? curvaSombra(pts, extra) : null; },
+    subir: subirSombras, deAmigo: sombraDeAmigo, elegirAmigo: elegirSombraAmigo,
+    activa(jid) { try { return !(JSON.parse(localStorage.getItem(SOMBRA_NO)) || {})[jid]; } catch (e) { return true; } },
+    elegir(jid, si) {
+      let o = {};
+      try { o = JSON.parse(localStorage.getItem(SOMBRA_NO)) || {}; } catch (e) {}
+      if (si) delete o[jid]; else o[jid] = 1;
+      try { localStorage.setItem(SOMBRA_NO, JSON.stringify(o)); } catch (e) {}
+      return !!si;
+    },
+    // Juegos de aguantar: una barrita arriba que se llena hasta tu récord ("hasta acá llegaste la otra vez").
+    //   const m = CC.sombra.marca('lluvia', 'normal');  m.ver(puntos) en cada cuadro;  m.quitar() al terminar
+    marca(jid, tid) {
+      const tb = tablaDe(jid, tid), recd = leer().mejores[jid + ':' + tid];
+      const nada = { ver() {}, quitar() {}, record: null };
+      if (!(recd > 0) || (tb && tb.orden === 'menor')) return nada;
+      estilos();
+      const el = document.createElement('div');
+      el.className = 'cc-marca';
+      el.innerHTML = '<i></i><span>🏁</span>';
+      el.title = 'Hasta acá llegaste la otra vez: ' + formato(recd, tb);
+      document.body.appendChild(el);
+      const barra = el.firstChild;
+      let ultimo = -1, paso = false;
+      return {
+        record: recd,
+        ver(v) {
+          const f = Math.max(0, Math.min(1, v / recd)), q = Math.round(f * 200);
+          if (q !== ultimo) { ultimo = q; barra.style.width = (f * 100) + '%'; }
+          if (!paso && v > recd) {
+            paso = true; el.classList.add('paso');
+            avisar('<b>¡Pasaste tu marca!</b><br>La otra vez llegaste a ' + formato(recd, tb), 2200);
+          }
+        },
+        quitar() { el.remove(); },
+      };
+    },
+    // "+0,8 s" / "−1,2 s" (negativo = vas adelante)
+    textoDif(ms) { const s = Math.abs(ms) / 1000; return (ms < 0 ? '−' : '+') + s.toFixed(1).replace('.', ',') + ' s'; },
+  };
+
   // Chrome bloquea (y avisa en consola) la vibración antes del primer toque del usuario.
   // Se apaga desde Opciones en la portada (cubo-vibrar = '0').
   function vibrar(ms = 12) {
@@ -3985,7 +4193,7 @@
     xpPara, nivelDe, perfil, skin, efecto, elegirSkin, elegirEfecto, libre, nuevos, marcarVistos,
     sumarXP, xpEscala, partida, importarRecord, anotarRecord, revisarLogros, tieneLogro,
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
-    avisar, vibrar, volver, dibujarCubo, morir,
+    avisar, vibrar, volver, dibujarCubo, morir, sombra,
   };
   // Duelos 1v1 (cubo-duelo.js): usa la misma conexión a Supabase y escucha las invitaciones en todas las páginas.
   window.CuboComun.RANKING = RANKING;

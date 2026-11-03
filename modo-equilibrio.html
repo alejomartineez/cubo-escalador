@@ -634,8 +634,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     for (const b of document.querySelectorAll('.diff')) b.addEventListener('click', () => setDiff(b.dataset.d));
   }
 
+  // marca de "hasta acá llegaste la otra vez": una barrita arriba que se llena hasta tu récord (cubo-comun.js)
+  let marca = null;
+  function ponerMarca(on) {
+    if (marca) { marca.quitar(); marca = null; }
+    if (on && CC && CC.sombra && G && !G.demo) marca = CC.sombra.marca('equilibrio', G.diff);
+  }
   function start() {
     newRun(false);
+    ponerMarca(true);
     state = 'play'; hudCache = '';
     $('hDiff').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + G.cfg.name; $('hDiff').dataset.d = G.diff;
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').hidden = false;
@@ -658,6 +665,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showMenu() {
     settleIfPlayed();
+    ponerMarca(false);
     state = 'menu';
     newRun(true, G ? G.D % 120 : 0);
     renderMenu();
@@ -666,6 +674,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showEnd() {
     state = 'end';
+    ponerMarca(false);
     renderAgain();
     $('end').hidden = false; $('pad').hidden = true; $('help').hidden = true;
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
@@ -950,6 +959,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (sig !== hudCache) {
         hudCache = sig;
         $('hDist').textContent = Math.floor(G.D); $('hTime').textContent = G.t.toFixed(1);
+        if (marca) marca.ver(Math.floor(G.D));
         $('hLvl').textContent = chip; $('hLvl').classList.toggle('hot', hot);
       }
     }

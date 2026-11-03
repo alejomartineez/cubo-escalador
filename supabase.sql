@@ -1,4 +1,4 @@
--- Ranking online de Cubo Escalador.
+-- Ranking online de TwoFingers.
 -- Supabase → SQL Editor → New query → pegar → Run. La primera vez va entero; después, solo la parte nueva
 -- (cada parte empieza con un título "-- ---------- ... ----------" y se puede correr más de una vez).
 
@@ -601,3 +601,51 @@ begin
   delete from public.jugadores where id = p_origen;   -- se lleva las filas viejas de amistades y retos
 end $$;
 revoke all on function public.juntar_jugadores(uuid, uuid) from public, anon, authenticated;
+
+-- ---------- Sombras de amigos ----------
+-- La sombra es tu mejor partida como curva de progreso (formato de CC.sombra en cubo-comun.js: "1:" + deltas en base 36,
+-- unos 1-2 KB). Se sube solo cuando hacés una sombra nueva y se baja solo cuando elegís competir contra un amigo.
+-- Una sola por jugador, juego y tabla. Nadie la lee directo: solo las ven los amigos aceptados (sombra_de_amigo).
+create table if not exists public.sombras (
+  jugador     uuid not null references public.jugadores (id) on delete cascade,
+  juego       text not null check (juego ~ '^[a-z]{3,12}$'),
+  tabla       text not null check (tabla ~ '^[a-z-]{1,12}$'),
+  valor       double precision not null,
+  curva       text not null check (char_length(curva) <= 2100 and curva ~ '^1:[0-9a-z]+(~-?[0-9a-z]+)?(,[0-9a-z]+(~-?[0-9a-z]+)?)*$'),
+  actualizado timestamptz not null default now(),
+  primary key (jugador, juego, tabla)
+);
+alter table public.sombras enable row level security;
+
+-- Guarda (o reemplaza) tu sombra de esa tabla. Como mucho 40 sombras por jugador y una subida cada 5 s por tabla.
+create or replace function public.subir_sombra(p_jugador uuid, p_juego text, p_tabla text, p_valor double precision, p_curva text)
+returns boolean language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.jugadores where id = p_jugador) then return false; end if;
+  if p_valor is null or p_valor = 'NaN'::double precision or abs(p_valor) = 'Infinity'::double precision then return false; end if;
+  if coalesce(char_length(p_curva), 9999) > 2100 or coalesce(p_juego, '') !~ '^[a-z]{3,12}$' or coalesce(p_tabla, '') !~ '^[a-z-]{1,12}$' then return false; end if;
+  if (select count(*) from public.sombras where jugador = p_jugador) >= 40
+     and not exists (select 1 from public.sombras where jugador = p_jugador and juego = p_juego and tabla = p_tabla) then
+    return false;
+  end if;
+  insert into public.sombras as s (jugador, juego, tabla, valor, curva) values (p_jugador, p_juego, p_tabla, p_valor, p_curva)
+  on conflict (jugador, juego, tabla) do update set valor = excluded.valor, curva = excluded.curva, actualizado = now()
+    where s.actualizado < now() - interval '5 seconds';
+  return found;   -- false si se salteó por el límite de 5 s: el juego la vuelve a mandar después
+exception when check_violation then return false;
+end $$;
+revoke all on function public.subir_sombra(uuid, text, text, double precision, text) from public;
+grant execute on function public.subir_sombra(uuid, text, text, double precision, text) to anon, authenticated;
+
+-- La sombra de un amigo (por su código de amigo). Si no son amigos aceptados, o no tiene sombra en esa tabla, null.
+create or replace function public.sombra_de_amigo(p_jugador uuid, p_codigo text, p_juego text, p_tabla text)
+returns json language plpgsql stable security definer set search_path = public as $$
+declare v_otro uuid;
+begin
+  v_otro := public.id_de_codigo(p_codigo);
+  if v_otro is null or v_otro = p_jugador or not public.son_amigos(p_jugador, v_otro) then return null; end if;
+  return (select json_build_object('valor', s.valor, 'curva', s.curva, 'actualizado', s.actualizado)
+          from public.sombras s where s.jugador = v_otro and s.juego = p_juego and s.tabla = p_tabla);
+end $$;
+revoke all on function public.sombra_de_amigo(uuid, text, text, text) from public;
+grant execute on function public.sombra_de_amigo(uuid, text, text, text) to anon, authenticated;

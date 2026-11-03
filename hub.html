@@ -1,4 +1,4 @@
-<title>Cubo Escalador</title>
+<title>TwoFingers</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -520,7 +520,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
 
 <div class="app">
   <header class="top">
-    <button class="brand" id="brand" type="button" aria-label="Cubo Escalador: volver a la pantalla de inicio">Cubo Escalador</button>
+    <button class="brand" id="brand" type="button" aria-label="TwoFingers: volver a la pantalla de inicio">TwoFingers</button>
     <div class="top-r">
       <button class="install" id="install" type="button" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M5 20h14"/></svg><span>Instalar</span>
@@ -661,7 +661,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
 <div class="portada espera" id="portada" hidden>
   <i class="pt-nube" aria-hidden="true"></i><i class="pt-nube" aria-hidden="true"></i><i class="pt-nube" aria-hidden="true"></i>
   <div class="pt-centro">
-    <h1 class="pt-titulo">Cubo<span>Escalador</span></h1>
+    <h1 class="pt-titulo">Two<span>Fingers</span></h1>
     <p class="pt-sub" id="ptSub">Juegos con solo dos flechas</p>
     <div class="pt-heroe">
       <canvas id="ptCubo" width="480" height="400" aria-label="Tu personaje"></canvas>
@@ -698,7 +698,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       <div class="opcion">
         <b>Esta pantalla al entrar</b>
         <div class="seg" role="group" aria-label="Pantalla de inicio al entrar" data-opcion="portada"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div>
-        <span>Si la sacás, entrás directo a los juegos. Para volver a verla tocá "Cubo Escalador" arriba.</span>
+        <span>Si la sacás, entrás directo a los juegos. Para volver a verla tocá "TwoFingers" arriba.</span>
       </div>
       <p class="creditos">Hecho por <a href="https://www.instagram.com/alejomartineez_/" target="_blank" rel="noopener">@alejomartineez_</a>. Música de Ritmo: Juhani Junkala (CC0).</p>
     </div>
@@ -1466,7 +1466,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   }
   $('copiarCodigo').addEventListener('click', async () => {
     const c = CC.perfil().codigoAmigo;
-    const texto = `¡Agregame en Cubo Escalador! Mi código de amigo es ${c}. ${location.origin + location.pathname}`;
+    const texto = `¡Agregame en TwoFingers! Mi código de amigo es ${c}. ${location.origin + location.pathname}`;
     try {
       if (navigator.share && tactil) await navigator.share({ text: texto });
       else { await navigator.clipboard.writeText(texto); $('amigoMsg').textContent = 'Copiado. Pegáselo a tu amigo.'; }

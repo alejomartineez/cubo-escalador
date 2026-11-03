@@ -8,7 +8,7 @@ import { deflateSync } from 'node:zlib';
 
 import { PAGES, idDe } from './paginas.mjs';
 const ASSETS = ['cubo-comun.js', 'cubo-duelo.js'];
-const NOMBRE = 'Cubo Escalador';
+const NOMBRE = 'TwoFingers';
 const SITIO = 'https://alejomartineez.github.io/cubo-escalador/';   // los links para compartir tienen que ser completos
 
 const ICON = 'data:image/svg+xml,' + encodeURIComponent(
@@ -148,7 +148,7 @@ function png(n) {
 for (const n of [180, 192, 512]) { writeFileSync(`docs/icono-${n}.png`, png(n)); salida.push(`icono-${n}.png`); }
 
 writeFileSync('docs/manifest.webmanifest', JSON.stringify({
-  name: NOMBRE, short_name: 'Cubo', lang: 'es', start_url: './', scope: './', display: 'standalone',
+  name: NOMBRE, short_name: 'TwoFingers', lang: 'es', start_url: './', scope: './', display: 'standalone',
   orientation: 'portrait', background_color: '#62c6ff', theme_color: '#62c6ff',
   description: PAGES[0].desc,
   icons: [

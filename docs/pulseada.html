@@ -6,23 +6,23 @@
 <meta name="description" content="Alterná izquierda y derecha lo más rápido que puedas para ganar la pulseada.">
 <link rel="canonical" href="https://alejomartineez.github.io/cubo-escalador/pulseada.html">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Cubo Escalador">
+<meta property="og:site_name" content="TwoFingers">
 <meta property="og:locale" content="es_AR">
 <meta property="og:url" content="https://alejomartineez.github.io/cubo-escalador/pulseada.html">
-<meta property="og:title" content="Pulseada · Cubo Escalador">
+<meta property="og:title" content="Pulseada · TwoFingers">
 <meta property="og:description" content="Alterná izquierda y derecha lo más rápido que puedas para ganar la pulseada.">
 <meta property="og:image" content="https://alejomartineez.github.io/cubo-escalador/og/pulseada.png">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Pulseada · Cubo Escalador">
+<meta property="og:image:alt" content="Pulseada · TwoFingers">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Pulseada · Cubo Escalador">
+<meta name="twitter:title" content="Pulseada · TwoFingers">
 <meta name="twitter:description" content="Alterná izquierda y derecha lo más rápido que puedas para ganar la pulseada.">
 <meta name="twitter:image" content="https://alejomartineez.github.io/cubo-escalador/og/pulseada.png">
 <meta name="theme-color" content="#62c6ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Cubo Escalador">
+<meta name="apple-mobile-web-app-title" content="TwoFingers">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%226%22%20fill%3D%22%23ffcc29%22%20stroke%3D%22%231d2340%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2210%22%20y%3D%2210%22%20width%3D%224%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%231d2340%22%2F%3E%3Crect%20x%3D%2218%22%20y%3D%2210%22%20width%3D%224%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%231d2340%22%2F%3E%3C%2Fsvg%3E">
 <link rel="apple-touch-icon" href="icono-180.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -212,6 +212,8 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 }
 .badge.tps { background: var(--cube); }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row .sombra { grid-column: 1 / -1; }
+.row .sombra small { font-weight: 600; opacity: .65; margin-left: 4px; }
 .btn {
   font: 800 16px var(--body); color: var(--ink); padding: 14px 10px; cursor: pointer;
   background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
@@ -328,6 +330,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <div class="row">
         <button class="btn small" id="btnRank" type="button">🏆 Ranking</button>
         <button class="ter btn small" id="btnMute" type="button">Sonido: sí</button>
+        <button class="btn small sombra" id="btnSombra" type="button" hidden>👻 Contra tu sombra <small id="mSombra"></small></button>
       </div>
       <p class="teclas" id="mTeclas"></p>
     </div>
@@ -350,6 +353,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     <div class="row">
       <button class="btn small" id="btnRankEnd" type="button">🏆 Ranking</button>
       <button class="ter btn small" id="btnHome" type="button">⌂ Juegos</button>
+      <button class="btn small sombra" id="btnSombraEnd" type="button" hidden>👻 Contra tu sombra</button>
     </div>
     <p class="teclas" id="eTeclas"></p>
   </div>
@@ -434,6 +438,28 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     rivalDuelo = { n: DUELO.rival.apodo, nombre: DUELO.rival.apodo, c: sk.cuerpo || '#ffcc29', o: 'negros', x: [], e: 'parejo', jefe: false };
   }
 
+  // ---------- sombra: tu ronda más rápida (cubo-comun.js, CC.sombra) ----------
+  // Cada ronda graba los toques en el tiempo. La de mejor ritmo queda como sombra, y "Contra tu sombra" es una ronda
+  // donde el rival empuja con esa curva, pasada por el mismo filtro que tu fuerza. Si la superás, queda la tuya.
+  const conSombra = !!(CC && CC.sombra) && !DUELO;
+  const rivalSombra = () => ({ n: 'Sombra', nombre: 'Sombra', c: playerColor(), o: 'negros', x: [], e: 'parejo', jefe: false, sombra: true });
+  let modoSombra = false;
+  // toques que llevaba la sombra a los `ft` s de pelea; cuando se termina su curva, sigue a su ritmo promedio
+  function toquesSombra(S, ft) {
+    const ms = ft * 1000;
+    return ms <= S.fin ? S.valorEn(ms) : S.max + (S.max / Math.max(1, S.fin)) * (ms - S.fin);
+  }
+  const ritmoSombra = S => S.valor / 10;   // se guarda en décimas de toque/s
+  // cierra la ronda que se estaba grabando: si fue la de mejor ritmo de la partida, queda como candidata a sombra
+  function cerrarGrabacion() {
+    const R = G && G.graba;
+    if (!R) return;
+    G.graba = null;
+    if (G.ft < 1.5 || R.n < 6) return;
+    const tps = Math.round(R.n / G.ft * 10);
+    if (!G.mejorRonda || tps > G.mejorRonda.tps) G.mejorRonda = { g: R.g, tps };
+  }
+
   // ---------- récords propios (el récord de rivales lo guarda cubo-comun) ----------
   const REC_KEY = 'cubo-pulseada-records';
   let rec = {};
@@ -492,8 +518,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let G = null, shake = 0, particles = [], floats = [], banner = null;
   const playerColor = () => (CC && CC.skin().cuerpo) || '#ffcc29';
 
-  function newRun(d) {
+  function newRun(d, S) {
     G = {
+      sombra: S || null, sf: 0, sn: 0, graba: null, mejorRonda: null,
       diff: d, score: 0, idx: 0, rival: rivalDe(0), phase: 'intro', pt: 0,
       p: 0, f: 0, you: 0, r1: 0, rv: 0, ft: 0, next: 0, taps: [], best: 0,
       wrong: 0, valid: 0, timeout: false, settled: false, tironOn: false, lastBad: 0, slide: 1, fall: 0,
@@ -502,7 +529,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     enterIntro();
   }
   function enterIntro() {
-    G.phase = 'intro'; G.pt = 0; G.rival = G.duelo ? rivalDuelo : rivalDe(G.idx); G.slide = G.idx === 0 ? 0 : 1; G.fall = 0;
+    G.phase = 'intro'; G.pt = 0; G.rival = G.duelo ? rivalDuelo : G.sombra ? rivalSombra() : rivalDe(G.idx); G.slide = G.idx === 0 ? 0 : 1; G.fall = 0;
     if (G.duelo) { G.duelo.ya = 0; G.duelo.p = 0; G.duelo.elYou = 0; G.p = 0; }
     G.f = 0; G.you = 0; G.r1 = 0; G.rv = 0; G.ft = 0; G.next = 0; G.taps = [];
     showCartel();
@@ -520,6 +547,19 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       $('cName').textContent = r.nombre;
       $('cPide').textContent = `Vos ${Du.yo} – ${Du.el} ${r.nombre}`;
       $('cEstilo').textContent = 'Gana el primero en llevarse 2 rondas.';
+      c.classList.remove('jefe');
+      const fc = $('cFace').getContext('2d');
+      fc.setTransform(1, 0, 0, 1, 0, 0); fc.clearRect(0, 0, 144, 144);
+      drawRival(fc, 72, 126, 96, r, 'calma', 0);
+      c.hidden = false;
+      c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
+      return;
+    }
+    if (G.sombra) {
+      $('cNum').textContent = 'Contra tu sombra';
+      $('cName').textContent = r.nombre;
+      $('cPide').textContent = 'Empuja como tu mejor ronda: ' + fmt1(ritmoSombra(G.sombra)) + ' toques/s';
+      $('cEstilo').textContent = 'Si la superás, tu ronda pasa a ser la sombra.';
       c.classList.remove('jefe');
       const fc = $('cFace').getContext('2d');
       fc.setTransform(1, 0, 0, 1, 0, 0); fc.clearRect(0, 0, 144, 144);
@@ -553,6 +593,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       return;
     }
     G.next = -d; G.f += 1; G.valid++;
+    if (G.graba) G.graba.g.marca(G.ft * 1000, ++G.graba.n);
     if (tipOn) { showTip(false); try { localStorage.setItem('cubo-pulseada-ayuda', '1'); } catch (e) {} }
     // ritmo sostenido: toques de los últimos 2 s, si cubren al menos 1,2 s
     const T = G.taps;
@@ -564,12 +605,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
 
   function winRound(now) {
+    cerrarGrabacion();
     G.phase = 'won'; G.pt = 0; G.score++;
     sfxWin(); CC?.vibrar(30);
     banner = { text: G.timeout ? '¡Por poquito!' : '¡Ganaste!', t: now, ms: 1200 };
     slam(1);
   }
   function loseRound(now) {
+    cerrarGrabacion();
     G.phase = 'lost'; G.pt = 0;
     sfxLose(); CC?.vibrar([40, 40, 60]);
     shake = reduceMotion ? 0 : 12;
@@ -586,9 +629,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function finish() {
     if (!G || G.settled) return null;
     G.settled = true;
+    G.sombraNueva = !!(G.mejorRonda && conSombra && CC.sombra.guardar('pulseada', 'ritmo', G.mejorRonda.g, G.mejorRonda.tps));
     const best = Math.round(G.best * 10) / 10;
     const tpsRec = best > 0 && best > (rec.bestTps || 0);
     if (tpsRec) { rec.bestTps = best; saveRec(); }
+    if (G.sombra) return { r: null, tpsRec, best };   // contra la sombra no hay rivales vencidos ni ranking
     let r = null;
     if (CC) {
       r = CC.partida({
@@ -603,6 +648,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function showEnd() {
     const res = finish() || { r: null, tpsRec: false, best: G.best };
     const r = res.r, D = DIFS[G.diff];
+    if (G.sombra) { finSombra(res); return; }
     $('eTitle').textContent = G.timeout ? '¡Se acabó el tiempo!' : `¡Te ganó ${G.rival.nombre}!`;
     $('eNum').textContent = G.score;
     $('eSub').textContent = G.score === 1 ? 'rival vencido seguido' : 'rivales vencidos seguidos';
@@ -621,7 +667,30 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('eBadges').innerHTML = b.join('');
     state = 'end';
     $('end').hidden = false; $('pad').classList.add('off'); $('cartel').hidden = true; showTip(false);
+    botonSombraFin();
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
+  }
+
+  // fin de la ronda contra la sombra
+  function finSombra(res) {
+    const gane = G.score > 0, mio = G.ft > 0 ? G.valid / G.ft : 0;
+    $('eTitle').textContent = gane ? '¡Le ganaste a tu sombra!' : '¡Te ganó tu sombra!';
+    $('eNum').textContent = fmt1(mio);
+    $('eSub').textContent = 'toques/s en la ronda';
+    $('eSub2').innerHTML = `Tu sombra: <b>${fmt1(ritmoSombra(G.sombra))} toques/s</b>`;
+    $('eSub3').textContent = G.sombraNueva ? 'Esta ronda queda como tu nueva sombra.' : `${G.wrong} ${G.wrong === 1 ? 'flecha repetida' : 'flechas repetidas'}`;
+    $('eXP').hidden = true;
+    $('eBadges').innerHTML = res.tpsRec ? '<span class="badge tps">Mejor ritmo</span>' : '';
+    state = 'end';
+    $('end').hidden = false; $('pad').classList.add('off'); $('cartel').hidden = true; showTip(false);
+    botonSombraFin();
+    setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
+  }
+  // en el fin: pasar de la partida normal a la sombra y al revés
+  function botonSombraFin() {
+    const hay = conSombra && !!CC.sombra.cargar('pulseada', 'ritmo');
+    $('btnSombraEnd').hidden = !hay;
+    $('btnSombraEnd').textContent = modoSombra ? '▶ Partida normal' : '👻 Contra tu sombra';
   }
 
   // ---------- duelo ----------
@@ -734,14 +803,19 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('mBest').textContent = best ? best + ' ' + rivales(best) : '—';
     $('mTps').textContent = rec.bestTps ? fmt1(rec.bestTps) + '/s' : '—';
     $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+    const S = conSombra ? CC.sombra.cargar('pulseada', 'ritmo') : null;
+    $('btnSombra').hidden = !S;
+    if (S) $('mSombra').textContent = fmt1(ritmoSombra(S)) + '/s';
   }
-  function start() {
+  function start(sombra) {
+    const S = sombra === true && conSombra ? CC.sombra.cargar('pulseada', 'ritmo') : null;
+    modoSombra = !!S;
     state = 'play';
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').classList.remove('off');
     resize();
-    newRun(sel.valor());
+    newRun(sel.valor(), S);
     const D = sel.valor();
-    $('hDiff').innerHTML = (CC ? CC.iconoDif(D, 16) : '') + DIFS[D].name;
+    $('hDiff').innerHTML = S ? '👻 Sombra' : (CC ? CC.iconoDif(D, 16) : '') + DIFS[D].name;
     $('hDiff').classList.toggle('hot', D === 'extremo' || D === 'maestro');
     let seen = false;
     try { seen = !!localStorage.getItem('cubo-pulseada-ayuda'); } catch (e) {}
@@ -753,7 +827,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function restart() {
     let xp = 0;
     if (state === 'play' && G && G.score > 0) { const res = finish(); xp = res && res.r ? res.r.xp : 0; }
-    start();
+    start(modoSombra);
     if (xp > 0) banner = { text: `+${xp} XP`, t: performance.now(), ms: 1100 };
   }
   function showMenu() {
@@ -810,13 +884,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         if (enDif) { const b = a.parentNode.querySelector('.cc-dif[aria-checked="true"]'); if (b) b.focus(); }
       }
       else if (left || right) e.preventDefault();
-      else if ((k === 'Enter' || k === ' ') && (!a || a === document.body || enDif || a === $('btnPlay') || a === $('btnAgain'))) { e.preventDefault(); if (!e.repeat) start(); }
+      else if ((k === 'Enter' || k === ' ') && (!a || a === document.body || enDif || a === $('btnPlay') || a === $('btnAgain'))) { e.preventDefault(); if (!e.repeat) start(state === 'end' && modoSombra); }
     }
   });
   const bindPad = (el, d) => el.addEventListener('pointerdown', e => { e.preventDefault(); press(d, performance.now()); });
   bindPad(bL, -1); bindPad(bR, 1);
   cv.addEventListener('pointerdown', e => { if (state === 'play') { e.preventDefault(); press(e.clientX < W / 2 ? -1 : 1, performance.now()); } });
-  $('btnPlay').addEventListener('click', start);
+  $('btnPlay').addEventListener('click', () => start());
+  $('btnSombra').addEventListener('click', () => start(true));
+  $('btnSombraEnd').addEventListener('click', () => start(!modoSombra));
   $('btnQuit').addEventListener('click', () => {
     if (DUELO) { if (sala && confirm('¿Salir del duelo? Lo perdés.')) sala.salir(); return; }
     if (G && G.score > 0) finish(); CC ? CC.volver() : showMenu();
@@ -830,7 +906,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   $('btnHome').addEventListener('click', () => CC ? CC.volver() : showMenu());
   $('btnRank').addEventListener('click', ranking);
   $('btnRankEnd').addEventListener('click', ranking);
-  $('btnAgain').addEventListener('click', start);
+  $('btnAgain').addEventListener('click', () => start(modoSombra));
   $('btnMute').addEventListener('click', () => {
     muted = !muted; rec.muted = muted; saveRec(); renderMenu();
     if (!muted) beep(660, 0.08);
@@ -882,6 +958,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (G.duelo ? (sala.host ? G.pt >= tCount() : G.duelo.ya === G.duelo.ronda) : G.pt >= tCount()) {
         if (G.duelo && sala.host) sala.enviar('ya', { n: G.duelo.ronda });
         G.phase = 'fight'; G.pt = 0; G.p = 0;
+        G.sf = 0; G.sn = 0;
+        if (conSombra && !G.duelo) G.graba = { g: CC.sombra.grabar(), n: 0 };
         sfxCount(0); banner = { text: '¡Ya!', t: now, ms: 600 };
       }
     } else if (G.phase === 'fight') {
@@ -890,7 +968,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       G.f *= Math.exp(-dt / TAU1);
       G.you += (G.f / TAU1 - G.you) * a2;
       if (G.duelo) peleaDuelo(now, dt, a2);
-      else {
+      else if (G.sombra) {
+        // la sombra: sus toques entran al mismo acumulador que los tuyos
+        const n = toquesSombra(G.sombra, G.ft);
+        G.sf = G.sf * Math.exp(-dt / TAU1) + (n - G.sn); G.sn = n;
+        G.r1 = G.sf / TAU1;
+        G.rv += (G.r1 - G.rv) * a2;
+        G.p = clamp(G.p + K * (G.you - G.rv) * dt, -1, 1);
+        if (G.p >= 1) winRound(now);
+        else if (G.p <= -1) loseRound(now);
+        else if (G.ft >= D.round) { G.timeout = true; G.p > 0 ? winRound(now) : loseRound(now); }
+      } else {
       const fo = forma(G.rival.e, G.ft);
       if (fo.tiron && !G.tironOn) { sfxTiron(); floats.push({ text: '¡Tirón!', x: CX + U * 2.6, y: Y0 + 3.6 * U, t: now, c: G.rival.c }); }
       G.tironOn = fo.tiron;
@@ -905,7 +993,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       G.p = Math.min(1.05, G.p + dt * 2);
       G.fall = clamp((G.pt - 0.7) / 0.6, 0, 1);
       G.you *= Math.exp(-dt * 3); G.rv *= Math.exp(-dt * 3);
-      if (G.pt >= T_WON) { if (G.duelo) finRonda(); else { G.idx++; G.timeout = false; enterIntro(); } }
+      if (G.pt >= T_WON) { if (G.duelo) finRonda(); else if (G.sombra) { if (state === 'play') showEnd(); } else { G.idx++; G.timeout = false; enterIntro(); } }
     } else if (G.phase === 'lost') {
       G.p = Math.max(-1.05, G.p - dt * 2);
       G.you *= Math.exp(-dt * 3); G.rv *= Math.exp(-dt * 3);
@@ -1003,9 +1091,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const eL = { x: CX - 0.6 * U, y: yT - 0.12 * U }, eR = { x: CX + 0.6 * U, y: yT - 0.12 * U };
     const aw = 0.5 * U, lw = Math.max(2.5, U * 0.08);
     const rivalHere = slide < 0.35 && fall < 0.5;
+    if (rival.sombra) ctx.globalAlpha = 0.45;
     if (rivalHere) arm([sr, eR, { x: hx + 0.16 * U, y: hy }], rc, aw, lw);
+    ctx.globalAlpha = 1;
     arm([sp, eL, { x: hx - 0.16 * U, y: hy }], pc, aw, lw);
+    if (rival.sombra) ctx.globalAlpha = 0.45;
     if (rivalHere) fist(hx + 0.2 * U, hy - 0.05 * U, rc, lw);
+    ctx.globalAlpha = 1;
     fist(hx - 0.2 * U, hy + 0.05 * U, pc, lw);
 
     for (const q of particles) {
@@ -1052,7 +1144,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const frac = clamp((p + 1) / 2, 0, 1), r = bh / 2, lw = Math.max(2.5, U * 0.08);
     ctx.fillStyle = 'rgba(29,35,64,.2)'; rr(ctx, bx, by + 4, bw, bh, r); ctx.fill();
     ctx.save(); rr(ctx, bx, by, bw, bh, r); ctx.clip();
-    ctx.fillStyle = rival.c; ctx.fillRect(bx, by, bw, bh);
+    ctx.fillStyle = rival.sombra ? '#cfc8b8' : rival.c; ctx.fillRect(bx, by, bw, bh);   // la sombra tiene tu color: su lado va gris
     ctx.fillStyle = playerColor(); ctx.fillRect(bx, by, bw * frac, bh);
     ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(bx, by + bh * 0.12, bw, bh * 0.16);
     ctx.restore();
@@ -1130,6 +1222,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   // cada rival es un cubo con su cara; mira a la izquierda (hacia vos)
   function drawRival(c, x, pie, s, r, mood, now, ang = 0) {
+    if (r.sombra && CC) {   // tu sombra: tu mismo cubo, transparente, mirando para tu lado
+      c.save(); c.globalAlpha = 0.5; c.translate(x, pie); c.rotate(ang);
+      CC.dibujarCubo(c, 0, 0, s, { skin: CC.skin(), efecto: false, mirar: -1, mareado: mood === 'ko', t: now });
+      c.restore();
+      return;
+    }
     const lw = Math.max(2, s * 0.07), lk = -s * 0.06;
     c.save(); c.translate(x, pie); c.rotate(ang);
     c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = lw;

@@ -6,23 +6,23 @@
 <meta name="description" content="Subí escalones en zigzag con izquierda y derecha, del cielo hasta el espacio.">
 <link rel="canonical" href="https://alejomartineez.github.io/cubo-escalador/escalador.html">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Cubo Escalador">
+<meta property="og:site_name" content="TwoFingers">
 <meta property="og:locale" content="es_AR">
 <meta property="og:url" content="https://alejomartineez.github.io/cubo-escalador/escalador.html">
-<meta property="og:title" content="Escalador · Cubo Escalador">
+<meta property="og:title" content="Escalador · TwoFingers">
 <meta property="og:description" content="Subí escalones en zigzag con izquierda y derecha, del cielo hasta el espacio.">
 <meta property="og:image" content="https://alejomartineez.github.io/cubo-escalador/og/escalador.png">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Escalador · Cubo Escalador">
+<meta property="og:image:alt" content="Escalador · TwoFingers">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Escalador · Cubo Escalador">
+<meta name="twitter:title" content="Escalador · TwoFingers">
 <meta name="twitter:description" content="Subí escalones en zigzag con izquierda y derecha, del cielo hasta el espacio.">
 <meta name="twitter:image" content="https://alejomartineez.github.io/cubo-escalador/og/escalador.png">
 <meta name="theme-color" content="#62c6ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Cubo Escalador">
+<meta name="apple-mobile-web-app-title" content="TwoFingers">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%226%22%20fill%3D%22%23ffcc29%22%20stroke%3D%22%231d2340%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2210%22%20y%3D%2210%22%20width%3D%224%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%231d2340%22%2F%3E%3Crect%20x%3D%2218%22%20y%3D%2210%22%20width%3D%224%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%231d2340%22%2F%3E%3C%2Fsvg%3E">
 <link rel="apple-touch-icon" href="icono-180.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -203,6 +203,10 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .lavachip.hot { background: #ff3b3b; color: var(--paper); animation: latido .5s ease-in-out infinite; }
 @keyframes latido { 50% { transform: scale(1.08); } }
 .mchip { display: inline-flex; align-items: center; gap: 4px; background: #b49bff; }
+/* sombra: verde si vas adelante, rosa si vas atrás */
+.sombrachip { background: #e6e2d6; }
+.sombrachip.adelante { background: #8ff0c8; }
+.sombrachip.atras { background: #ffb3c2; }
 /* en la compu todo un poco más grande (--ui lo calcula cubo-comun.js) */
 .card, .hud > *, .tuto, .zone > * { zoom: var(--ui, 1); }
 .pad { max-width: calc(560px * var(--ui, 1)); }
@@ -290,6 +294,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     <span class="chip" id="hSpeed">0 esc/s</span>
     <span class="chip xchip" id="hX" hidden></span>
     <span class="chip lavachip" id="hLava" hidden></span>
+    <span class="chip sombrachip" id="hSombra" hidden></span>
   </div>
 </div>
 
@@ -314,6 +319,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <button class="smallbtn ter" id="btnHome" type="button">← Juegos</button>
       <button class="smallbtn sec" id="btnRank" type="button">🏆 Ranking</button>
       <span class="keys" id="keys"></span>
+      <button class="smallbtn ter" id="btnSombra" type="button" hidden title="Un cubo transparente repite tu mejor partida">Sombra: sí</button>
+      <button class="smallbtn ter" id="btnSombraAmigo" type="button" hidden title="Correr contra la mejor partida de un amigo">👥 Amigo</button>
       <button class="smallbtn ter" id="btnMute" type="button">Sonido: sí</button>
     </div>
   </div>
@@ -464,6 +471,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       rx: 0, ry: 0, arc: 0, fromX: 0, fromY: 0, tw0: -1e9, face: 1, combo: 0, errors: 0, moves: [], botNext: 0,
       lastDir: 0, turnT: -1e9, landT: -1e9, landI: -1, rings: [], ghosts: [], zone: 0,
       pisado: 0, crujido: 0, cae: null,   // cuándo llegaste al escalón actual, último crujido y el escalón que se cayó
+      graba: null, sombra: null, sombraDe: null, tLlegue: 0,   // la curva de esta partida, la sombra contra la que corrés (y de qué amigo) y en qué ms llegaste al escalón actual
     };
     shooting = [];
     $('zone').classList.remove('show');
@@ -491,6 +499,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       G.ghosts.push({ x: G.rx, y: G.ry, t: now });
       G.fromX = G.rx; G.fromY = G.ry; G.tw0 = now;
       G.i++; G.combo++; G.moves.push(now); G.pisado = now;
+      G.tLlegue = now - G.t0;
+      if (G.graba) G.graba.marca(G.tLlegue, G.i);
       G.lastDir = d; G.landT = now + TWEEN; G.landI = G.i;
       dust(next.x, G.i, zoneOf(G.i)[0], turn ? 12 : 5, turn ? -d : 0);
       if (turn) { G.turnT = now; G.rings.push({ x: next.x, i: G.i, t: now }); }
@@ -552,9 +562,75 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const isRec = guardarLocal(G.mode, G.dif, valor);
     const r = cerrar(valor, G.mode === 'sprint' && G.errors === 0 ? ['escalador-limpio'] : []);
     if (!isRec && anterior) sub += ` · récord ${G.mode === 'sprint' ? fmtS(anterior) + ' s' : anterior}`;
+    sub += finSombra(valor);
     pintarFin(title, num, sub, isRec, r);
     if (G.duelo) { sala.enviar('fin', { ms: valor }); G.duelo.mio = valor; finDuelo(); return; }
     setTimeout(() => { if (G && G.done && state === 'play') showEnd(); }, 450);
+  }
+
+  // ---------- sombra ----------
+  // Sprint 100 y 30 segundos graban la curva (en qué ms llegaste a cada escalón). Si es tu mejor partida grabada
+  // de esa tabla y dificultad, queda como sombra; en la próxima un cubo transparente sube a ese ritmo.
+  const conSombra = mode => !!(CC && CC.sombra) && !DUELO && (mode === 'sprint' || mode === 'time');
+  // contraAmigo: { S, amigo, mode } mientras corrés contra la sombra de un amigo (hasta volver al menú)
+  let contraAmigo = null;
+  function prepararSombra() {
+    if (!conSombra(G.mode) || G.demo) return;
+    G.graba = CC.sombra.grabar();
+    if (contraAmigo && contraAmigo.mode === G.mode && contraAmigo.dif === G.dif) { G.sombra = contraAmigo.S; G.sombraDe = contraAmigo.amigo; return; }
+    contraAmigo = null;
+    G.sombra = CC.sombra.activa('escalador') ? CC.sombra.cargar('escalador', tabla(G.mode, G.dif)) : null;
+  }
+  function elegirAmigo() {
+    CC.sombra.elegirAmigo({
+      juego: 'escalador', titulo: 'Escalador · ' + CC.DIFS.find(d => d.id === dif).nombre, detalle: CC.DIFS.find(d => d.id === dif).nombre,
+      opciones: [{ tabla: tabla('sprint', dif), nombre: 'Sprint 100' }, { tabla: tabla('time', dif), nombre: '30 s' }],
+      alElegir(S, amigo, t) { const mode = t.startsWith('sprint') ? 'sprint' : 'time'; contraAmigo = { S, amigo, mode, dif }; start(mode); },
+    });
+  }
+  const deQuien = () => (G.sombraDe ? 'la sombra de ' + G.sombraDe.apodo : 'tu sombra');
+  // Cuánto vas adelante o atrás. Sprint: en segundos (negativo = adelante). 30 s: en escalones (positivo = adelante).
+  function difSombra(el) {
+    const S = G.sombra;
+    if (G.mode === 'time') return { esc: G.i - S.valorEn(el) };
+    let d = G.tLlegue - S.tiempoPara(G.i);
+    const sig = S.tiempoPara(G.i + 1);   // si la sombra ya pasó el próximo escalón y vos no, la diferencia crece en vivo
+    if (el > sig) d = Math.max(d, el - sig);
+    return { ms: isFinite(d) ? d : 0 };
+  }
+  function textoSombra(el) {
+    const d = difSombra(el);
+    if (d.esc != null) return { txt: (d.esc > 0 ? '+' : d.esc < 0 ? '−' : '±') + Math.abs(d.esc) + ' esc.', adelante: d.esc > 0, atras: d.esc < 0 };
+    return { txt: Math.abs(d.ms) < 50 ? '±0,0 s' : CC.sombra.textoDif(d.ms), adelante: d.ms <= -50, atras: d.ms >= 50 };
+  }
+  // Al terminar: guarda la curva si fue tu mejor partida y arma el renglón "contra la sombra".
+  function finSombra(valor) {
+    if (!G.graba) return '';
+    const S = G.sombra;
+    const nueva = CC.sombra.guardar('escalador', tabla(G.mode, G.dif), G.graba, valor);
+    if (!S) return nueva ? ' · ya tenés sombra para la próxima' : '';
+    const q = deQuien(), Q = q[0].toUpperCase() + q.slice(1);
+    if (G.mode === 'sprint') {
+      const d = valor - S.fin;
+      return d < 0 ? ` · le ganaste a ${q} por ${fmtS(-d)} s` : d > 0 ? ` · ${Q} te ganó por ${fmtS(d)} s` : ` · empate con ${q}`;
+    }
+    const d = valor - S.max;
+    return d > 0 ? ` · le ganaste a ${q} por ${d} esc.` : d < 0 ? ` · ${Q} hizo ${-d} esc. más` : ` · empate con ${q}`;
+  }
+  // El cubo de la sombra, transparente, en el escalón al que había llegado a esta altura de la partida.
+  function drawSombra(now) {
+    const S = G.sombra;
+    if (!S || G.demo) return;
+    const el = !G.started ? 0 : (G.done ? G.endT : now) - G.t0;
+    const lim = Math.min(G.steps.length - 1, G.mode === 'sprint' ? SPRINT_GOAL : Infinity);
+    const v = Math.min(lim, S.valorEn(el));
+    if (G.x && v - G.i > VISTA[G.dif]) return;   // en Extremo y Maestro no te muestra escalones que todavía no ves
+    const st = G.steps[v], ant = G.steps[Math.max(0, v - 1)];
+    const t = v > 0 ? clamp01((el - S.tiempoPara(v)) / TWEEN) : 1, e = 1 - (1 - t) * (1 - t);
+    const x = lerp(ant.x, st.x, e) * U, y = -lerp(Math.max(0, v - 1), v, e) * RISE * U;
+    ctx.save(); ctx.globalAlpha = v === G.i ? 0.2 : 0.33;
+    CC.dibujarCubo(ctx, x, y, U * 0.62, { skin: G.sombraDe ? G.sombraDe.skin : CC.skin(), t: now, efecto: false, mirar: st.dir || 1 });
+    ctx.restore();
   }
 
   // ---------- duelo ----------
@@ -574,8 +650,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }, n => { if (n > 0) beep(523, 0.09, 'triangle', 0.07); });
   }
   function barraDuelo() {
-    const Du = G.duelo, h = $('hud').getBoundingClientRect();
-    CD.barra({ top: Math.round(h.bottom + 6), nombre: DUELO.rival.apodo, colorYo: CC.skin().cuerpo, colorEl: Du.sk.cuerpo || '#ffcc29',
+    // abajo, arriba de las flechas: arriba tapaba los escalones que vienen (abajo solo quedan los que ya subiste)
+    const Du = G.duelo, pad = $('pad'), ui = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui')) || 1;
+    const abajo = pad.hidden ? 16 : innerHeight - pad.firstElementChild.getBoundingClientRect().top + 14;
+    CD.barra({ bottom: Math.round(abajo / ui), nombre: DUELO.rival.apodo, colorYo: CC.skin().cuerpo, colorEl: Du.sk.cuerpo || '#ffcc29',
       yo: G.i / SPRINT_GOAL, el: Du.el / SPRINT_GOAL, txtYo: G.i, txtEl: Du.el });
   }
   // Gana el primero que llega arriba. Si llegaron casi juntos, se comparan los tiempos de cada uno.
@@ -642,6 +720,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       isRec = valor > 0 && guardarLocal(G.mode, G.dif, valor);
       r = cerrar(valor);
       if (!isRec && anterior) sub += ` · récord ${anterior}`;
+      sub += finSombra(valor);
     }
     if (por === 'lava') { beep(110, 0.5, 'sawtooth', 0.07, 0.5); beep(70, 0.6, 'square', 0.05); }
     if (por === 'derrumbe') { beep(160, 0.4, 'sawtooth', 0.06, 0.35); beep(90, 0.5, 'square', 0.04, 0.5); }
@@ -669,6 +748,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       box.appendChild(b);
     }
     $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+    if (CC && CC.sombra && !DUELO) { $('btnSombraAmigo').hidden = !CC.rankingActivo(); $('btnSombra').hidden = false; $('btnSombra').textContent = 'Sombra: ' + (CC.sombra.activa('escalador') ? 'sí' : 'no'); }
   }
   // Partida cortada a la mitad (R, Menú): Libre cuenta como terminada; Sprint y 30 s suman un poco de XP.
   function cortar() {
@@ -685,6 +765,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function start(mode) {
     lastMode = mode; rec.last = mode; saveRec();
     newRun(mode, false);
+    prepararSombra();
     state = 'play';
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').hidden = false;
     $('hTimeLbl').textContent = mode === 'time' ? 'quedan' : mode === 'sprint' ? 'segundos' : mode === 'lava' ? 'segundos' : 'mejor';
@@ -692,11 +773,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('hX').hidden = dif === 'normal';
     if (CC && dif !== 'normal') { $('hX').innerHTML = CC.iconoDif(dif, 16) + (dif === 'maestro' ? 'Maestro' : 'Extremo'); $('hX').className = 'chip ' + (dif === 'maestro' ? 'mchip' : 'xchip'); }
     $('hLava').hidden = mode !== 'lava';
+    $('hSombra').hidden = !G.sombra;
     $('tuto').hidden = !!rec.tuto;
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   }
   function showMenu() {
     cortar();
+    contraAmigo = null;
     state = 'menu';
     newRun('free', true);
     renderModes();
@@ -769,6 +852,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     setTimeout(() => CC.revisarLogros(), 600);
   } else { $('btnRank').hidden = true; $('btnRank2').hidden = true; }
   $('btnAgain').addEventListener('click', () => start(lastMode));
+  $('btnSombraAmigo').addEventListener('click', elegirAmigo);
+  $('btnSombra').addEventListener('click', () => { CC.sombra.elegir('escalador', !CC.sombra.activa('escalador')); renderModes(); });
   $('btnMute').addEventListener('click', () => {
     muted = !muted; rec.muted = muted; saveRec(); renderModes();
     if (!muted) beep(660, 0.08);
@@ -1032,7 +1117,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       else if (G.mode === 'lava') time = (el / 1000).toFixed(1);
       else time = String(Math.max(recDe('free', G.dif) || 0, G.i));
       const dist = G.mode === 'lava' ? Math.max(0, Math.floor(G.i - G.lava)) : 0;
-      const sig = steps + '|' + time + '|' + speed + '|' + dist;
+      const som = G.sombra ? textoSombra(el) : null;
+      const sig = steps + '|' + time + '|' + speed + '|' + dist + '|' + (som ? som.txt : '');
       if (sig !== hudCache) {
         hudCache = sig;
         if (G.mode === 'lava') {
@@ -1042,6 +1128,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         $('hSteps').textContent = steps; $('hTime').textContent = time;
         $('hSpeed').textContent = speed + ' esc/s';
         $('hSpeed').classList.toggle('hot', speed >= 7);
+        if (som) {
+          $('hSombra').textContent = (G.sombraDe ? G.sombraDe.apodo : 'Sombra') + ' ' + som.txt;
+          $('hSombra').classList.toggle('adelante', som.adelante); $('hSombra').classList.toggle('atras', som.atras);
+        }
       }
     }
   }
@@ -1164,6 +1254,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       CC.dibujarCubo(ctx, st.x * U, -G.duelo.el * RISE * U, U * 0.62, { skin: G.duelo.sk, t: now, efecto: false, mirar: st.dir || 1 });
       ctx.restore();
     }
+    drawSombra(now);
     drawCube(now);
 
     for (const f of floats) {

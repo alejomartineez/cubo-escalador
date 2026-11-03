@@ -568,8 +568,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (xp > 0) banner = { text: `+${xp} XP`, t: performance.now() };
   }
   const touchy = matchMedia('(pointer: coarse)').matches;
+  // marca de "hasta acá llegaste la otra vez": una barrita arriba que se llena hasta tu récord (cubo-comun.js)
+  let marca = null;
+  function ponerMarca(on) {
+    if (marca) { marca.quitar(); marca = null; }
+    if (on && CC && CC.sombra && G && !G.demo) marca = CC.sombra.marca('lluvia', G.diff);
+  }
   function start() {
     newRun(false, diffNow());
+    ponerMarca(true);
     state = 'play';
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false;
     $('pad').classList.remove('off'); $('pad').classList.add('wait');
@@ -585,6 +592,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   }
   function showMenu() {
+    ponerMarca(false);
     state = 'menu';
     newRun(true);
     renderMenu();
@@ -594,6 +602,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showEnd() {
     state = 'end';
+    ponerMarca(false);
     $('end').hidden = false; $('pad').classList.add('off');
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
   }
@@ -767,6 +776,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (sig !== hudCache) {
         hudCache = sig;
         $('hScore').textContent = fmtN(G.score); $('hTime').textContent = G.t.toFixed(1);
+        if (marca) marca.ver(G.score);
         const D = DIFFS[G.diff], vv = Math.max(0, G.vidas);
         $('hLevel').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + D.name + ' · Nivel ' + G.level +
           (D.vidas > 1 ? ` <span class="vidas" aria-label="${vv} vidas">${'♥'.repeat(vv)}${'♡'.repeat(D.vidas - vv)}</span>` : '');
