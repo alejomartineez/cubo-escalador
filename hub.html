@@ -231,8 +231,7 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
 
 /* ---------- jerarquía: Jugar es lo principal; flechas, "Todos" y pestañas, secundarios ---------- */
 .arrow, .all { box-shadow: 0 2px 0 var(--ink); border-width: 2.5px; }
-.all { background: transparent; border-color: transparent; box-shadow: none; }
-.all:hover { background: rgba(255, 255, 255, .35); }
+.all:hover, .arrow:hover { background: #fff; }
 .icon-btn { box-shadow: 0 3px 0 var(--ink); border-width: 2.5px; }
 .play { box-shadow: 0 6px 0 var(--ink); font-size: 24px; }
 /* pestañas: una sola barra con la sección actual marcada, no cuatro botones sueltos */
@@ -242,6 +241,27 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
 .tab span:not(.badge) { font-size: 11.5px; white-space: nowrap; }
 .tab[aria-current="page"] { background: var(--cube); box-shadow: inset 0 0 0 2.5px var(--ink); }
 .tab:active { transform: scale(.96); box-shadow: none; }
+.tab:not([aria-current="page"]):hover { background: rgba(29, 35, 64, .07); }
+
+/* ---------- que todo lo tocable se vea tocable: borde, sombra abajo y respuesta al apretar ---------- */
+.x { box-shadow: 0 3px 0 var(--ink); }
+.x:hover { background: #fff4c7; }
+.x:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.mini:hover, .item:not(.lock):not(.leg):not(.pase):not([aria-pressed="true"]):hover, .jg:hover { background: #fff4c7; }
+.amigo button.vs { color: var(--ink); }
+.amigo button.vs:active, .amigo-form button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+/* peligro: quitar un amigo (rojo, pero con caja como los demás) */
+.amigo button.quitar { flex: none; width: 44px; height: 44px; border: 2.5px solid var(--ink); border-radius: 12px; background: #fff; color: #b3122a;
+  box-shadow: 0 3px 0 var(--ink); font-weight: 800; font-size: 18px; }
+.amigo button.quitar:hover { background: #ffe3e8; }
+.amigo button.quitar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+/* elegir dentro de un grupo: lo elegido en amarillo, como las dificultades y el ranking */
+.seg button[aria-pressed="true"] { background: var(--cube); }
+.seg button:not([aria-pressed="true"]):hover { background: rgba(255, 255, 255, .65); }
+/* los puntitos son chicos: el área para tocarlos es más alta que el dibujo */
+.dots button { position: relative; }
+.dots button::after { content: ""; position: absolute; inset: -16px -3px; }
+button:disabled { cursor: not-allowed; opacity: .55; box-shadow: none; transform: none; }
 
 /* en la compu todo un poco más grande (--ui lo calcula cubo-comun.js) */
 .top, .pager, .info, .tabs, .coach, .sheet .card { zoom: var(--ui, 1); }

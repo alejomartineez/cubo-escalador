@@ -65,7 +65,7 @@ body {
 .smallbtn {
   pointer-events: auto; font: 800 13px var(--body); color: var(--ink);
   background: var(--paper); border: 2px solid var(--ink); border-radius: 999px;
-  padding: 5px 12px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; white-space: nowrap;
+  padding: 5px 12px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; min-height: 40px; min-width: 44px; white-space: nowrap;
 }
 .smallbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 .hbtns { display: flex; gap: 8px; }
@@ -175,7 +175,7 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .btn.small { padding: 10px; font-size: 15px; }
 .btn svg { width: 18px; height: 18px; flex: none; }
 .btn.primary { background: var(--cube); }
-.btn.big { font: 400 26px var(--display); padding: 12px 10px; }
+.btn.big { font: 400 26px var(--display); padding: 12px 10px; -webkit-text-stroke: 0; text-shadow: none; }
 @media (pointer: coarse) { .kbd-only { display: none; } }
 .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
@@ -224,11 +224,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 /* 2. secundarios (Ranking): blancos, borde fino y sombra corta */
 .card .btn:not(.primary) { background: #fff; border-width: 2px; box-shadow: 0 2px 0 var(--ink); font-family: var(--body); font-weight: 800; font-size: 15px; }
 .card .btn:not(.primary):active { transform: translateY(2px); box-shadow: none; }
-/* 3. navegación y ajustes (← Juegos, ⌂ Juegos, Sonido): solo texto, sin caja */
-.card .ter { background: transparent !important; border-color: transparent !important; box-shadow: none !important; color: var(--ink);
-  font: 800 14px var(--body) !important; opacity: .72; padding: 8px 10px !important; min-height: 0; }
-.card .ter:hover { opacity: 1; background: rgba(29, 35, 64, .07) !important; }
-.card .ter:active { transform: none; }
+/* 3. ajustes (Sonido, Calibrar, Modos): chicos y sin relleno, pero con borde y sombra para que se vean como botón */
+.card .ter { background: transparent !important; border: 2px solid var(--ink) !important; box-shadow: 0 2px 0 var(--ink) !important; color: var(--ink);
+  font: 800 14px var(--body) !important; padding: 8px 14px !important; min-height: 44px; opacity: 1; }
+.card .ter:hover { background: rgba(255, 255, 255, .7) !important; }
+.card .ter:active { transform: translateY(2px); box-shadow: 0 0 0 var(--ink) !important; }
 /* 4. teclas de la demo: muestran cómo se juega, no son botones */
 .card .key { box-shadow: none !important; border-style: dashed !important; border-width: 2px !important; background: rgba(255, 255, 255, .55) !important; }
 .card .key.on { background: var(--cube) !important; border-style: solid !important; transform: none !important; }

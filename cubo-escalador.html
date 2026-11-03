@@ -61,7 +61,7 @@ body {
 .smallbtn {
   pointer-events: auto; font: 800 13px var(--body); color: var(--ink);
   background: var(--paper); border: 2px solid var(--ink); border-radius: 999px;
-  padding: 5px 12px; box-shadow: 0 3px 0 var(--ink); cursor: pointer;
+  padding: 5px 12px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; min-height: 40px; min-width: 44px;
 }
 .hbtns { display: flex; gap: 6px; }
 .foot .keys { order: 3; flex-basis: 100%; }
@@ -225,11 +225,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 /* secundario: Ranking */
 .card .btn:not(.primary):not(.ter), .card .smallbtn.sec { background: #fff; border-width: 2px; box-shadow: 0 2px 0 var(--ink); }
 .card .smallbtn.sec { padding: 7px 14px; font-size: 14px; }
-/* navegación y ajustes: solo texto */
-.card .ter { background: transparent !important; border-color: transparent !important; box-shadow: none !important; opacity: .72;
-  font: 800 14px var(--body) !important; padding: 8px 10px !important; }
-.card .ter:hover { opacity: 1; background: rgba(29, 35, 64, .07) !important; }
-.card .ter:active { transform: none; }
+/* 3. ajustes (Sonido, Calibrar, Modos): chicos y sin relleno, pero con borde y sombra para que se vean como botón */
+.card .ter { background: transparent !important; border: 2px solid var(--ink) !important; box-shadow: 0 2px 0 var(--ink) !important; color: var(--ink);
+  font: 800 14px var(--body) !important; padding: 8px 14px !important; min-height: 44px; opacity: 1; }
+.card .ter:hover { background: rgba(255, 255, 255, .7) !important; }
+.card .ter:active { transform: translateY(2px); box-shadow: 0 0 0 var(--ink) !important; }
 </style>
 
 <canvas id="cv"></canvas>
