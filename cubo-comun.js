@@ -142,6 +142,8 @@
       pista: 'Solo la tiene quien hizo el juego.' },
     { id: 'sonrisa', nombre: 'Sonrisa de metal', legendaria: true, exclusiva: true, codigo: true, cuerpo: '#3a3550', extra: 'sonrisa', glow: '#ffb070', sinBoca: true, sinCachetes: true,
       pista: 'Hecha a pedido para un solo jugador.' },
+    { id: 'benja', nombre: 'Benja', legendaria: true, exclusiva: true, codigo: true, cuerpo: '#f4c9a1', extra: 'benja', glow: '#6f8fe8', sinBoca: true,
+      pista: 'Hecha a pedido para un solo jugador.' },
     // muerte: al perder se parte en pedazos con una onda expansiva (ver morir). radio: esquinas casi rectas.
     { id: 'geo', nombre: 'Geo', legendaria: true, codigo: true, cuerpo: '#ffb52e', extra: 'geo', glow: '#5ff5ff', radio: 0.07, muerte: 'pedazos',
       sinOjos: true, sinBoca: true, sinCachetes: true, pista: 'Se consigue con un código.' },
@@ -155,6 +157,7 @@
     '4fc29aadc1cb4782ab3fb16750ccad73b99b72b671b49c69bcc46650dce3fb5d': ['fx:aurora'],
     '586d6eb5df7242531b10f2f102171007645ef9a21b08272eab5ffd8acc409a88': ['fx:alas'],
     'b1f396b676c2285c8ceb19b6406265dd4afae29521f9253a86de66a025bfca04': ['sonrisa'],   // exclusiva de nacho
+    '7f0da2349fd57b88ad0f54b7fc15ea2d9b11aa216e5e5d0fb23bd47bc7963cbb': ['benja'],     // exclusiva de benja
     'b96e9678392994a52ed4be7e7282ee2f6cbc80679de2c7410b85c9526afe9e23': ['geo'],
   };
 
@@ -3144,6 +3147,56 @@
         for (const [x, y] of [[-0.3, -0.98], [0.02, -1.03], [0.3, -0.96], [-0.12, -0.9], [0.16, -0.89]]) { ctx.beginPath(); ctx.arc(x * s, y * s, s * 0.022, 0, Math.PI * 2); ctx.fill(); }
         ctx.fillStyle = '#25305a'; ctx.lineWidth = Math.max(1.5, s * 0.04);
         ctx.beginPath(); ctx.ellipse(lado * s * 0.52, -s * 0.86, s * 0.07, s * 0.08, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      },
+    },
+    // ---- Benja (exclusiva): pelo negro corto con flequillo, anteojos finos, cara seria y remera naranja de cuello rojo ----
+    benja: {
+      piel(ctx, s) {
+        // remera naranja con el cuello rojo (casi recto: si baja mucho parece una sonrisa)
+        ctx.fillStyle = '#ff9a2e'; ctx.fillRect(-s / 2, -s * 0.14, s, s * 0.14);
+        ctx.fillStyle = '#d8343f'; ctx.beginPath(); ctx.moveTo(-s / 2, -s * 0.17); ctx.lineTo(-s * 0.16, -s * 0.17);
+        ctx.quadraticCurveTo(0, -s * 0.12, s * 0.16, -s * 0.17); ctx.lineTo(s / 2, -s * 0.17); ctx.lineTo(s / 2, -s * 0.12);
+        ctx.lineTo(s * 0.16, -s * 0.12); ctx.quadraticCurveTo(0, -s * 0.07, -s * 0.16, -s * 0.12); ctx.lineTo(-s / 2, -s * 0.12); ctx.closePath(); ctx.fill();
+      },
+      encima(ctx, s, sk, t, look) {
+        const lw = Math.max(1.5, s * 0.045);
+        // orejas (van encima: atrás del cuerpo las tapaba el brillo)
+        ctx.fillStyle = sk.cuerpo; ctx.strokeStyle = INK; ctx.lineWidth = lw;
+        for (const side of [-1, 1]) {
+          ctx.beginPath(); ctx.ellipse(side * s * 0.52, -s * 0.5, s * 0.08, s * 0.11, 0, side > 0 ? -Math.PI / 2 : Math.PI / 2, side > 0 ? Math.PI / 2 : Math.PI * 1.5); ctx.fill(); ctx.stroke();
+        }
+        // pelo: casquete negro con el flequillo cortito y desparejo
+        ctx.fillStyle = '#1f1b24'; ctx.strokeStyle = INK; ctx.lineWidth = lw;
+        ctx.beginPath(); ctx.moveTo(-s * 0.55, -s * 0.66);
+        ctx.quadraticCurveTo(-s * 0.6, -s * 1.13, 0, -s * 1.14); ctx.quadraticCurveTo(s * 0.6, -s * 1.13, s * 0.55, -s * 0.66);
+        const puntas = [0.5, 0.38, 0.27, 0.15, 0.03, -0.09, -0.21, -0.33, -0.45];
+        puntas.forEach((px, i) => {
+          const y = -s * (0.8 + (i % 2 ? 0.05 : 0) + Math.abs(px) * 0.04);
+          ctx.lineTo(px * s + look * 0.6, i % 2 ? y : -s * (0.76 + Math.abs(px) * 0.04));
+        });
+        ctx.lineTo(-s * 0.55, -s * 0.78); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = Math.max(1, s * 0.03);
+        ctx.beginPath(); ctx.moveTo(-s * 0.28, -s * 1.02); ctx.quadraticCurveTo(-s * 0.05, -s * 1.08, s * 0.18, -s * 1.03); ctx.stroke();
+        // cejas gruesas
+        ctx.strokeStyle = '#1f1b24'; ctx.lineWidth = Math.max(2, s * 0.05);
+        for (const side of [-1, 1]) { ctx.beginPath(); ctx.moveTo(side * s * 0.1 + look, -s * 0.72); ctx.lineTo(side * s * 0.3 + look, -s * 0.73); ctx.stroke(); }
+        // anteojos rectangulares finos, con el reflejo en los vidrios
+        const ly = -s * 0.68, lw2 = s * 0.31, lh = s * 0.23;
+        for (const side of [-1, 1]) {
+          const x0 = side * s * 0.2 + look - lw2 / 2;
+          ctx.fillStyle = 'rgba(220,240,255,.12)'; rr(ctx, x0, ly, lw2, lh, s * 0.05); ctx.fill();
+          ctx.save(); rr(ctx, x0, ly, lw2, lh, s * 0.05); ctx.clip();
+          ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = Math.max(1, s * 0.035);
+          ctx.beginPath(); ctx.moveTo(x0 + lw2 * 0.55, ly - s * 0.02); ctx.lineTo(x0 + lw2 * 0.95, ly + lh * 0.75); ctx.stroke();
+          ctx.restore();
+          ctx.strokeStyle = '#2b3a33'; ctx.lineWidth = Math.max(1.5, s * 0.035); rr(ctx, x0, ly, lw2, lh, s * 0.05); ctx.stroke();
+        }
+        ctx.beginPath(); ctx.moveTo(-s * 0.2 + look + lw2 / 2, ly + lh * 0.35); ctx.quadraticCurveTo(look, ly + lh * 0.2, s * 0.2 + look - lw2 / 2, ly + lh * 0.35);
+        ctx.moveTo(-s * 0.2 + look - lw2 / 2, ly + lh * 0.3); ctx.lineTo(-s * 0.5, ly + lh * 0.25);
+        ctx.moveTo(s * 0.2 + look + lw2 / 2, ly + lh * 0.3); ctx.lineTo(s * 0.5, ly + lh * 0.25); ctx.stroke();
+        // boca seria, casi recta
+        ctx.strokeStyle = '#b5546a'; ctx.lineWidth = Math.max(2, s * 0.05);
+        ctx.beginPath(); ctx.moveTo(look - s * 0.09, -s * 0.3); ctx.quadraticCurveTo(look, -s * 0.32, look + s * 0.09, -s * 0.3); ctx.stroke();
       },
     },
     // ---- Geo: cubo naranja de esquinas rectas, borde celeste y cara de cuadrados ----
