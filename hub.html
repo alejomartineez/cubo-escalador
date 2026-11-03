@@ -33,7 +33,15 @@ button { font: inherit; color: var(--ink); }
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: 10px var(--gy) 2px var(--gx);
 }
-.brand { font-family: var(--display); font-size: 22px; color: var(--paper); -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); white-space: nowrap; }
+.brand { display: flex; align-items: center; gap: 8px; flex: none; font-family: var(--display); font-size: 22px; color: var(--paper); white-space: nowrap; }
+.brand span { -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); }
+/* el botón de la casita vuelve a la portada (Jugar, Opciones y redes) */
+.brand i {
+  flex: none; display: grid; place-items: center; width: 48px; height: 48px; color: var(--ink);
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 15px; box-shadow: 0 4px 0 var(--ink);
+}
+.brand i svg { width: 24px; height: 24px; }
+.brand:active i { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 .top-r { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .install {
   display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 12px; cursor: pointer;
@@ -441,9 +449,9 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 @media (max-height: 600px) { .tab { height: 48px; } .tab span { display: none; } }
 @media (max-width: 480px) { .amigos-btn span { display: none; } .amigos-btn { padding: 0; } }
 /* con el botón de amigos no entra el nombre en una línea: va en dos */
-@media (max-width: 420px) { .brand { white-space: normal; width: min-content; line-height: .95; } }
-@media (max-width: 400px) { .brand { font-size: 18px; } .bar { width: 64px; } .install span { display: none; } .all span { display: none; } }
-@media (max-width: 340px) { .brand { display: none; } }
+@media (max-width: 420px) { .brand span { display: none; } }
+@media (max-width: 400px) { .bar { width: 64px; } .install span { display: none; } .all span { display: none; } }
+@media (max-width: 340px) { .brand i { width: 44px; height: 44px; } }
 @media (prefers-reduced-motion: reduce) { body { transition: none; } .badge, .coach svg, .card { animation: none; } }
 
 /* ---------- portada: lo primero que se ve al entrar. El cubo de la carga salta hasta acá ---------- */
@@ -520,7 +528,9 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
 
 <div class="app">
   <header class="top">
-    <button class="brand" id="brand" type="button" aria-label="TwoFingers: volver a la pantalla de inicio">TwoFingers</button>
+    <button class="brand" id="brand" type="button" aria-label="Volver al menú principal" title="Menú principal">
+      <i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11 12 4l8.5 7M6 9.5V20h4.5v-5.5h3V20H18V9.5"/></svg></i><span>TwoFingers</span>
+    </button>
     <div class="top-r">
       <button class="install" id="install" type="button" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M5 20h14"/></svg><span>Instalar</span>

@@ -43,7 +43,7 @@ Controles: `鈫恅 `鈫抈 o `A` `D` en la compu, `R` reinicia; botones grandes y 鈫
 
 ## Archivos
 
-- `hub.html`: pantalla principal (sale como `index.html`). Al entrar muestra la portada (Jugar, Opciones y redes): el cubo de la pantalla de carga salta hasta ella (`window.alSalirCarga`, que llama `build.mjs`). Las redes van en `REDES` y las opciones (sonido de todos los juegos, vibraci贸n, ver la portada) en `OPCIONES`.
+- `hub.html`: pantalla principal (sale como `index.html`). Al entrar muestra la portada (Jugar, Opciones y redes): el cubo de la pantalla de carga salta hasta ella (`window.alSalirCarga`, que llama `build.mjs`). Se vuelve a la portada con el bot贸n de la casita, arriba a la izquierda. Las redes van en `REDES` y las opciones (sonido de todos los juegos, vibraci贸n, ver la portada) en `OPCIONES`.
 - `cubo-escalador.html`, `modo-*.html`: los juegos.
 - `cubo-comun.js`: perfil compartido (nivel, XP, personajes, efectos, logros, r茅cords), ranking, selector de dificultad y el dibujo del cubo.
 - `supabase.sql`: tablas y funciones del ranking, los amigos, los retos y las sombras. Est谩 armado por partes, una por cada vez que cambi贸 el esquema: cuando se agrega una parte, se corre solo esa en el SQL Editor de Supabase (correr el archivo entero de nuevo falla en la vista `ranking`).
