@@ -63,9 +63,11 @@ body {
 .chip.hot { background: var(--cube); }
 .diffchip[data-d="facil"] { background: var(--good); }
 .diffchip[data-d="dificil"] { background: var(--accent); }
+.diffchip[data-d="extremo"] { background: #ff3b3b; }
+.diffchip svg { vertical-align: -4px; margin-right: 4px; }
 .hbtns { display: flex; gap: 8px; }
 #btnRestart { touch-action: none; min-width: 34px; }
-.diffs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.diffs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .diff {
   display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer;
   font: inherit; color: var(--ink); background: #fff; padding: 8px 4px;
@@ -80,7 +82,7 @@ body {
 .smallbtn {
   pointer-events: auto; font: 800 13px var(--body); color: var(--ink);
   background: var(--paper); border: 2px solid var(--ink); border-radius: 999px;
-  padding: 5px 12px; box-shadow: 0 3px 0 var(--ink); cursor: pointer;
+  padding: 5px 12px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; white-space: nowrap;
 }
 .smallbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 
@@ -96,20 +98,38 @@ body {
   height: clamp(76px, 13vh, 116px); border-radius: 22px;
   background: var(--paper); color: var(--ink);
   border: 3px solid var(--ink); box-shadow: 0 7px 0 var(--ink);
-  display: grid; place-items: center; cursor: pointer; touch-action: none;
+  display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; touch-action: none;
+  font: 400 clamp(19px, 5.4vw, 26px) var(--display);
   transition: transform .05s, box-shadow .05s;
 }
-.pad button svg { width: 44px; height: 44px; }
+.pad button svg { width: 36px; height: 36px; flex: none; }
 .pad button.on { transform: translateY(5px); box-shadow: 0 2px 0 var(--ink); background: var(--cube); }
 
+/* ayuda de la primera partida, arriba de los botones */
+.help {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(76px, 13vh, 116px) + 34px);
+  width: min(380px, calc(100% - 32px)); pointer-events: none;
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 5px 0 var(--ink);
+  padding: 12px 14px; text-align: center; font-size: 15px; line-height: 1.4;
+}
+.help b { font-family: var(--display); font-weight: 400; font-size: 20px; display: block; line-height: 1.15; margin-bottom: 4px; }
+.help .k { display: inline-block; min-width: 26px; padding: 0 4px; border: 2px solid var(--ink); border-radius: 7px; background: var(--cube); font-weight: 800; }
+.help::after {
+  content: ""; position: absolute; left: 50%; bottom: -12px; width: 18px; height: 18px; background: var(--paper);
+  border-right: 3px solid var(--ink); border-bottom: 3px solid var(--ink); transform: translateX(-50%) rotate(45deg);
+}
+
 .overlay {
-  position: fixed; inset: 0; display: grid; place-items: center;
-  padding-block: 24px;
+  position: fixed; inset: 0; display: flex; flex-direction: column; overflow-y: auto; touch-action: pan-y;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   background: rgba(29, 35, 64, .28);
 }
 .card {
+  margin: auto; flex: none; box-sizing: border-box; min-width: 0;
   width: min(420px, 100%); background: var(--paper);
   border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink);
   padding: 22px; display: flex; flex-direction: column; gap: 16px;
@@ -127,6 +147,12 @@ h1, h2 { font-family: var(--display); font-weight: 400; margin: 0; line-height: 
 h1 { font-size: clamp(32px, 9vw, 42px); }
 h2 { font-size: 34px; }
 .intro { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.45; }
+.intro b { color: var(--ink); }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: -4px; }
+.demo {
+  width: 100%; height: 118px; display: block;
+  border: 3px solid var(--ink); border-radius: 16px; background: #c9f1ff;
+}
 .mode {
   display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px;
   text-align: left; font: inherit; color: var(--ink);
@@ -155,10 +181,11 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 }
 .tags { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .badge.xp { background: var(--cube); }
-.back { margin-left: auto; flex: none; }
+.badge.logro { background: #ffe14d; letter-spacing: .04em; text-transform: none; font-size: 13px; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.row.three { grid-template-columns: 1fr 1fr 1.25fr; }
-.row.three .btn { padding-inline: 6px; }
+.row.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.row.three .btn { padding-inline: 4px; font-size: 14px; white-space: nowrap; }
+.btn.wide { width: 100%; font-size: 18px; }
 .btn {
   font: 800 16px var(--body); color: var(--ink); padding: 14px 10px; cursor: pointer;
   background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
@@ -185,7 +212,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 }
 @keyframes zoneFade { 0%, 100% { opacity: 0; } 12%, 80% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .zone.show { animation-name: zoneFade; } }
-@media (max-width: 380px) { .card { padding: 18px; } .mdesc { display: none; } }
+@media (max-width: 380px) { .card { padding: 18px; gap: 14px; } }
+@media (hover: none) and (pointer: coarse) { .kbhint { display: none; } }
 </style>
 
 <canvas id="cv"></canvas>
@@ -198,35 +226,41 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   <div class="right">
     <div class="hbtns">
       <button class="smallbtn" id="btnRestart" type="button" aria-label="Reiniciar (R)" title="Reiniciar (R)">↻</button>
-      <button class="smallbtn" id="btnQuit" type="button">Menú</button>
+      <button class="smallbtn" id="btnQuit" type="button" title="Menú (Escape)">← Menú</button>
     </div>
     <span class="chip diffchip" id="hDiff" data-d="normal">Normal</span>
     <span class="chip" id="hLvl">Nivel 1</span>
   </div>
 </div>
 
+<div class="help" id="help" hidden role="status">
+  <b>Que no se caiga</b>
+  Si se inclina para un lado, tocá la flecha del <u>otro</u>: <span class="k">◀</span> lo empuja a la izquierda, <span class="k">▶</span> a la derecha. Mantené apretado para empujar más fuerte.
+</div>
+
 <div class="pad" id="pad" hidden>
-  <button id="bL" type="button" aria-label="Empujar a la izquierda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 7 12l8 8"/></svg></button>
-  <button id="bR" type="button" aria-label="Empujar a la derecha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4 8 8-8 8"/></svg></button>
+  <button id="bL" type="button" aria-label="Empujar a la izquierda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 7 12l8 8"/></svg><span>Izquierda</span></button>
+  <button id="bR" type="button" aria-label="Empujar a la derecha"><span>Derecha</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4 8 8-8 8"/></svg></button>
 </div>
 
 <div class="overlay" id="menu">
   <div class="card">
-    <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Equilibrio</h1><button class="smallbtn back" id="btnGames" type="button" hidden>← Juegos</button></div>
-    <p class="intro">El cubo cruza la cuerda floja y se tambalea solo. Si se va para un lado, tocá la flecha del otro para enderezarlo. Ojo con las ráfagas de viento: avisan antes de llegar.</p>
-    <div class="diffs" role="group" aria-label="Dificultad">
-      <button class="diff" data-d="facil" type="button" aria-pressed="false"><span class="dname">Fácil</span><span class="dxp">×1 XP</span></button>
-      <button class="diff" data-d="normal" type="button" aria-pressed="true"><span class="dname">Normal</span><span class="dxp">×1,5 XP</span></button>
-      <button class="diff" data-d="dificil" type="button" aria-pressed="false"><span class="dname">Difícil</span><span class="dxp">×2 XP</span></button>
+    <div class="topbar">
+      <button class="smallbtn" id="btnGames" type="button" hidden>← Juegos</button>
+      <button class="smallbtn" id="btnMute" type="button" style="margin-left:auto">Sonido: sí</button>
     </div>
+    <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Equilibrio</h1></div>
+    <p class="intro">Si el cubo se inclina para un lado, <b>tocá la flecha del otro lado</b>. Ojo con el viento: avisa antes de soplar.</p>
+    <canvas class="demo" id="demo" aria-label="Ejemplo: el cubo se inclina a la derecha, se toca la flecha izquierda y se endereza" role="img"></canvas>
+    <div class="diffs" id="difs"></div>
     <button class="mode" id="btnPlay" type="button">
       <span class="key">↵</span>
-      <span><span class="mname">Cuerda floja</span><span class="mdesc" id="mDesc">Caminá todo lo que puedas sin caerte.</span></span>
+      <span><span class="mname">Jugar</span><span class="mdesc" id="mDesc">Caminá la cuerda todo lo que puedas.</span></span>
       <span class="mrec">Récord<b id="mRec">—</b></span>
     </button>
-    <div class="foot">
-      <span>Teclado: <kbd>←</kbd> <kbd>→</kbd> o <kbd>A</kbd> <kbd>D</kbd> · <kbd>R</kbd> reinicia</span>
-      <button class="smallbtn" id="btnMute" type="button">Sonido: sí</button>
+    <button class="btn" id="btnRank" type="button" hidden>🏆 Ranking</button>
+    <div class="foot kbhint">
+      <span>Teclado: <kbd>←</kbd> <kbd>→</kbd> o <kbd>A</kbd> <kbd>D</kbd> · <kbd>Enter</kbd> juega · <kbd>R</kbd> reinicia</span>
     </div>
   </div>
 </div>
@@ -237,12 +271,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <h2 id="eTitle">¡Plaf!</h2>
       <span class="num" id="eNum">0 m</span>
       <span class="sub" id="eSub"></span>
-      <span class="tags"><span class="badge" id="eBadge" hidden>Nuevo récord</span><span class="badge xp" id="eXP" hidden>+0 XP</span></span>
+      <span class="sub" id="eRec"></span>
+      <span class="tags" id="eTags"><span class="badge" id="eBadge" hidden>Nuevo récord</span><span class="badge xp" id="eXP" hidden>+0 XP</span></span>
     </div>
+    <button class="btn primary wide" id="btnAgain" type="button">Otra vez <kbd class="kbhint">R</kbd></button>
     <div class="row" id="eRow">
       <button class="btn" id="btnGames2" type="button" hidden>← Juegos</button>
       <button class="btn" id="btnMenu" type="button">Menú</button>
-      <button class="btn primary" id="btnAgain" type="button">Otra vez</button>
+      <button class="btn" id="btnRank2" type="button" hidden>🏆 Ranking</button>
     </div>
   </div>
 </div>
@@ -257,6 +293,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun || null; // perfil y personaje compartidos; sin esto el juego anda igual
 
+  const INK = '#1d2340';
   const LIMIT = 0.8;       // rad: pasado esto, el cubo se cae
   const IMP = 0.7;         // rad/s que suma cada toque
   const HOLD = 2.6;        // rad/s² mientras mantenés apretado
@@ -274,13 +311,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   ];
   const LEAVES = ['#1fbf8a', '#ffcc29', '#ff5d7d', '#ffad4d'];
   const TITLES = ['¡Plaf!', '¡A la red!', '¡Boing!', '¡Uy, uy, uy!', '¡Se fue!'];
-  // t0: segundos de dificultad con los que arranca; ramp: qué tan rápido sube; k/wind: escala de inestabilidad y viento
+  // t0: segundos de dificultad con los que arranca; ramp: qué tan rápido sube; k/wind: escala de inestabilidad y viento.
+  // Pasados ~110 s de dificultad todo llega a su tope, así que Extremo arranca directo ahí y encima más fuerte.
   const DIFFS = {
-    facil:   { name: 'Fácil',   desc: 'Cuerda más firme y viento suave.',    t0: 0,  ramp: 0.7, k: 0.8, wind: 0.6, gap: 1.2, xp: 1,   xpTxt: '×1' },
-    normal:  { name: 'Normal',  desc: 'Se va poniendo difícil con el tiempo.', t0: 0,  ramp: 1,   k: 1,   wind: 1,   gap: 0,   xp: 1.5, xpTxt: '×1,5' },
-    dificil: { name: 'Difícil', desc: 'Arranca como el Normal al minuto.',   t0: 60, ramp: 0.7,   k: 1,   wind: 1,   gap: 0,   xp: 2,   xpTxt: '×2' },
+    facil:   { name: 'Fácil',   desc: 'Cuerda más firme y viento suave.',             t0: 0,   ramp: 0.7, k: 0.8, wind: 0.6, gap: 1.2 },
+    normal:  { name: 'Normal',  desc: 'Se va poniendo difícil con el tiempo.',        t0: 0,   ramp: 1,   k: 1,   wind: 1,   gap: 0 },
+    dificil: { name: 'Difícil', desc: 'Arranca como el Normal al minuto.',            t0: 60,  ramp: 0.7, k: 1,   wind: 1,   gap: 0 },
+    extremo: { name: 'Extremo', desc: 'Todo al máximo desde el primer paso. Sin perdón.', t0: 110, ramp: 1,   k: 1.1, wind: 1.1, gap: 0 },
   };
   const DIFF_IDS = Object.keys(DIFFS);
+  // XP base según los metros (en Normal): 15 m es una partida floja y 350 m es de experto
+  const XP_MALO = 15, XP_EXPERTO = 350;
 
   // ---------- récords ----------
   const REC_KEY = 'cubo-equilibrio-records';
@@ -290,14 +331,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   if (rec.best) { rec.bestBy.normal = Math.max(rec.bestBy.normal || 0, rec.best); delete rec.best; } // récord de antes de las dificultades
   let diffId = DIFFS[rec.diff] ? rec.diff : 'normal';
   const saveRec = () => { try { localStorage.setItem(REC_KEY, JSON.stringify(rec)); } catch (e) {} };
-  // a la pantalla de juegos va el mejor de todas las dificultades (si empatan, el de la más difícil)
-  const shareRec = () => {
-    if (!CC) return;
-    let best = 0, id = null;
-    for (const d of DIFF_IDS) if ((rec.bestBy[d] || 0) > 0 && rec.bestBy[d] >= best) { best = rec.bestBy[d]; id = d; }
-    if (id) CC.anotarRecord('equilibrio', `${best} m (${DIFFS[id].name})`);
+  // récord de una dificultad: el del perfil común o el guardado acá (de antes del perfil)
+  const bestOf = id => {
+    let v = rec.bestBy[id] || 0;
+    if (CC) { try { v = Math.max(v, CC.perfil().mejores['equilibrio:' + id] || 0); } catch (e) {} }
+    return v;
   };
-  shareRec();
 
   // ---------- sonido ----------
   let actx = null, muted = !!rec.muted, noiseBuf = null;
@@ -391,7 +430,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function tap(d, now) {
     if (!G || G.fall) return;
     G.face = d; G.pushT = now; G.pushDir = d;
-    if (!G.started) { G.started = true; G.th = (Math.random() < 0.5 ? -1 : 1) * 0.04; }
+    if (!G.started) { G.started = true; G.th = (Math.random() < 0.5 ? -1 : 1) * 0.04; if (!G.demo) hideHelp(); }
     else G.om += d * IMP;
     // nubecita del lado que empuja
     if (!reduceMotion) {
@@ -414,33 +453,48 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     G.gust = null;
     if (!G.demo) {
       sfxFall(); shake = reduceMotion ? 0 : 6;
+      if (CC) CC.vibrar(30);
       floats.push({ text: '¡Aaah!', x: W / 2 + G.fall.x, y: ropeY - S * 1.4, t: now });
     }
   }
 
-  // cierra la partida (por caída o porque la cortaste con R): récord y XP
+  // cierra la partida (por caída o porque la cortaste con R o Menú): récord, XP, logros y ranking
   function settle() {
     if (!G || G.demo || G.done || !G.started) return null;
     G.done = true;
-    const m = Math.floor(G.D);
-    const isRec = m > (rec.bestBy[G.diff] || 0);
-    if (isRec) { rec.bestBy[G.diff] = m; shareRec(); }
+    const m = Math.floor(G.D), prev = bestOf(G.diff);
+    if (m > (rec.bestBy[G.diff] || 0)) rec.bestBy[G.diff] = m;
     saveRec();
-    // 1 XP por segundo aguantado, por el multiplicador de la dificultad
-    const xp = CC ? CC.sumarXP(Math.round(G.t * G.cfg.xp)) : null;
-    return { m, isRec, xp };
+    let r = null;
+    if (CC) {
+      try {
+        r = CC.partida({ juego: 'equilibrio', tabla: G.diff, valor: m, texto: `${m} m (${G.cfg.name})`,
+                         xp: CC.xpEscala(m, XP_MALO, XP_EXPERTO) });
+      } catch (e) { r = null; }
+    }
+    return { m, isRec: m > 0 && m > prev, prev, r };
   }
+  // cortar una partida recién empezada no cuenta
+  const settleIfPlayed = () => { if (state === 'play' && G && G.started && !G.done && G.t >= 1) settle(); };
 
   function finish() {
-    const r = settle();
-    if (!r) return;
-    const { m, isRec, xp } = r;
-    $('eXP').hidden = !xp;
-    if (xp) $('eXP').textContent = `+${xp.ganada} XP` + (G.cfg.xp !== 1 ? ` (${G.cfg.xpTxt})` : '');
-    $('eTitle').textContent = TITLES[Math.floor(Math.random() * TITLES.length)];
+    const res = settle();
+    if (!res) return;
+    const { m, isRec, prev, r } = res;
+    $('eTitle').textContent = isRec ? '¡Récord!' : TITLES[Math.floor(Math.random() * TITLES.length)];
     $('eNum').textContent = m + ' m';
-    $('eSub').textContent = `${G.t.toFixed(1)} s en la cuerda · nivel ${G.level} · récord en ${G.cfg.name}: ${rec.bestBy[G.diff] || 0} m`;
+    $('eSub').textContent = `${G.t.toFixed(1)} s en la cuerda · nivel ${G.level}`;
+    $('eRec').textContent = isRec ? (prev ? `Antes: ${prev} m en ${G.cfg.name}` : `Primer récord en ${G.cfg.name}`)
+                                  : `Récord en ${G.cfg.name}: ${bestOf(G.diff)} m`;
     $('eBadge').hidden = !isRec;
+    $('eXP').hidden = !r;
+    if (r) $('eXP').textContent = `+${r.xp} XP`;
+    for (const el of document.querySelectorAll('#eTags .logro')) el.remove();
+    for (const name of (r && r.logros) || []) {
+      const b = document.createElement('span');
+      b.className = 'badge logro'; b.textContent = '★ ' + name;
+      $('eTags').appendChild(b);
+    }
     if (isRec) sfxLevel();
     showEnd();
   }
@@ -452,41 +506,70 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     z.classList.remove('show'); void z.offsetWidth; z.classList.add('show');
   }
   function renderMenu() {
-    const best = rec.bestBy[diffId];
+    const best = bestOf(diffId);
     $('mRec').textContent = best ? best + ' m' : '—';
-    $('mDesc').textContent = DIFFS[diffId].desc;
+    $('mDesc').textContent = sel ? 'Caminá la cuerda todo lo que puedas.' : DIFFS[diffId].desc;
     for (const b of document.querySelectorAll('.diff')) b.setAttribute('aria-pressed', String(b.dataset.d === diffId));
     $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
   }
+  // selector común de dificultad; sin cubo-comun.js, unos botones propios
+  let sel = null;
   function setDiff(id) {
     if (!DIFFS[id] || id === diffId) return;
     diffId = id; rec.diff = id; saveRec(); renderMenu();
     beep(520 + DIFF_IDS.indexOf(id) * 140, 0.06);
   }
+  function stepDiff(dir) {
+    if (sel) sel.siguiente(dir);
+    else setDiff(DIFF_IDS[Math.max(0, Math.min(DIFF_IDS.length - 1, DIFF_IDS.indexOf(diffId) + dir))]);
+  }
+  if (CC && CC.selectorDif) {
+    let saved = null;
+    try { saved = localStorage.getItem('cubo-dif-equilibrio'); } catch (e) {}
+    sel = CC.selectorDif($('difs'), {
+      juego: 'equilibrio', valor: saved ? undefined : rec.diff,
+      notas: Object.fromEntries(DIFF_IDS.map(id => [id, DIFFS[id].desc])),
+      alCambiar: id => setDiff(id),
+    });
+    diffId = DIFFS[sel.valor()] ? sel.valor() : 'normal';
+  } else {
+    $('difs').innerHTML = DIFF_IDS.map(id => `<button class="diff" data-d="${id}" type="button" aria-pressed="false"><span class="dname">${DIFFS[id].name}</span></button>`).join('');
+    for (const b of document.querySelectorAll('.diff')) b.addEventListener('click', () => setDiff(b.dataset.d));
+  }
+
   function start() {
     newRun(false);
     state = 'play'; hudCache = '';
-    $('hDiff').textContent = G.cfg.name; $('hDiff').dataset.d = G.diff;
+    $('hDiff').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + G.cfg.name; $('hDiff').dataset.d = G.diff;
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').hidden = false;
     $('zone').classList.remove('show');
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    // la primera vez, la ayuda queda hasta el primer toque (o unos segundos)
+    G.tutorial = !rec.ayuda;
+    $('help').hidden = !G.tutorial;
+    if (G.tutorial) G.helpUntil = performance.now() + 9000;
+  }
+  function hideHelp() {
+    if ($('help').hidden) return;
+    $('help').hidden = true;
+    if (!rec.ayuda) { rec.ayuda = 1; saveRec(); }
   }
   // R / ↻: partida nueva al toque con la misma dificultad; si cortás una en curso, se lleva su XP
   function restart() {
-    if (state === 'play') settle();
+    settleIfPlayed();
     start();
   }
   function showMenu() {
-    if (state === 'play') settle();
+    settleIfPlayed();
     state = 'menu';
     newRun(true, G ? G.D % 120 : 0);
     renderMenu();
-    $('menu').hidden = false; $('end').hidden = true; $('hud').hidden = true; $('pad').hidden = true;
+    $('menu').hidden = false; $('end').hidden = true; $('hud').hidden = true; $('pad').hidden = true; $('help').hidden = true;
     $('zone').classList.remove('show');
   }
   function showEnd() {
     state = 'end';
-    $('end').hidden = false; $('pad').hidden = true;
+    $('end').hidden = false; $('pad').hidden = true; $('help').hidden = true;
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
   }
 
@@ -506,6 +589,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   addEventListener('keydown', e => {
     const k = e.key;
+    // con el ranking abierto o escribiendo el apodo, el teclado no es del juego
+    if (document.getElementById('cc-rank') || (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName))) return;
     const dir = (k === 'ArrowLeft' || k === 'a' || k === 'A') ? -1 : (k === 'ArrowRight' || k === 'd' || k === 'D') ? 1 : 0;
     if ((k === 'r' || k === 'R') && (state === 'play' || state === 'end')) {
       e.preventDefault(); if (!e.repeat) restart();
@@ -513,12 +598,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (dir) { e.preventDefault(); keys[dir < 0 ? 'L' : 'R'] = true; if (!e.repeat) input(dir); }
       else if (k === 'Escape') showMenu();
     } else if (state === 'menu') {
-      const ae = document.activeElement, onDiff = ae && ae.classList && ae.classList.contains('diff');
+      const ae = document.activeElement, onDiff = ae && ae.classList && (ae.classList.contains('diff') || ae.classList.contains('cc-dif'));
       if (dir) {
         e.preventDefault();
-        const i = Math.max(0, Math.min(DIFF_IDS.length - 1, DIFF_IDS.indexOf(diffId) + dir));
-        setDiff(DIFF_IDS[i]);
-        if (onDiff) document.querySelector(`.diff[data-d="${diffId}"]`).focus({ preventScroll: true });
+        stepDiff(dir);
+        if (onDiff) { const b = document.querySelector(`#difs [data-d="${diffId}"]`); if (b) b.focus({ preventScroll: true }); }
       }
       else if ((k === 'Enter' && (ae === document.body || onDiff)) || (k === ' ' && ae === document.body)) { e.preventDefault(); start(); }
       else if (k === 'Escape' && CC) CC.volver();
@@ -546,11 +630,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   $('btnMenu').addEventListener('click', showMenu);
   $('btnAgain').addEventListener('click', start);
   $('btnRestart').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (state === 'play') restart(); });
-  for (const b of document.querySelectorAll('.diff')) b.addEventListener('click', () => setDiff(b.dataset.d));
   if (CC) {
-    $('btnGames').hidden = false; $('btnGames2').hidden = false; $('eRow').classList.add('three');
+    for (const id of ['btnGames', 'btnGames2', 'btnRank', 'btnRank2']) $(id).hidden = false;
+    $('eRow').classList.add('three');
     for (const id of ['btnGames', 'btnGames2']) $(id).addEventListener('click', () => CC.volver());
-  }
+    for (const id of ['btnRank', 'btnRank2']) $(id).addEventListener('click', () => CC.verRanking({ juego: 'equilibrio', tabla: state === 'end' && G ? G.diff : diffId }));
+  } else $('eRow').style.gridTemplateColumns = '1fr';
   $('btnMute').addEventListener('click', () => {
     muted = !muted; rec.muted = muted; saveRec(); renderMenu();
     if (!muted) beep(660, 0.08);
@@ -587,10 +672,64 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     update(now, dt); draw(now);
+    if (state === 'menu') drawDemo(now);
     requestAnimationFrame(frame);
   }
 
+  // ---------- mini demo del menú: se inclina, se toca la flecha del otro lado y se endereza ----------
+  const dcv = $('demo'), dctx = dcv.getContext('2d');
+  let DW = 0, DH = 0;
+  function drawDemo(now) {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = dcv.clientWidth, h = dcv.clientHeight;
+    if (!w || !h) return;
+    if (w !== DW || h !== DH) { DW = w; DH = h; dcv.width = Math.round(w * dpr); dcv.height = Math.round(h * dpr); }
+    const c = dctx;
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.clearRect(0, 0, w, h);
+    // ciclo de 3,2 s: a la derecha y tocás ◀, después a la izquierda y tocás ▶ (quieto si se pidió menos movimiento)
+    const P = 1.6, tt = reduceMotion ? 0.8 : (now / 1000) % (P * 2);
+    const side = tt < P ? 1 : -1, u = tt % P;
+    const ease = x => x * x * (3 - 2 * x);
+    let th = 0;
+    if (u < 0.7) th = side * 0.5 * ease(u / 0.7);
+    else if (u < 0.9) th = side * 0.5;
+    else if (u < 1.35) { const q = (u - 0.9) / 0.45; th = side * 0.5 * (1 - ease(q)) - side * 0.06 * Math.sin(Math.PI * q); }
+    const pressed = u >= 0.7 && u < 1.0 ? -side : 0;
+
+    const ry = h * 0.74, cx = w / 2, s = Math.min(46, h * 0.38);
+    c.lineCap = 'round';
+    c.strokeStyle = INK; c.lineWidth = 4; c.beginPath(); c.moveTo(0, ry); c.lineTo(w, ry); c.stroke();
+    c.strokeStyle = '#e8c58a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(0, ry); c.lineTo(w, ry); c.stroke();
+    c.save(); c.translate(cx, ry); c.rotate(th);
+    c.strokeStyle = INK; c.lineWidth = 4;
+    c.beginPath(); c.moveTo(-s * 1.3, -s * 0.3); c.quadraticCurveTo(0, -s * 0.5, s * 1.3, -s * 0.3); c.stroke();
+    c.strokeStyle = '#ff5d7d'; c.lineWidth = 2; c.stroke();
+    if (CC) CC.dibujarCubo(c, 0, 0, s, { mirar: Math.max(-1, Math.min(1, th * 2)), t: now });
+    else { c.fillStyle = '#ffcc29'; c.lineWidth = 3; c.strokeStyle = INK; c.beginPath(); c.roundRect ? c.roundRect(-s / 2, -s, s, s, s * 0.2) : c.rect(-s / 2, -s, s, s); c.fill(); c.stroke(); }
+    c.restore();
+
+    // teclas a los costados
+    const kw = Math.min(58, w * 0.17), kh = Math.min(46, h * 0.42);
+    for (const d of [-1, 1]) {
+      const on = pressed === d, kx = d < 0 ? 12 : w - 12 - kw, ky = h * 0.2 + (on ? 3 : 0);
+      c.fillStyle = INK; c.beginPath(); c.roundRect ? c.roundRect(kx, h * 0.2 + 4, kw, kh, 10) : c.rect(kx, h * 0.2 + 4, kw, kh); c.fill();
+      c.fillStyle = on ? '#ffcc29' : '#fffaf0'; c.strokeStyle = INK; c.lineWidth = 3;
+      c.beginPath(); c.roundRect ? c.roundRect(kx, ky, kw, kh, 10) : c.rect(kx, ky, kw, kh); c.fill(); c.stroke();
+      c.fillStyle = INK; c.font = `${Math.round(kh * 0.5)}px "Lilita One", "Trebuchet MS", sans-serif`;
+      c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(d < 0 ? '◀' : '▶', kx + kw / 2, ky + kh / 2 + 1);
+      if (on) {
+        c.font = `${Math.round(Math.min(16, h * 0.15))}px "Lilita One", "Trebuchet MS", sans-serif`;
+        c.lineWidth = 4; c.lineJoin = 'round'; c.strokeStyle = INK; c.fillStyle = '#fffaf0';
+        const ly = ky + kh + 16;
+        c.strokeText('¡Tocá!', kx + kw / 2, ly); c.fillText('¡Tocá!', kx + kw / 2, ly);
+      }
+    }
+  }
+
   function update(now, dt) {
+    if (state === 'play' && G.helpUntil && now > G.helpUntil) { G.helpUntil = 0; hideHelp(); }
     // bot del menú
     if (G.demo && !G.fall && now >= G.botT) {
       const u = 2.6 * G.th + 0.9 * G.om + windAt(G.t) * 0.25;
@@ -607,6 +746,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         const dur = 0.6 + Math.random() * 0.6 + Math.min(0.6, d * 0.006);
         G.gust = { dir: Math.random() < 0.5 ? -1 : 1, str, warn: G.t, start: G.nextGust, end: G.nextGust + dur, blown: false };
         if (!G.demo) sfxWarn();
+        // en la primera partida, explicamos la primera ráfaga
+        if (G.tutorial && !G.windTip) { G.windTip = true; banner(G.gust.dir > 0 ? '¡Viento →!' : '¡← Viento!', `Tocá ${G.gust.dir > 0 ? '◀' : '▶'} para aguantar`); }
       }
       if (G.gust && !G.gust.blown && G.t >= G.gust.start) {
         G.gust.blown = true;

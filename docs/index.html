@@ -3,12 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Juegos de navegador que se juegan con dos flechas. Subí de nivel y desbloqueá personajes.">
+<meta name="description" content="Juegos de navegador que se juegan con dos flechas. Subí de nivel, desbloqueá personajes y competí en el ranking.">
 <meta property="og:title" content="Cubo Escalador">
-<meta property="og:description" content="Juegos de navegador que se juegan con dos flechas. Subí de nivel y desbloqueá personajes.">
+<meta property="og:description" content="Juegos de navegador que se juegan con dos flechas. Subí de nivel, desbloqueá personajes y competí en el ranking.">
 <meta name="theme-color" content="#62c6ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cubo Escalador">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%226%22%20fill%3D%22%23ffcc29%22%20stroke%3D%22%231d2340%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2210%22%20y%3D%2210%22%20width%3D%224%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%231d2340%22%2F%3E%3Crect%20x%3D%2218%22%20y%3D%2210%22%20width%3D%224%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%231d2340%22%2F%3E%3C%2Fsvg%3E">
+<link rel="apple-touch-icon" href="icono-180.png">
+<link rel="manifest" href="manifest.webmanifest">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))</script>
 </head>
 <body>
 <title>Cubo Escalador</title>
@@ -17,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:wght@400;600;800&display=swap">
 <style>
-/* Layout: perfil arriba, un juego por pantalla en slides horizontales, ◀ ▶ abajo como en los juegos */
+/* Layout: perfil arriba, un juego por pantalla en slides horizontales, barra de secciones abajo */
 :root {
   --ink: #1d2340;
   --paper: #fffaf0;
@@ -27,6 +32,8 @@
   --bg: #62c6ff;
   --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
   --body: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --gx: max(16px, env(safe-area-inset-left, 0px));
+  --gy: max(16px, env(safe-area-inset-right, 0px));
   color-scheme: light;
 }
 *, *::before, *::after { box-sizing: border-box; }
@@ -36,28 +43,43 @@ body {
   overflow: hidden; transition: background-color .35s ease;
   user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
 }
-.app { height: 100%; display: grid; grid-template-rows: auto 1fr auto; }
+button { font: inherit; color: var(--ink); }
+.app { height: 100%; height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
 
+/* ---------- arriba ---------- */
 .top {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding-block: 12px 4px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px var(--gy) 2px var(--gx);
 }
 .brand { font-family: var(--display); font-size: 22px; color: var(--paper); -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink); white-space: nowrap; }
+.top-r { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.install {
+  display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 12px; cursor: pointer;
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
+  font-weight: 800; font-size: 13px; white-space: nowrap;
+}
+.install svg { width: 20px; height: 20px; flex: none; }
+.install:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 .me {
-  display: flex; align-items: center; gap: 10px; cursor: pointer; font: inherit; color: var(--ink);
+  position: relative; display: flex; align-items: center; gap: 8px; cursor: pointer;
   background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink);
-  padding: 4px 12px 4px 6px; min-width: 0;
+  padding: 3px 10px 3px 4px; min-width: 0;
 }
 .me:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 .me canvas { width: 40px; height: 44px; flex: none; }
-.me-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; text-align: left; }
-.me-lvl { font-family: var(--display); font-size: 17px; line-height: 1; white-space: nowrap; }
-.bar { width: 96px; height: 8px; border-radius: 99px; background: #e6e2d6; border: 2px solid var(--ink); overflow: hidden; }
+.me-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; text-align: left; }
+.me-lvl { font-family: var(--display); font-size: 16px; line-height: 1; white-space: nowrap; }
+.bar { width: 84px; height: 8px; border-radius: 99px; background: #e6e2d6; border: 2px solid var(--ink); overflow: hidden; }
 .bar i { display: block; height: 100%; background: var(--accent); }
-.me-xp { font-size: 11px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.me-edit { font-size: 11px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+.badge {
+  position: absolute; top: -10px; right: -8px; padding: 2px 7px; border-radius: 99px;
+  background: var(--accent); color: var(--paper); border: 2.5px solid var(--ink);
+  font: 400 13px/1.1 var(--display); letter-spacing: .02em; animation: latir 1.4s ease-in-out infinite;
+}
+@keyframes latir { 50% { transform: scale(1.12) rotate(-4deg); } }
 
+/* ---------- slides ---------- */
 .slides {
   display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory;
   scrollbar-width: none; overscroll-behavior-x: contain; min-height: 0;
@@ -65,132 +87,253 @@ body {
 .slides::-webkit-scrollbar { display: none; }
 .slide {
   flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
-  padding-block: 8px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  min-height: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: 6px var(--gy) 8px var(--gx); min-height: 0;
 }
-.num { font-weight: 800; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--paper); text-shadow: 0 1px 0 var(--ink), 1px 0 0 var(--ink), -1px 0 0 var(--ink), 0 -1px 0 var(--ink); }
+.head { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .slide h2 {
   margin: 0; font-family: var(--display); font-weight: 400; line-height: 1; text-align: center;
-  font-size: clamp(40px, 11vw, 64px); color: var(--paper);
+  font-size: clamp(38px, 10.5vw, 60px); color: var(--paper);
   -webkit-text-stroke: 2.5px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 var(--ink);
 }
+.nuevo {
+  display: inline-block; vertical-align: top; margin-left: 6px; padding: 3px 8px 2px; border-radius: 10px; transform: rotate(6deg);
+  background: var(--accent); color: var(--paper); border: 2.5px solid var(--ink); -webkit-text-stroke: 0;
+  font: 400 15px/1 var(--display); text-shadow: none; box-shadow: 0 3px 0 var(--ink);
+}
 .stage {
-  width: min(480px, 100%); flex: 1 1 auto; min-height: 120px; max-height: 340px;
+  position: relative; width: min(480px, 100%); flex: 1 1 auto; min-height: 120px; max-height: 330px;
   border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 7px 0 var(--ink); overflow: hidden; background: var(--paper);
 }
-.stage canvas { display: block; width: 100%; height: 100%; }
+.stage canvas { display: block; width: 100%; height: 100%; cursor: pointer; }
 .info {
   width: min(480px, 100%); display: flex; flex-direction: column; gap: 10px;
-  background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 5px 0 var(--ink); padding: 14px 16px;
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 5px 0 var(--ink); padding: 12px 14px;
 }
 .info p { margin: 0; font-size: 15px; line-height: 1.4; }
-.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.rec { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.rec b { display: block; font-family: var(--display); font-weight: 400; letter-spacing: 0; text-transform: none; font-size: 20px; color: var(--ink); font-variant-numeric: tabular-nums; }
-.play {
-  font: 800 18px var(--body); color: var(--ink); background: var(--cube); cursor: pointer;
-  border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 5px 0 var(--ink); padding: 12px 26px;
+.row { display: flex; align-items: center; gap: 10px; }
+.rec { flex: 1; min-width: 0; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.rec b { display: block; font-family: var(--display); font-weight: 400; letter-spacing: 0; text-transform: none; font-size: 19px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rec small { display: block; margin-top: 2px; font-size: 11px; letter-spacing: 0; text-transform: none; }
+.icon-btn {
+  flex: none; width: 52px; height: 52px; display: grid; place-items: center; cursor: pointer;
+  background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 5px 0 var(--ink);
 }
+.icon-btn svg { width: 26px; height: 26px; }
+.icon-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.play {
+  flex: none; display: flex; align-items: center; gap: 8px; height: 52px; padding: 0 20px 0 16px; cursor: pointer;
+  font: 400 22px var(--display); background: var(--cube);
+  border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 5px 0 var(--ink);
+}
+.play svg { width: 20px; height: 20px; }
 .play:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
 
-.nav {
-  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px;
-  width: min(560px, 100%); margin: 0 auto; box-sizing: border-box;
-  padding-top: 6px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-}
+/* flechas y puntos */
+.pager { display: flex; align-items: center; justify-content: center; gap: 10px; width: min(480px, 100%); }
 .arrow {
-  width: 76px; height: 64px; display: grid; place-items: center; cursor: pointer; color: var(--ink);
-  background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 6px 0 var(--ink);
+  flex: none; width: 48px; height: 44px; display: grid; place-items: center; cursor: pointer;
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
 }
-.arrow svg { width: 34px; height: 34px; }
-.arrow:active, .arrow.on { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); background: var(--cube); }
-.dots { display: flex; justify-content: center; gap: 8px; }
-.dots button { width: 12px; height: 12px; padding: 0; border-radius: 99px; border: 2px solid var(--ink); background: var(--paper); cursor: pointer; transition: width .2s; }
-.dots button[aria-current="true"] { width: 30px; background: var(--cube); }
-.hint { text-align: center; font-size: 12px; font-weight: 600; color: var(--ink); margin-top: 6px; }
+.arrow svg { width: 24px; height: 24px; }
+.arrow:active, .arrow.on { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); background: var(--cube); }
+.dots { flex: 1; min-width: 0; display: flex; justify-content: center; align-items: center; gap: 4px; }
+.dots button { flex: none; width: 9px; height: 9px; padding: 0; border-radius: 99px; border: 2px solid var(--ink); background: var(--paper); cursor: pointer; }
+.dots button[aria-current="true"] { width: 20px; background: var(--cube); }
+.all {
+  flex: none; height: 44px; padding: 0 10px; display: flex; align-items: center; gap: 6px; cursor: pointer;
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); font-weight: 800; font-size: 13px;
+}
+.all svg { width: 18px; height: 18px; }
+.all:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 
-/* personaje */
+/* ---------- barra de abajo ---------- */
+.tabs {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: min(560px, 100%); margin: 0 auto;
+  padding: 6px var(--gy) calc(env(safe-area-inset-bottom, 0px) + 10px) var(--gx);
+}
+.tab {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  height: 58px; cursor: pointer; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink);
+  font-weight: 800; font-size: 12px;
+}
+.tab svg { width: 24px; height: 24px; }
+.tab[aria-current="page"] { background: var(--cube); }
+.tab:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.tab .badge { top: -9px; right: -4px; font-size: 12px; }
+
+/* ---------- hojas (personaje, logros, ranking, todos) ---------- */
 .sheet {
-  position: fixed; inset: 0; display: flex; overflow-y: auto; z-index: 10;
-  background: rgba(29, 35, 64, .45);
-  padding-block: 24px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  position: fixed; inset: 0; z-index: 10; display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(29, 35, 64, .5);
+  padding: 16px var(--gy) calc(env(safe-area-inset-bottom, 0px) + 12px) var(--gx);
 }
 .card {
-  margin: auto; width: min(460px, 100%); background: var(--paper);
-  border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink);
-  padding: 18px; display: flex; flex-direction: column; gap: 14px;
+  width: min(500px, 100%); max-height: calc(100dvh - 32px); display: flex; flex-direction: column;
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink); overflow: hidden;
+  animation: subir .22s ease-out;
 }
-.card h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 30px; line-height: 1; }
-.preview { display: flex; align-items: center; gap: 16px; }
-.preview canvas { width: 96px; height: 104px; flex: none; background: #e9f6ff; border: 2px solid var(--ink); border-radius: 16px; }
-.preview b { font-family: var(--display); font-weight: 400; font-size: 24px; display: block; }
-.preview span { font-size: 13px; color: var(--muted); }
-.skins { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; }
-.skin {
-  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px 6px; cursor: pointer;
-  font: 600 12px var(--body); color: var(--ink); background: #fff;
-  border: 2px solid var(--ink); border-radius: 14px; box-shadow: 0 3px 0 var(--ink);
+@keyframes subir { from { transform: translateY(24px); opacity: 0; } }
+.card-h { display: flex; align-items: center; gap: 10px; padding: 14px 14px 10px 18px; }
+.card-h h3 { margin: 0; flex: 1; font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 1; }
+.x { width: 44px; height: 44px; flex: none; cursor: pointer; border-radius: 12px; border: 3px solid var(--ink); background: #fff; font: 700 20px/1 system-ui; }
+.card-b { overflow-y: auto; padding: 0 18px 18px; display: flex; flex-direction: column; gap: 14px; }
+.preview { display: flex; align-items: center; gap: 14px; }
+.preview canvas { width: 112px; height: 120px; flex: none; background: #e9f6ff; border: 2.5px solid var(--ink); border-radius: 16px; }
+.preview b { font-family: var(--display); font-weight: 400; font-size: 24px; display: block; line-height: 1.05; }
+.preview .sub { font-size: 13px; font-weight: 600; color: var(--muted); line-height: 1.35; margin-top: 4px; }
+.preview .bar { width: 100%; margin-top: 8px; height: 10px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 4px; background: #ece8dc; border: 2.5px solid var(--ink); border-radius: 14px; }
+.seg button { height: 40px; border: 0; border-radius: 10px; background: transparent; font-weight: 800; font-size: 14px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--paper); box-shadow: inset 0 0 0 2.5px var(--ink); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 10px; }
+.item {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px 7px; cursor: pointer;
+  font-weight: 600; font-size: 12px; background: #fff;
+  border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 0 3px 0 var(--ink);
 }
-.skin canvas { width: 56px; height: 60px; }
-.skin[aria-pressed="true"] { background: var(--cube); }
-.skin:disabled { cursor: default; background: #ece8dc; box-shadow: none; color: var(--muted); }
-.skin:disabled canvas { opacity: .35; filter: grayscale(1); }
-.skin small { font-weight: 800; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
-.close {
-  font: 800 16px var(--body); color: var(--ink); background: var(--cube); cursor: pointer;
-  border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); padding: 12px;
+.item canvas { width: 60px; height: 64px; }
+.item[aria-pressed="true"] { background: var(--cube); }
+.item.lock { cursor: default; background: #ece8dc; box-shadow: none; color: var(--muted); }
+.item.lock canvas { opacity: .35; filter: grayscale(1); }
+.item small { font-weight: 800; font-size: 10px; line-height: 1.2; text-align: center; }
+.item .badge { top: -8px; right: -6px; font-size: 11px; animation: none; }
+.tip { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); line-height: 1.4; }
+.apodo { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 2.5px dashed rgba(29,35,64,.35); border-radius: 14px; font-size: 14px; }
+.apodo b { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini {
+  height: 40px; padding: 0 14px; cursor: pointer; flex: none;
+  background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; box-shadow: 0 3px 0 var(--ink); font-weight: 800; font-size: 13px;
 }
-.close:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.mini:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+
+/* logros */
+.resumen { display: flex; align-items: center; gap: 12px; }
+.resumen b { font-family: var(--display); font-weight: 400; font-size: 34px; line-height: 1; }
+.medallas { display: flex; gap: 6px; flex-wrap: wrap; }
+.med { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 800; }
+.med i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--ink); }
+.grupo h4 { margin: 4px 0 8px; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.logro { display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 14px; background: #fff; border: 2.5px solid var(--ink); margin-bottom: 8px; }
+.logro.no { background: transparent; border-style: dashed; border-color: rgba(29,35,64,.35); }
+.logro .m { flex: none; width: 38px; height: 38px; border-radius: 50%; border: 3px solid var(--ink); display: grid; place-items: center; font: 400 18px var(--display); }
+.logro.no .m { background: #ece8dc !important; border-color: rgba(29,35,64,.4); color: rgba(29,35,64,.4); }
+.logro .t { flex: 1; min-width: 0; }
+.logro .t b { display: block; font-size: 14px; }
+.logro .t span { display: block; font-size: 12px; font-weight: 600; color: var(--muted); line-height: 1.3; }
+.prog { margin-top: 5px; height: 7px; border-radius: 99px; background: #e6e2d6; overflow: hidden; }
+.prog i { display: block; height: 100%; background: var(--accent); }
+.logro .xp { flex: none; font-size: 12px; font-weight: 800; color: var(--muted); }
+
+/* lista de juegos (ranking y todos) */
+.juegos { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.jg {
+  display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 0; overflow: hidden; cursor: pointer; text-align: left;
+  border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); background: #fff;
+}
+.jg canvas { width: 100%; height: 76px; display: block; border-bottom: 2.5px solid var(--ink); }
+.jg span { padding: 7px 10px 2px; font: 400 18px/1.1 var(--display); }
+.jg small { padding: 0 10px 8px; font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jg:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+
+/* ayuda de la primera vez */
+.coach {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 92px); transform: translateX(-50%); z-index: 5;
+  display: flex; align-items: center; gap: 10px; padding: 10px 16px; pointer-events: none;
+  background: var(--ink); color: var(--paper); border-radius: 14px; font-weight: 800; font-size: 14px; white-space: nowrap;
+}
+.coach svg { width: 28px; height: 28px; animation: deslizar 1.4s ease-in-out infinite; }
+@keyframes deslizar { 0%, 100% { transform: translateX(8px); } 50% { transform: translateX(-8px); } }
+
 button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-@media (max-height: 640px) { .info p { display: none; } .slide { gap: 8px; } }
-@media (max-width: 400px) { .brand { font-size: 18px; } .bar { width: 72px; } }
-@media (prefers-reduced-motion: reduce) { body { transition: none; } }
+@media (max-height: 700px) { .info p { display: none; } .slide { gap: 8px; } }
+@media (max-height: 600px) { .tab { height: 48px; } .tab span { display: none; } }
+@media (max-width: 400px) { .brand { font-size: 18px; } .bar { width: 64px; } .install span { display: none; } .all span { display: none; } }
+@media (max-width: 340px) { .brand { display: none; } }
+@media (prefers-reduced-motion: reduce) { body { transition: none; } .badge, .coach svg, .card { animation: none; } }
 </style>
 
 <div class="app">
   <header class="top">
     <span class="brand">Cubo Escalador</span>
-    <button class="me" id="me" type="button" aria-label="Elegir personaje">
-      <canvas id="avatar" width="80" height="88"></canvas>
-      <span class="me-info">
-        <span class="me-lvl" id="meLvl">Nivel 1</span>
-        <span class="bar"><i id="meBar" style="width:0%"></i></span>
-        <span class="me-xp" id="meXp">0 / 80 XP</span>
-      </span>
-    </button>
+    <div class="top-r">
+      <button class="install" id="install" type="button" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M5 20h14"/></svg><span>Instalar</span>
+      </button>
+      <button class="me" id="me" type="button" aria-label="Tu personaje: cambiar personaje y efecto">
+        <canvas id="avatar" width="80" height="88"></canvas>
+        <span class="me-info">
+          <span class="me-lvl" id="meLvl">Nivel 1</span>
+          <span class="bar"><i id="meBar" style="width:0%"></i></span>
+          <span class="me-edit">Cambiar personaje</span>
+        </span>
+        <span class="badge" id="meBadge" hidden>¡Nuevo!</span>
+      </button>
+    </div>
   </header>
 
   <main class="slides" id="slides" aria-label="Juegos"></main>
 
-  <footer>
-    <div class="nav">
-      <button class="arrow" id="prev" type="button" aria-label="Juego anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 7 12l8 8"/></svg></button>
-      <div>
-        <div class="dots" id="dots"></div>
-        <div class="hint" id="hint">← → para elegir · Enter para jugar</div>
-      </div>
-      <button class="arrow" id="next" type="button" aria-label="Juego siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4 8 8-8 8"/></svg></button>
-    </div>
-  </footer>
+  <nav class="tabs" aria-label="Secciones">
+    <button class="tab" type="button" data-tab="juegos" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="2.5" y="7" width="19" height="11" rx="5"/><path d="M7.5 10.5v4M5.5 12.5h4" stroke-linecap="round"/><circle cx="15.5" cy="11.5" r="1.3" fill="currentColor"/><circle cx="18" cy="14" r="1.3" fill="currentColor"/></svg>
+      <span>Juegos</span></button>
+    <button class="tab" type="button" data-tab="personaje">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><path d="M9 9v2.5M15 9v2.5" stroke-linecap="round"/><path d="M8.5 15q3.5 3 7 0" stroke-linecap="round"/></svg>
+      <span>Personaje</span><span class="badge" id="tabBadge" hidden>!</span></button>
+    <button class="tab" type="button" data-tab="logros">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11M17 6h3v1.5A3.5 3.5 0 0 1 16.5 11M12 14v3M8 20h8M9.5 17h5v3h-5z"/></svg>
+      <span>Logros</span></button>
+    <button class="tab" type="button" data-tab="ranking">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M9 20V8h6v12zM3 20v-7h6v7zM15 20v-9h6v9z"/><path d="m12 2.6.8 1.7 1.8.2-1.3 1.2.3 1.8-1.6-.9-1.6.9.3-1.8-1.3-1.2 1.8-.2z" fill="currentColor" stroke-width="1"/></svg>
+      <span>Ranking</span></button>
+  </nav>
 </div>
 
-<div class="sheet" id="sheet" hidden>
-  <div class="card" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
-    <h3 id="sheetTitle">Tu personaje</h3>
-    <div class="preview">
-      <canvas id="big" width="192" height="208"></canvas>
-      <div><b id="bigName">Clásico</b><span id="bigNext"></span></div>
+<!-- personaje -->
+<div class="sheet" id="sheetPersonaje" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="tPers">
+    <div class="card-h"><h3 id="tPers">Tu personaje</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
+    <div class="card-b">
+      <div class="preview">
+        <canvas id="big" width="224" height="240"></canvas>
+        <div style="flex:1;min-width:0">
+          <b id="bigName">Clásico</b>
+          <div class="sub" id="bigLvl"></div>
+          <div class="bar"><i id="bigBar" style="width:0%"></i></div>
+          <div class="sub" id="bigNext"></div>
+        </div>
+      </div>
+      <div class="seg" role="group" aria-label="Qué cambiar">
+        <button type="button" data-seg="skins" aria-pressed="true">Personajes</button>
+        <button type="button" data-seg="efectos" aria-pressed="false">Efectos</button>
+      </div>
+      <div class="grid" id="items"></div>
+      <p class="tip">Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 % y Extremo multiplica por 3. Algunos personajes y efectos solo salen con logros.</p>
+      <div class="apodo"><span style="flex:1;min-width:0">Apodo en el ranking<b id="apodoTxt" style="display:block">—</b></span><button class="mini" type="button" id="apodoBtn">Cambiar</button></div>
     </div>
-    <div class="skins" id="skins"></div>
-    <button class="close" id="close" type="button">Listo</button>
   </div>
+</div>
+
+<!-- logros -->
+<div class="sheet" id="sheetLogros" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="tLog">
+    <div class="card-h"><h3 id="tLog">Logros</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
+    <div class="card-b" id="logros"></div>
+  </div>
+</div>
+
+<!-- elegir juego: para el ranking o para ver todos -->
+<div class="sheet" id="sheetJuegos" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="tJue">
+    <div class="card-h"><h3 id="tJue">Ranking</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
+    <div class="card-b"><p class="tip" id="jueTip"></p><div class="juegos" id="juegos"></div></div>
+  </div>
+</div>
+
+<div class="coach" id="coach" hidden>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5A6.5 6.5 0 0 1 11.5 21h-.6a6 6 0 0 1-4.6-2.2L3.6 15.4a1.6 1.6 0 0 1 2.4-2.1L9 16"/></svg>
+  <span id="coachTxt">Deslizá para ver los 11 juegos</span>
 </div>
 
 <script src="cubo-comun.js"></script>
@@ -200,7 +343,9 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
   const CC = window.CuboComun;
   const $ = id => document.getElementById(id);
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const INK = '#1d2340';
+  const tactil = matchMedia('(hover: none)').matches;
+  const INK = '#1d2340', PAPER = '#fffaf0';
+  const guardado = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; };
 
   // ---------- dibujos de cada juego ----------
   function rr(c, x, y, w, h, r) {
@@ -218,6 +363,7 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
     c.ellipse(x + s * 0.5, y - s * 0.45, s * 0.85, s * 0.75, 0, 0, Math.PI * 2); c.fill();
   }
   const bob = (t, sp = 380) => Math.abs(Math.sin(t / sp));
+  const rival = id => CC.SKINS.find(s => s.id === id);
 
   function ilEscalador(c, w, h, t) {
     sky(c, w, h, '#62c6ff', '#c9f1ff');
@@ -254,7 +400,7 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
     const box = (x, col, shape) => {
       c.fillStyle = col; c.strokeStyle = INK; c.lineWidth = 3;
       rr(c, x - s * 0.9, h * 0.62, s * 1.8, h * 0.34, s * 0.2); c.fill(); c.stroke();
-      c.fillStyle = '#fffaf0'; c.beginPath();
+      c.fillStyle = PAPER; c.beginPath();
       if (shape === 'c') c.arc(x, h * 0.79, s * 0.3, 0, Math.PI * 2);
       else { c.moveTo(x, h * 0.79 - s * 0.32); c.lineTo(x + s * 0.34, h * 0.79 + s * 0.24); c.lineTo(x - s * 0.34, h * 0.79 + s * 0.24); c.closePath(); }
       c.fill(); c.stroke();
@@ -295,61 +441,232 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
     sky(c, w, h, '#8f6bff', '#e2d8ff');
     const lw = w * 0.22, xl = w / 2 - lw * 1.15, xr = w / 2 + lw * 0.15, hit = h * 0.8, s = Math.min(lw * 0.7, h * 0.15);
     for (const x of [xl, xr]) { c.fillStyle = 'rgba(255,255,255,.22)'; c.fillRect(x, 0, lw, h); }
-    c.fillStyle = '#fffaf0'; c.fillRect(xl - 6, hit - 3, xr + lw - xl + 12, 6);
-    const notes = [[0, 0.1], [1, 0.38], [0, 0.62], [1, 0.9], [1, 1.15]];
+    c.fillStyle = PAPER; c.fillRect(xl - 6, hit - 3, xr + lw - xl + 12, 6);
+    const notes = [[0, 0.1], [1, 0.55], [0, 1.0]];
     for (const [side, y0] of notes) {
-      const x = (side ? xr : xl) + (lw - s) / 2, y = ((y0 * h + t * 0.08) % (h * 1.2)) - h * 0.2;
+      const x = (side ? xr : xl) + (lw - s) / 2, y = ((y0 * h + t * 0.14) % (h * 1.35)) - h * 0.2;
       c.fillStyle = side ? '#5cb0ff' : '#ff5d7d'; c.strokeStyle = INK; c.lineWidth = 3;
-      rr(c, x, y, s, s, s * 0.2); c.fill(); c.stroke();
-      c.strokeStyle = '#fffaf0'; c.lineWidth = 4; c.beginPath();
-      const d = side ? 1 : -1, cx = x + s / 2, cy = y + s / 2;
-      c.moveTo(cx - d * s * 0.12, cy - s * 0.22); c.lineTo(cx + d * s * 0.14, cy); c.lineTo(cx - d * s * 0.12, cy + s * 0.22); c.stroke();
+      rr(c, x, y, s, s * 0.5, s * 0.14); c.fill(); c.stroke();
     }
     const beat = bob(t, 250);
-    CC.dibujarCubo(c, w / 2 - lw * 0.5 + lw * 0.5, h * 0.98 - beat * h * 0.05, s * 0.85, { mirar: Math.floor(t / 500) % 2 ? 1 : -1, t });
+    CC.dibujarCubo(c, w / 2, h * 0.98 - beat * h * 0.05, s * 0.85, { mirar: Math.floor(t / 500) % 2 ? 1 : -1, t });
     c.fillStyle = INK; c.font = `${Math.round(s * 0.5)}px "Lilita One", sans-serif`;
     c.globalAlpha = 0.5 + beat * 0.5; c.fillText('♪', w * 0.86, h * 0.2 + beat * 6); c.fillText('♫', w * 0.08, h * 0.3 - beat * 6);
     c.globalAlpha = 1;
   }
+  function ilVoley(c, w, h, t) {
+    sky(c, w, h, '#ff9a6b', '#ffe0c2');
+    c.fillStyle = '#ffd98a'; c.fillRect(0, h * 0.82, w, h * 0.18);
+    c.strokeStyle = INK; c.lineWidth = 3; c.beginPath(); c.moveTo(0, h * 0.82); c.lineTo(w, h * 0.82); c.stroke();
+    const s = Math.min(w / 8, h / 5);
+    c.fillStyle = PAPER; c.strokeStyle = INK; c.lineWidth = 3; rr(c, w / 2 - 4, h * 0.42, 8, h * 0.4, 3); c.fill(); c.stroke();
+    c.strokeStyle = 'rgba(29,35,64,.55)'; c.lineWidth = 1.5;
+    for (let y = h * 0.44; y < h * 0.62; y += 7) { c.beginPath(); c.moveTo(w / 2 - 3, y); c.lineTo(w / 2 + 3, y); c.stroke(); }
+    const f = (t % 1800) / 1800, ida = f < 0.5, p = ida ? f * 2 : (f - 0.5) * 2;
+    const xa = w * 0.25, xb = w * 0.75, bx = ida ? xa + (xb - xa) * p : xb - (xb - xa) * p;
+    const by = h * 0.82 - s * 1.1 - Math.sin(p * Math.PI) * h * 0.5;
+    c.fillStyle = 'rgba(29,35,64,.18)'; c.beginPath(); c.ellipse(ida ? xb : xa, h * 0.86, s * 0.3, s * 0.08, 0, 0, Math.PI * 2); c.fill();
+    CC.dibujarCubo(c, xa + Math.sin(t / 300) * s * 0.2, h * 0.82, s, { mirar: 1, t });
+    CC.dibujarCubo(c, xb, h * 0.82, s, { mirar: -1, t, skin: rival('menta'), efecto: false });
+    c.fillStyle = PAPER; c.strokeStyle = INK; c.lineWidth = 3;
+    c.beginPath(); c.arc(bx, by, s * 0.26, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.strokeStyle = '#ff7a59'; c.lineWidth = 2.5; c.beginPath(); c.arc(bx, by, s * 0.26, t / 200, t / 200 + 2); c.stroke();
+  }
+  function ilPaseo(c, w, h, t) {
+    sky(c, w, h, '#e98fd0', '#fde1f3');
+    const s = Math.min(w / 8, h / 4.4), suelo = h * 0.84, off = (t * 0.08) % (s * 3);
+    for (let x = -off; x < w + s * 3; x += s * 3) {
+      c.fillStyle = '#7bd36a'; c.strokeStyle = INK; c.lineWidth = 3;
+      c.beginPath(); c.arc(x + s, suelo - s * 1.9, s * 0.62, 0, Math.PI * 2); c.fill(); c.stroke();
+      c.fillStyle = '#9a5b2e'; rr(c, x + s * 0.88, suelo - s * 1.35, s * 0.24, s * 1.35, 3); c.fill(); c.stroke();
+    }
+    c.fillStyle = '#d9c7b8'; c.fillRect(0, suelo, w, h - suelo);
+    c.strokeStyle = INK; c.lineWidth = 3; c.beginPath(); c.moveTo(0, suelo); c.lineTo(w, suelo); c.stroke();
+    const paso = Math.floor(t / 260) % 2, cx = w * 0.32, px = w * 0.68 + Math.sin(t / 500) * s * 0.3;
+    c.strokeStyle = '#ff5d7d'; c.lineWidth = 3;
+    c.beginPath(); c.moveTo(cx + s * 0.4, suelo - s * 0.55); c.quadraticCurveTo((cx + px) / 2, suelo - s * 0.1, px - s * 0.35, suelo - s * 0.45); c.stroke();
+    CC.dibujarCubo(c, cx, suelo - (paso ? s * 0.08 : 0), s, { mirar: 1, t });
+    // mascota
+    const ms = s * 0.62, py = suelo - bob(t, 160) * s * 0.12;
+    c.save(); c.translate(px, py);
+    c.fillStyle = '#ffad4d'; c.strokeStyle = INK; c.lineWidth = 2.5;
+    c.beginPath(); c.moveTo(-ms * 0.5, -ms * 0.6); c.quadraticCurveTo(-ms * 0.95, -ms * (0.9 + Math.sin(t / 90) * 0.15), -ms * 0.8, -ms * 1.1); c.stroke();
+    rr(c, -ms * 0.5, -ms, ms * 1.25, ms, ms * 0.22); c.fill(); c.stroke();
+    c.fillStyle = '#c96a2a'; c.beginPath(); c.ellipse(ms * 0.55, -ms * 0.95, ms * 0.14, ms * 0.26, 0.4, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.fillStyle = INK; c.beginPath(); c.arc(ms * 0.45, -ms * 0.62, ms * 0.07, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(ms * 0.75, -ms * 0.5, ms * 0.08, 0, Math.PI * 2); c.fill();
+    c.restore();
+  }
+  function ilSerpiente(c, w, h, t) {
+    sky(c, w, h, '#a3e048', '#e3f7c2');
+    const cel = Math.min(w / 10, h / 6);
+    c.strokeStyle = 'rgba(29,35,64,.08)'; c.lineWidth = 1;
+    for (let x = 0; x < w; x += cel) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
+    for (let y = 0; y < h; y += cel) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+    // camino en circuito: recorre un rectángulo
+    const cols = 6, rows = 3, ox = (w - cols * cel) / 2, oy = (h - rows * cel) / 2 + cel * 0.4;
+    const per = [];
+    for (let i = 0; i < cols; i++) per.push([i, 0]);
+    for (let j = 1; j < rows; j++) per.push([cols - 1, j]);
+    for (let i = cols - 2; i >= 0; i--) per.push([i, rows - 1]);
+    for (let j = rows - 2; j > 0; j--) per.push([0, j]);
+    const pos = t / 220, largo = 7, cuerpo = CC.skin().cuerpo;
+    const at = k => { const n = per.length, a = ((Math.floor(k) % n) + n) % n, b = (a + 1) % n, f = k - Math.floor(k);
+      return [ox + (per[a][0] + (per[b][0] - per[a][0]) * f) * cel + cel / 2, oy + (per[a][1] + (per[b][1] - per[a][1]) * f) * cel + cel / 2]; };
+    for (let k = largo; k >= 1; k--) {
+      const [x, y] = at(pos - k * 0.9); c.fillStyle = cuerpo; c.strokeStyle = INK; c.lineWidth = 2.5;
+      rr(c, x - cel * 0.38, y - cel * 0.38, cel * 0.76, cel * 0.76, cel * 0.18); c.fill(); c.stroke();
+    }
+    const fx = ox + 2.5 * cel + cel / 2, fy = oy + 1 * cel + cel / 2;
+    c.fillStyle = '#ff5d7d'; c.strokeStyle = INK; c.lineWidth = 2.5; c.beginPath(); c.arc(fx, fy, cel * 0.3, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.strokeStyle = '#2fb36b'; c.lineWidth = 3; c.beginPath(); c.moveTo(fx, fy - cel * 0.3); c.lineTo(fx + cel * 0.12, fy - cel * 0.5); c.stroke();
+    const [hx, hy] = at(pos), [nx] = at(pos + 0.3);
+    CC.dibujarCubo(c, hx, hy + cel * 0.48, cel * 0.95, { mirar: Math.sign(nx - hx), t });
+  }
+  function ilCohete(c, w, h, t) {
+    sky(c, w, h, '#2a1a5e', '#ff5d7d');
+    c.fillStyle = PAPER;
+    for (let k = 0; k < 24; k++) { const x = (k * 97) % w, y = ((k * 53 + t * 0.05) % h); c.globalAlpha = 0.4 + (k % 3) * 0.2; c.fillRect(x, y, 2.5, 2.5); }
+    c.globalAlpha = 1;
+    const s = Math.min(w / 8, h / 5.2), cx = w / 2 + Math.sin(t / 700) * w * 0.12, cy = h * 0.62 + Math.sin(t / 450) * h * 0.04;
+    const ang = Math.cos(t / 700) * 0.25, izq = Math.sin(t / 350) > -0.3, der = Math.sin(t / 350) < 0.3;
+    for (const [x, y, r] of [[w * 0.14, ((t * 0.06) % (h * 1.4)) - h * 0.2, s * 0.5], [w * 0.86, ((t * 0.06 + h * 0.7) % (h * 1.4)) - h * 0.2, s * 0.38]]) {
+      c.fillStyle = '#8a7aa8'; c.strokeStyle = INK; c.lineWidth = 3; c.beginPath();
+      for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, rr2 = r * (k % 2 ? 0.82 : 1); c.lineTo(x + Math.cos(a) * rr2, y + Math.sin(a) * rr2); }
+      c.closePath(); c.fill(); c.stroke();
+    }
+    c.save(); c.translate(cx, cy); c.rotate(ang);
+    for (const [side, on] of [[-1, izq], [1, der]]) {
+      if (!on) continue;
+      const fl = s * (0.55 + Math.random() * 0.2);
+      c.fillStyle = '#ffad4d'; c.beginPath(); c.moveTo(side * s * 0.42 - s * 0.14, s * 0.32); c.lineTo(side * s * 0.42, s * 0.32 + fl); c.lineTo(side * s * 0.42 + s * 0.14, s * 0.32); c.fill();
+      c.fillStyle = '#ffe14d'; c.beginPath(); c.moveTo(side * s * 0.42 - s * 0.07, s * 0.32); c.lineTo(side * s * 0.42, s * 0.32 + fl * 0.6); c.lineTo(side * s * 0.42 + s * 0.07, s * 0.32); c.fill();
+    }
+    c.fillStyle = '#e9edf5'; c.strokeStyle = INK; c.lineWidth = 3;
+    rr(c, -s * 0.62, -s * 0.05, s * 1.24, s * 0.38, s * 0.14); c.fill(); c.stroke();
+    c.fillStyle = '#ff5d7d';
+    for (const side of [-1, 1]) { rr(c, side * s * 0.42 - s * 0.14, s * 0.2, s * 0.28, s * 0.18, s * 0.06); c.fill(); c.stroke(); }
+    CC.dibujarCubo(c, 0, -s * 0.05, s * 0.78, { mirar: 0, t });
+    c.restore();
+  }
+  function ilEsqui(c, w, h, t) {
+    sky(c, w, h, '#eaf4ff', '#cfe3ff');
+    const s = Math.min(w / 8, h / 4.6), vel = t * 0.07;
+    const puertas = [0, 1, 2, 3].map(k => {
+      const y = ((k * h * 0.42 - vel) % (h * 1.68) + h * 1.68) % (h * 1.68) - h * 0.2;
+      return { y, x: w / 2 + (k % 2 ? 1 : -1) * w * 0.18 };
+    });
+    for (const p of puertas) {
+      for (const side of [-1, 1]) {
+        const x = p.x + side * s * 0.9;
+        c.strokeStyle = INK; c.lineWidth = 2.5; c.beginPath(); c.moveTo(x, p.y); c.lineTo(x, p.y - s * 0.7); c.stroke();
+        c.fillStyle = side < 0 ? '#ff5d7d' : '#5b8cff';
+        c.beginPath(); c.moveTo(x, p.y - s * 0.7); c.lineTo(x + side * -s * 0.36, p.y - s * 0.56); c.lineTo(x, p.y - s * 0.42); c.closePath(); c.fill(); c.stroke();
+      }
+    }
+    for (const [x, y0] of [[0.08, 0.2], [0.92, 0.65], [0.1, 1.1]]) {
+      const y = ((y0 * h - vel) % (h * 1.5) + h * 1.5) % (h * 1.5) - h * 0.2, tx = x * w;
+      c.fillStyle = '#2fb36b'; c.strokeStyle = INK; c.lineWidth = 2.5;
+      c.beginPath(); c.moveTo(tx, y - s * 0.9); c.lineTo(tx + s * 0.42, y); c.lineTo(tx - s * 0.42, y); c.closePath(); c.fill(); c.stroke();
+    }
+    const px = w / 2 + Math.sin(t / 600) * w * 0.18, py = h * 0.6;
+    c.strokeStyle = CC.skin().cuerpo; c.lineWidth = 4; c.globalAlpha = 0.6; c.beginPath();
+    for (let k = 0; k < 30; k++) { const tt = t - k * 40, x = w / 2 + Math.sin(tt / 600) * w * 0.18, y = py - k * 0.07 * 40; k ? c.lineTo(x, y) : c.moveTo(x, y); }
+    c.stroke(); c.globalAlpha = 1;
+    const ang = Math.cos(t / 600) * 0.5;
+    c.save(); c.translate(px, py); c.rotate(-ang * 0.3);
+    c.strokeStyle = '#ff5d7d'; c.lineWidth = 4;
+    for (const side of [-1, 1]) { c.beginPath(); c.moveTo(side * s * 0.22, -s * 0.05); c.lineTo(side * s * 0.22 + Math.sin(ang) * s * 0.4, s * 0.55); c.stroke(); }
+    c.restore();
+    CC.dibujarCubo(c, px, py + s * 0.1, s * 0.82, { mirar: Math.sign(Math.cos(t / 600)), t });
+  }
+  function ilPulseada(c, w, h, t) {
+    sky(c, w, h, '#f5b84a', '#ffe9c2');
+    const s = Math.min(w / 7, h / 4.2), mesa = h * 0.74, emp = Math.sin(t / 380) * w * 0.07;
+    c.fillStyle = '#9a5b2e'; c.strokeStyle = INK; c.lineWidth = 3;
+    rr(c, w * 0.08, mesa, w * 0.84, s * 0.32, s * 0.08); c.fill(); c.stroke();
+    rr(c, w * 0.2, mesa + s * 0.3, s * 0.3, h, 3); c.fill(); c.stroke(); rr(c, w * 0.8 - s * 0.3, mesa + s * 0.3, s * 0.3, h, 3); c.fill(); c.stroke();
+    const mx = w / 2 + emp, my = mesa - s * 1.05;
+    c.lineCap = 'round';
+    for (const [x0, col] of [[w * 0.22, CC.skin().cuerpo], [w * 0.78, '#6be0b5']]) {
+      c.strokeStyle = INK; c.lineWidth = s * 0.34; c.beginPath(); c.moveTo(x0, mesa - s * 0.35); c.lineTo(mx, my); c.stroke();
+      c.strokeStyle = col; c.lineWidth = s * 0.22; c.beginPath(); c.moveTo(x0, mesa - s * 0.35); c.lineTo(mx, my); c.stroke();
+    }
+    c.fillStyle = PAPER; c.strokeStyle = INK; c.lineWidth = 3; c.beginPath(); c.arc(mx, my, s * 0.22, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.lineCap = 'butt';
+    CC.dibujarCubo(c, w * 0.15, mesa, s, { mirar: 1, t });
+    CC.dibujarCubo(c, w * 0.85, mesa, s, { mirar: -1, t, skin: rival('menta'), efecto: false });
+    const lado = Math.floor(t / 130) % 2;
+    for (const [k, x] of [[0, w * 0.36], [1, w * 0.64]]) {
+      c.fillStyle = k === lado ? '#ffcc29' : PAPER; c.strokeStyle = INK; c.lineWidth = 2.5;
+      rr(c, x - s * 0.3, h * 0.08, s * 0.6, s * 0.48, s * 0.12); c.fill(); c.stroke();
+      c.fillStyle = INK; c.beginPath(); const d = k ? 1 : -1, cx = x, cy = h * 0.08 + s * 0.24;
+      c.moveTo(cx + d * s * 0.14, cy); c.lineTo(cx - d * s * 0.08, cy - s * 0.13); c.lineTo(cx - d * s * 0.08, cy + s * 0.13); c.closePath(); c.fill();
+    }
+  }
 
-  const JUEGOS = [
-    { id: 'escalador', archivo: 'escalador.html', nombre: 'Escalador', fondo: '#62c6ff', dibujo: ilEscalador,
-      desc: 'Subí escalones en zigzag tocando el lado del próximo. Si errás, te mareás medio segundo.' },
-    { id: 'lluvia', archivo: 'lluvia.html', nombre: 'Lluvia', fondo: '#3fc1c9', dibujo: ilLluvia,
-      desc: 'Movete entre carriles y esquivá los bloques que caen cada vez más rápido.' },
-    { id: 'clasificador', archivo: 'clasificador.html', nombre: 'Clasificador', fondo: '#ffad4d', dibujo: ilClasificador,
-      desc: 'Mandá cada cubo a la caja de su color. Mirá la fila para leer adelante.' },
-    { id: 'equilibrio', archivo: 'equilibrio.html', nombre: 'Equilibrio', fondo: '#6be0b5', dibujo: ilEquilibrio,
-      desc: 'Corregí la tabla con izquierda y derecha para que no te tire el viento.' },
-    { id: 'ritmo', archivo: 'ritmo.html', nombre: 'Ritmo', fondo: '#8f6bff', dibujo: ilRitmo,
-      desc: 'Tocá cada flecha justo cuando llega a la línea, al ritmo de la música.' },
-  ];
+  const DIBUJOS = { escalador: ilEscalador, lluvia: ilLluvia, clasificador: ilClasificador, equilibrio: ilEquilibrio, ritmo: ilRitmo,
+    voley: ilVoley, paseo: ilPaseo, serpiente: ilSerpiente, cohete: ilCohete, esqui: ilEsqui, pulseada: ilPulseada };
+  const DESC = {
+    escalador: 'Tocá el lado donde está el próximo escalón. Si errás, te mareás medio segundo. Sprint 100: ¿bajás de 11 segundos?',
+    lluvia: 'Movete entre carriles y esquivá los bloques que caen cada vez más rápido.',
+    clasificador: 'Mandá cada cubo a la caja de su color con ◀ o ▶. Mirá la fila para leer adelante.',
+    equilibrio: 'Corregí la tabla con izquierda y derecha para que no te tire el viento.',
+    ritmo: 'Tocá el lado de cada nota justo cuando llega a la línea, al ritmo de la música.',
+    voley: 'Movete con ◀ ▶ y el cubo devuelve solo. Pegale con el borde para cruzarla. ¿Cuántos puntos le hacés al rival?',
+    paseo: 'Alterná ◀ ▶ para caminar con tu mascota. Cuando se distraiga, tocá la flecha grande para tirar de la correa.',
+    serpiente: '◀ dobla a la izquierda y ▶ a la derecha, según hacia dónde vas. Comé y no te choques la cola.',
+    cohete: 'Cada flecha prende un propulsor y te lleva para ese lado; las dos juntas suben derecho. Escapá de la lava por la cueva.',
+    esqui: 'Mantené ◀ o ▶ para doblar y pasá entre las banderas. Cada vez más rápido.',
+    pulseada: 'Alterná ◀ ▶ lo más rápido que puedas para ganarle la fuerza al rival. ¿Cuántos toques por segundo hacés?',
+  };
+  const JUEGOS = CC.JUEGOS.map(j => ({ ...j, dibujo: DIBUJOS[j.id], desc: DESC[j.id] }));
 
   // ---------- slides ----------
-  const slides = $('slides'), dots = $('dots');
+  const slides = $('slides');
+  const ICO_PLAY = '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
+  const ICO_RANK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M9 20V8h6v12zM3 20v-7h6v7zM15 20v-9h6v9z"/></svg>';
+  const ICO_PREV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 7 12l8 8"/></svg>';
+  const ICO_NEXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4 8 8-8 8"/></svg>';
+  const ICO_ALL = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>';
+
   JUEGOS.forEach((g, i) => {
     const s = document.createElement('section');
-    s.className = 'slide'; s.id = g.id; s.setAttribute('aria-label', g.nombre);
-    s.innerHTML = `<span class="num">Juego ${i + 1} de ${JUEGOS.length}</span><h2>${g.nombre}</h2>
-      <div class="stage"><canvas></canvas></div>
-      <div class="info"><p>${g.desc}</p><div class="row"><span class="rec">Récord<b data-rec>—</b></span>
-      <button class="play" type="button">Jugar</button></div></div>`;
+    s.className = 'slide'; s.id = g.id; s.setAttribute('aria-label', `${g.nombre}, juego ${i + 1} de ${JUEGOS.length}`);
+    s.innerHTML = `<div class="head"><h2>${g.nombre}${g.nuevo ? '<span class="nuevo">Nuevo</span>' : ''}</h2></div>
+      <div class="pager">
+        <button class="arrow" type="button" data-ir="-1" aria-label="Juego anterior">${ICO_PREV}</button>
+        <div class="dots" aria-hidden="true"></div>
+        <button class="arrow" type="button" data-ir="1" aria-label="Juego siguiente">${ICO_NEXT}</button>
+      </div>
+      <div class="stage"><canvas aria-hidden="true"></canvas></div>
+      <div class="info"><p>${g.desc}</p><div class="row">
+        <span class="rec">Tu récord<b data-rec>—</b><small data-logros></small></span>
+        <button class="icon-btn" type="button" data-rank aria-label="Ranking de ${g.nombre}">${ICO_RANK}</button>
+        <button class="play" type="button">${ICO_PLAY}Jugar</button></div></div>`;
     s.querySelector('.play').addEventListener('click', () => jugar(i));
+    s.querySelector('canvas').addEventListener('click', () => jugar(i));
+    s.querySelector('[data-rank]').addEventListener('click', () => CC.verRanking({ juego: g.id }));
+    for (const b of s.querySelectorAll('[data-ir]')) b.addEventListener('click', () => ir(actual + +b.dataset.ir));
+    const dots = s.querySelector('.dots');
+    JUEGOS.forEach((_, k) => { const d = document.createElement('button'); d.type = 'button'; d.tabIndex = -1; if (k === i) d.setAttribute('aria-current', 'true'); d.addEventListener('click', () => ir(k)); dots.appendChild(d); });
     slides.appendChild(s);
     g.cv = s.querySelector('canvas');
-    const d = document.createElement('button');
-    d.type = 'button'; d.setAttribute('aria-label', g.nombre);
-    d.addEventListener('click', () => ir(i));
-    dots.appendChild(d);
   });
+  // "Ver todos" al lado de los puntos, solo en el primer pager visible de cada slide
+  for (const p of slides.querySelectorAll('.pager')) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'all'; b.innerHTML = `${ICO_ALL}<span>Todos</span>`; b.setAttribute('aria-label', 'Ver todos los juegos');
+    b.addEventListener('click', () => abrirJuegos('todos'));
+    p.insertBefore(b, p.lastElementChild);
+  }
 
   const SLIDE_KEY = 'cubo-hub-slide';
-  let actual = 0;
+  let actual = 0, listo = false;
   function marcar(i) {
     actual = i;
-    [...dots.children].forEach((d, k) => d.setAttribute('aria-current', k === i ? 'true' : 'false'));
-    document.documentElement.style.setProperty('--bg', JUEGOS[i].fondo);
-    try { localStorage.setItem(SLIDE_KEY, String(i)); } catch (e) {}
+    document.documentElement.style.setProperty('--bg', JUEGOS[i].color);
+    guardado(SLIDE_KEY, String(i));
   }
   function ir(i, suave = true) {
     i = (i + JUEGOS.length) % JUEGOS.length;
@@ -359,57 +676,190 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
   function jugar(i) { location.href = JUEGOS[i].archivo; }
   slides.addEventListener('scroll', () => {
     const i = Math.round(slides.scrollLeft / Math.max(1, slides.clientWidth));
-    if (i !== actual && i >= 0 && i < JUEGOS.length) marcar(i);
+    if (i !== actual && i >= 0 && i < JUEGOS.length) { marcar(i); if (listo) ocultarCoach(); }
   }, { passive: true });
 
-  const flash = id => { const b = $(id); b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 110); };
-  $('prev').addEventListener('click', () => ir(actual - 1));
-  $('next').addEventListener('click', () => ir(actual + 1));
-  addEventListener('keydown', e => {
-    if (!$('sheet').hidden) { if (e.key === 'Escape') cerrarSheet(); return; }
-    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { e.preventDefault(); flash('prev'); ir(actual - 1); }
-    else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { e.preventDefault(); flash('next'); ir(actual + 1); }
-    else if ((e.key === 'Enter' || e.key === ' ') && (document.activeElement === document.body || document.activeElement?.classList.contains('arrow'))) { e.preventDefault(); jugar(actual); }
-  });
-  if (matchMedia('(hover: none)').matches) $('hint').textContent = 'Deslizá para elegir';
+  // ---------- ayuda de la primera vez ----------
+  function ocultarCoach() { if (!$('coach').hidden) { $('coach').hidden = true; guardado('cubo-hub-coach', '1'); } }
+  if (!guardado('cubo-hub-coach')) {
+    $('coachTxt').textContent = tactil ? `Deslizá para ver los ${JUEGOS.length} juegos` : `Usá ← → para ver los ${JUEGOS.length} juegos`;
+    $('coach').hidden = false;
+    setTimeout(ocultarCoach, 7000);
+  }
 
   // ---------- perfil ----------
+  function mejorTexto(g, p) {
+    if (p.records[g.id]) return p.records[g.id];
+    let m = null, tb = null;
+    for (const t of g.tablas) { const v = p.mejores[g.id + ':' + t.id]; if (v != null && (m == null || (t.orden === 'menor' ? v < m : v > m))) { m = v; tb = t; } }
+    return m == null ? '—' : CC.formato(m, tb);
+  }
   function pintarPerfil() {
     const p = CC.perfil();
     $('meLvl').textContent = 'Nivel ' + p.nivel;
     $('meBar').style.width = Math.round(100 * p.enNivel / p.paraSiguiente) + '%';
-    $('meXp').textContent = `${p.enNivel} / ${p.paraSiguiente} XP`;
-    const a = $('avatar').getContext('2d');
-    a.setTransform(2, 0, 0, 2, 0, 0); a.clearRect(0, 0, 40, 44);
-    CC.dibujarCubo(a, 20, 40, 26, { t: 0 });
-    JUEGOS.forEach((g, i) => { slides.children[i].querySelector('[data-rec]').textContent = p.records[g.id] || '—'; });
+    const n = CC.nuevos().length;
+    $('meBadge').hidden = !n; $('tabBadge').hidden = !n; $('tabBadge').textContent = n;
+    JUEGOS.forEach((g, i) => {
+      const s = slides.children[i];
+      s.querySelector('[data-rec]').textContent = mejorTexto(g, p);
+      const ls = CC.LOGROS.filter(l => l.juego === g.id);
+      s.querySelector('[data-logros]').textContent = ls.length ? `${ls.filter(l => p.logros[l.id]).length} de ${ls.length} logros` : '';
+    });
   }
 
-  // ---------- personaje ----------
-  function abrirSheet() {
-    pintarPerfil();
-    const p = CC.perfil(), box = $('skins');
+  // ---------- hojas ----------
+  let abierta = null, previo = null;
+  function abrir(id) {
+    cerrar(true);
+    previo = document.activeElement;
+    abierta = $(id); abierta.hidden = false;
+    abierta.querySelector('[data-cerrar]').focus({ preventScroll: true });
+  }
+  function cerrar(sinFoco) {
+    if (!abierta) return;
+    abierta.hidden = true; abierta = null;
+    marcarTab('juegos'); pintarPerfil();
+    if (!sinFoco && previo && previo.focus) previo.focus({ preventScroll: true });
+  }
+  for (const sh of document.querySelectorAll('.sheet')) {
+    sh.addEventListener('click', e => { if (e.target === sh || e.target.closest('[data-cerrar]')) cerrar(); });
+  }
+  function marcarTab(id) {
+    for (const b of document.querySelectorAll('.tab')) { if (b.dataset.tab === id) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }
+  }
+  for (const b of document.querySelectorAll('.tab')) {
+    b.addEventListener('click', () => {
+      const t = b.dataset.tab;
+      if (t === 'juegos') { cerrar(); return; }
+      if (t === 'personaje') abrirPersonaje();
+      if (t === 'logros') abrirLogros();
+      if (t === 'ranking') abrirJuegos('ranking');
+      marcarTab(t);
+    });
+  }
+
+  // personaje
+  let seg = 'skins';
+  function requisito(it) {
+    if (it.logro) { const l = CC.LOGROS.find(x => x.id === it.logro); return 'Logro: ' + (l ? l.nombre : it.logro); }
+    return 'Nivel ' + it.nivel;
+  }
+  function pintarItems() {
+    const p = CC.perfil(), box = $('items'), nuevos = CC.nuevos();
     box.innerHTML = '';
-    for (const s of CC.SKINS) {
-      const libre = p.nivel >= s.nivel;
+    for (const b of document.querySelectorAll('[data-seg]')) b.setAttribute('aria-pressed', String(b.dataset.seg === seg));
+    const lista = seg === 'skins' ? CC.SKINS : CC.EFECTOS;
+    for (const it of lista) {
+      const libre = CC.libre(it), elegido = seg === 'skins' ? p.skin.id === it.id : p.efecto.id === it.id;
+      const nuevo = nuevos.includes(seg === 'skins' ? it.id : 'fx:' + it.id);
       const b = document.createElement('button');
-      b.type = 'button'; b.className = 'skin'; b.disabled = !libre;
-      b.setAttribute('aria-pressed', p.skin.id === s.id ? 'true' : 'false');
-      b.innerHTML = `<canvas width="112" height="120"></canvas><span>${s.nombre}</span>${libre ? '' : `<small>Nivel ${s.nivel}</small>`}`;
-      const c = b.querySelector('canvas').getContext('2d'); c.scale(2, 2);
-      CC.dibujarCubo(c, 28, 54, 30, { skin: s, t: 0 });
-      b.addEventListener('click', () => { if (CC.elegirSkin(s.id)) { abrirSheet(); pintarPerfil(); } });
+      b.type = 'button'; b.className = 'item' + (libre ? '' : ' lock');
+      b.setAttribute('aria-pressed', String(elegido));
+      if (!libre) b.setAttribute('aria-disabled', 'true');
+      b.innerHTML = `<canvas width="120" height="128"></canvas><span>${it.nombre}</span>${libre ? '' : `<small>${requisito(it)}</small>`}${nuevo ? '<span class="badge">Nuevo</span>' : ''}`;
+      it._cv = b.querySelector('canvas');
+      b.addEventListener('click', () => {
+        if (!libre) { CC.avisar(`<div><b>${it.nombre}</b><span>Se desbloquea con ${requisito(it).replace('Logro: ', 'el logro ')}.</span></div>`, 2400); return; }
+        if (seg === 'skins' ? CC.elegirSkin(it.id) : CC.elegirEfecto(it.id)) { CC.vibrar(10); pintarPersonaje(); }
+      });
       box.appendChild(b);
     }
-    const prox = CC.SKINS.find(s => s.nivel > p.nivel);
-    $('bigName').textContent = p.skin.nombre;
-    $('bigNext').textContent = prox ? `Próximo personaje en nivel ${prox.nivel}. Ganás XP jugando cualquier juego.` : 'Tenés todos los personajes.';
-    $('sheet').hidden = false;
   }
-  function cerrarSheet() { $('sheet').hidden = true; pintarPerfil(); $('me').focus({ preventScroll: true }); }
-  $('me').addEventListener('click', abrirSheet);
-  $('close').addEventListener('click', cerrarSheet);
-  $('sheet').addEventListener('click', e => { if (e.target === $('sheet')) cerrarSheet(); });
+  function pintarPersonaje() {
+    const p = CC.perfil();
+    $('bigName').textContent = p.skin.nombre + (p.efecto.id !== 'ninguno' ? ' · ' + p.efecto.nombre : '');
+    $('bigLvl').textContent = `Nivel ${p.nivel} · ${p.enNivel} / ${p.paraSiguiente} XP`;
+    $('bigBar').style.width = Math.round(100 * p.enNivel / p.paraSiguiente) + '%';
+    const todos = [...CC.SKINS, ...CC.EFECTOS].filter(i => !i.logro && i.nivel > p.nivel).sort((a, b) => a.nivel - b.nivel);
+    $('bigNext').textContent = todos.length ? `En nivel ${todos[0].nivel} desbloqueás ${todos.filter(i => i.nivel === todos[0].nivel).map(i => i.nombre).join(' y ')}.` : 'Ya desbloqueaste todo lo que da el nivel.';
+    $('apodoTxt').textContent = p.apodo || 'Todavía no tenés';
+    pintarItems();
+  }
+  function abrirPersonaje() {
+    pintarPersonaje();
+    abrir('sheetPersonaje');
+    setTimeout(() => { CC.marcarVistos(); pintarPerfil(); }, 600);
+  }
+  for (const b of document.querySelectorAll('[data-seg]')) b.addEventListener('click', () => { seg = b.dataset.seg; pintarItems(); });
+  $('me').addEventListener('click', () => { abrirPersonaje(); marcarTab('personaje'); });
+  $('apodoBtn').addEventListener('click', () => CC.verRanking({ juego: JUEGOS[actual].id, alCerrar: pintarPersonaje }));
+
+  // logros
+  function abrirLogros() {
+    const p = CC.perfil(), box = $('logros');
+    const total = CC.LOGROS.length, hechos = CC.LOGROS.filter(l => p.logros[l.id]);
+    const cuenta = m => hechos.filter(l => l.medalla === m).length;
+    box.innerHTML = `<div class="resumen"><b>${hechos.length} / ${total}</b><div class="medallas">${Object.entries(CC.MEDALLAS).map(([k, m]) =>
+      `<span class="med"><i style="background:${m.color}"></i>${cuenta(k)}</span>`).join('')}</div></div>
+      <p class="tip">Bronce sale jugando, plata con práctica, oro es para muy buenos y diamante, para muy pocos. Cada logro da XP y algunos desbloquean personajes y efectos.</p>`;
+    const grupos = [['General', CC.LOGROS.filter(l => !l.juego)], ...JUEGOS.map(g => [g.nombre, CC.LOGROS.filter(l => l.juego === g.id)])];
+    for (const [nombre, ls] of grupos) {
+      if (!ls.length) continue;
+      const g = document.createElement('div'); g.className = 'grupo';
+      g.innerHTML = `<h4>${nombre}</h4>`;
+      for (const l of ls) {
+        const m = CC.MEDALLAS[l.medalla], ok = !!p.logros[l.id];
+        const premio = [...CC.SKINS, ...CC.EFECTOS].filter(i => i.logro === l.id).map(i => i.nombre);
+        let prog = '';
+        if (!ok && l.progreso) { try { const [a, b] = l.progreso(p); prog = `<div class="prog"><i style="width:${Math.min(100, Math.round(100 * a / b))}%"></i></div>`; } catch (e) {} }
+        const el = document.createElement('div');
+        el.className = 'logro' + (ok ? '' : ' no');
+        el.innerHTML = `<span class="m" style="background:${m.color}">${ok ? '★' : '?'}</span><span class="t"><b>${l.nombre}</b><span>${l.desc}${premio.length ? ' Premio: ' + premio.join(', ') + '.' : ''}</span>${prog}</span><span class="xp">+${m.xp}</span>`;
+        g.appendChild(el);
+      }
+      box.appendChild(g);
+    }
+    abrir('sheetLogros');
+  }
+
+  // elegir juego (ranking / todos)
+  let modoJuegos = 'ranking';
+  function abrirJuegos(modo) {
+    modoJuegos = modo;
+    const p = CC.perfil();
+    $('tJue').textContent = modo === 'ranking' ? 'Ranking' : 'Todos los juegos';
+    $('jueTip').textContent = modo === 'ranking'
+      ? (p.apodo ? `Jugás como ${p.apodo}. Elegí un juego para ver el ranking online.` : 'Elegí un juego para ver el ranking. Poné tu apodo para aparecer.')
+      : 'Elegí un juego para ir directo.';
+    const box = $('juegos'); box.innerHTML = '';
+    JUEGOS.forEach((g, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'jg';
+      b.innerHTML = `<canvas></canvas><span>${g.nombre}</span><small>${mejorTexto(g, p) === '—' ? (g.nuevo ? '¡Nuevo!' : 'Sin jugar') : 'Récord: ' + mejorTexto(g, p)}</small>`;
+      b.addEventListener('click', () => {
+        if (modoJuegos === 'ranking') CC.verRanking({ juego: g.id });
+        else { cerrar(true); ir(i, false); }
+      });
+      box.appendChild(b);
+      g.mini = b.querySelector('canvas');
+    });
+    abrir('sheetJuegos');
+    requestAnimationFrame(() => JUEGOS.forEach(g => { const [c, w, h] = tam(g.mini); g.dibujo(c, w, h, 1400); }));
+  }
+
+  // ---------- teclado ----------
+  const flash = el => { if (!el) return; el.classList.add('on'); setTimeout(() => el.classList.remove('on'), 110); };
+  addEventListener('keydown', e => {
+    if (document.getElementById('cc-rank')) return;
+    if (abierta) { if (e.key === 'Escape') cerrar(); return; }
+    const s = slides.children[actual];
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { e.preventDefault(); flash(s.querySelector('[data-ir="-1"]')); ir(actual - 1); }
+    else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { e.preventDefault(); flash(s.querySelector('[data-ir="1"]')); ir(actual + 1); }
+    else if ((e.key === 'Enter' || e.key === ' ') && (document.activeElement === document.body || document.activeElement?.classList.contains('arrow'))) { e.preventDefault(); jugar(actual); }
+  });
+
+  // ---------- instalar como app ----------
+  let pedido = null;
+  const instalada = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedido = e; $('install').hidden = false; });
+  addEventListener('appinstalled', () => { $('install').hidden = true; CC.avisar('<div><b>¡Instalado!</b><span>Ya lo podés abrir sin internet.</span></div>'); });
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (ios && !instalada) $('install').hidden = false;
+  $('install').addEventListener('click', async () => {
+    if (pedido) { pedido.prompt(); const r = await pedido.userChoice.catch(() => null); if (r && r.outcome === 'accepted') $('install').hidden = true; pedido = null; return; }
+    CC.avisar('<div><b>Instalalo en tu iPhone</b><span>Tocá Compartir y después "Agregar a inicio". Funciona sin internet.</span></div>', 5000);
+  });
 
   // ---------- dibujo ----------
   function tam(cv) {
@@ -421,12 +871,23 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
   }
   function dibujar(i, t) { const g = JUEGOS[i]; const [c, w, h] = tam(g.cv); g.dibujo(c, w, h, t); }
   function todo() { JUEGOS.forEach((_, i) => dibujar(i, 1400)); }
+  function avatar(t) {
+    const a = $('avatar').getContext('2d');
+    a.setTransform(2, 0, 0, 2, 0, 0); a.clearRect(0, 0, 40, 44);
+    CC.dibujarCubo(a, 20, 40, 24, { t, efecto: false });
+  }
   function frame(now) {
     if (!document.hidden) {
-      if (!reduceMotion) dibujar(actual, now);
-      if (!$('sheet').hidden) {
-        const c = $('big').getContext('2d'); c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, 96, 104);
-        CC.dibujarCubo(c, 48, 88 - Math.abs(Math.sin(now / 380)) * (reduceMotion ? 0 : 8), 52, { t: now, mirar: Math.sin(now / 900) });
+      if (!reduceMotion) { if (!abierta) dibujar(actual, now); avatar(now); }
+      if (abierta && abierta.id === 'sheetPersonaje') {
+        const c = $('big').getContext('2d'); c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, 112, 120);
+        CC.dibujarCubo(c, 56, 104 - bob(now) * (reduceMotion ? 0 : 8), 52, { t: now, mirar: Math.sin(now / 900) });
+        for (const it of (seg === 'skins' ? CC.SKINS : CC.EFECTOS)) {
+          if (!it._cv) continue;
+          const k = it._cv.getContext('2d'); k.setTransform(2, 0, 0, 2, 0, 0); k.clearRect(0, 0, 60, 64);
+          if (seg === 'skins') CC.dibujarCubo(k, 30, 58, 30, { skin: it, t: reduceMotion ? 0 : now, efecto: false });
+          else CC.dibujarCubo(k, 30, 56, 26, { t: reduceMotion ? 900 : now, efecto: it.id });
+        }
       }
     }
     requestAnimationFrame(frame);
@@ -435,12 +896,11 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
   addEventListener('pageshow', pintarPerfil); // al volver de un juego con "atrás"
 
   // ---------- arranque ----------
-  let inicio = 0;
-  try { inicio = +localStorage.getItem(SLIDE_KEY) || 0; } catch (e) {}
+  let inicio = +(guardado(SLIDE_KEY) || 0) || 0;
   const porHash = JUEGOS.findIndex(g => '#' + g.id === location.hash);
   if (porHash >= 0) inicio = porHash;
-  pintarPerfil();
-  requestAnimationFrame(() => { todo(); ir(Math.min(Math.max(0, inicio), JUEGOS.length - 1), false); });
+  pintarPerfil(); avatar(0);
+  requestAnimationFrame(() => { todo(); ir(Math.min(Math.max(0, inicio), JUEGOS.length - 1), false); setTimeout(() => { listo = true; }, 400); });
   requestAnimationFrame(frame);
 })();
 </script>

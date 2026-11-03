@@ -116,7 +116,7 @@
     { id: 'ritmo', nombre: 'Ritmo', archivo: 'ritmo.html', color: '#8f6bff', tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'voley', nombre: 'Vóley', archivo: 'voley.html', color: '#ff7a59', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'paseo', nombre: 'Paseo', archivo: 'paseo.html', color: '#e98fd0', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
-    { id: 'serpiente', nombre: 'Serpiente', archivo: 'serpiente.html', color: '#a3e048', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
+    { id: 'serpiente', nombre: 'Serpiente', archivo: 'serpiente.html', color: '#a3e048', nuevo: true, tablas: tablasDif('mayor', 'num', 'frutas') },
     { id: 'cohete', nombre: 'Cohete', archivo: 'cohete.html', color: '#ff5d7d', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'esqui', nombre: 'Esquí', archivo: 'esqui.html', color: '#5b8cff', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
     { id: 'pulseada', nombre: 'Pulseada', archivo: 'pulseada.html', color: '#f5b84a', nuevo: true, tablas: tablasDif('mayor', 'num', 'rivales') },
@@ -141,10 +141,10 @@
   // bronce sale en las primeras partidas, plata con práctica, oro es muy bueno y diamante es para pocos.
   // Cuentan las partidas en Normal o más difícil.
   const UMBRALES = {
-    lluvia: [300, 1200, 3000, 6000],
+    lluvia: [100, 400, 1000, 2000],
     clasificador: [15, 40, 80, 140],
     equilibrio: [100, 400, 1000, 2000],
-    ritmo: [3000, 12000, 30000, 60000],
+    ritmo: [5000, 20000, 60000, 120000],
     voley: [5, 15, 35, 70],
     paseo: [100, 400, 1000, 2000],
     serpiente: [8, 20, 40, 70],
@@ -200,6 +200,9 @@
       prueba: p => mejorTabla(p, 'escalador', 'time') > 200 },
     { id: 'escalador-espacio', juego: 'escalador', nombre: 'Houston', desc: 'Llegá al espacio en Libre (escalón 330).', medalla: 'plata',
       prueba: p => Math.max(mejorTabla(p, 'escalador', 'free') || 0, mejorTabla(p, 'escalador', 'free-x') || 0) >= 330 },
+    // Pulseada: alternando con dos dedos un promedio hace 6 a 8 toques por segundo; 10 sostenidos es de muy buenos.
+    { id: 'pulseada-tps10', juego: 'pulseada', nombre: 'Diez por segundo', desc: 'Sostené 10 toques por segundo en la Pulseada.', medalla: 'oro',
+      prueba: p => !!p.marcas['tps10'] },
     { id: 'escalador-x', juego: 'escalador', nombre: 'Escalera del infierno', desc: 'Sprint 100 en Extremo en menos de 15 s.', medalla: 'oro',
       prueba: p => mejorTabla(p, 'escalador', 'sprint-x') < 15000 },
   ];
@@ -1071,7 +1074,10 @@
     }
   }
 
-  function vibrar(ms = 12) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+  // Chrome bloquea (y avisa en consola) la vibración antes del primer toque del usuario.
+  function vibrar(ms = 12) {
+    try { if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(ms); } catch (e) {}
+  }
   function volver() { location.href = 'index.html'; }
 
   window.CuboComun = {

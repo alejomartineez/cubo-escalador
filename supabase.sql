@@ -73,3 +73,17 @@ end $$;
 
 revoke all on function public.enviar_puntaje(text, uuid, text, double precision, text) from public;
 grant execute on function public.enviar_puntaje(text, uuid, text, double precision, text) to anon, authenticated;
+
+-- Topes por juego y dificultad (puntajes por encima se descartan). Salen de lo que mide cada juego.
+insert into public.limites (tabla, minimo, maximo, orden) values
+  ('lluvia:facil', null, 10000, 'mayor'), ('lluvia:normal', null, 5000, 'mayor'), ('lluvia:dificil', null, 5000, 'mayor'), ('lluvia:extremo', null, 5000, 'mayor'),
+  ('clasificador:facil', null, 220, 'mayor'), ('clasificador:normal', null, 220, 'mayor'), ('clasificador:dificil', null, 220, 'mayor'), ('clasificador:extremo', null, 220, 'mayor'),
+  ('equilibrio:facil', null, 6000, 'mayor'), ('equilibrio:normal', null, 4000, 'mayor'), ('equilibrio:dificil', null, 4000, 'mayor'), ('equilibrio:extremo', null, 4000, 'mayor'),
+  ('ritmo:facil', null, 600000, 'mayor'), ('ritmo:normal', null, 400000, 'mayor'), ('ritmo:dificil', null, 500000, 'mayor'), ('ritmo:extremo', null, 600000, 'mayor'),
+  ('voley:facil', null, 250, 'mayor'), ('voley:normal', null, 150, 'mayor'), ('voley:dificil', null, 100, 'mayor'), ('voley:extremo', null, 60, 'mayor'),
+  ('paseo:facil', null, 5000, 'mayor'), ('paseo:normal', null, 3000, 'mayor'), ('paseo:dificil', null, 3000, 'mayor'), ('paseo:extremo', null, 2000, 'mayor'),
+  ('serpiente:facil', null, 192, 'mayor'), ('serpiente:normal', null, 192, 'mayor'), ('serpiente:dificil', null, 192, 'mayor'), ('serpiente:extremo', null, 192, 'mayor'),
+  ('pulseada:facil', null, 40, 'mayor'), ('pulseada:normal', null, 30, 'mayor'), ('pulseada:dificil', null, 28, 'mayor'), ('pulseada:extremo', null, 22, 'mayor'),
+  ('cohete:facil', null, 60000, 'mayor'), ('cohete:normal', null, 60000, 'mayor'), ('cohete:dificil', null, 60000, 'mayor'), ('cohete:extremo', null, 60000, 'mayor'),
+  ('esqui:facil', null, 40000, 'mayor'), ('esqui:normal', null, 40000, 'mayor'), ('esqui:dificil', null, 40000, 'mayor'), ('esqui:extremo', null, 40000, 'mayor')
+on conflict (tabla) do update set minimo = excluded.minimo, maximo = excluded.maximo, orden = excluded.orden;

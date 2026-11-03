@@ -61,8 +61,9 @@ body {
   transition: background .15s;
 }
 .chip.hot { background: var(--cube); }
-.stat .chip { align-self: flex-start; margin-top: 8px; font-size: 12px; padding: 3px 9px; }
-.chip.d-facil { background: var(--good); } .chip.d-dificil { background: var(--accent); }
+.stat .chip { align-self: flex-start; margin-top: 8px; font-size: 12px; padding: 3px 9px 3px 6px; display: flex; align-items: center; gap: 4px; }
+.chip .cc-ico { flex: none; }
+.chip.d-facil { background: var(--good); } .chip.d-dificil { background: var(--accent); } .chip.d-extremo { background: #ff3b3b; }
 .hbtns { display: flex; gap: 8px; }
 #btnRestart { font-size: 16px; line-height: 1; padding: 4px 11px; touch-action: none; }
 .smallbtn {
@@ -84,20 +85,40 @@ body {
   height: clamp(76px, 13vh, 116px); border-radius: 22px;
   background: var(--paper); color: var(--ink);
   border: 3px solid var(--ink); box-shadow: 0 7px 0 var(--ink);
-  display: grid; place-items: center; cursor: pointer; touch-action: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  cursor: pointer; touch-action: none; font: inherit;
   transition: transform .05s, box-shadow .05s;
 }
-.pad button svg { width: 44px; height: 44px; }
+.pad .prow { display: flex; align-items: center; gap: 8px; }
+.pad .prow > svg { width: 34px; height: 34px; }
+.pad .pbox { width: 34px; height: 34px; display: block; }
+.pad .pbox svg { width: 100%; height: 100%; stroke: var(--ink); stroke-linejoin: round; }
+.pad .ptx { font-family: var(--display); font-size: 18px; line-height: 1; }
 .pad button.on { transform: translateY(5px); box-shadow: 0 2px 0 var(--ink); background: var(--cube); }
+.f-y { fill: var(--cube); } .f-b { fill: var(--blue); } .f-p { fill: var(--paper); }
+
+/* ayuda de la primera partida: cartel arriba (donde va el cartel del canvas) y los dos botones titilan */
+.tip {
+  position: fixed; left: 50%; transform: translateX(-50%); width: min(340px, calc(100% - 32px));
+  top: calc(env(safe-area-inset-top, 0px) + 122px);
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 5px 0 var(--ink);
+  padding: 10px 14px; font-size: 15px; font-weight: 600; line-height: 1.35; text-align: center; pointer-events: none;
+}
+.tip b { font-family: var(--display); font-weight: 400; font-size: 20px; display: block; margin-bottom: 2px; }
+.pad.hint button { animation: hint .9s ease-in-out infinite; }
+@keyframes hint { 50% { background: #ffe58a; transform: translateY(-3px); box-shadow: 0 10px 0 var(--ink); } }
+@media (prefers-reduced-motion: reduce) { .pad.hint button { animation: none; background: #ffe58a; } }
 
 .overlay {
-  position: fixed; inset: 0; display: grid; place-items: center;
-  padding-block: 24px;
+  position: fixed; inset: 0; display: flex; overflow-y: auto;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   background: rgba(29, 35, 64, .28);
 }
 .card {
+  margin: auto;
   width: min(420px, 100%); background: var(--paper);
   border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink);
   padding: 22px; display: flex; flex-direction: column; gap: 16px;
@@ -117,46 +138,19 @@ h2 { font-size: 34px; }
 .intro { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.45; }
 .intro b { color: var(--ink); }
 
-.legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; }
-.leg {
-  margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
-  background: #fff; border: 2px solid var(--ink); border-radius: 14px; padding: 10px 4px 8px;
-}
-.leg svg { width: 40px; height: 40px; stroke: var(--ink); stroke-linejoin: round; }
-.leg figcaption { font-size: 12px; line-height: 1.25; color: var(--muted); }
-.leg figcaption b { display: block; font-size: 13px; color: var(--ink); }
-.leg.trap { background: #fff4cc; }
-.f-y { fill: var(--cube); } .f-b { fill: var(--blue); } .f-p { fill: var(--paper); } .f-i { fill: var(--ink); stroke: none; }
+/* mini demo del menú: muestra qué hace cada flecha */
+.demo { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+#demo { width: 100%; height: 128px; display: block; background: #e3f6ff; border: 2px solid var(--ink); border-radius: 14px; }
+.demo figcaption { min-height: 20px; text-align: center; font-size: 14px; font-weight: 800; }
 
-.modes { display: flex; flex-direction: column; gap: 12px; }
-.diffs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.diff {
-  font: inherit; color: var(--ink); cursor: pointer; text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px 7px;
-  background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
-}
-.diff:hover { background: #fff4cc; }
-.diff .dn { font-family: var(--display); font-size: 19px; line-height: 1.1; }
-.diff .dx { font-size: 12px; font-weight: 800; }
-.diff .dr { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.diff[aria-checked="true"] { background: var(--cube); transform: translateY(2px); box-shadow: 0 2px 0 var(--ink); }
-.diff[aria-checked="true"] .dr { color: var(--ink); }
-.mode {
-  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px;
-  text-align: left; font: inherit; color: var(--ink);
-  background: var(--cube); border: 3px solid var(--ink); border-radius: 16px;
-  box-shadow: 0 4px 0 var(--ink); padding: 12px 14px; cursor: pointer;
-}
-.mode:hover { background: #ffd84d; }
-.mode:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-.key {
-  font: 800 12px var(--body); width: 24px; height: 24px; border-radius: 6px;
-  display: grid; place-items: center; border: 2px solid var(--ink); background: var(--paper);
-}
-.mname { font-family: var(--display); font-size: 21px; display: block; }
-.mdesc { font-size: 13px; color: var(--ink); display: block; margin-top: 2px; }
-.mrec { text-align: right; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
-.mrec b { display: block; font-family: var(--display); font-weight: 400; font-size: 19px; letter-spacing: 0; color: var(--ink); text-transform: none; font-variant-numeric: tabular-nums; }
+.fallback-difs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.fallback-difs .btn { padding: 10px 4px; font-size: 14px; }
+.fallback-difs .btn[aria-checked="true"] { background: var(--cube); }
+.go { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; align-items: stretch; }
+.go .btn.primary { font-family: var(--display); font-weight: 400; font-size: 24px; padding: 12px 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.go .btn.primary kbd { font-size: 13px; }
+.mrec { margin: -4px 0 0; text-align: center; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mrec b { color: var(--ink); }
 .foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
 kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-width: 3px; border-radius: 6px; padding: 0 5px; color: var(--ink); background: #fff; }
 
@@ -168,9 +162,15 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
   background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
 }
 .badge.xp { background: var(--cube); }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+.logros { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.logros li { font-weight: 800; font-size: 14px; background: #fff; border: 2px solid var(--ink); border-radius: 12px; padding: 4px 12px; }
+.logros li::before { content: "★ "; color: #e0a020; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row .btn.primary { font-size: 18px; }
+.go > [hidden] + .btn, .row > [hidden] + .btn { grid-column: 1 / -1; }
 .back { align-self: flex-start; }
-.card > .back:last-child { align-self: center; }
+.links { display: flex; justify-content: space-between; gap: 10px; }
 .btn {
   font: 800 16px var(--body); color: var(--ink); padding: 14px 10px; cursor: pointer;
   background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
@@ -178,8 +178,8 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .btn.primary { background: var(--cube); }
 .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-@media (max-width: 380px) { .card { padding: 18px; gap: 14px; } .leg figcaption { font-size: 11px; } }
-@media (max-height: 620px) { .legend { display: none; } }
+@media (max-width: 380px) { .card { padding: 18px; gap: 14px; } }
+@media (max-height: 640px) { #demo { height: 96px; } }
 </style>
 
 <canvas id="cv"></canvas>
@@ -197,37 +197,26 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 </div>
 
 <div class="pad" id="pad" hidden>
-  <button id="bL" type="button" aria-label="Mandar a la caja de la izquierda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 7 12l8 8"/></svg></button>
-  <button id="bR" type="button" aria-label="Mandar a la caja de la derecha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4 8 8-8 8"/></svg></button>
+  <button id="bL" type="button"><span class="prow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4 7 12l8 8"/></svg><span class="pbox" id="pbL" aria-hidden="true"></span></span><span class="ptx">Izquierda</span></button>
+  <button id="bR" type="button"><span class="prow"><span class="pbox" id="pbR" aria-hidden="true"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 4 8 8-8 8"/></svg></span><span class="ptx">Derecha</span></button>
 </div>
+
+<div class="tip" id="tip" role="status" hidden></div>
 
 <div class="overlay" id="menu">
   <div class="card">
     <button class="smallbtn back" id="btnGames" type="button" hidden>← Juegos</button>
     <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Clasificador</h1></div>
-    <p class="intro">Mandá cada cubo a la caja que tiene su misma forma. Tenés 30 segundos, y si le errás quedás mareado un ratito.</p>
-    <div class="legend">
-      <figure class="leg">
-        <svg viewBox="0 0 40 40" aria-hidden="true"><rect class="f-y" x="3" y="3" width="34" height="34" rx="8" stroke-width="3"/><circle class="f-p" cx="20" cy="20.5" r="7.5" stroke-width="2.5"/></svg>
-        <figcaption><b>Círculo</b>a su caja</figcaption>
-      </figure>
-      <figure class="leg">
-        <svg viewBox="0 0 40 40" aria-hidden="true"><rect class="f-b" x="3" y="3" width="34" height="34" rx="8" stroke-width="3"/><path class="f-p" d="M20 11.5 28.5 26h-17z" stroke-width="2.5"/></svg>
-        <figcaption><b>Triángulo</b>a su caja</figcaption>
-      </figure>
-      <figure class="leg trap">
-        <svg viewBox="0 0 40 40" aria-hidden="true"><defs><pattern id="rayas" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect class="f-p" width="7" height="7" stroke="none"/><rect class="f-i" width="3.5" height="7"/></pattern></defs><rect x="3" y="3" width="34" height="34" rx="8" fill="url(#rayas)" stroke-width="3"/><rect class="f-y" x="9.5" y="9.5" width="21" height="21" rx="5" stroke-width="2"/><circle class="f-p" cx="20" cy="20" r="4.5" stroke-width="2"/></svg>
-        <figcaption><b>Rayado</b>a la otra caja</figcaption>
-      </figure>
-    </div>
-    <p class="intro">Ojo: cada tanto las cajas <b>se cambian de lado</b>. Mirá la fila para leer lo que viene.</p>
-    <div class="modes">
-      <div class="diffs" role="radiogroup" aria-label="Dificultad">
-        <button class="diff" id="diff-facil" type="button" role="radio" aria-checked="false"><span class="dn">Fácil</span><span class="dx">×1 XP</span><span class="dr">Récord —</span></button>
-        <button class="diff" id="diff-normal" type="button" role="radio" aria-checked="true"><span class="dn">Normal</span><span class="dx">×1,5 XP</span><span class="dr">Récord —</span></button>
-        <button class="diff" id="diff-dificil" type="button" role="radio" aria-checked="false"><span class="dn">Difícil</span><span class="dx">×2 XP</span><span class="dr">Récord —</span></button>
-      </div>
-      <button class="mode" id="btnPlay" type="button"><span class="key">↵</span><span><span class="mname">Jugar 30 segundos</span><span class="mdesc" id="mDesc">Con el tiempo se suman rayados y cambios de lado.</span></span></button>
+    <p class="intro">Mandá cada cubo a la caja con <b>su misma forma</b>: <b>◀</b> a la izquierda, <b>▶</b> a la derecha. Tenés 30 segundos.</p>
+    <figure class="demo">
+      <canvas id="demo" aria-hidden="true"></canvas>
+      <figcaption id="demoCap"></figcaption>
+    </figure>
+    <div id="difs"></div>
+    <p class="mrec" id="mRec"></p>
+    <div class="go">
+      <button class="btn" id="btnRank" type="button" hidden>Ranking</button>
+      <button class="btn primary" id="btnPlay" type="button">Jugar <kbd>↵</kbd></button>
     </div>
     <div class="foot">
       <span>Teclado: <kbd>←</kbd> <kbd>→</kbd> o <kbd>A</kbd> <kbd>D</kbd> · <kbd>R</kbd> reinicia</span>
@@ -243,14 +232,20 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="num" id="eNum">0</span>
       <span class="sub" id="eSub"></span>
       <span class="sub" id="eRec"></span>
-      <span class="badge xp" id="eXP" hidden>+0 XP</span>
-      <span class="badge" id="eBadge" hidden>Nuevo récord</span>
+      <div class="badges">
+        <span class="badge" id="eBadge" hidden>Nuevo récord</span>
+        <span class="badge xp" id="eXP" hidden>+0 XP</span>
+      </div>
+      <ul class="logros" id="eLogros" aria-label="Logros nuevos" hidden></ul>
     </div>
     <div class="row">
-      <button class="btn" id="btnMenu" type="button">Menú</button>
+      <button class="btn" id="btnRank2" type="button" hidden>Ranking</button>
       <button class="btn primary" id="btnAgain" type="button">Otra vez</button>
     </div>
-    <button class="smallbtn back" id="btnGames2" type="button" hidden>← Juegos</button>
+    <div class="links">
+      <button class="smallbtn" id="btnGames2" type="button" hidden>← Juegos</button>
+      <button class="smallbtn" id="btnMenu" type="button">Cambiar dificultad</button>
+    </div>
   </div>
 </div>
 
@@ -259,7 +254,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 (() => {
   'use strict';
   const cv = document.getElementById('cv');
-  const ctx = cv.getContext('2d');
+  let ctx = cv.getContext('2d'); // la mini demo del menú lo cambia un momento para dibujar en su canvas
   const $ = id => document.getElementById(id);
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido y personaje; sin él el juego anda igual
@@ -267,7 +262,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const FLY = 150;        // ms del vuelo a la caja (la lógica avanza al instante)
   const SHIFT = 90;        // ms que tarda la fila en correrse un lugar
   const SWAP_ANIM = 380;   // ms del salto de las cajas al cambiar de lado
-  const WARN = 800;        // ms de aviso antes de que se cambien
   const TIME_LIMIT = 30000;
   const QN = 5;           // cubos visibles en la fila además del actual
   const INK = '#1d2340', PAPER = '#fffaf0';
@@ -275,26 +269,37 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     { c1: '#ffcc29', c2: '#d9a514', shape: 'circle' },
     { c1: '#5cb0ff', c2: '#2f7fe0', shape: 'tri' },
   ];
-  // trapFrom/trapP: desde cuándo y con qué chance salen rayados (sube hasta trapMax); swaps: primer cambio de lado y cada cuánto (ms, con azar)
+  // trapFrom/trapP: desde cuándo y con qué chance salen rayados (sube hasta trapMax); swaps: primer cambio de lado y cada cuánto (ms, con azar);
+  // warn: ms de aviso antes del cambio; stun: ms de mareo al errar; penalty: cubos que resta cada error
   const DIFFS = {
-    facil:   { name: 'Fácil',   desc: 'Solo círculos y triángulos, sin rayados ni cambios.', stun: 500, xp: 1,
+    facil:   { name: 'Fácil',   note: 'Solo círculos y triángulos: sin rayados ni cambios de lado.', stun: 500, penalty: 0, warn: 800,
                trapFrom: Infinity, trapP: 0, trapMax: 0, swaps: null },
-    normal:  { name: 'Normal',  desc: 'Con el tiempo se suman rayados y cambios de lado.', stun: 500, xp: 1.5,
+    normal:  { name: 'Normal',  note: 'Con el tiempo aparecen rayados y las cajas se cambian de lado.', stun: 500, penalty: 0, warn: 800,
                trapFrom: 6000, trapP: 0.14, trapMax: 0.3, swaps: { first: 9000, every: 5500, jitter: 1500, until: 2500 } },
-    dificil: { name: 'Difícil', desc: 'Todo desde el arranque y el mareo dura más.', stun: 700, xp: 2,
+    dificil: { name: 'Difícil', note: 'Rayados y cambios de lado desde el primer segundo. Errar marea más.', stun: 700, penalty: 0, warn: 700,
                trapFrom: 0, trapP: 0.25, trapMax: 0.35, swaps: { first: 3000, every: 3200, jitter: 1200, until: 1500 } },
+    extremo: { name: 'Extremo', note: 'Casi la mitad rayados, cajas que no paran de cambiarse y cada error te resta un cubo. XP ×3.',
+               stun: 900, penalty: 1, warn: 550,
+               trapFrom: 0, trapP: 0.38, trapMax: 0.48, swaps: { first: 2000, every: 2100, jitter: 900, until: 1100 } },
   };
   const DIFF_IDS = Object.keys(DIFFS);
-  const fmtX = n => '×' + String(n).replace('.', ',');
+  // XP base según el puntaje (partida() multiplica por dificultad): 15 cubos es una partida floja, 100 una de experto
+  const XP_MALO = 15, XP_EXPERTO = 100;
+  const plural = n => `${n} ${n === 1 ? 'cubo' : 'cubos'}`;
 
   // ---------- récords ----------
+  // con cubo-comun los récords oficiales están en el perfil; acá queda una copia local por si no está o por récords de antes
   const REC_KEY = 'cubo-clasificador-records';
   let rec = {};
   try { rec = JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { rec = {}; }
   if (!rec.bests || typeof rec.bests !== 'object') rec.bests = rec.best ? { normal: rec.best } : {}; // el récord viejo era el del Normal
   delete rec.best;
-  let diff = DIFFS[rec.diff] ? rec.diff : 'normal';
   const saveRec = () => { try { localStorage.setItem(REC_KEY, JSON.stringify(rec)); } catch (e) {} };
+  function bestOf(id) {
+    let b = rec.bests[id] || 0;
+    if (CC) { try { b = Math.max(b, CC.perfil().mejores['clasificador:' + id] || 0); } catch (e) {} }
+    return b;
+  }
 
   // ---------- sonido ----------
   let actx = null, muted = !!rec.muted;
@@ -405,9 +410,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       G.stunUntil = now + G.D.stun; G.bonkDir = d; G.bonkT = now;
       G.nope[G.sides.indexOf(d)] = now;
       G.combo = 0; G.errors++;
+      const lost = Math.min(G.score, G.D.penalty);
+      G.score -= lost;
       if (!G.demo) {
         shake = reduceMotion ? 0 : 7; sfxBonk();
-        floats.push({ text: c.trap ? '¡Al revés!' : '¡Ups!', x: cx, y: cubeY - S0 * 0.9, t: now });
+        if (CC && touchy) CC.vibrar(35);
+        floats.push({ text: (c.trap ? '¡Al revés!' : '¡Ups!') + (lost ? ` −${lost}` : ''), x: cx, y: cubeY - S0 * 0.9, t: now });
       }
     }
   }
@@ -415,85 +423,141 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     G.from = G.sides.slice();
     G.sides = [-G.sides[0], -G.sides[1]];
     G.swapT = now; G.high = Math.random() < 0.5 ? 0 : 1; G.swapI++;
-    if (!G.demo) sfxSwap();
+    if (!G.demo) { sfxSwap(); syncPad(); }
   }
 
-  // XP: medio punto por cubo bien clasificado, por el multiplicador de la dificultad (una partida normal da 20–60)
-  function giveXP() {
-    let xp = 0;
-    if (CC && !G.demo && !G.xpDone) { G.xpDone = true; try { xp = CC.sumarXP(Math.round(G.score / 2 * G.D.xp)).ganada; } catch (e) {} }
-    return xp;
+  // Anota la partida: récord local y, con cubo-comun, una sola llamada a partida() (XP, récord, logros y ranking)
+  function registrar() {
+    const prev = bestOf(G.diff), n = G.score;
+    const out = { xp: 0, record: n > 0 && n > prev, prev, logros: [] };
+    if (n > (rec.bests[G.diff] || 0)) { rec.bests[G.diff] = n; saveRec(); }
+    if (CC) {
+      try {
+        const r = CC.partida({ juego: 'clasificador', tabla: G.diff, valor: n, texto: `${plural(n)} (${G.D.name})`,
+                               xp: CC.xpEscala(n, XP_MALO, XP_EXPERTO) });
+        out.xp = r.xp; out.logros = r.logros || [];
+      } catch (e) {}
+    }
+    return out;
   }
   function finish(now) {
     G.done = true; G.endT = now;
-    let isRec = false;
-    if (G.score > 0 && G.score > (rec.bests[G.diff] || 0)) { rec.bests[G.diff] = G.score; isRec = true; anotarRecord(); }
-    saveRec();
-    const xp = giveXP();
+    const r = registrar();
     $('eNum').textContent = G.score;
     $('eSub').textContent = `${G.score === 1 ? 'cubo clasificado' : 'cubos clasificados'} · ${G.errors} ${G.errors === 1 ? 'error' : 'errores'} · mejor racha ${G.bestCombo}`;
-    $('eRec').textContent = `Récord en ${G.D.name}: ${rec.bests[G.diff] || 0}`;
-    $('eXP').textContent = `+${xp} XP` + (G.D.xp > 1 ? ` (${fmtX(G.D.xp)})` : ''); $('eXP').hidden = !CC;
-    $('eBadge').hidden = !isRec;
+    $('eRec').textContent = r.record ? (r.prev ? `Antes: ${plural(r.prev)} en ${G.D.name}` : `Primer récord en ${G.D.name}`)
+                                     : `Récord en ${G.D.name}: ${plural(bestOf(G.diff))}`;
+    $('eBadge').hidden = !r.record;
+    $('eXP').textContent = `+${r.xp} XP`; $('eXP').hidden = !CC;
+    const ul = $('eLogros'); ul.innerHTML = '';
+    for (const name of r.logros) { const li = document.createElement('li'); li.textContent = name; ul.appendChild(li); }
+    ul.hidden = !r.logros.length;
     sfxWin();
     setTimeout(() => { if (G && G.done && state === 'play') showEnd(); }, 450);
   }
 
   // ---------- pantallas ----------
-  // para la pantalla de juegos: el récord que más vale (cubos × multiplicador de XP), con su dificultad
-  function anotarRecord() {
-    let id = null;
-    for (const d of DIFF_IDS) if (rec.bests[d] && (!id || rec.bests[d] * DIFFS[d].xp >= rec.bests[id] * DIFFS[id].xp)) id = d;
-    if (!CC || !id) return;
-    const n = rec.bests[id];
-    try { CC.anotarRecord('clasificador', `${n} ${n === 1 ? 'cubo' : 'cubos'} (${DIFFS[id].name})`); } catch (e) {}
-  }
   function volver() { if (CC) CC.volver(); }
+  // selector de dificultad común; sin cubo-comun, unos botones simples que hacen lo mismo
+  const DIF_KEY = 'cubo-dif-clasificador';
+  let legacyDiff = null; // la dificultad que se elegía antes con los botones propios
+  try { if (!localStorage.getItem(DIF_KEY) && DIFFS[rec.diff]) legacyDiff = rec.diff; } catch (e) {}
+  delete rec.diff;
+  const notas = Object.fromEntries(DIFF_IDS.map(id => [id, DIFFS[id].note]));
+  const sel = CC ? CC.selectorDif($('difs'), { juego: 'clasificador', valor: legacyDiff, notas, alCambiar: id => { diff = id; renderMenu(); } })
+                 : fallbackSel($('difs'));
+  let diff = sel.valor();
+  function fallbackSel(el) {
+    let v = legacyDiff || 'normal';
+    try { v = DIFFS[localStorage.getItem(DIF_KEY)] ? localStorage.getItem(DIF_KEY) : v; } catch (e) {}
+    el.className = 'fallback-difs'; el.setAttribute('role', 'radiogroup'); el.setAttribute('aria-label', 'Dificultad');
+    el.innerHTML = DIFF_IDS.map(id => `<button class="btn" type="button" role="radio" data-d="${id}">${DIFFS[id].name}</button>`).join('');
+    const poner = id => {
+      if (!DIFFS[id]) return; v = id;
+      try { localStorage.setItem(DIF_KEY, id); } catch (e) {}
+      for (const b of el.children) b.setAttribute('aria-checked', String(b.dataset.d === id));
+      diff = id; renderMenu();
+    };
+    el.addEventListener('click', e => { const b = e.target.closest('[data-d]'); if (b) poner(b.dataset.d); });
+    for (const b of el.children) b.setAttribute('aria-checked', String(b.dataset.d === v));
+    return { valor: () => v, poner };
+  }
   function renderMenu() {
-    for (const id of DIFF_IDS) {
-      const b = $('diff-' + id);
-      b.setAttribute('aria-checked', String(id === diff)); b.tabIndex = id === diff ? 0 : -1;
-      b.querySelector('.dr').textContent = 'Récord ' + (rec.bests[id] || '—');
-    }
-    $('mDesc').textContent = DIFFS[diff].desc;
+    const b = bestOf(diff);
+    $('mRec').innerHTML = `Tu récord en ${DIFFS[diff].name}: <b>${b ? plural(b) : '—'}</b>`;
     $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+    demoReset();
   }
   function setDiff(id) {
-    if (!DIFFS[id]) return;
-    const hadFocus = document.activeElement && document.activeElement.classList.contains('diff');
-    diff = id; rec.diff = id; saveRec(); renderMenu();
-    if (hadFocus) $('diff-' + id).focus({ preventScroll: true });
+    if (!DIFFS[id] || id === diff) return;
+    const ae = document.activeElement, hadFocus = ae && ae.closest && ae.closest('#difs');
+    sel.poner(id);
+    if (hadFocus) { const nb = $('difs').querySelector(`[data-d="${id}"]`); if (nb) nb.focus({ preventScroll: true }); }
   }
+  function ranking() { if (CC) CC.verRanking({ juego: 'clasificador', tabla: diff }); }
   function start() {
     newRun(false);
     state = 'play'; hudCache = '';
-    $('hDiff').textContent = G.D.name; $('hDiff').className = 'chip d-' + G.diff;
+    $('hDiff').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + G.D.name; $('hDiff').className = 'chip d-' + G.diff;
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').hidden = false;
+    syncPad(); showTip();
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   }
-  // R o ↻: partida nueva al toque; si cortás una en curso, igual suma la XP de lo que llevabas
+  // R o ↻: partida nueva al toque. Si cortás una que ya venía bien (10 cubos o más), cuenta como partida
   function restart() {
     if (state === 'menu') return;
-    if (G && G.started && !G.done) giveXP();
+    if (G && G.started && !G.done && G.score >= 10) { G.done = true; registrar(); }
     start();
   }
   function showMenu() {
     state = 'menu';
     newRun(true);
-    renderMenu();
+    renderMenu(); hideTip();
     $('menu').hidden = false; $('end').hidden = true; $('hud').hidden = true; $('pad').hidden = true;
+    sizeDemo();
   }
   function showEnd() {
     state = 'end';
-    $('end').hidden = false; $('pad').hidden = true;
+    $('end').hidden = false; $('pad').hidden = true; hideTip();
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
+  }
+
+  // botones del celu: cada uno muestra la caja que hay de su lado (cambia cuando se cambian las cajas)
+  const BOX_SVG = [
+    '<svg viewBox="0 0 40 40"><rect class="f-y" x="3" y="3" width="34" height="34" rx="8" stroke-width="3"/><circle class="f-p" cx="20" cy="20.5" r="7.5" stroke-width="2.5"/></svg>',
+    '<svg viewBox="0 0 40 40"><rect class="f-b" x="3" y="3" width="34" height="34" rx="8" stroke-width="3"/><path class="f-p" d="M20 11.5 28.5 26h-17z" stroke-width="2.5"/></svg>',
+  ];
+  const SHAPE_NAME = ['círculo', 'triángulo'];
+  function syncPad() {
+    for (const [d, id, pb, side] of [[-1, 'bL', 'pbL', 'izquierda'], [1, 'bR', 'pbR', 'derecha']]) {
+      const t = G.sides.indexOf(d);
+      $(pb).innerHTML = BOX_SVG[t];
+      $(id).setAttribute('aria-label', `Mandar a la caja del ${SHAPE_NAME[t]} (${side})`);
+    }
+  }
+
+  // ayuda de la primera partida: se va con el primer toque o sola a los 7 s
+  const touchy = matchMedia('(pointer: coarse)').matches;
+  let tipTimer = 0, tipOn = false;
+  function showTip() {
+    if (rec.tipSeen) return;
+    $('tip').innerHTML = touchy
+      ? '<b>Tocá ◀ o ▶ abajo</b>Cada botón muestra la caja de su lado. Elegí la que tiene la misma forma que el cubo.'
+      : '<b>Apretá ← o →</b>Mandá el cubo a la caja con su misma forma. El tiempo arranca con tu primera flecha.';
+    $('tip').hidden = false; $('pad').classList.add('hint'); tipOn = true;
+    clearTimeout(tipTimer); tipTimer = setTimeout(hideTip, 7000);
+  }
+  function hideTip() {
+    clearTimeout(tipTimer);
+    $('pad').classList.remove('hint');
+    if (tipOn) { tipOn = false; $('tip').hidden = true; rec.tipSeen = true; saveRec(); }
   }
 
   // ---------- entrada ----------
   const flash = d => { const b = d < 0 ? $('bL') : $('bR'); b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 90); };
   function input(d) {
     if (state !== 'play') return;
-    flash(d); press(d, performance.now());
+    hideTip(); flash(d); press(d, performance.now());
   }
   addEventListener('keydown', e => {
     const k = e.key;
@@ -508,9 +572,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const i = DIFF_IDS.indexOf(diff), ae = document.activeElement;
       if (k === 'ArrowLeft' || k === 'a' || k === 'A') { e.preventDefault(); setDiff(DIFF_IDS[Math.max(0, i - 1)]); }
       else if (k === 'ArrowRight' || k === 'd' || k === 'D') { e.preventDefault(); setDiff(DIFF_IDS[Math.min(DIFF_IDS.length - 1, i + 1)]); }
-      else if (k === '1' || k === '2' || k === '3') setDiff(DIFF_IDS[+k - 1]);
+      else if (k >= '1' && k <= '4' && k.length === 1) setDiff(DIFF_IDS[+k - 1]);
       else if (k === 'Escape') volver();
-      else if ((k === 'Enter' && (ae === document.body || ae.classList.contains('diff'))) || (k === ' ' && ae === document.body)) { e.preventDefault(); start(); }
+      else if ((k === 'Enter' && (ae === document.body || ae.closest('#difs'))) || (k === ' ' && ae === document.body)) { e.preventDefault(); start(); }
     } else if (state === 'end') {
       if (k === 'Escape') showMenu();
       else if ((k === 'Enter' || k === ' ') && document.activeElement === document.body) { e.preventDefault(); start(); }
@@ -522,11 +586,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   $('btnPlay').addEventListener('click', start);
   $('btnQuit').addEventListener('click', showMenu);
   $('btnRestart').addEventListener('pointerdown', e => { e.preventDefault(); restart(); });
-  for (const id of DIFF_IDS) $('diff-' + id).addEventListener('click', () => setDiff(id));
   $('btnMenu').addEventListener('click', showMenu);
   $('btnAgain').addEventListener('click', start);
   for (const id of ['btnGames', 'btnGames2']) { $(id).hidden = !CC; $(id).addEventListener('click', volver); }
-  anotarRecord();
+  for (const id of ['btnRank', 'btnRank2']) { $(id).hidden = !CC; $(id).addEventListener('click', ranking); }
   $('btnMute').addEventListener('click', () => {
     muted = !muted; rec.muted = muted; saveRec(); renderMenu();
     if (!muted) beep(660, 0.08);
@@ -599,7 +662,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const p = boxPos(t, now);
     const bt = (now - G.bump[t]) / 180, bump = bt >= 0 && bt < 1 ? Math.sin(Math.PI * bt) * 0.12 : 0;
     const nt = (now - G.nope[t]) / 320, nope = nt >= 0 && nt < 1 && !reduceMotion ? Math.sin(nt * Math.PI * 4) * (1 - nt) * U * 0.12 : 0;
-    const warn = now - G.warnT < WARN && !reduceMotion ? Math.sin(now / 45) * 0.07 : 0;
+    const warn = now - G.warnT < G.D.warn && !reduceMotion ? Math.sin(now / 45) * 0.07 : 0;
     const tilt = p.a < 1 ? Math.sin(Math.PI * p.a) * 0.25 * p.dir : 0;
     ctx.save();
     ctx.translate(p.x + nope, p.y + bh / 2);
@@ -633,11 +696,99 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
   }
 
+  // ---------- mini demo del menú: qué flecha manda cada cubo a qué caja ----------
+  // Cada paso es un cubo (aparece, se aprieta la flecha, vuela a su caja) o un cambio de lado de las cajas.
+  const dcv = $('demo'), dctx = dcv.getContext('2d');
+  const DSTEP = 1150, DSWAP = 1300, CAP_NAME = ['Círculo', 'Triángulo'];
+  let DW = 0, DH = 0, demo = null;
+  function sizeDemo() {
+    const r = dcv.getBoundingClientRect();
+    if (!r.width) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    DW = r.width; DH = r.height;
+    dcv.width = Math.round(DW * dpr); dcv.height = Math.round(DH * dpr);
+    dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  addEventListener('resize', () => { if (state === 'menu') sizeDemo(); });
+  function demoReset() {
+    const seq = !DIFFS[diff].swaps
+      ? [{ type: 0 }, { type: 1 }, { type: 1 }, { type: 0 }]
+      : [{ type: 0 }, { type: 1 }, { type: 0, trap: true }, { swap: true }, { type: 0 }, { type: 1, trap: true }, { swap: true }];
+    demo = { seq, i: 0, t0: performance.now(), sides: [-1, 1], from: [-1, 1], cap: '' };
+  }
+  function demoKey(x, y, s, dir, on) {
+    const dy = on ? 3 : 0, a = s * 0.2;
+    ctx.fillStyle = INK; rr(x - s / 2, y - s / 2 + 4, s, s, s * 0.25); ctx.fill();
+    ctx.fillStyle = on ? '#ffcc29' : PAPER; rr(x - s / 2, y - s / 2 + dy, s, s, s * 0.25); ctx.fill();
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.fillStyle = INK; ctx.beginPath();
+    ctx.moveTo(x + dir * a, y + dy); ctx.lineTo(x - dir * a * 0.8, y + dy - a * 1.1); ctx.lineTo(x - dir * a * 0.8, y + dy + a * 1.1);
+    ctx.closePath(); ctx.fill();
+  }
+  function demoBox(t, x, base, w, h, rot, bump, front) {
+    const T = TYPES[t], r = w * 0.14;
+    ctx.save(); ctx.translate(x, base); ctx.rotate(rot); ctx.scale(1 + bump, 1 - bump);
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+    if (!front) {
+      ctx.fillStyle = T.c2; rr(-w / 2, -h, w, h, r); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(29,35,64,.6)'; rr(-w / 2 + 5, -h + h * 0.08, w - 10, h * 0.24, r * 0.5); ctx.fill();
+    } else {
+      const top = -h * 0.68;
+      ctx.fillStyle = T.c1; rr(-w / 2, top, w, h * 0.68, r); ctx.fill(); ctx.stroke();
+      symbol(T.shape, 0, top + h * 0.36, h * 0.14, 2);
+    }
+    ctx.restore();
+  }
+  function drawDemo(now) {
+    if (!DW || !demo) return;
+    if (now - demo.t0 > 5000) demo.t0 = now; // volvió de estar oculto
+    let st = demo.seq[demo.i], dur = st.swap ? DSWAP : DSTEP;
+    while (now - demo.t0 >= dur) {
+      demo.t0 += dur; demo.i = (demo.i + 1) % demo.seq.length;
+      st = demo.seq[demo.i]; dur = st.swap ? DSWAP : DSTEP;
+      demo.from = demo.sides.slice();
+      if (st.swap) demo.sides = [-demo.sides[0], -demo.sides[1]];
+    }
+    const el = now - demo.t0, d = st.swap ? 0 : demo.sides[st.type] * (st.trap ? -1 : 1);
+    const cap = st.swap ? '¡Ojo! Las cajas se cambian de lado'
+      : (d < 0 ? '◀ ' : '') + (st.trap ? 'Rayado: a la otra caja' : CAP_NAME[st.type] + ' a su caja') + (d > 0 ? ' ▶' : '');
+    if (cap !== demo.cap) { demo.cap = cap; $('demoCap').textContent = cap; }
+
+    const main = ctx; ctx = dctx;
+    try {
+      ctx.clearRect(0, 0, DW, DH);
+      const floor = DH - 8, bW = Math.min(DW * 0.27, 96), bH = Math.min(DH * 0.5, bW * 0.72), bx = DW * 0.31;
+      ctx.fillStyle = '#3fdca8'; ctx.fillRect(0, floor, DW, DH - floor);
+      ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, floor); ctx.lineTo(DW, floor); ctx.stroke();
+      const sa = st.swap ? clamp01((el - 350) / 500) : 1;
+      const boxX = t => DW / 2 + lerp(demo.from[t], demo.sides[t], easeInOut(sa)) * bx;
+      const lift = t => st.swap && t === 0 && !reduceMotion ? Math.sin(Math.PI * sa) * DH * 0.32 : 0;
+      const wig = st.swap && el < 350 && !reduceMotion ? Math.sin(now / 45) * 0.08 : 0;
+      const target = d ? demo.sides.indexOf(d) : -1;
+      const bt = (el - 800) / 160, bump = bt >= 0 && bt < 1 ? Math.sin(Math.PI * bt) * 0.12 : 0;
+      const ks = Math.min(30, DH * 0.24), ky = floor - ks / 2 - 6;
+      const pressed = !st.swap && el >= 470 && el < 680 ? d : 0;
+      demoKey(DW / 2 - ks * 0.68, ky, ks, -1, pressed === -1);
+      demoKey(DW / 2 + ks * 0.68, ky, ks, 1, pressed === 1);
+      for (let t = 0; t < 2; t++) demoBox(t, boxX(t), floor - lift(t), bW, bH, wig, t === target ? bump : 0, false);
+      if (!st.swap) {
+        const cs = Math.min(42, DH * 0.32), cy = DH * 0.3, ft = clamp01((el - 500) / 300);
+        if (ft < 1) {
+          const tx = boxX(target), ty = floor - bH * 0.75;
+          const x = lerp(DW / 2, tx, ft), y = lerp(cy, ty, ft) - (reduceMotion ? 0 : Math.sin(Math.PI * ft) * DH * 0.22);
+          drawCube(x, y, cs * lerp(1, 0.55, ft) * easeOut(clamp01(el / 160)), st, { rot: reduceMotion ? 0 : d * ft * Math.PI * 0.6 });
+        }
+      }
+      for (let t = 0; t < 2; t++) demoBox(t, boxX(t), floor - lift(t), bW, bH, wig, t === target ? bump : 0, true);
+    } finally { ctx = main; }
+  }
+
   // ---------- bucle ----------
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     update(now, dt); draw(now);
+    if (state === 'menu') drawDemo(now);
     requestAnimationFrame(frame);
   }
 
@@ -653,7 +804,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // cambios de lado de las cajas
     if (G.started && !G.done && G.swapI < G.swaps.length) {
       const at = G.swaps[G.swapI];
-      if (el >= at - WARN && G.warned !== G.swapI) { G.warned = G.swapI; G.warnT = now; if (!G.demo) sfxWarn(); }
+      if (el >= at - G.D.warn && G.warned !== G.swapI) { G.warned = G.swapI; G.warnT = now; if (!G.demo) sfxWarn(); }
       if (el >= at) { doSwap(now); if (G.demo) G.swaps.push(at + 4200); }
     }
     // cubos que ya cayeron en su caja
@@ -795,9 +946,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
     // cartel
     let banner = '', pulse = false;
-    if (now - G.warnT < WARN + 250 && !G.demo) { banner = '¡Se cambian las cajas!'; pulse = true; }
+    if (now - G.warnT < G.D.warn + 250 && !G.demo) { banner = '¡Se cambian las cajas!'; pulse = true; }
     else if (!G.demo && state === 'play' && firstTrap) banner = 'Rayado: va a la otra caja';
-    else if (!G.demo && state === 'play' && !G.started) banner = 'Mandá cada cubo a su caja';
+    else if (!G.demo && state === 'play' && !G.started && !tipOn) banner = 'Mandá cada cubo a su caja';
     if (banner) {
       let fs = Math.min(U * 0.55, 34);
       ctx.font = `${Math.round(fs)}px "Lilita One", "Trebuchet MS", sans-serif`;

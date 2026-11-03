@@ -1,0 +1,1105 @@
+<title>Pulseada</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:wght@400;600;800&display=swap">
+<style>
+/* Layout: canvas a pantalla completa con la mesa de pulseada al medio; HUD arriba, dos botones gigantes abajo (el que toca, resaltado) */
+:root {
+  --wall: #ffc864;
+  --ink: #1d2340;
+  --paper: #fffaf0;
+  --cube: #f5b84a;
+  --accent: #ff5d7d;
+  --good: #1fbf8a;
+  --bad: #ff4f5e;
+  --muted: #5b6382;
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body {
+  background: var(--wall);
+  color: var(--ink);
+  font-family: var(--body);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+#cv { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.hud {
+  position: fixed; top: 0; left: 0; right: 0;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 12px;
+  pointer-events: none;
+}
+.stat { display: flex; flex-direction: column; line-height: 1; }
+.stat.mid { align-items: center; }
+.big {
+  font-family: var(--display); font-size: clamp(34px, 7vw, 52px);
+  color: var(--paper); font-variant-numeric: tabular-nums;
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill;
+  text-shadow: 0 3px 0 var(--ink);
+}
+.big.gana { color: #8ff0b8; }
+.lbl {
+  font-weight: 800; font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--paper);
+  text-shadow: 1px 0 0 var(--ink), -1px 0 0 var(--ink), 0 1px 0 var(--ink), 0 -1px 0 var(--ink), 0 2px 0 var(--ink);
+  margin-top: 6px;
+}
+.right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.chip {
+  font-weight: 800; font-size: 13px; padding: 4px 10px 4px 6px; border-radius: 999px;
+  background: var(--paper); border: 2px solid var(--ink); font-variant-numeric: tabular-nums;
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+}
+.chip.hot { background: var(--cube); }
+.chip .cc-ico { flex: none; }
+.smallbtn {
+  pointer-events: auto; font: 800 13px var(--body); color: var(--ink);
+  background: var(--paper); border: 2px solid var(--ink); border-radius: 999px;
+  padding: 5px 12px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; white-space: nowrap;
+}
+.smallbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.hbtns { display: flex; gap: 8px; }
+.smallbtn.icon { font-size: 17px; line-height: 1; padding: 5px 12px; }
+
+.pad {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  padding-top: 18px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  max-width: 560px; margin: 0 auto;
+}
+.pad.off { visibility: hidden; }
+.pad button {
+  position: relative;
+  height: clamp(76px, 13vh, 116px); border-radius: 22px;
+  background: var(--paper); color: var(--ink);
+  border: 3px solid var(--ink); box-shadow: 0 7px 0 var(--ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font: 800 15px var(--body); cursor: pointer; touch-action: none;
+  transition: transform .05s, box-shadow .05s, opacity .12s, background-color .12s;
+}
+.pad button svg { width: 38px; height: 38px; }
+.pad button.next { background: var(--cube); }
+.pad button.dim { opacity: .5; }
+.pad.uno button.next::after {
+  content: "¡Ahora!"; position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+  font: 800 11px var(--body); letter-spacing: .08em; text-transform: uppercase;
+  background: var(--ink); color: var(--paper); padding: 3px 9px; border-radius: 999px;
+}
+.pad button.on { transform: translateY(5px); box-shadow: 0 2px 0 var(--ink); }
+.pad button.bad { background: var(--bad); opacity: 1; animation: sacudir .18s; }
+@keyframes sacudir { 25% { translate: -5px 0; } 75% { translate: 5px 0; } }
+
+.overlay {
+  position: fixed; inset: 0; display: grid; place-items: center;
+  padding-block: 24px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: rgba(29, 35, 64, .28);
+  overflow-y: auto;
+}
+.card {
+  width: min(420px, 100%); background: var(--paper);
+  border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink);
+  padding: 22px; display: flex; flex-direction: column; gap: 14px;
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo {
+  width: 48px; height: 48px; flex: none; border-radius: 10px; background: var(--cube);
+  border: 3px solid var(--ink); position: relative; transform: rotate(-6deg);
+}
+.logo::before, .logo::after {
+  content: ""; position: absolute; top: 13px; width: 8px; height: 11px; border-radius: 4px; background: var(--ink);
+}
+.logo::before { left: 11px; } .logo::after { right: 11px; }
+h1, h2 { font-family: var(--display); font-weight: 400; margin: 0; line-height: 1; text-wrap: balance; }
+h1 { font-size: clamp(32px, 9vw, 42px); }
+h2 { font-size: 32px; }
+.intro { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.45; }
+.intro b { color: var(--ink); }
+#demo { width: 100%; height: 92px; display: block; border: 3px solid var(--ink); border-radius: 14px; background: #fff3d6; }
+.go { display: grid; grid-template-columns: auto auto 1fr; gap: 10px; align-items: stretch; }
+.best {
+  display: flex; flex-direction: column; justify-content: center; padding: 6px 12px;
+  border: 3px solid var(--ink); border-radius: 14px; background: #fff;
+  font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.best b { font-family: var(--display); font-weight: 400; font-size: 24px; letter-spacing: 0; color: var(--ink); text-transform: none; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-width: 3px; border-radius: 6px; padding: 0 5px; color: var(--ink); background: #fff; }
+.back { align-self: flex-start; }
+
+.result { text-align: center; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.result .num { font-family: var(--display); font-size: 64px; line-height: 1; font-variant-numeric: tabular-nums; }
+.result .sub { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.result .sub b { color: var(--ink); }
+.xp {
+  font-family: var(--display); font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums;
+  background: var(--cube); border: 2px solid var(--ink); border-radius: 999px; padding: 5px 14px; margin-top: 4px;
+}
+.badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.badge {
+  font-weight: 800; font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+  background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
+}
+.badge.tps { background: var(--cube); }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn {
+  font: 800 16px var(--body); color: var(--ink); padding: 14px 10px; cursor: pointer;
+  background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn.small { padding: 10px; font-size: 15px; }
+.btn svg { width: 18px; height: 18px; flex: none; }
+.btn.primary { background: var(--cube); }
+.btn.big { font: 400 26px var(--display); padding: 12px 10px; }
+@media (pointer: coarse) { .kbd-only { display: none; } }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+/* cartel de cada rival, entre ronda y ronda */
+.cartel {
+  position: fixed; left: 50%; top: 30%; transform: translate(-50%, -50%);
+  width: min(340px, calc(100% - 32px)); pointer-events: none;
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink);
+  padding: 12px 16px; display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 12px;
+}
+.cartel > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cartel h2 { font-size: 28px; }
+.cartel.pop { animation: pop .28s ease-out; }
+@keyframes pop { from { transform: translate(-50%, -50%) scale(.7); opacity: 0; } }
+.cartel canvas { width: 72px; height: 72px; }
+.cartel .k { font-weight: 800; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.cartel .pide { font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; }
+.cartel .estilo { font-size: 13px; color: var(--muted); }
+
+/* ayuda de la primera vez */
+.tip {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 170px;
+  width: min(340px, calc(100% - 32px)); pointer-events: none; text-align: center;
+  background: var(--ink); color: var(--paper); border-radius: 16px; padding: 12px 14px;
+  font-size: 15px; line-height: 1.4; font-weight: 600;
+}
+.tip b { color: var(--cube); }
+.tip::after {
+  content: ""; position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%);
+  border: 10px solid transparent; border-bottom: 0; border-top-color: var(--ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pad button.bad, .cartel.pop { animation: none; }
+}
+@media (max-width: 380px) { .card { padding: 18px; } .best { padding: 6px 9px; } }
+</style>
+
+<canvas id="cv"></canvas>
+
+<div class="hud" id="hud" hidden>
+  <div class="stat"><span class="big" id="hScore">0</span><span class="lbl" id="hScoreLbl">rivales</span></div>
+  <div class="stat mid"><span class="big" id="hTps">0,0</span><span class="lbl">toques/s</span></div>
+  <div class="right">
+    <div class="hbtns">
+      <button class="smallbtn" id="btnQuit" type="button">← Juegos</button>
+      <button class="smallbtn icon" id="btnRestart" type="button" aria-label="Reiniciar (R)" title="Reiniciar (R)">↻</button>
+    </div>
+    <span class="chip" id="hDiff"></span>
+  </div>
+</div>
+
+<div class="pad off" id="pad">
+  <button id="bL" type="button" aria-label="Izquierda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4 7 12l8 8"/></svg><span>Izquierda</span></button>
+  <button id="bR" type="button" aria-label="Derecha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 4 8 8-8 8"/></svg><span>Derecha</span></button>
+</div>
+
+<div class="cartel" id="cartel" hidden>
+  <canvas id="cFace" width="144" height="144"></canvas>
+  <div>
+    <span class="k" id="cNum">Rival 1</span>
+    <h2 id="cName">Tito Flan</h2>
+    <span class="pide" id="cPide">Pide unos 4,0 toques/s</span>
+    <span class="estilo" id="cEstilo"></span>
+  </div>
+</div>
+
+<div class="tip" id="tip" hidden>Alterná <b>◀ ▶ ◀ ▶</b> lo más rápido que puedas.<br>Repetir la misma flecha <b>no suma</b>.</div>
+
+<div class="overlay" id="menu">
+  <div class="card">
+    <button class="smallbtn back" id="btnBack" type="button">← Juegos</button>
+    <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Pulseada</h1></div>
+    <p class="intro">Alterná <b>◀ ▶ ◀ ▶</b> lo más rápido que puedas para tumbarle el brazo a cada rival. Repetir la misma flecha <b>no suma</b>.</p>
+    <canvas id="demo" aria-label="Demo: alternar izquierda y derecha empuja la barra; repetir la misma flecha no hace nada"></canvas>
+    <div id="difs"></div>
+    <div class="go">
+      <span class="best">Récord<b id="mBest">—</b></span>
+      <span class="best">Mejor ritmo<b id="mTps">—</b></span>
+      <button class="btn primary big" id="btnPlay" type="button">Jugar</button>
+    </div>
+    <div class="row">
+      <button class="btn small" id="btnRank" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v3M8 20h8l-1-3H9z"/></svg>Ranking</button>
+      <button class="btn small" id="btnMute" type="button">Sonido: sí</button>
+    </div>
+    <div class="foot kbd-only">
+      <span>Teclado: <kbd>←</kbd> <kbd>→</kbd> o <kbd>A</kbd> <kbd>D</kbd> · <kbd>Enter</kbd> juega · <kbd>R</kbd> reinicia</span>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="end" hidden>
+  <div class="card">
+    <div class="result">
+      <h2 id="eTitle">¡Te ganó!</h2>
+      <span class="num" id="eNum">0</span>
+      <span class="sub" id="eSub"></span>
+      <span class="sub" id="eSub2"></span>
+      <span class="sub" id="eSub3"></span>
+      <span class="xp" id="eXP" hidden>+0 XP</span>
+      <div class="badges" id="eBadges"></div>
+    </div>
+    <button class="btn primary big" id="btnAgain" type="button">Otra vez</button>
+    <div class="row">
+      <button class="btn small" id="btnRankEnd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v3M8 20h8l-1-3H9z"/></svg>Ranking</button>
+      <button class="btn small" id="btnHome" type="button">← Juegos</button>
+    </div>
+    <p class="foot kbd-only" style="justify-content:center;margin:0"><span><kbd>R</kbd> o <kbd>Enter</kbd> otra vez · <kbd>Esc</kbd> menú</span></p>
+  </div>
+</div>
+
+<script src="cubo-comun.js"></script>
+<script>
+(() => {
+  'use strict';
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  const INK = '#1d2340', PAPER = '#fffaf0', GOLD = '#f5b84a';
+
+  // Cada rival pide base + inc × (rivales ya vencidos) toques por segundo.
+  // Referencia: alternando con dos dedos un promedio hace 6 a 8, alguien bueno 9 o 10 y uno de élite 12 o más.
+  // pen: cuánto te hace retroceder repetir la flecha (en Difícil y Extremo se castiga).
+  const DIFS = {
+    facil:   { name: 'Fácil',   base: 3, inc: 0.4, pen: 0,     round: 8 },
+    normal:  { name: 'Normal',  base: 4, inc: 0.5, pen: 0,     round: 7 },
+    dificil: { name: 'Difícil', base: 6, inc: 0.5, pen: 0.025, round: 7 },
+    extremo: { name: 'Extremo', base: 9, inc: 0.5, pen: 0.05,  round: 7 },
+  };
+  const DIFF_IDS = Object.keys(DIFS);
+  const K = 0.16;                     // cuánto se mueve la barra por segundo por cada toque/s de ventaja
+  const TAU1 = 0.5, TAU2 = 0.25;      // suavizado de la fuerza (igual para vos y para el rival)
+  const ANG = 1.15;                   // inclinación máxima de los brazos (rad)
+  const T_INTRO = 1.7, T_COUNT = 1.5, T_WON = 1.3, T_LOST = 1.2;
+
+  // o: ojos · x: detalles · e: estilo de fuerza
+  const RIVALES = [
+    { n: 'Tito Flan', c: '#ffe08a', o: 'dormido', x: [], e: 'parejo' },
+    { n: 'Bochi', c: '#ff9ec0', o: 'redondos', x: ['cachetes', 'moño'], e: 'arranque' },
+    { n: 'Ladrillo', c: '#e0674a', o: 'enojado', x: ['cejota'], e: 'parejo' },
+    { n: 'La Morsa', c: '#9fb4cc', o: 'redondos', x: ['bigote'], e: 'remonta' },
+    { n: 'Turbo', c: '#6fd16a', o: 'enojado', x: ['vincha'], e: 'tirones' },
+    { n: 'Doña Yunque', c: '#b58bf0', o: 'lentes', x: ['rodete'], e: 'parejo' },
+    { n: 'El Toro', c: '#b0713f', o: 'enojado', x: ['cuernos', 'argolla'], e: 'arranque' },
+    { n: 'Pochoclo', c: '#fff3d6', o: 'redondos', x: ['lunares', 'cachetes'], e: 'tirones' },
+    { n: 'Mecha', c: '#ff9b3d', o: 'enojado', x: ['pelos'], e: 'remonta' },
+    { n: 'Capitán Bíceps', c: '#5d9cff', o: 'negros', x: ['bigote'], e: 'parejo' },
+    { n: 'La Bestia', c: '#4f8f5a', o: 'enojado', x: ['dientes', 'cejota'], e: 'arranque' },
+    { n: 'Fierro', c: '#8d96a8', o: 'cuadrados', x: ['tornillos'], e: 'tirones' },
+    { n: 'Reina Roca', c: '#3d3552', o: 'enojado', ojo: PAPER, x: ['corona'], e: 'remonta' },
+    { n: 'El Campeón', c: '#ffc93c', o: 'negros', x: ['medalla', 'vincha'], e: 'tirones' },
+  ];
+  const ESTILOS = {
+    parejo: 'Empuja parejo todo el rato.',
+    arranque: 'Arranca con todo y después afloja.',
+    remonta: 'Arranca tranqui y aprieta al final.',
+    tirones: 'Pega tirones de golpe.',
+  };
+  const ROMANOS = ['', ' II', ' III', ' IV', ' V', ' VI'];
+  function rivalDe(i) {
+    const r = RIVALES[i % RIVALES.length], v = Math.floor(i / RIVALES.length);
+    return { ...r, nombre: r.n + (ROMANOS[v] ?? ' ' + (v + 1)) };
+  }
+  const rivalTps = (d, i) => DIFS[d].base + DIFS[d].inc * i;
+  // multiplicador de la fuerza del rival según su estilo (en promedio da ~1)
+  function forma(e, t) {
+    if (e === 'arranque') return { m: t < 2.2 ? 1.15 : 0.94, tiron: false };
+    if (e === 'remonta') return { m: t < 3 ? 0.86 : 1.08, tiron: false };
+    if (e === 'tirones') { const on = (t % 2.2) > 1.5; return { m: on ? 1.28 : 0.9, tiron: on }; }
+    return { m: 1 + 0.06 * Math.sin(t * 2.3), tiron: false };
+  }
+
+  // ---------- récords propios (el récord de rivales lo guarda cubo-comun) ----------
+  const REC_KEY = 'cubo-pulseada-records';
+  let rec = {};
+  try { rec = JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { rec = {}; }
+  const saveRec = () => { try { localStorage.setItem(REC_KEY, JSON.stringify(rec)); } catch (e) {} };
+  const fmt1 = n => n.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const rivales = n => n === 1 ? 'rival' : 'rivales';
+
+  // ---------- sonido ----------
+  let actx = null, muted = !!rec.muted;
+  function beep(freq, dur, type = 'triangle', vol = 0.07, slide = 0, delay = 0) {
+    if (muted) return;
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      const t = actx.currentTime + delay, o = actx.createOscillator(), g = actx.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, t);
+      if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, t + dur);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur + 0.02);
+    } catch (e) {}
+  }
+  const sfxTap = (d, tps) => beep(330 + Math.min(14, tps) * 32 + (d > 0 ? 40 : 0), 0.035, 'square', 0.025);
+  const sfxBad = () => beep(130, 0.1, 'sawtooth', 0.05, 0.7);
+  const sfxCount = n => beep(n ? 523 : 880, n ? 0.09 : 0.18, 'triangle', 0.07);
+  const sfxWin = () => { beep(110, 0.18, 'square', 0.05, 0.5); [659, 784, 988, 1319].forEach((f, i) => beep(f, 0.12, 'triangle', 0.06, 0, 0.12 + i * 0.08)); };
+  const sfxLose = () => { beep(110, 0.2, 'square', 0.05, 0.5); [392, 330, 262].forEach((f, i) => beep(f, 0.16, 'triangle', 0.06, 0, 0.1 + i * 0.12)); };
+  const sfxTiron = () => beep(180, 0.12, 'sawtooth', 0.03, 1.4);
+
+  // ---------- canvas y medidas ----------
+  // todo se mide en U (una décima del ancho de la escena) para que entre igual en el celu y en la compu
+  let W = 0, H = 0, U = 34, CX = 0, Y0 = 0, TOP = 100;
+  const YT = 6.0, COMP = 7.4;          // altura de la mesa y alto total de la escena, en U
+  function resize() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = innerWidth; H = innerHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const padTop = $('pad').getBoundingClientRect().top + 10;
+    const hb = $('hud').hidden ? 100 : $('hud').getBoundingClientRect().bottom + 10;
+    const top = Math.max(60, hb), bot = Math.max(top + 140, padTop - 10);
+    const sh = bot - top;
+    U = Math.max(14, Math.min(W * 0.1, 56, sh / (COMP + 0.2)));
+    CX = W / 2; TOP = top;
+    Y0 = top + Math.max(0, (sh - COMP * U) / 2);
+    $('tip').style.bottom = Math.round(H - padTop + 30) + 'px';
+    $('cartel').style.top = Math.round(Y0 + 1.7 * U) + 'px';
+  }
+  addEventListener('resize', resize);
+
+  // ---------- estado ----------
+  let state = 'menu';   // menu | play | end
+  let G = null, shake = 0, particles = [], floats = [], banner = null;
+  const playerColor = () => (CC && CC.skin().cuerpo) || '#ffcc29';
+
+  function newRun(d) {
+    G = {
+      diff: d, score: 0, idx: 0, rival: rivalDe(0), phase: 'intro', pt: 0,
+      p: 0, f: 0, you: 0, r1: 0, rv: 0, ft: 0, next: 0, taps: [], best: 0,
+      wrong: 0, valid: 0, timeout: false, settled: false, tironOn: false, lastBad: 0, slide: 1, fall: 0,
+    };
+    particles = []; floats = []; banner = null;
+    enterIntro();
+  }
+  function enterIntro() {
+    G.phase = 'intro'; G.pt = 0; G.rival = rivalDe(G.idx); G.slide = G.idx === 0 ? 0 : 1; G.fall = 0;
+    G.f = 0; G.you = 0; G.r1 = 0; G.rv = 0; G.ft = 0; G.next = 0; G.taps = [];
+    showCartel();
+  }
+
+  // primera vez: ayuda superpuesta hasta la primera pulsación válida
+  let tipOn = false;
+  function showTip(on) { tipOn = on; $('tip').hidden = !on; }
+
+  function showCartel() {
+    const r = G.rival, c = $('cartel');
+    $('cNum').textContent = 'Rival ' + (G.idx + 1);
+    $('cName').textContent = r.nombre;
+    $('cPide').textContent = 'Pide unos ' + fmt1(rivalTps(G.diff, G.idx)) + ' toques/s';
+    $('cEstilo').textContent = ESTILOS[r.e];
+    const fc = $('cFace').getContext('2d');
+    fc.setTransform(1, 0, 0, 1, 0, 0); fc.clearRect(0, 0, 144, 144);
+    drawRival(fc, 72, 126, 96, r, 'calma', 0);
+    c.hidden = false;
+    c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
+  }
+
+  function press(d, now) {
+    if (state !== 'play' || !G) return;
+    flash(d);
+    if (G.phase !== 'fight') return;
+    if (G.next !== 0 && d !== G.next) {
+      G.wrong++;
+      G.p = Math.max(-1, G.p - DIFS[G.diff].pen);
+      bad(d); sfxBad(); CC?.vibrar(25);
+      if (now - G.lastBad > 450) { G.lastBad = now; floats.push({ text: '¡Alterná!', x: CX + d * U * 2.2, y: Y0 + 3.6 * U, t: now, c: '#ff4f5e' }); }
+      return;
+    }
+    G.next = -d; G.f += 1; G.valid++;
+    if (tipOn) { showTip(false); try { localStorage.setItem('cubo-pulseada-ayuda', '1'); } catch (e) {} }
+    // ritmo sostenido: toques de los últimos 2 s, si cubren al menos 1,2 s
+    const T = G.taps;
+    T.push(now);
+    while (T.length && now - T[0] > 2000) T.shift();
+    const span = T[T.length - 1] - T[0];
+    if (span >= 1200) G.best = Math.max(G.best, (T.length - 1) / (span / 1000));
+    sfxTap(d, G.you);
+  }
+
+  function winRound(now) {
+    G.phase = 'won'; G.pt = 0; G.score++;
+    sfxWin(); CC?.vibrar(30);
+    banner = { text: G.timeout ? '¡Por poquito!' : '¡Ganaste!', t: now, ms: 1200 };
+    slam(1);
+  }
+  function loseRound(now) {
+    G.phase = 'lost'; G.pt = 0;
+    sfxLose(); CC?.vibrar([40, 40, 60]);
+    shake = reduceMotion ? 0 : 12;
+    banner = { text: G.timeout ? '¡Tiempo!' : '¡Uy!', t: now, ms: 1100 };
+    slam(-1);
+  }
+  function slam(side) {
+    const h = handPos(side * 1.05);
+    burst(h.x, h.y + U * 0.3, '#fff1c4', 14, 1);
+    burst(h.x, h.y + U * 0.3, side > 0 ? playerColor() : G.rival.c, 10, 1);
+  }
+
+  // XP, récord y ranking de la partida (una sola vez por partida)
+  function finish() {
+    if (!G || G.settled) return null;
+    G.settled = true;
+    const best = Math.round(G.best * 10) / 10;
+    const tpsRec = best > 0 && best > (rec.bestTps || 0);
+    if (tpsRec) { rec.bestTps = best; saveRec(); }
+    let r = null;
+    if (CC) {
+      r = CC.partida({
+        juego: 'pulseada', tabla: G.diff, valor: G.score,
+        texto: `${G.score} ${rivales(G.score)} (${DIFS[G.diff].name})`,
+        xp: CC.xpEscala(G.score, 1, 14), marcas: G.best >= 10 ? ['tps10'] : [],
+      });
+    }
+    return { r, tpsRec, best };
+  }
+
+  function showEnd() {
+    const res = finish() || { r: null, tpsRec: false, best: G.best };
+    const r = res.r, D = DIFS[G.diff];
+    $('eTitle').textContent = G.timeout ? '¡Se acabó el tiempo!' : `¡Te ganó ${G.rival.nombre}!`;
+    $('eNum').textContent = G.score;
+    $('eSub').textContent = G.score === 1 ? 'rival vencido seguido' : 'rivales vencidos seguidos';
+    $('eSub2').innerHTML = res.best > 0
+      ? `Tu ritmo máximo: <b>${fmt1(res.best)} toques/s</b> · mejor ${fmt1(rec.bestTps || res.best)}`
+      : 'Aguantá un segundo y pico alternando para medir tu ritmo';
+    $('eSub3').textContent = `${D.name} · ${G.wrong} ${G.wrong === 1 ? 'flecha repetida' : 'flechas repetidas'}` +
+      (r && r.textoAnterior && !r.record ? ` · récord ${r.textoAnterior}` : '');
+    $('eXP').hidden = !r;
+    if (r) $('eXP').textContent = `+${r.xp} XP`;
+    const b = [];
+    if (r && r.record) b.push(`<span class="badge">${r.primera ? 'Primer récord' : 'Nuevo récord'}</span>`);
+    if (res.tpsRec) b.push('<span class="badge tps">Mejor ritmo</span>');
+    if (res.best >= 10) b.push('<span class="badge tps">+10 toques/s</span>');
+    for (const l of (r && r.logros) || []) b.push(`<span class="badge">Logro: ${l.replace(/</g, '&lt;')}</span>`);
+    $('eBadges').innerHTML = b.join('');
+    state = 'end';
+    $('end').hidden = false; $('pad').classList.add('off'); $('cartel').hidden = true; showTip(false);
+    setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
+  }
+
+  // ---------- pantallas ----------
+  // selector común; sin la librería, uno mínimo con los mismos ids
+  const NOTAS = {
+    facil: 'El primer rival pide unos 3 toques/s. Ideal para aprender.',
+    normal: 'El primer rival pide unos 4 toques/s y cada uno pide medio más.',
+    dificil: 'Arrancan en 6 toques/s y repetir flecha te hace retroceder.',
+    extremo: 'Arrancan en 9 toques/s y cada error te hunde. XP ×3.',
+  };
+  const sel = CC ? CC.selectorDif($('difs'), { juego: 'pulseada', notas: NOTAS, alCambiar: renderMenu }) : (() => {
+    let v = 'normal';
+    const el = $('difs');
+    el.className = 'row';
+    el.innerHTML = DIFF_IDS.map(id => `<button class="btn" type="button" data-d="${id}">${DIFS[id].name}</button>`).join('');
+    const pintar = () => { for (const b of el.children) b.classList.toggle('primary', b.dataset.d === v); };
+    el.addEventListener('click', e => { const b = e.target.closest('button'); if (b) { v = b.dataset.d; pintar(); renderMenu(); } });
+    pintar();
+    return { valor: () => v, siguiente(p = 1) { v = DIFF_IDS[(DIFF_IDS.indexOf(v) + p + 4) % 4]; pintar(); renderMenu(); } };
+  })();
+
+  function renderMenu() {
+    const d = sel.valor();
+    const best = CC ? CC.perfil().mejores['pulseada:' + d] : null;
+    $('mBest').textContent = best ? best + ' ' + rivales(best) : '—';
+    $('mTps').textContent = rec.bestTps ? fmt1(rec.bestTps) + '/s' : '—';
+    $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+  }
+  function start() {
+    state = 'play';
+    $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').classList.remove('off');
+    resize();
+    newRun(sel.valor());
+    const D = sel.valor();
+    $('hDiff').innerHTML = (CC ? CC.iconoDif(D, 16) : '') + DIFS[D].name;
+    $('hDiff').classList.toggle('hot', D === 'extremo');
+    let seen = false;
+    try { seen = !!localStorage.getItem('cubo-pulseada-ayuda'); } catch (e) {}
+    showTip(!seen);
+    hudCache = '';
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  }
+  // R o ↻: partida nueva al instante; si ya le ganaste a alguien, esa partida cuenta
+  function restart() {
+    let xp = 0;
+    if (state === 'play' && G && G.score > 0) { const res = finish(); xp = res && res.r ? res.r.xp : 0; }
+    start();
+    if (xp > 0) banner = { text: `+${xp} XP`, t: performance.now(), ms: 1100 };
+  }
+  function showMenu() {
+    if (state === 'play' && G && G.score > 0) finish();
+    state = 'menu';
+    G = null;
+    renderMenu();
+    $('menu').hidden = false; $('end').hidden = true; $('hud').hidden = true; $('pad').classList.add('off');
+    $('cartel').hidden = true; showTip(false);
+    resize();
+  }
+  const ranking = () => CC?.verRanking({ juego: 'pulseada', tabla: G ? G.diff : sel.valor() });
+
+  // ---------- entrada ----------
+  const bL = $('bL'), bR = $('bR');
+  const flash = d => { const b = d < 0 ? bL : bR; b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 80); };
+  const bad = d => { const b = d < 0 ? bL : bR; b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad'); setTimeout(() => b.classList.remove('bad'), 200); };
+  let padSig = '';
+  function paintPad() {
+    const fight = state === 'play' && G && G.phase === 'fight';
+    const nx = fight ? G.next : 9;
+    const sig = String(nx);
+    if (sig === padSig) return;
+    padSig = sig;
+    bL.classList.toggle('next', fight && nx !== 1);
+    bR.classList.toggle('next', fight && nx !== -1);
+    bL.classList.toggle('dim', fight && nx === 1);
+    bR.classList.toggle('dim', fight && nx === -1);
+    $('pad').classList.toggle('uno', fight && nx !== 0);
+  }
+
+  const rankOpen = () => !!document.getElementById('cc-rank');
+  addEventListener('keydown', e => {
+    if (rankOpen()) return;
+    const k = e.key;
+    const left = k === 'ArrowLeft' || k === 'a' || k === 'A', right = k === 'ArrowRight' || k === 'd' || k === 'D';
+    if ((k === 'r' || k === 'R') && (state === 'play' || state === 'end')) { e.preventDefault(); if (!e.repeat) restart(); return; }
+    if (state === 'play') {
+      // mantener apretada la tecla no suma: solo cuenta cada pulsación nueva
+      if (left) { e.preventDefault(); if (!e.repeat) press(-1, performance.now()); }
+      else if (right) { e.preventDefault(); if (!e.repeat) press(1, performance.now()); }
+      else if (k === 'Escape') showMenu();
+      else if (k === ' ') e.preventDefault();
+    } else if (state === 'menu') {
+      const a = document.activeElement;
+      if (k === 'Escape' && CC) CC.volver();
+      else if (left || right) { e.preventDefault(); sel.siguiente(left ? -1 : 1); }
+      else if (k === 'Enter' && (a === document.body || a === $('btnPlay'))) { e.preventDefault(); start(); }
+      else if (k === ' ' && a === document.body) { e.preventDefault(); start(); }
+    } else if (state === 'end') {
+      if (k === 'Escape') showMenu();
+      else if ((k === 'Enter' || k === ' ') && document.activeElement === document.body) { e.preventDefault(); start(); }
+    }
+  });
+  const bindPad = (el, d) => el.addEventListener('pointerdown', e => { e.preventDefault(); press(d, performance.now()); });
+  bindPad(bL, -1); bindPad(bR, 1);
+  cv.addEventListener('pointerdown', e => { if (state === 'play') { e.preventDefault(); press(e.clientX < W / 2 ? -1 : 1, performance.now()); } });
+  $('btnPlay').addEventListener('click', start);
+  $('btnQuit').addEventListener('click', () => { if (G && G.score > 0) finish(); CC ? CC.volver() : showMenu(); });
+  $('btnRestart').addEventListener('pointerdown', e => { e.preventDefault(); restart(); });
+  $('btnRestart').addEventListener('click', e => { if (e.detail === 0) restart(); });
+  $('btnBack').hidden = !CC;
+  $('btnRank').hidden = !CC; $('btnRankEnd').hidden = !CC;
+  if (!CC) { $('btnHome').textContent = 'Inicio'; $('btnQuit').textContent = 'Menú'; }
+  $('btnBack').addEventListener('click', () => CC?.volver());
+  $('btnHome').addEventListener('click', () => CC ? CC.volver() : showMenu());
+  $('btnRank').addEventListener('click', ranking);
+  $('btnRankEnd').addEventListener('click', ranking);
+  $('btnAgain').addEventListener('click', start);
+  $('btnMute').addEventListener('click', () => {
+    muted = !muted; rec.muted = muted; saveRec(); renderMenu();
+    if (!muted) beep(660, 0.08);
+  });
+
+  // ---------- efectos ----------
+  function burst(x, y, color, n, power) {
+    if (reduceMotion) return;
+    for (let k = 0; k < n; k++) {
+      const a = -Math.PI * Math.random();
+      const sp = (90 + Math.random() * 200) * power;
+      particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60,
+        life: 0.35 + Math.random() * 0.25, age: 0, s: U * (0.12 + Math.random() * 0.12), c: color });
+    }
+  }
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  function rr(c, x, y, w, h, r) {
+    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  }
+
+  // ---------- bucle ----------
+  let last = performance.now(), hudCache = '', menuT = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    update(now, dt); draw(now);
+    if (state === 'menu') drawDemo(now);
+    requestAnimationFrame(frame);
+  }
+
+  function update(now, dt) {
+    shake *= Math.exp(-dt * 14);
+    for (const p of particles) { p.age += dt; p.vy += 700 * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
+    particles = particles.filter(p => p.age < p.life);
+    floats = floats.filter(f => now - f.t < 750);
+    if (banner && now - banner.t > banner.ms) banner = null;
+    if (state === 'menu') { menuT += dt; return; }
+    if (!G) return;
+    G.pt += dt;
+    const D = DIFS[G.diff];
+    const a1 = 1 - Math.exp(-dt / TAU1), a2 = 1 - Math.exp(-dt / TAU2);
+    if (G.phase === 'intro') {
+      G.p *= Math.exp(-dt * 5);
+      G.slide = Math.max(0, G.slide - dt * 2.6);
+      if (G.pt >= T_INTRO) { G.phase = 'count'; G.pt = 0; $('cartel').hidden = true; G.lastCount = 4; }
+    } else if (G.phase === 'count') {
+      const n = 3 - Math.floor(G.pt / (T_COUNT / 3));
+      if (n !== G.lastCount && n > 0) { G.lastCount = n; sfxCount(n); }
+      if (G.pt >= T_COUNT) {
+        G.phase = 'fight'; G.pt = 0; G.p = 0;
+        sfxCount(0); banner = { text: '¡Ya!', t: now, ms: 600 };
+      }
+    } else if (G.phase === 'fight') {
+      G.ft += dt;
+      // tu fuerza: cada toque válido suma 1 a un acumulador que se va vaciando; la del rival pasa por el mismo filtro
+      G.f *= Math.exp(-dt / TAU1);
+      G.you += (G.f / TAU1 - G.you) * a2;
+      const fo = forma(G.rival.e, G.ft);
+      if (fo.tiron && !G.tironOn) { sfxTiron(); floats.push({ text: '¡Tirón!', x: CX + U * 2.6, y: Y0 + 3.6 * U, t: now, c: G.rival.c }); }
+      G.tironOn = fo.tiron;
+      G.r1 += (rivalTps(G.diff, G.idx) * fo.m - G.r1) * a1;
+      G.rv += (G.r1 - G.rv) * a2;
+      G.p = clamp(G.p + K * (G.you - G.rv) * dt, -1, 1);
+      if (G.p >= 1) winRound(now);
+      else if (G.p <= -1) loseRound(now);
+      else if (G.ft >= D.round) { G.timeout = true; G.p > 0 ? winRound(now) : loseRound(now); }
+    } else if (G.phase === 'won') {
+      G.p = Math.min(1.05, G.p + dt * 2);
+      G.fall = clamp((G.pt - 0.7) / 0.6, 0, 1);
+      G.you *= Math.exp(-dt * 3); G.rv *= Math.exp(-dt * 3);
+      if (G.pt >= T_WON) { G.idx++; G.timeout = false; enterIntro(); }
+    } else if (G.phase === 'lost') {
+      G.p = Math.max(-1.05, G.p - dt * 2);
+      G.you *= Math.exp(-dt * 3); G.rv *= Math.exp(-dt * 3);
+      if (G.pt >= T_LOST && state === 'play') showEnd();
+    }
+
+    paintPad();
+    if (state === 'play') {
+      const sig = G.score + '|' + fmt1(G.you) + '|' + (G.you > G.rv + 0.05 && G.phase === 'fight');
+      if (sig !== hudCache) {
+        hudCache = sig;
+        $('hScore').textContent = G.score;
+        $('hScoreLbl').textContent = rivales(G.score);
+        $('hTps').textContent = fmt1(G.you);
+        $('hTps').classList.toggle('gana', G.phase === 'fight' && G.you > G.rv + 0.05);
+      }
+    }
+  }
+
+  // posición de los puños para un empuje p (−1 gana el rival, +1 ganás vos)
+  function handPos(p) {
+    const th = p * ANG, yT = Y0 + YT * U, FL = 1.95 * U;
+    return { x: CX + FL * Math.sin(th), y: yT - 0.12 * U - FL * Math.cos(th) };
+  }
+
+  // ---------- dibujo ----------
+  function draw(now) {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#ffc864'); g.addColorStop(1, '#ffe6ad');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+    // banderines
+    const flagC = ['#ff5d7d', '#62c6ff', '#6be0b5', '#c08bff', '#fffaf0'];
+    // banderines entre el HUD y la barra (si no hay lugar, no van)
+    const fy = TOP - 4, sag = 22, n = Math.max(6, Math.round(W / 46));
+    if (Y0 - TOP > 54) {
+    ctx.strokeStyle = INK; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, fy); ctx.quadraticCurveTo(W / 2, fy + sag * 2, W, fy); ctx.stroke();
+    }
+    for (let k = 0; k < n && Y0 - TOP > 54; k++) {
+      const t0 = (k + 0.2) / n, t1 = (k + 0.8) / n, tm = (k + 0.5) / n;
+      const yy = t => fy + sag * 4 * t * (1 - t);
+      ctx.fillStyle = flagC[k % flagC.length];
+      ctx.beginPath(); ctx.moveTo(t0 * W, yy(t0)); ctx.lineTo(t1 * W, yy(t1)); ctx.lineTo(tm * W, yy(tm) + 22); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    }
+
+    // piso de madera
+    const yT = Y0 + YT * U, floorY = yT + 0.8 * U;
+    ctx.fillStyle = '#e8a148'; ctx.fillRect(0, floorY, W, H - floorY);
+    ctx.fillStyle = '#d98f37';
+    for (let y = floorY + U * 0.7; y < H; y += U * 0.7) ctx.fillRect(0, y, W, 2);
+    ctx.fillStyle = INK; ctx.fillRect(0, floorY - 1.5, W, 3);
+
+    // estado de la escena: en el menú, una pulseada de muestra que va y viene
+    let p, rival, pMood, rMood, slide = 0, fall = 0, fighting = false, lost = false, tension = 0;
+    if (state === 'menu' || !G) {
+      p = 0.55 * Math.sin(menuT * 0.9); rival = RIVALES[0]; rMood = p > 0.3 ? 'pierde' : 'fuerza'; fighting = true; tension = 0.6;
+    } else {
+      p = G.p; rival = G.rival; slide = G.slide; fall = G.fall;
+      fighting = G.phase === 'fight'; lost = G.phase === 'lost' || state === 'end';
+      tension = fighting ? clamp((G.you + G.rv) / 14, 0.2, 1) : 0;
+      rMood = G.phase === 'won' ? 'ko' : lost ? 'gana' : !fighting ? 'calma' : p > 0.4 ? 'pierde' : p < -0.4 ? 'gana' : 'fuerza';
+    }
+    pMood = lost;
+
+    const sx = reduceMotion ? 0 : (Math.random() - 0.5) * shake, sy = reduceMotion ? 0 : (Math.random() - 0.5) * shake;
+    ctx.save(); ctx.translate(sx, sy);
+
+    drawBar(now, p, rival);
+
+    const jit = reduceMotion ? 0 : tension * U * 0.035;
+    const jx = () => (Math.random() - 0.5) * jit;
+    const s = 2.3 * U, pie = yT + 0.35 * U;
+    const px = CX - 2.95 * U + jx(), rx = CX + 2.95 * U + jx() + slide * (W * 0.6) + fall * U * 1.2;
+    const pa = 0.12 * clamp(p, -1, 1), ra = 0.12 * clamp(p, -1, 1) + fall * 0.5;
+    const pc = playerColor(), rc = rival.c;
+    // hombros: el costado de adentro de cada cubo, inclinado con el cuerpo
+    const rot = (x0, a, dx, dy) => ({ x: x0 + dx * Math.cos(a) - dy * Math.sin(a), y: pie + dx * Math.sin(a) + dy * Math.cos(a) });
+    const sp = rot(px, pa, s * 0.42, -s * 0.45), sr = rot(rx, ra, -s * 0.42, -s * 0.45);
+
+    // rival
+    drawRival(ctx, rx, pie, s, rival, rMood, now, ra);
+    // vos
+    ctx.save(); ctx.translate(px, pie); ctx.rotate(pa);
+    if (CC) CC.dibujarCubo(ctx, 0, 0, s, { mirar: 1, mareado: pMood, t: now });
+    else drawFallbackCube(s, pMood);
+    ctx.restore();
+
+    drawTable(yT);
+
+    // brazos: hombro → codo (apoyado en la mesa) → puños agarrados
+    const h = handPos(clamp(p, -1.05, 1.05));
+    const hx = h.x + jx(), hy = h.y + jx();
+    const eL = { x: CX - 0.6 * U, y: yT - 0.12 * U }, eR = { x: CX + 0.6 * U, y: yT - 0.12 * U };
+    const aw = 0.5 * U, lw = Math.max(2.5, U * 0.08);
+    const rivalHere = slide < 0.35 && fall < 0.5;
+    if (rivalHere) arm([sr, eR, { x: hx + 0.16 * U, y: hy }], rc, aw, lw);
+    arm([sp, eL, { x: hx - 0.16 * U, y: hy }], pc, aw, lw);
+    if (rivalHere) fist(hx + 0.2 * U, hy - 0.05 * U, rc, lw);
+    fist(hx - 0.2 * U, hy + 0.05 * U, pc, lw);
+
+    for (const q of particles) {
+      ctx.globalAlpha = 1 - q.age / q.life; ctx.fillStyle = q.c;
+      ctx.fillRect(q.x - q.s / 2, q.y - q.s / 2, q.s, q.s);
+    }
+    ctx.globalAlpha = 1;
+
+    // textos flotantes, cuenta regresiva y carteles
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.lineJoin = 'round'; ctx.strokeStyle = INK;
+    for (const f of floats) {
+      const a = (now - f.t) / 750;
+      ctx.globalAlpha = 1 - a;
+      ctx.font = `${Math.round(U * 0.62)}px "Lilita One", "Trebuchet MS", sans-serif`;
+      ctx.lineWidth = 5; ctx.fillStyle = f.c || PAPER;
+      const y = f.y - a * U * 0.8;
+      ctx.strokeText(f.text, f.x, y); ctx.fillText(f.text, f.x, y);
+    }
+    ctx.globalAlpha = 1;
+    let big = null;
+    if (state === 'play' && G && G.phase === 'count') {
+      const k = G.pt / (T_COUNT / 3), n = 3 - Math.floor(k);
+      if (n > 0) big = { text: String(n), a: k % 1 };
+    }
+    if (big) {
+      const pop = reduceMotion ? 1 : 1.3 - Math.min(0.3, big.a * 1.5);
+      ctx.font = `${Math.round(U * 1.5 * pop)}px "Lilita One", "Trebuchet MS", sans-serif`;
+      ctx.lineWidth = 8; ctx.fillStyle = PAPER;
+      ctx.strokeText(big.text, CX, Y0 + 3.2 * U); ctx.fillText(big.text, CX, Y0 + 3.2 * U);
+    } else if (banner && state === 'play') {
+      const a = (now - banner.t) / banner.ms, pop = reduceMotion ? 1 : a < 0.15 ? 0.6 + a / 0.15 * 0.4 : 1;
+      ctx.globalAlpha = a > 0.75 ? (1 - a) / 0.25 : 1;
+      ctx.font = `${Math.round(U * 1.05 * pop)}px "Lilita One", "Trebuchet MS", sans-serif`;
+      ctx.lineWidth = 8; ctx.fillStyle = PAPER;
+      ctx.strokeText(banner.text, CX, Y0 + 3.1 * U); ctx.fillText(banner.text, CX, Y0 + 3.1 * U);
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
+
+  // barra de fuerza: tu color va llenando desde la izquierda; si llega al rival, ganaste
+  function drawBar(now, p, rival) {
+    const bw = Math.min(8.6 * U, W - 32), bh = 0.8 * U, bx = CX - bw / 2, by = Y0 + 0.5 * U - bh / 2;
+    const frac = clamp((p + 1) / 2, 0, 1), r = bh / 2, lw = Math.max(2.5, U * 0.08);
+    ctx.fillStyle = 'rgba(29,35,64,.2)'; rr(ctx, bx, by + 4, bw, bh, r); ctx.fill();
+    ctx.save(); rr(ctx, bx, by, bw, bh, r); ctx.clip();
+    ctx.fillStyle = rival.c; ctx.fillRect(bx, by, bw, bh);
+    ctx.fillStyle = playerColor(); ctx.fillRect(bx, by, bw * frac, bh);
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(bx, by + bh * 0.12, bw, bh * 0.16);
+    ctx.restore();
+    ctx.strokeStyle = INK; ctx.lineWidth = lw; rr(ctx, bx, by, bw, bh, r); ctx.stroke();
+    // mitad
+    ctx.setLineDash([3, 4]); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(CX, by + 3); ctx.lineTo(CX, by + bh - 3); ctx.stroke(); ctx.setLineDash([]);
+    // perilla en el frente de la pelea
+    const kx = clamp(bx + bw * frac, bx + r * 0.6, bx + bw - r * 0.6), kw = U * 0.34;
+    ctx.fillStyle = PAPER; rr(ctx, kx - kw / 2, by - U * 0.16, kw, bh + U * 0.32, kw * 0.4); ctx.fill();
+    ctx.lineWidth = lw; ctx.stroke();
+
+    // textos: vos, reloj, rival
+    const ty = Y0 + 1.6 * U, fs = Math.max(12, Math.round(U * 0.4));
+    ctx.textBaseline = 'middle';
+    ctx.font = `800 ${fs}px "Rubik", system-ui, sans-serif`;
+    const inPlay = state === 'play' && G;
+    const you = inPlay ? G.you : 4 + 2.5 * (1 + Math.sin(menuT * 0.9)) / 2, rv = inPlay ? G.rv : 4.6;
+    ctx.fillStyle = INK;
+    ctx.textAlign = 'left'; ctx.fillText('Vos ' + fmt1(you) + '/s', bx, ty);
+    ctx.textAlign = 'right'; ctx.fillText((inPlay ? G.rival.nombre : rival.n) + ' ' + fmt1(rv) + '/s', bx + bw, ty);
+    if (inPlay) {
+      const D = DIFS[G.diff];
+      const left = G.phase === 'fight' ? Math.max(0, D.round - G.ft) : G.phase === 'intro' || G.phase === 'count' ? D.round : 0;
+      const txt = fmt1(left) + ' s', tw = ctx.measureText('00,0 s').width + U * 0.5, th = fs * 1.6;
+      const urgent = G.phase === 'fight' && left < 2;
+      ctx.fillStyle = urgent ? '#ff4f5e' : PAPER;
+      rr(ctx, CX - tw / 2, ty - th / 2, tw, th, th / 2); ctx.fill();
+      ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.fillText(txt, CX, ty + 1);
+    }
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  function drawTable(yT) {
+    const lw = Math.max(2.5, U * 0.08);
+    ctx.strokeStyle = INK; ctx.lineWidth = lw;
+    for (const side of [-1, 1]) {
+      ctx.fillStyle = '#a8612b'; rr(ctx, CX + side * 2.9 * U - 0.25 * U, yT + 0.6 * U, 0.5 * U, 1.0 * U, 0.12 * U); ctx.fill(); ctx.stroke();
+    }
+    ctx.fillStyle = '#b86c31'; rr(ctx, CX - 3.5 * U, yT + 0.35 * U, 7 * U, 0.45 * U, 0.12 * U); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e0954f'; rr(ctx, CX - 4 * U, yT - 0.05 * U, 8 * U, 0.5 * U, 0.16 * U); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(CX - 3.8 * U, yT + 0.04 * U, 7.6 * U, 0.08 * U);
+    // almohadillas de los codos
+    ctx.fillStyle = '#5b6382';
+    for (const side of [-1, 1]) { rr(ctx, CX + side * 0.6 * U - 0.45 * U, yT - 0.12 * U, 0.9 * U, 0.16 * U, 0.08 * U); ctx.fill(); }
+  }
+
+  function arm(pts, color, w, lw) {
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); for (const q of pts.slice(1)) ctx.lineTo(q.x, q.y);
+    ctx.strokeStyle = INK; ctx.lineWidth = w + lw * 2; ctx.stroke();
+    ctx.strokeStyle = color; ctx.lineWidth = w; ctx.stroke();
+  }
+  function fist(x, y, color, lw) {
+    ctx.fillStyle = color; ctx.strokeStyle = INK; ctx.lineWidth = lw;
+    rr(ctx, x - 0.4 * U, y - 0.4 * U, 0.8 * U, 0.8 * U, 0.26 * U); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = Math.max(1.5, lw * 0.6);
+    ctx.beginPath();
+    for (let k = -1; k <= 1; k++) { ctx.moveTo(x - 0.2 * U, y + k * 0.18 * U); ctx.lineTo(x + 0.2 * U, y + k * 0.18 * U); }
+    ctx.stroke();
+  }
+
+  function drawFallbackCube(s, dead) {
+    ctx.fillStyle = '#ffcc29'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2.5, s * 0.07);
+    rr(ctx, -s / 2, -s, s, s, s * 0.2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = INK;
+    for (const side of [-1, 1]) { rr(ctx, side * s * 0.2 + s * 0.06 - s * 0.06, -s * 0.66, s * 0.12, s * 0.2, s * 0.06); ctx.fill(); }
+    if (dead) { ctx.beginPath(); ctx.ellipse(0, -s * 0.28, s * 0.08, s * 0.06, 0, 0, Math.PI * 2); ctx.fill(); }
+  }
+
+  // cada rival es un cubo con su cara; mira a la izquierda (hacia vos)
+  function drawRival(c, x, pie, s, r, mood, now, ang = 0) {
+    const lw = Math.max(2, s * 0.07), lk = -s * 0.06;
+    c.save(); c.translate(x, pie); c.rotate(ang);
+    c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = lw;
+    const X = r.x;
+    // lo que va detrás del cuerpo
+    if (X.includes('cuernos')) {
+      c.fillStyle = PAPER;
+      for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * s * 0.22, -s * 0.95); c.quadraticCurveTo(sd * s * 0.5, -s * 1.05, sd * s * 0.52, -s * 1.3); c.quadraticCurveTo(sd * s * 0.3, -s * 1.12, sd * s * 0.08, -s * 0.98); c.closePath(); c.fill(); c.stroke(); }
+    }
+    if (X.includes('pelos')) {
+      c.fillStyle = '#ff5d2e';
+      c.beginPath(); c.moveTo(-s * 0.4, -s * 0.9);
+      for (let k = 0; k < 5; k++) { const x0 = -s * 0.4 + k * s * 0.2; c.lineTo(x0 + s * 0.1, -s * (1.22 + (k % 2) * 0.08)); c.lineTo(x0 + s * 0.2, -s * 0.92); }
+      c.closePath(); c.fill(); c.stroke();
+    }
+    if (X.includes('rodete')) { c.fillStyle = '#7a52c7'; c.beginPath(); c.arc(0, -s * 1.02, s * 0.17, 0, Math.PI * 2); c.fill(); c.stroke(); }
+    // cuerpo
+    c.fillStyle = 'rgba(29,35,64,.2)'; rr(c, -s / 2 + 3, -s + 4, s, s, s * 0.2); c.fill();
+    c.fillStyle = r.c; rr(c, -s / 2, -s, s, s, s * 0.2); c.fill(); c.stroke();
+    c.fillStyle = 'rgba(255,255,255,.35)'; rr(c, -s * 0.36, -s * 0.9, s * 0.72, s * 0.1, s * 0.05); c.fill();
+    if (X.includes('lunares')) {
+      c.fillStyle = 'rgba(232,160,60,.55)';
+      for (const [a, b, rad] of [[-0.3, -0.25, 0.06], [0.28, -0.2, 0.05], [0.33, -0.78, 0.045], [-0.34, -0.8, 0.04], [0.05, -0.12, 0.04]]) { c.beginPath(); c.arc(a * s, b * s, rad * s, 0, Math.PI * 2); c.fill(); }
+    }
+    if (X.includes('tornillos')) {
+      c.fillStyle = '#c9d3e3'; c.lineWidth = lw * 0.6;
+      for (const [a, b] of [[-0.36, -0.86], [0.36, -0.86], [-0.36, -0.14], [0.36, -0.14]]) { c.beginPath(); c.arc(a * s, b * s, s * 0.045, 0, Math.PI * 2); c.fill(); c.stroke(); }
+      c.lineWidth = lw;
+    }
+    if (X.includes('vincha')) {
+      c.fillStyle = '#ff4f5e'; c.fillRect(-s / 2 + lw / 2, -s * 0.86, s - lw, s * 0.12);
+      c.beginPath(); c.moveTo(-s / 2, -s * 0.86); c.lineTo(s / 2, -s * 0.86); c.moveTo(-s / 2, -s * 0.74); c.lineTo(s / 2, -s * 0.74); c.stroke();
+      // nudo con las puntas hacia atrás (a la derecha)
+      c.beginPath(); c.moveTo(s * 0.5, -s * 0.8); c.lineTo(s * 0.72, -s * 0.9); c.lineTo(s * 0.66, -s * 0.78); c.lineTo(s * 0.74, -s * 0.66); c.closePath(); c.fill(); c.stroke();
+    }
+
+    // ojos
+    const ey = -s * 0.56, ex = s * 0.19, eye = r.ojo || INK;
+    c.fillStyle = eye; c.strokeStyle = INK;
+    if (mood === 'ko') {
+      c.strokeStyle = eye === INK ? INK : eye; c.lineWidth = lw * 0.9;
+      for (const sd of [-1, 1]) { const x0 = sd * ex + lk, d = s * 0.07; c.beginPath(); c.moveTo(x0 - d, ey - d); c.lineTo(x0 + d, ey + d); c.moveTo(x0 + d, ey - d); c.lineTo(x0 - d, ey + d); c.stroke(); }
+      c.strokeStyle = INK; c.lineWidth = lw;
+    } else if (r.o === 'dormido' && mood !== 'pierde') {
+      c.strokeStyle = eye; c.lineWidth = lw * 0.9;
+      for (const sd of [-1, 1]) { c.beginPath(); c.arc(sd * ex + lk, ey - s * 0.02, s * 0.07, 0.1 * Math.PI, 0.9 * Math.PI); c.stroke(); }
+      c.strokeStyle = INK; c.lineWidth = lw;
+    } else if (r.o === 'lentes') {
+      c.lineWidth = lw * 0.7;
+      for (const sd of [-1, 1]) { c.fillStyle = '#fff'; c.beginPath(); c.arc(sd * ex + lk, ey, s * 0.12, 0, Math.PI * 2); c.fill(); c.stroke(); c.fillStyle = INK; c.beginPath(); c.arc(sd * ex + lk * 1.6, ey, s * 0.05, 0, Math.PI * 2); c.fill(); }
+      c.beginPath(); c.moveTo(-ex + lk + s * 0.12, ey); c.lineTo(ex + lk - s * 0.12, ey); c.stroke();
+      c.lineWidth = lw;
+    } else if (r.o === 'negros') {
+      c.fillStyle = INK;
+      rr(c, -s * 0.4 + lk, ey - s * 0.09, s * 0.8, s * 0.07, s * 0.03); c.fill();
+      for (const sd of [-1, 1]) { rr(c, sd * ex + lk - s * 0.13, ey - s * 0.08, s * 0.26, s * 0.17, s * 0.07); c.fill(); }
+      c.fillStyle = 'rgba(255,255,255,.55)'; for (const sd of [-1, 1]) c.fillRect(sd * ex + lk - s * 0.08, ey - s * 0.05, s * 0.06, s * 0.03);
+    } else if (r.o === 'cuadrados') {
+      for (const sd of [-1, 1]) { c.fillRect(sd * ex + lk - s * 0.06, ey - s * 0.07, s * 0.12, s * 0.12); }
+    } else {
+      const big = mood === 'pierde' ? 1.25 : 1;
+      for (const sd of [-1, 1]) { rr(c, sd * ex + lk - s * 0.06 * big, ey - s * 0.1 * big, s * 0.12 * big, s * 0.19 * big, s * 0.06 * big); c.fill(); }
+    }
+    // cejas
+    c.strokeStyle = INK;
+    if (X.includes('cejota')) {
+      c.lineWidth = lw * 1.6; c.beginPath(); c.moveTo(-s * 0.34 + lk, ey - s * 0.2); c.lineTo(lk, ey - s * 0.13); c.lineTo(s * 0.34 + lk, ey - s * 0.2); c.stroke(); c.lineWidth = lw;
+    } else if ((r.o === 'enojado' || mood === 'fuerza') && mood !== 'ko' && r.o !== 'negros') {
+      c.strokeStyle = r.ojo || INK; c.lineWidth = lw;
+      c.beginPath();
+      for (const sd of [-1, 1]) { c.moveTo(sd * ex + lk + sd * s * 0.12, ey - s * 0.2); c.lineTo(sd * ex + lk - sd * s * 0.08, ey - s * 0.13); }
+      c.stroke(); c.strokeStyle = INK;
+    }
+    if (X.includes('cachetes')) {
+      c.fillStyle = 'rgba(255,93,125,.5)';
+      for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(sd * s * 0.3 + lk, -s * 0.33, s * 0.08, s * 0.05, 0, 0, Math.PI * 2); c.fill(); }
+    }
+    // boca
+    const my = -s * 0.28, mc = r.ojo || INK;
+    c.strokeStyle = mc; c.fillStyle = mc; c.lineWidth = lw * 0.9;
+    if (mood === 'fuerza' || X.includes('dientes') && mood !== 'ko' && mood !== 'pierde') {
+      c.fillStyle = '#fff'; c.strokeStyle = INK;
+      rr(c, -s * 0.15 + lk, my - s * 0.05, s * 0.3, s * 0.1, s * 0.03); c.fill(); c.stroke();
+      c.lineWidth = lw * 0.5; c.beginPath(); c.moveTo(-s * 0.15 + lk, my); c.lineTo(s * 0.15 + lk, my);
+      for (const k of [-0.05, 0.05]) { c.moveTo(k * s + lk, my - s * 0.05); c.lineTo(k * s + lk, my + s * 0.05); }
+      c.stroke();
+    } else if (mood === 'gana') {
+      c.beginPath(); c.arc(lk, my - s * 0.07, s * 0.12, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke();
+    } else if (mood === 'pierde') {
+      c.beginPath(); c.ellipse(lk, my, s * 0.06, s * 0.08, 0, 0, Math.PI * 2); c.fill();
+      // gota de sudor
+      c.fillStyle = '#9fe0ff'; c.strokeStyle = INK; c.lineWidth = lw * 0.6;
+      const gy = -s * 0.86 + ((now / 500) % 1) * s * 0.12;
+      c.beginPath(); c.moveTo(s * 0.38, gy - s * 0.08); c.quadraticCurveTo(s * 0.46, gy + s * 0.02, s * 0.38, gy + s * 0.04); c.quadraticCurveTo(s * 0.3, gy + s * 0.02, s * 0.38, gy - s * 0.08); c.fill(); c.stroke();
+    } else if (mood === 'ko') {
+      c.beginPath(); c.moveTo(-s * 0.14 + lk, my);
+      for (let k = 1; k <= 4; k++) c.lineTo(-s * 0.14 + lk + k * s * 0.07, my + (k % 2 ? -1 : 1) * s * 0.03);
+      c.stroke();
+    } else {
+      c.beginPath(); c.arc(lk, my - s * 0.05, s * 0.08, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
+    }
+    c.strokeStyle = INK; c.lineWidth = lw;
+    if (X.includes('bigote')) {
+      c.fillStyle = '#3a2a1e';
+      for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(sd * s * 0.1 + lk, -s * 0.37, s * 0.11, s * 0.045, sd * 0.25, 0, Math.PI * 2); c.fill(); }
+    }
+    if (X.includes('argolla')) { c.strokeStyle = '#ffd84d'; c.lineWidth = lw * 0.8; c.beginPath(); c.arc(lk, -s * 0.38, s * 0.05, 0, Math.PI * 2); c.stroke(); c.strokeStyle = INK; c.lineWidth = lw; }
+    // lo que va arriba
+    if (X.includes('moño')) {
+      c.fillStyle = '#ff5d7d';
+      c.beginPath(); c.moveTo(s * 0.18, -s); c.lineTo(s * 0.02, -s * 1.12); c.lineTo(s * 0.02, -s * 0.9); c.closePath();
+      c.moveTo(s * 0.18, -s); c.lineTo(s * 0.34, -s * 1.12); c.lineTo(s * 0.34, -s * 0.9); c.closePath(); c.fill(); c.stroke();
+      c.beginPath(); c.arc(s * 0.18, -s, s * 0.045, 0, Math.PI * 2); c.fill(); c.stroke();
+    }
+    if (X.includes('corona')) {
+      c.fillStyle = '#ffd84d';
+      c.beginPath(); c.moveTo(-s * 0.3, -s * 0.94); c.lineTo(-s * 0.3, -s * 1.22); c.lineTo(-s * 0.15, -s * 1.08); c.lineTo(0, -s * 1.28); c.lineTo(s * 0.15, -s * 1.08); c.lineTo(s * 0.3, -s * 1.22); c.lineTo(s * 0.3, -s * 0.94); c.closePath(); c.fill(); c.stroke();
+    }
+    if (X.includes('medalla')) {
+      c.strokeStyle = '#ff4f5e'; c.lineWidth = lw * 1.2;
+      c.beginPath(); c.moveTo(-s * 0.18, -s * 0.2); c.lineTo(0, -s * 0.06); c.lineTo(s * 0.18, -s * 0.2); c.stroke();
+      c.strokeStyle = INK; c.lineWidth = lw * 0.7; c.fillStyle = '#ffd84d';
+      c.beginPath(); c.arc(0, -s * 0.04, s * 0.08, 0, Math.PI * 2); c.fill(); c.stroke();
+      c.lineWidth = lw;
+    }
+    c.restore();
+  }
+
+  // ---------- demo del menú: alternar suma, repetir no ----------
+  const dm = $('demo'), dctx = dm.getContext('2d');
+  function drawDemo(now) {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = dm.clientWidth, h = dm.clientHeight;
+    if (!w) return;
+    if (dm.width !== Math.round(w * dpr)) { dm.width = Math.round(w * dpr); dm.height = Math.round(h * dpr); }
+    const c = dctx;
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.clearRect(0, 0, w, h);
+    const cyc = 4.4, t = reduceMotion ? 1.1 : (now / 1000) % cyc, alt = t < 2.8;
+    // teclas
+    const ks = 40, gap = 10, kx0 = 14, ky = 14;
+    let pressed = 0, next = 0, fill;
+    if (alt) {
+      const k = Math.floor(t * 4), ph = (t * 4) % 1;
+      pressed = ph < 0.4 ? (k % 2 ? 1 : -1) : 0;
+      next = k % 2 ? -1 : 1;
+      if (pressed) next = -pressed;
+      fill = 0.12 + Math.min(1, t / 2.8) * 0.66;
+    } else {
+      const ph = ((t - 2.8) * 3) % 1;
+      pressed = ph < 0.4 ? -1 : 0; next = 1; fill = 0.78;
+    }
+    c.lineJoin = 'round'; c.lineCap = 'round';
+    for (const d of [-1, 1]) {
+      const x = kx0 + (d > 0 ? ks + gap : 0), on = pressed === d, y = ky + (on ? 3 : 0);
+      const wrong = on && !alt;
+      c.fillStyle = INK; rr(c, x, ky + 4, ks, ks, 9); c.fill();
+      c.fillStyle = wrong ? '#ff4f5e' : next === d && alt ? GOLD : '#fff';
+      rr(c, x, y, ks, ks, 9); c.fill(); c.strokeStyle = INK; c.lineWidth = 2.5; c.stroke();
+      c.lineWidth = 3.5; c.beginPath();
+      const ax = x + ks / 2, ay = y + ks / 2;
+      if (d < 0) { c.moveTo(ax + 5, ay - 9); c.lineTo(ax - 5, ay); c.lineTo(ax + 5, ay + 9); }
+      else { c.moveTo(ax - 5, ay - 9); c.lineTo(ax + 5, ay); c.lineTo(ax - 5, ay + 9); }
+      c.stroke();
+      if (on) {
+        c.font = '16px "Lilita One", "Trebuchet MS", sans-serif'; c.textAlign = 'center';
+        c.lineWidth = 4; c.strokeStyle = INK; c.fillStyle = wrong ? '#ff4f5e' : '#8ff0b8';
+        c.strokeText(wrong ? '✕' : '+1', ax, ky - 1 + 4); c.fillText(wrong ? '✕' : '+1', ax, ky - 1 + 4);
+      }
+    }
+    // barra
+    const bx = kx0 + ks * 2 + gap + 18, bw = Math.max(40, w - bx - 14), by = ky + 10, bh = 20;
+    c.save(); rr(c, bx, by, bw, bh, bh / 2); c.clip();
+    c.fillStyle = RIVALES[0].c; c.fillRect(bx, by, bw, bh);
+    c.fillStyle = playerColor(); c.fillRect(bx, by, bw * fill, bh);
+    c.restore();
+    c.strokeStyle = INK; c.lineWidth = 2.5; rr(c, bx, by, bw, bh, bh / 2); c.stroke();
+    c.fillStyle = PAPER; rr(c, bx + bw * fill - 5, by - 4, 10, bh + 8, 4); c.fill(); c.stroke();
+    // leyenda
+    c.font = '800 13px "Rubik", system-ui, sans-serif'; c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+    c.fillStyle = alt ? INK : '#d8243a';
+    c.fillText(alt ? '◀ ▶ ◀ ▶  alternando, empujás' : '◀ ◀  la misma flecha no suma', kx0, h - 12);
+  }
+
+  resize();
+  showMenu();
+  requestAnimationFrame(frame);
+})();
+</script>
