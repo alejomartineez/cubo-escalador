@@ -6,34 +6,10 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, existsSyn
 import { createHash } from 'node:crypto';
 import { deflateSync } from 'node:zlib';
 
-const PAGES = [
-  { src: 'hub.html', out: 'index.html',
-    desc: 'Juegos de navegador que se juegan con dos flechas. Subí de nivel, desbloqueá personajes y competí en el ranking.' },
-  { src: 'cubo-escalador.html', out: 'escalador.html',
-    desc: 'Subí escalones en zigzag con izquierda y derecha, del cielo hasta el espacio.' },
-  { src: 'modo-lluvia.html', out: 'lluvia.html',
-    desc: 'Movete entre carriles y esquivá los bloques que caen.' },
-  { src: 'modo-clasificador.html', out: 'clasificador.html',
-    desc: 'Mandá cada cubo a la caja de su color, cada vez más rápido.' },
-  { src: 'modo-equilibrio.html', out: 'equilibrio.html',
-    desc: 'Mantené el equilibrio con izquierda y derecha para que no te tire el viento.' },
-  { src: 'modo-ritmo.html', out: 'ritmo.html',
-    desc: 'Tocá izquierda o derecha justo cuando la nota llega a la línea, al ritmo de la música.' },
-  { src: 'modo-voley.html', out: 'voley.html',
-    desc: 'Vóley con dos flechas: movete, devolvé la pelota y ganale a rivales cada vez mejores.' },
-  { src: 'modo-paseo.html', out: 'paseo.html',
-    desc: 'Sacá a pasear a tu mascota alternando izquierda y derecha sin que se te escape.' },
-  { src: 'modo-serpiente.html', out: 'serpiente.html',
-    desc: 'La serpiente de siempre, pero doblás con izquierda y derecha.' },
-  { src: 'modo-cohete.html', out: 'cohete.html',
-    desc: 'Cada flecha prende un propulsor. Esquivá asteroides y no te estrelles.' },
-  { src: 'modo-esqui.html', out: 'esqui.html',
-    desc: 'Bajá en slalom entre las banderas, cada vez más rápido.' },
-  { src: 'modo-pulseada.html', out: 'pulseada.html',
-    desc: 'Alterná izquierda y derecha lo más rápido que puedas para ganar la pulseada.' },
-];
+import { PAGES, idDe } from './paginas.mjs';
 const ASSETS = ['cubo-comun.js'];
 const NOMBRE = 'Cubo Escalador';
+const SITIO = 'https://alejomartineez.github.io/cubo-escalador/';   // los links para compartir tienen que ser completos
 
 const ICON = 'data:image/svg+xml,' + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect x="3" y="3" width="26" height="26" rx="6" fill="#ffcc29" stroke="#1d2340" stroke-width="3"/><rect x="10" y="10" width="4" height="7" rx="2" fill="#1d2340"/><rect x="18" y="10" width="4" height="7" rx="2" fill="#1d2340"/></svg>');
@@ -72,14 +48,30 @@ for (const p of PAGES) {
   body = body.replace(FUENTES, (_, href) => `<link rel="stylesheet" media="print" data-fuentes href="${href}" onload="this.onload=null;this.media='all'">` +
     `<noscript><link rel="stylesheet" href="${href}"></noscript>`);
   const title = (body.match(/<title>([^<]*)<\/title>/) || [, 'Juego'])[1];
+  const titulo = title === NOMBRE ? NOMBRE : `${title} · ${NOMBRE}`;
+  const url = SITIO + (p.out === 'index.html' ? '' : p.out), imagen = `${SITIO}og/${idDe(p)}.png`;
   const html = `<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="${esc(p.desc)}">
-<meta property="og:title" content="${esc(title)}">
+<link rel="canonical" href="${url}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="${NOMBRE}">
+<meta property="og:locale" content="es_AR">
+<meta property="og:url" content="${url}">
+<meta property="og:title" content="${esc(titulo)}">
 <meta property="og:description" content="${esc(p.desc)}">
+<meta property="og:image" content="${imagen}">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${esc(titulo)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(titulo)}">
+<meta name="twitter:description" content="${esc(p.desc)}">
+<meta name="twitter:image" content="${imagen}">
 <meta name="theme-color" content="#62c6ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="${NOMBRE}">
@@ -102,6 +94,10 @@ ${CARGA_JS}
   console.log(`docs/${p.out}  <-  ${p.src}`);
 }
 for (const a of ASSETS) { copyFileSync(a, `docs/${a}`); salida.push(a); console.log(`docs/${a}`); }
+
+// imágenes para compartir el link (las dibuja og.mjs). No van a la caché del service worker: solo las piden las redes.
+mkdirSync('docs/og');
+for (const p of PAGES) { const f = `og/${idDe(p)}.png`; if (existsSync(f)) copyFileSync(f, `docs/${f}`); else console.warn(`Falta ${f}: corré node og.mjs`); }
 
 // ---------- íconos PNG (el cubo amarillo sobre celeste), dibujados píxel por píxel ----------
 function png(n) {

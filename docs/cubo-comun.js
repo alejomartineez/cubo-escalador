@@ -594,6 +594,20 @@
 .cc-difs.compacto{padding:3px;border-radius:14px}
 .cc-difs.compacto .cc-dif{min-height:42px;padding:4px 2px;border-radius:10px;font-size:12px}
 .cc-difs.compacto .cc-dif small{display:none}
+/* casita para volver a los juegos: a la izquierda del nombre del juego, o arriba a la izquierda de la tarjeta */
+.card button.cc-casa{position:relative!important;flex:none;z-index:3;display:grid!important;place-items:center;
+  width:46px!important;height:46px!important;min-width:0!important;min-height:0!important;margin:0!important;padding:0!important;
+  border:2.5px solid ${INK}!important;border-radius:14px!important;background:#fff!important;color:${INK}!important;
+  box-shadow:0 3px 0 ${INK}!important;cursor:pointer;opacity:1!important;transition:transform .08s}
+.card button.cc-casa.esquina{position:absolute!important;top:12px!important;left:12px!important}
+.card button.cc-casa[hidden]{display:none!important}
+.cc-cabeza{display:flex;align-items:center;gap:10px}
+.cc-cabeza>.brand{flex:1;min-width:0}
+.cc-con-casa .result h2{padding-inline:50px}
+.card button.cc-casa svg{width:25px;height:25px;margin:0}
+.card button.cc-casa:hover{background:#fff4c7!important}
+.card button.cc-casa:active{transform:translateY(2px);box-shadow:0 1px 0 ${INK}!important}
+.card button.cc-casa:focus-visible{outline:3px solid #62c6ff;outline-offset:2px}
 /* leyenda de teclas: información, no botones (sin sombra, más tenue) */
 .cc-teclas{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin:0;font:600 12px/1.2 "Rubik",system-ui,sans-serif;color:${INK};opacity:.8}
 .cc-teclas .g{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
@@ -757,6 +771,38 @@
     }, { passive: false });
     addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
   })();
+
+  // El botón "Juegos" del menú y del final se convierte en una casita en la esquina de la tarjeta (el texto chiquito no se veía).
+  // Sigue siendo el mismo botón, así que lo que hace al tocarlo, y cuándo se esconde, lo sigue manejando cada juego.
+  const CASA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 9.8v9.7h5V14h3v5.5h5V9.8"/></svg>';
+  function casita() {
+    for (const b of document.querySelectorAll('.overlay .card button')) {
+      if (!/Juegos\s*$/.test(b.textContent)) continue;
+      estilos();
+      const card = b.closest('.card'), fila = b.parentElement, brand = card.querySelector(':scope > .brand');
+      b.className = 'cc-casa';
+      b.innerHTML = CASA;
+      b.setAttribute('aria-label', 'Volver a los juegos');
+      b.title = 'Volver a los juegos';
+      if (fila !== card && fila === card.firstElementChild) continue;   // ya está en la fila de arriba, con Ranking y Sonido
+      if (brand) {
+        // menú: la casita a la izquierda del nombre del juego, en la misma fila
+        const cabeza = document.createElement('div');
+        cabeza.className = 'cc-cabeza';
+        cabeza.style.margin = getComputedStyle(brand).margin;   // el espacio que tenía el nombre lo toma la fila
+        brand.style.margin = '0';
+        brand.before(cabeza);
+        cabeza.append(b, brand);
+      } else {
+        // final: en la esquina de la tarjeta
+        if (getComputedStyle(card).position === 'static') card.style.position = 'relative';
+        b.classList.add('esquina');
+        card.classList.add('cc-con-casa');
+        card.prepend(b);
+      }
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', casita); else casita();
 
   // ---------- avisos (nivel y logros), uno debajo del otro ----------
   function avisar(html, ms = 3200) {

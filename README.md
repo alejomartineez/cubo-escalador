@@ -39,6 +39,8 @@ Controles: `←` `→` o `A` `D` en la compu, `R` reinicia; botones grandes y �
 - `cubo-comun.js`: perfil compartido (nivel, XP, personajes, efectos, logros, récords), ranking, selector de dificultad y el dibujo del cubo.
 - `supabase.sql`: tablas y función del ranking. Se corre una vez en el SQL Editor de Supabase.
 - `build.mjs`: arma `docs/` con las páginas, el manifest, los íconos y el service worker para jugar sin conexión.
+- `paginas.mjs`: la lista de páginas con su descripción (la que aparece al compartir el link).
+- `og.mjs` y `og/`: las imágenes que se ven al compartir el link (una por juego), dibujadas con Chrome a partir de `og/plantilla.html`.
 
 ## Cómo actualizar el sitio
 
@@ -51,4 +53,4 @@ git commit -m "Actualizar juegos"
 git push
 ```
 
-`build.mjs` arma la carpeta `docs/`, que es la que publica GitHub Pages. Para sumar un juego, agregalo a `PAGES` en `build.mjs`, a `JUEGOS` en `cubo-comun.js` y su dibujo a `DIBUJOS` en `hub.html`.
+`build.mjs` arma la carpeta `docs/`, que es la que publica GitHub Pages. Para sumar un juego, agregalo a `PAGES` en `paginas.mjs` (y corré `node og.mjs` para su imagen), a `JUEGOS` en `cubo-comun.js` y su dibujo a `DIBUJOS` en `hub.html`.

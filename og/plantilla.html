@@ -1,0 +1,85 @@
+<!doctype html>
+<!-- Plantilla de las imágenes para compartir (1200×630). La usa og.mjs: ?id=<juego>&d=<descripción>, o ?id=hub. -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:wght@600;800&display=swap">
+<style>html,body{margin:0;width:1200px;height:630px;overflow:hidden}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1200" height="630"></canvas>
+<script src="../cubo-comun.js"></script>
+<script>
+(async () => {
+  const CC = window.CuboComun, INK = '#1d2340', CREMA = '#fffaf0';
+  const q = new URLSearchParams(location.search), id = q.get('id') || 'hub';
+  const hub = id === 'hub', juego = CC.JUEGOS.find(j => j.id === id);
+  const SKIN_DE = { escalador: 'clasico', lluvia: 'abeja', clasificador: 'robot', equilibrio: 'ninja', ritmo: 'dj', voley: 'gorra',
+    paseo: 'gato', serpiente: 'rana', cohete: 'astronauta', esqui: 'pinguino', pulseada: 'vaquero' };
+  const sk = n => CC.SKINS.find(s => s.id === n);
+  const color = hub ? '#62c6ff' : juego.color;
+  await document.fonts.load('80px "Lilita One"'); await document.fonts.load('800 30px Rubik'); await document.fonts.load('600 30px Rubik');
+
+  const c = document.getElementById('c'), x = c.getContext('2d');
+  const rr = (X, Y, W, H, R) => { x.beginPath(); x.roundRect(X, Y, W, H, R); };
+
+  // fondo del color del juego, con nubes suaves
+  x.fillStyle = color; x.fillRect(0, 0, 1200, 630);
+  x.fillStyle = 'rgba(255,255,255,.22)';
+  for (const [cx, cy, r] of [[90, 80, 60], [150, 70, 45], [1080, 110, 70], [1010, 120, 50], [700, 40, 40], [760, 50, 30]]) { x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill(); }
+
+  // escalones en zigzag a la derecha, con cubos arriba
+  const escalon = (ex, ey, w) => { x.fillStyle = 'rgba(29,35,64,.18)'; rr(ex + 5, ey + 7, w, 30, 10); x.fill(); x.fillStyle = CREMA; x.strokeStyle = INK; x.lineWidth = 5; rr(ex, ey, w, 30, 10); x.fill(); x.stroke(); };
+  const t = 1200;
+  if (hub) {
+    const fila = ['mago', 'fenix', 'clasico', 'astronauta', 'dj'];
+    const pos = [[760, 520, 92], [880, 430, 104], [1000, 340, 130], [880, 250, 96], [1040, 170, 88]];
+    pos.forEach(([px, py, s], i) => { escalon(px - s * 0.75, py, s * 1.5); CC.dibujarCubo(x, px, py, s, { skin: sk(fila[i]), efecto: false, t, mirar: i % 2 ? 1 : -1 }); });
+  } else {
+    const pasos = [[740, 560], [870, 470], [1000, 380]];
+    pasos.forEach(([px, py]) => escalon(px - 80, py, 160));
+    CC.dibujarCubo(x, 1000, 380, 170, { skin: sk(SKIN_DE[id]) || sk('clasico'), efecto: false, t, mirar: -1 });
+  }
+
+  // textos a la izquierda
+  const marca = (mx, my) => {
+    x.fillStyle = '#ffcc29'; x.strokeStyle = INK; x.lineWidth = 4; rr(mx, my, 44, 44, 11); x.fill(); x.stroke();
+    x.fillStyle = INK; rr(mx + 12, my + 12, 6, 12, 3); x.fill(); rr(mx + 26, my + 12, 6, 12, 3); x.fill();
+    x.font = '800 26px Rubik'; x.textBaseline = 'middle'; x.fillText('Cubo Escalador', mx + 60, my + 23);
+  };
+  const envolver = (txt, maxW) => {
+    const lineas = []; let l = '';
+    for (const p of txt.split(' ')) { const prueba = l ? l + ' ' + p : p; if (x.measureText(prueba).width > maxW && l) { lineas.push(l); l = p; } else l = prueba; }
+    if (l) lineas.push(l); return lineas;
+  };
+  const titulo = hub ? 'Cubo Escalador' : juego.nombre;
+  const desc = hub ? '11 juegos que se juegan con dos flechas. Subí de nivel, desbloqueá personajes y competí en el ranking.' : (q.get('d') || '');
+  x.textBaseline = 'alphabetic'; x.fillStyle = INK;
+  if (!hub) marca(64, 58);
+  let tam = hub ? 92 : 120;
+  x.font = `${tam}px "Lilita One"`;
+  while (x.measureText(titulo).width > 600 && tam > 60) { tam -= 4; x.font = `${tam}px "Lilita One"`; }
+  const ty = hub ? 205 : 245;
+  x.lineJoin = 'round'; x.strokeStyle = CREMA; x.lineWidth = 14; x.strokeText(titulo, 64, ty); x.fillText(titulo, 64, ty);
+  x.font = '600 31px Rubik';
+  const lineas = envolver(desc, 600).slice(0, 3);
+  lineas.forEach((l, i) => x.fillText(l, 66, ty + (hub ? 62 : 74) + i * 42));
+
+  // teclas ← → abajo
+  const tecla = (kx, ky, flecha) => {
+    x.fillStyle = INK; rr(kx, ky + 6, 74, 70, 16); x.fill();
+    x.fillStyle = '#ffcc29'; x.strokeStyle = INK; x.lineWidth = 4.5; rr(kx, ky, 74, 70, 16); x.fill(); x.stroke();
+    x.lineWidth = 7; x.lineCap = 'round'; x.beginPath();
+    const m = kx + 37, n = ky + 35, d = flecha === 'L' ? -1 : 1;
+    x.moveTo(m + 10 * d * -1 + 0, n - 15); x.lineTo(m + 10 * d, n); x.lineTo(m - 10 * d, n + 15); x.stroke();
+  };
+  const ky = 500;
+  tecla(64, ky, 'L'); tecla(152, ky, 'R');
+  x.fillStyle = INK; x.font = '800 27px Rubik'; x.textBaseline = 'middle';
+  x.fillText(hub ? 'Gratis, en el navegador' : 'Se juega con dos flechas', 250, ky + 37);
+
+  document.title = 'listo';
+})();
+</script>
+</body>
+</html>
