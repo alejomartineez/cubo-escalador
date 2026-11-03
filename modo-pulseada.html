@@ -65,7 +65,7 @@ body {
 .smallbtn {
   pointer-events: auto; font: 800 13px var(--body); color: var(--ink);
   background: var(--paper); border: 2px solid var(--ink); border-radius: 999px;
-  padding: 5px 12px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; white-space: nowrap;
+  padding: 5px 12px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; min-height: 40px; min-width: 44px; white-space: nowrap;
 }
 .smallbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 .hbtns { display: flex; gap: 8px; }
@@ -175,7 +175,7 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .btn.small { padding: 10px; font-size: 15px; }
 .btn svg { width: 18px; height: 18px; flex: none; }
 .btn.primary { background: var(--cube); }
-.btn.big { font: 400 26px var(--display); padding: 12px 10px; }
+.btn.big { font: 400 26px var(--display); padding: 12px 10px; -webkit-text-stroke: 0; text-shadow: none; }
 @media (pointer: coarse) { .kbd-only { display: none; } }
 .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
@@ -224,11 +224,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 /* 2. secundarios (Ranking): blancos, borde fino y sombra corta */
 .card .btn:not(.primary) { background: #fff; border-width: 2px; box-shadow: 0 2px 0 var(--ink); font-family: var(--body); font-weight: 800; font-size: 15px; }
 .card .btn:not(.primary):active { transform: translateY(2px); box-shadow: none; }
-/* 3. navegación y ajustes (← Juegos, ⌂ Juegos, Sonido): solo texto, sin caja */
-.card .ter { background: transparent !important; border-color: transparent !important; box-shadow: none !important; color: var(--ink);
-  font: 800 14px var(--body) !important; opacity: .72; padding: 8px 10px !important; min-height: 0; }
-.card .ter:hover { opacity: 1; background: rgba(29, 35, 64, .07) !important; }
-.card .ter:active { transform: none; }
+/* 3. ajustes (Sonido, Calibrar, Modos): chicos y sin relleno, pero con borde y sombra para que se vean como botón */
+.card .ter { background: transparent !important; border: 2px solid var(--ink) !important; box-shadow: 0 2px 0 var(--ink) !important; color: var(--ink);
+  font: 800 14px var(--body) !important; padding: 8px 14px !important; min-height: 44px; opacity: 1; }
+.card .ter:hover { background: rgba(255, 255, 255, .7) !important; }
+.card .ter:active { transform: translateY(2px); box-shadow: 0 0 0 var(--ink) !important; }
 /* 4. teclas de la demo: muestran cómo se juega, no son botones */
 .card .key { box-shadow: none !important; border-style: dashed !important; border-width: 2px !important; background: rgba(255, 255, 255, .55) !important; }
 .card .key.on { background: var(--cube) !important; border-style: solid !important; transform: none !important; }
@@ -311,6 +311,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 </div>
 
 <script src="cubo-comun.js"></script>
+<script src="cubo-duelo.js"></script>
 <script>
 (() => {
   'use strict';
@@ -375,6 +376,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (e === 'remonta') return { m: t < 3 ? 0.86 : 1.08, tiron: false };
     if (e === 'tirones') { const on = (t % 2.2) > 1.5; return { m: on ? 1.28 : 0.9, tiron: on }; }
     return { m: 1 + 0.06 * Math.sin(t * 2.3), tiron: false };
+  }
+
+  // ---------- duelo 1v1 en vivo contra un amigo (cubo-duelo.js) ----------
+  // El que retó (host) hace la cuenta de la barra con su fuerza y la que le manda el otro, y avisa quién gana cada ronda.
+  // El otro predice la barra con lo que tiene y la va corrigiendo con la del host. Al mejor de 3.
+  const CD = window.CuboDuelo, DUELO = CD ? CD.partida() : null;
+  const RONDAS = 2;   // rondas para ganar
+  let sala = null, rivalDuelo = null;
+  if (DUELO) {
+    const sk = CD.skinDe(DUELO.rival.skin);
+    rivalDuelo = { n: DUELO.rival.apodo, nombre: DUELO.rival.apodo, c: sk.cuerpo || '#ffcc29', o: 'negros', x: [], e: 'parejo', jefe: false };
   }
 
   // ---------- récords propios (el récord de rivales lo guarda cubo-comun) ----------
@@ -445,7 +457,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     enterIntro();
   }
   function enterIntro() {
-    G.phase = 'intro'; G.pt = 0; G.rival = rivalDe(G.idx); G.slide = G.idx === 0 ? 0 : 1; G.fall = 0;
+    G.phase = 'intro'; G.pt = 0; G.rival = G.duelo ? rivalDuelo : rivalDe(G.idx); G.slide = G.idx === 0 ? 0 : 1; G.fall = 0;
+    if (G.duelo) { G.duelo.ya = 0; G.duelo.p = 0; G.duelo.elYou = 0; G.p = 0; }
     G.f = 0; G.you = 0; G.r1 = 0; G.rv = 0; G.ft = 0; G.next = 0; G.taps = [];
     showCartel();
   }
@@ -456,6 +469,20 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   function showCartel() {
     const r = G.rival, c = $('cartel');
+    if (G.duelo) {
+      const Du = G.duelo;
+      $('cNum').textContent = 'Duelo · Ronda ' + Du.ronda;
+      $('cName').textContent = r.nombre;
+      $('cPide').textContent = `Vos ${Du.yo} – ${Du.el} ${r.nombre}`;
+      $('cEstilo').textContent = 'Gana el primero en llevarse 2 rondas.';
+      c.classList.remove('jefe');
+      const fc = $('cFace').getContext('2d');
+      fc.setTransform(1, 0, 0, 1, 0, 0); fc.clearRect(0, 0, 144, 144);
+      drawRival(fc, 72, 126, 96, r, 'calma', 0);
+      c.hidden = false;
+      c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
+      return;
+    }
     $('cNum').textContent = 'Rival ' + (G.idx + 1) + (r.jefe ? ' · ¡Jefe!' : '');
     c.classList.toggle('jefe', !!r.jefe);
     if (r.jefe && G.idx > 0) sfxJefe();
@@ -552,6 +579,82 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
   }
 
+  // ---------- duelo ----------
+  function empezarDuelo() {
+    CD.cerrarCapa();
+    state = 'play';
+    $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').classList.remove('off');
+    $('btnRestart').hidden = true;
+    resize();
+    G = null;
+    newRunDuelo();
+    $('hDiff').textContent = '⚔️ ' + DUELO.rival.apodo;
+    hudCache = '';
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  }
+  function newRunDuelo() {
+    G = {
+      diff: 'normal', score: 0, idx: 0, rival: rivalDuelo, phase: 'intro', pt: 0,
+      p: 0, f: 0, you: 0, r1: 0, rv: 0, ft: 0, next: 0, taps: [], best: 0,
+      wrong: 0, valid: 0, timeout: false, settled: true, tironOn: false, lastBad: 0, slide: 1, fall: 0,
+      duelo: { ronda: 1, yo: 0, el: 0, ya: 0, p: 0, elYou: 0, tx: 0, fin: false },
+    };
+    particles = []; floats = []; banner = null;
+    enterIntro();
+  }
+  function peleaDuelo(now, dt, a2) {
+    const Du = G.duelo;
+    G.rv += (Du.elYou - G.rv) * a2;   // la fuerza del otro llega por la red y pasa por el mismo filtro
+    if (now - Du.tx > 66) { Du.tx = now; sala.enviar(sala.host ? 'e' : 'f', sala.host ? { p: G.p, you: G.you, n: Du.ronda } : { you: G.you, n: Du.ronda }); }
+    G.p = clamp(G.p + K * (G.you - G.rv) * dt, -1, 1);
+    if (!sala.host) { G.p += (Du.p - G.p) * Math.min(1, dt * 8); return; }
+    let gana = null;
+    if (G.p >= 1) gana = 'host';
+    else if (G.p <= -1) gana = 'guest';
+    else if (G.ft >= DIFS.normal.round) { G.timeout = true; gana = G.p >= 0 ? 'host' : 'guest'; }
+    if (gana) { sala.enviar('r', { gana, n: Du.ronda, t: G.timeout }); terminarRonda(gana === 'host', now); }
+  }
+  function terminarRonda(gane, now) {
+    const Du = G.duelo;
+    if (gane) Du.yo++; else Du.el++;
+    if (gane) winRound(now); else loseRound(now);
+  }
+  function finRonda() {
+    const Du = G.duelo;
+    if (Du.yo < RONDAS && Du.el < RONDAS) { Du.ronda++; G.timeout = false; enterIntro(); return; }
+    if (Du.fin) return;
+    Du.fin = true; state = 'duelo';
+    $('pad').classList.add('off'); $('cartel').hidden = true; showTip(false);
+    const gane = Du.yo > Du.el, xp = gane ? 40 : 15;
+    if (CC) CC.sumarXP(xp);
+    CD.resultado(sala, { gane, texto: `Rondas: <b>${Du.yo} – ${Du.el}</b>`, nota: `+${xp} XP · Tu mejor ritmo: ${fmt1(G.best)} toques/s` });
+  }
+  function conectarDuelo() {
+    $('menu').hidden = true;
+    sala = CD.sala(DUELO, {
+      alConectar: () => sala.listo(),
+      alEmpezar: () => empezarDuelo(),
+      alMensaje(ev, d) {
+        if (!G || !G.duelo) return;
+        const Du = G.duelo;
+        if (d.n !== Du.ronda) return;
+        if (ev === 'f' && sala.host) Du.elYou = +d.you || 0;
+        else if (ev === 'e' && !sala.host) { Du.p = -(+d.p || 0); Du.elYou = +d.you || 0; }
+        else if (ev === 'ya' && !sala.host) Du.ya = d.n;
+        else if (ev === 'r' && !sala.host && (G.phase === 'fight' || G.phase === 'count' || G.phase === 'intro')) { G.timeout = !!d.t; terminarRonda(d.gana === 'guest', performance.now()); }
+      },
+      alIrse() {
+        const jugando = state === 'play' && G && G.duelo && !G.duelo.fin;
+        if (G && G.duelo) G.duelo.fin = true;
+        state = 'duelo'; $('pad').classList.add('off'); $('cartel').hidden = true; showTip(false);
+        const quien = DUELO.rival.apodo.replace(/</g, '&lt;');
+        CD.resultado(sala, jugando ? { gane: true, sinRevancha: true, texto: `${quien} se fue del duelo.` }
+          : { titulo: 'Se fue', sinRevancha: true, texto: `${quien} salió del duelo.` });
+      },
+    });
+    CD.esperandoRival(sala);
+  }
+
   // ---------- pantallas ----------
   // selector común; sin la librería, uno mínimo con los mismos ids
   const NOTAS = {
@@ -643,6 +746,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (rankOpen()) return;
     const k = e.key;
     const left = k === 'ArrowLeft' || k === 'a' || k === 'A', right = k === 'ArrowRight' || k === 'd' || k === 'D';
+    if (DUELO && state !== 'play') return;
+    if (DUELO && (k === 'r' || k === 'R' || k === 'Escape')) return;
     if ((k === 'r' || k === 'R') && (state === 'play' || state === 'end')) { e.preventDefault(); if (!e.repeat) restart(); return; }
     if (state === 'play') {
       // mantener apretada la tecla no suma: solo cuenta cada pulsación nueva
@@ -667,7 +772,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   bindPad(bL, -1); bindPad(bR, 1);
   cv.addEventListener('pointerdown', e => { if (state === 'play') { e.preventDefault(); press(e.clientX < W / 2 ? -1 : 1, performance.now()); } });
   $('btnPlay').addEventListener('click', start);
-  $('btnQuit').addEventListener('click', () => { if (G && G.score > 0) finish(); CC ? CC.volver() : showMenu(); });
+  $('btnQuit').addEventListener('click', () => {
+    if (DUELO) { if (sala && confirm('¿Salir del duelo? Lo perdés.')) sala.salir(); return; }
+    if (G && G.score > 0) finish(); CC ? CC.volver() : showMenu();
+  });
   $('btnRestart').addEventListener('pointerdown', e => { e.preventDefault(); restart(); });
   $('btnRestart').addEventListener('click', e => { if (e.detail === 0) restart(); });
   $('btnBack').hidden = !CC;
@@ -726,7 +834,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     } else if (G.phase === 'count') {
       const n = 3 - Math.floor(G.pt / (tCount() / 3));
       if (n !== G.lastCount && n > 0) { G.lastCount = n; sfxCount(n); }
-      if (G.pt >= tCount()) {
+      if (G.duelo ? (sala.host ? G.pt >= tCount() : G.duelo.ya === G.duelo.ronda) : G.pt >= tCount()) {
+        if (G.duelo && sala.host) sala.enviar('ya', { n: G.duelo.ronda });
         G.phase = 'fight'; G.pt = 0; G.p = 0;
         sfxCount(0); banner = { text: '¡Ya!', t: now, ms: 600 };
       }
@@ -735,6 +844,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       // tu fuerza: cada toque válido suma 1 a un acumulador que se va vaciando; la del rival pasa por el mismo filtro
       G.f *= Math.exp(-dt / TAU1);
       G.you += (G.f / TAU1 - G.you) * a2;
+      if (G.duelo) peleaDuelo(now, dt, a2);
+      else {
       const fo = forma(G.rival.e, G.ft);
       if (fo.tiron && !G.tironOn) { sfxTiron(); floats.push({ text: '¡Tirón!', x: CX + U * 2.6, y: Y0 + 3.6 * U, t: now, c: G.rival.c }); }
       G.tironOn = fo.tiron;
@@ -744,15 +855,16 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (G.p >= 1) winRound(now);
       else if (G.p <= -1) loseRound(now);
       else if (G.ft >= D.round) { G.timeout = true; G.p > 0 ? winRound(now) : loseRound(now); }
+      }
     } else if (G.phase === 'won') {
       G.p = Math.min(1.05, G.p + dt * 2);
       G.fall = clamp((G.pt - 0.7) / 0.6, 0, 1);
       G.you *= Math.exp(-dt * 3); G.rv *= Math.exp(-dt * 3);
-      if (G.pt >= T_WON) { G.idx++; G.timeout = false; enterIntro(); }
+      if (G.pt >= T_WON) { if (G.duelo) finRonda(); else { G.idx++; G.timeout = false; enterIntro(); } }
     } else if (G.phase === 'lost') {
       G.p = Math.max(-1.05, G.p - dt * 2);
       G.you *= Math.exp(-dt * 3); G.rv *= Math.exp(-dt * 3);
-      if (G.pt >= T_LOST && state === 'play') showEnd();
+      if (G.pt >= T_LOST && state === 'play') { if (G.duelo) finRonda(); else showEnd(); }
     }
 
     paintPad();
@@ -761,7 +873,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (sig !== hudCache) {
         hudCache = sig;
         $('hScore').textContent = G.score;
-        $('hScoreLbl').textContent = rivales(G.score);
+        $('hScoreLbl').textContent = G.duelo ? (G.score === 1 ? 'ronda' : 'rondas') : rivales(G.score);
         $('hTps').textContent = fmt1(G.you);
         $('hTps').classList.toggle('gana', G.phase === 'fight' && G.you > G.rv + 0.05);
       }
@@ -916,7 +1028,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const you = inPlay ? G.you : 4 + 2.5 * (1 + Math.sin(menuT * 0.9)) / 2, rv = inPlay ? G.rv : 4.6;
     ctx.fillStyle = INK;
     ctx.textAlign = 'left'; ctx.fillText('Vos ' + fmt1(you) + '/s', bx, ty);
-    ctx.textAlign = 'right'; ctx.fillText((inPlay ? G.rival.nombre : rival.n) + ' ' + fmt1(rv) + '/s', bx + bw, ty);
+    // el nombre del rival no puede pisar el reloj del medio (en un duelo es el apodo de tu amigo, que puede ser largo)
+    const lado = bw / 2 - (ctx.measureText('00,0 s').width + U * 0.5) / 2 - 6, cola = ' ' + fmt1(rv) + '/s';
+    let nom = inPlay ? G.rival.nombre : rival.n;
+    if (ctx.measureText(nom + cola).width > lado) { while (nom.length > 1 && ctx.measureText(nom + '…' + cola).width > lado) nom = nom.slice(0, -1); nom += '…'; }
+    ctx.textAlign = 'right'; ctx.fillText(nom + cola, bx + bw, ty);
     if (inPlay) {
       const D = DIFS[G.diff];
       const left = G.phase === 'fight' ? Math.max(0, D.round - G.ft) : G.phase === 'intro' || G.phase === 'count' ? D.round : 0;
@@ -1157,6 +1273,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   resize();
   showMenu();
+  if (DUELO) conectarDuelo();
   requestAnimationFrame(frame);
 })();
 </script>

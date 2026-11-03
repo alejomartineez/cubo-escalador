@@ -42,6 +42,13 @@ button { font: inherit; color: var(--ink); }
 }
 .install svg { width: 20px; height: 20px; flex: none; }
 .install:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.amigos-btn {
+  position: relative; flex: none; display: flex; align-items: center; justify-content: center; gap: 6px; height: 52px; min-width: 52px; padding: 0 12px; cursor: pointer;
+  background: var(--cube); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink);
+  font: 400 17px var(--display); white-space: nowrap;
+}
+.amigos-btn svg { width: 24px; height: 24px; flex: none; }
+.amigos-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 .me {
   position: relative; display: flex; align-items: center; gap: 8px; cursor: pointer;
   background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink);
@@ -231,8 +238,7 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
 
 /* ---------- jerarquía: Jugar es lo principal; flechas, "Todos" y pestañas, secundarios ---------- */
 .arrow, .all { box-shadow: 0 2px 0 var(--ink); border-width: 2.5px; }
-.all { background: transparent; border-color: transparent; box-shadow: none; }
-.all:hover { background: rgba(255, 255, 255, .35); }
+.all:hover, .arrow:hover { background: #fff; }
 .icon-btn { box-shadow: 0 3px 0 var(--ink); border-width: 2.5px; }
 .play { box-shadow: 0 6px 0 var(--ink); font-size: 24px; }
 /* pestañas: una sola barra con la sección actual marcada, no cuatro botones sueltos */
@@ -242,6 +248,27 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
 .tab span:not(.badge) { font-size: 11.5px; white-space: nowrap; }
 .tab[aria-current="page"] { background: var(--cube); box-shadow: inset 0 0 0 2.5px var(--ink); }
 .tab:active { transform: scale(.96); box-shadow: none; }
+.tab:not([aria-current="page"]):hover { background: rgba(29, 35, 64, .07); }
+
+/* ---------- que todo lo tocable se vea tocable: borde, sombra abajo y respuesta al apretar ---------- */
+.x { box-shadow: 0 3px 0 var(--ink); }
+.x:hover { background: #fff4c7; }
+.x:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.mini:hover, .item:not(.lock):not(.leg):not(.pase):not([aria-pressed="true"]):hover, .jg:hover { background: #fff4c7; }
+.amigo button.vs { color: var(--ink); }
+.amigo button.vs:active, .amigo-form button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+/* peligro: quitar un amigo (rojo, pero con caja como los demás) */
+.amigo button.quitar { flex: none; width: 44px; height: 44px; border: 2.5px solid var(--ink); border-radius: 12px; background: #fff; color: #b3122a;
+  box-shadow: 0 3px 0 var(--ink); font-weight: 800; font-size: 18px; }
+.amigo button.quitar:hover { background: #ffe3e8; }
+.amigo button.quitar:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+/* elegir dentro de un grupo: lo elegido en amarillo, como las dificultades y el ranking */
+.seg button[aria-pressed="true"] { background: var(--cube); }
+.seg button:not([aria-pressed="true"]):hover { background: rgba(255, 255, 255, .65); }
+/* los puntitos son chicos: el área para tocarlos es más alta que el dibujo */
+.dots button { position: relative; }
+.dots button::after { content: ""; position: absolute; inset: -16px -3px; }
+button:disabled { cursor: not-allowed; opacity: .55; box-shadow: none; transform: none; }
 
 /* en la compu todo un poco más grande (--ui lo calcula cubo-comun.js) */
 .top, .pager, .info, .tabs, .coach, .sheet .card { zoom: var(--ui, 1); }
@@ -262,17 +289,6 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
 .item.leg .badge { top: auto; bottom: -8px; }
 .item.leg.lock { background: #2b2f4a; color: #c9cfe6; box-shadow: none; border-style: dashed; }
 .item.leg.lock canvas { opacity: 1; filter: brightness(0) invert(.18); }
-/* exclusivas del pase: calidad naranja */
-.sub-h.pase-h { color: #c25a00; }
-.sub-h.pase-h::after { background: linear-gradient(90deg, #ffb341, #ff7a1a); }
-.item.pase { background: linear-gradient(160deg, #fff1dc, #ffd6a3); }
-.item.pase[aria-pressed="true"] { background: linear-gradient(160deg, #ffc061, #ff9a2e); }
-.item.pase::before {
-  content: "Pase"; position: absolute; top: -9px; left: 50%; transform: translateX(-50%); white-space: nowrap;
-  padding: 1px 7px; border-radius: 99px; border: 2px solid var(--ink); background: #ff8a1f; color: var(--ink); font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
-}
-.item.pase .badge { top: auto; bottom: -8px; }
-.item.pase.lock { background: #ffe9cf; color: #9a5a1c; }
 .item .formas-n { font-size: 10px; font-weight: 800; color: #c25a00; text-transform: uppercase; letter-spacing: .04em; }
 .formas-box { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 10px; padding: 14px 10px 10px;
   border: 2.5px dashed #ff8a1f; border-radius: 16px; background: #fff6ea; position: relative; }
@@ -282,7 +298,7 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
 .seg.tres { grid-template-columns: repeat(4, auto); }
 .seg.tres button { font-size: 13px; padding: 0 2px; }
 
-/* pase de batalla */
+/* camino de nivel */
 .pase-b { gap: 12px; }
 .pase-b > * { flex: none; }
 .pase-hero { position: relative; display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 20px; overflow: hidden;
@@ -304,7 +320,6 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
 .pase-stats div { padding: 8px 6px; border-radius: 14px; background: #fff; border: 2.5px solid var(--ink); text-align: center; }
 .pase-stats b { display: block; font-family: var(--display); font-weight: 400; font-size: 22px; line-height: 1; }
 .pase-stats span { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-.pase-stats .naranja b { color: #e06a00; }
 .pase-sig { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; background: #fff6ea; border: 2.5px dashed #ff8a1f; }
 .pase-sig canvas { width: 56px; height: 62px; flex: none; }
 .pase-sig .tt-ico { width: 56px; height: 56px; flex: none; display: grid; place-items: center; border-radius: 12px; background: #ffe2bd; font-size: 26px; }
@@ -371,7 +386,14 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 .amigo .nm { flex: 1; min-width: 0; font-weight: 800; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .amigo .nm small { display: block; font-size: 11px; font-weight: 700; color: var(--muted); }
 .amigo .vs { height: 40px; padding: 0 12px; border-radius: 12px; border: 2.5px solid var(--ink); background: #ff5d7d; color: #fff; box-shadow: 0 3px 0 var(--ink); font-family: var(--display); font-size: 16px; cursor: pointer; }
+.amigo .retar { height: 40px; padding: 0 12px; border-radius: 12px; border: 2.5px solid var(--ink); background: var(--cube); box-shadow: 0 3px 0 var(--ink); font-family: var(--display); font-size: 16px; cursor: pointer; white-space: nowrap; }
+.amigo .retar:active, .amigo .vs:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.amigo .vs { background: #fff; color: var(--ink); }
 .amigo .quitar { width: 32px; height: 32px; border-radius: 10px; border: 0; background: transparent; font-size: 16px; color: var(--muted); cursor: pointer; }
+@media (max-width: 440px) {
+  .amigo { display: grid; grid-template-columns: 36px 1fr 1fr 32px; grid-template-areas: "c n n q" "r r v v"; }
+  .amigo canvas { grid-area: c; } .amigo .nm { grid-area: n; } .amigo .quitar { grid-area: q; } .amigo .retar { grid-area: r; } .amigo .vs { grid-area: v; }
+}
 .vacio-amigos { padding: 18px; text-align: center; border: 2.5px dashed rgba(29,35,64,.3); border-radius: 14px; font-size: 13px; font-weight: 600; color: var(--muted); line-height: 1.45; }
 .vs-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 6px; padding: 12px; border-radius: 16px; background: #2b2f4a; color: var(--paper); text-align: center; }
 .vs-top canvas { width: 56px; height: 62px; margin: 0 auto; display: block; }
@@ -400,6 +422,9 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 .logro.secreto .m { background: #8f6bff !important; border-color: var(--ink); color: var(--paper); }
 @media (max-height: 700px) { .info p { display: none; } .slide { gap: 8px; } }
 @media (max-height: 600px) { .tab { height: 48px; } .tab span { display: none; } }
+@media (max-width: 480px) { .amigos-btn span { display: none; } .amigos-btn { padding: 0; } }
+/* con el botón de amigos no entra el nombre en una línea: va en dos */
+@media (max-width: 420px) { .brand { white-space: normal; width: min-content; line-height: .95; } }
 @media (max-width: 400px) { .brand { font-size: 18px; } .bar { width: 64px; } .install span { display: none; } .all span { display: none; } }
 @media (max-width: 340px) { .brand { display: none; } }
 @media (prefers-reduced-motion: reduce) { body { transition: none; } .badge, .coach svg, .card { animation: none; } }
@@ -421,6 +446,9 @@ ol.pase li.lock .pr.pase::after { animation: none; }
         </span>
         <span class="badge" id="meBadge" hidden>¡Nuevo!</span>
       </button>
+      <button class="amigos-btn" id="amigosBtn" type="button" aria-label="Amigos: agregar, comparar y retar a un 1v1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.2a6.5 6.5 0 0 1 3 5.8"/></svg><span>Amigos</span>
+      </button>
     </div>
   </header>
 
@@ -434,8 +462,8 @@ ol.pase li.lock .pr.pase::after { animation: none; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><path d="M9 9v2.5M15 9v2.5" stroke-linecap="round"/><path d="M8.5 15q3.5 3 7 0" stroke-linecap="round"/></svg>
       <span>Personaje</span><span class="badge" id="tabBadge" hidden>!</span></button>
     <button class="tab" type="button" data-tab="pase">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M3.5 7.5a2 2 0 0 0 2-2h13a2 2 0 0 0 2 2v2a2.5 2.5 0 0 0 0 5v2a2 2 0 0 0-2 2h-13a2 2 0 0 0-2-2v-2a2.5 2.5 0 0 0 0-5z"/><path d="m12 9 .9 1.9 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3z" fill="currentColor" stroke-width="1"/></svg>
-      <span>Pase</span></button>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2.8 20 7.4v9.2l-8 4.6-8-4.6V7.4z"/><path d="m8.5 13.5 3.5-3.5 3.5 3.5" stroke-width="2.6"/></svg>
+      <span>Nivel</span></button>
     <button class="tab" type="button" data-tab="logros">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11M17 6h3v1.5A3.5 3.5 0 0 1 16.5 11M12 14v3M8 20h8M9.5 17h5v3h-5z"/></svg>
       <span>Logros</span></button>
@@ -472,24 +500,24 @@ ol.pase li.lock .pr.pase::after { animation: none; }
         <button type="submit">Canjear</button>
       </form>
       <p class="codigo-msg" id="codigoMsg" aria-live="polite"></p>
-      <p class="tip">Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 %, Extremo multiplica por 3 y Maestro por 4. Algunos personajes salen con logros, los naranjas solo con el pase y los legendarios solo con secretos o códigos.</p>
+      <p class="tip">Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 %, Extremo multiplica por 3 y Maestro por 4. Casi todo sale subiendo de nivel (en la pestaña Nivel ves qué da cada uno), algunas cosas con logros y las legendarias solo con secretos o códigos.</p>
       <div class="apodo"><span style="flex:1;min-width:0">Apodo en el ranking<b id="apodoTxt" style="display:block">—</b></span><button class="mini" type="button" id="apodoBtn">Cambiar</button></div>
     </div>
   </div>
 </div>
 
-<!-- pase de batalla -->
+<!-- camino de nivel -->
 <div class="sheet" id="sheetPase" hidden>
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="tPase">
-    <div class="card-h"><h3 id="tPase">Pase de batalla</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
+    <div class="card-h"><h3 id="tPase">Tu nivel</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
     <div class="card-b pase-b">
       <div class="pase-hero">
         <div class="ph-av"><canvas id="paseAv" width="160" height="176"></canvas></div>
-        <div class="ph-info"><small>Temporada 1</small><b id="paseNivel">Nivel 1</b><div class="ph-bar"><i id="paseBar" style="width:0%"></i><span id="paseXP"></span></div></div>
+        <div class="ph-info"><small>Camino de premios</small><b id="paseNivel">Nivel 1</b><div class="ph-bar"><i id="paseBar" style="width:0%"></i><span id="paseXP"></span></div></div>
       </div>
       <div class="pase-stats" id="paseStats"></div>
       <div class="pase-sig" id="paseSig"></div>
-      <p class="tip">Cada nivel te da un premio y se gana jugando cualquier juego. Los naranjas son exclusivos del pase: no salen de ninguna otra forma. Tocá un premio que ya tengas para usarlo.</p>
+      <p class="tip">Subís de nivel jugando cualquier juego y cada nivel te da algo nuevo. Tocá un premio que ya tengas para usarlo. Lo que sale con logros o códigos lo ves en Personaje.</p>
       <div id="pase"></div>
     </div>
   </div>
@@ -516,17 +544,21 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="tJue">
     <div class="card-h"><h3 id="tJue">Ranking</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
     <div class="card-b">
-      <div class="seg" id="segRank" role="group" aria-label="Qué ver"><button type="button" data-r="rankings" aria-pressed="true">🏆 Rankings</button><button type="button" data-r="amigos" aria-pressed="false">👥 Amigos</button></div>
       <p class="tip" id="jueTip"></p><div class="juegos" id="juegos"></div>
-      <div id="panelAmigos" hidden>
-        <div style="display:grid;gap:12px">
-          <div class="mi-codigo"><span id="miCodigoTxt">Tu código de amigo</span><b id="miCodigo"></b><button class="mini" type="button" id="copiarCodigo">Copiar</button></div>
-          <form class="amigo-form" id="amigoForm" autocomplete="off"><input id="amigoCodigo" maxlength="7" placeholder="CÓDIGO DE TU AMIGO" spellcheck="false" autocapitalize="characters" aria-label="Código de tu amigo"><button type="submit">Agregar</button></form>
-          <p class="codigo-msg" id="amigoMsg" aria-live="polite"></p>
-          <div class="amigos" id="amigos"></div>
-          <p class="tip">Tocá <b>Versus</b> para comparar sus mejores marcas en cada juego. En cada ranking podés tocar <b>👥 Amigos</b> para competir solo con ellos.</p>
-        </div>
-      </div>
+    </div>
+  </div>
+</div>
+
+<!-- amigos -->
+<div class="sheet" id="sheetAmigos" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="tAmi">
+    <div class="card-h"><h3 id="tAmi">Amigos</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
+    <div class="card-b">
+      <div class="mi-codigo"><span id="miCodigoTxt">Tu código de amigo</span><b id="miCodigo"></b><button class="mini" type="button" id="copiarCodigo">Copiar</button></div>
+      <form class="amigo-form" id="amigoForm" autocomplete="off"><input id="amigoCodigo" maxlength="7" placeholder="CÓDIGO DE TU AMIGO" spellcheck="false" autocapitalize="characters" aria-label="Código de tu amigo"><button type="submit">Agregar</button></form>
+      <p class="codigo-msg" id="amigoMsg" aria-live="polite"></p>
+      <div class="amigos" id="amigos"></div>
+      <p class="tip"><b>Retar</b> lo invita a un 1v1 en vivo: juegan los dos a la vez y ven cómo va el otro. <b>Versus</b> compara sus mejores marcas en cada juego. En cada ranking podés tocar <b>👥 Amigos</b> para competir solo con ellos.</p>
     </div>
   </div>
 </div>
@@ -955,7 +987,6 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   let seg = 'skins', formaAbierta = null;
   function requisito(it) {
     if (it.legendaria) return it.codigo ? 'Código' : 'Secreto';
-    if (it.pase) return 'Pase · nivel ' + it.nivel;
     if (it.logro) { const l = CC.LOGROS.find(x => x.id === it.logro); return 'Logro: ' + (l ? l.nombre : it.logro); }
     return 'Nivel ' + it.nivel;
   }
@@ -966,28 +997,25 @@ ol.pase li.lock .pr.pase::after { animation: none; }
     if (seg === 'titulos') { pintarTitulos(p, box); return; }
     if (seg === 'brillos') { pintarMarcos(p, box); return; }
     const lista = seg === 'skins' ? CC.SKINS : CC.EFECTOS;
-    let conTitulo = false, conPase = false;
+    let conTitulo = false;
     const formasDe = it => (it.formas || []).map(id => lista.find(x => x.id === id)).filter(Boolean);
     const encabezado = (txt, clase) => {
       const h = document.createElement('p'); h.className = 'sub-h' + (clase ? ' ' + clase : ''); h.style.gridColumn = '1 / -1';
       h.textContent = txt; box.appendChild(h);
     };
-    // primero lo común, después las exclusivas del pase y al final las legendarias
-    const orden = [...lista.filter(i => !i.pase && !i.legendaria), ...lista.filter(i => i.pase), ...lista.filter(i => i.legendaria)];
+    // primero lo que sale por nivel (de menor a mayor), después lo de logros y al final las legendarias
+    const porNivel = i => i.nivel && !i.logro && !i.codigo && !i.legendaria;
+    const orden = [...lista.filter(porNivel).sort((a, b) => a.nivel - b.nivel), ...lista.filter(i => !porNivel(i) && !i.legendaria), ...lista.filter(i => i.legendaria)];
     for (const it of orden) {
       if (it.de) continue; // las formas se ven al tocar su personaje
       const libre = CC.libre(it), elegido = seg === 'skins' ? p.skin.id === it.id || (it.formas || []).includes(p.skin.id) : p.efecto.id === it.id;
       const nuevo = nuevos.includes(seg === 'skins' ? it.id : 'fx:' + it.id);
-      if (it.pase && !conPase) {
-        conPase = true;
-        encabezado(`Exclusivas del pase · ${lista.filter(i => i.pase && CC.libre(i)).length} de ${lista.filter(i => i.pase).length}`, 'pase-h');
-      }
       if (it.legendaria && !conTitulo) {
         conTitulo = true;
         encabezado(`Legendarias · ${lista.filter(i => i.legendaria && CC.libre(i)).length} de ${lista.filter(i => i.legendaria).length}`);
       }
       const b = document.createElement('button');
-      b.type = 'button'; b.className = 'item' + (libre ? '' : ' lock') + (it.legendaria ? ' leg' : '') + (it.pase ? ' pase' : '') + (it.exclusiva ? ' exc' : '');
+      b.type = 'button'; b.className = 'item' + (libre ? '' : ' lock') + (it.legendaria ? ' leg' : '') + (it.exclusiva ? ' exc' : '');
       b.setAttribute('aria-pressed', String(elegido));
       if (!libre) b.setAttribute('aria-disabled', 'true');
       const nombre = it.legendaria && !libre ? '???' : it.nombre;
@@ -1011,13 +1039,13 @@ ol.pase li.lock .pr.pase::after { animation: none; }
         const fb = document.createElement('div'); fb.className = 'formas-box';
         for (const f of [it, ...formasDe(it)]) {
           const ok = CC.libre(f), fbtn = document.createElement('button');
-          fbtn.type = 'button'; fbtn.className = 'item pase' + (ok ? '' : ' lock');
+          fbtn.type = 'button'; fbtn.className = 'item' + (ok ? '' : ' lock');
           fbtn.setAttribute('aria-pressed', String(p.skin.id === f.id));
-          fbtn.innerHTML = `<canvas width="120" height="128"></canvas><span></span>${ok ? '' : `<small>Pase · nivel ${f.nivel}</small>`}`;
+          fbtn.innerHTML = `<canvas width="120" height="128"></canvas><span></span>${ok ? '' : `<small>Nivel ${f.nivel}</small>`}`;
           fbtn.querySelector('span').textContent = f.nombre;
           f._cv = fbtn.querySelector('canvas');
           fbtn.addEventListener('click', () => {
-            if (!ok) { CC.avisar(`<div><b>${f.nombre}</b><span>Se gana en el nivel ${f.nivel} del pase.</span></div>`, 2600); return; }
+            if (!ok) { CC.avisar(`<div><b>${f.nombre}</b><span>Se gana en el nivel ${f.nivel}.</span></div>`, 2600); return; }
             if (CC.elegirSkin(f.id)) { CC.vibrar(10); pintarPersonaje(); }
           });
           fb.appendChild(fbtn);
@@ -1033,13 +1061,13 @@ ol.pase li.lock .pr.pase::after { animation: none; }
     box.appendChild(h);
     for (const it of CC.MARCOS) {
       const libre = CC.libre(it), b = document.createElement('button');
-      b.type = 'button'; b.className = 'item' + (libre ? '' : ' lock') + (it.pase ? ' pase' : '');
+      b.type = 'button'; b.className = 'item' + (libre ? '' : ' lock');
       b.setAttribute('aria-pressed', String(p.marco && p.marco.id === it.id));
-      b.innerHTML = `<canvas width="120" height="128"></canvas><span></span>${libre ? '' : `<small>Pase · nivel ${it.nivel}</small>`}`;
+      b.innerHTML = `<canvas width="120" height="128"></canvas><span></span>${libre ? '' : `<small>Nivel ${it.nivel}</small>`}`;
       b.querySelector('span').textContent = it.nombre;
       it._cv = b.querySelector('canvas');
       b.addEventListener('click', () => {
-        if (!libre) { CC.avisar(`<div><b>Brillo ${it.nombre}</b><span>Se gana en el nivel ${it.nivel} del pase.</span></div>`, 2600); return; }
+        if (!libre) { CC.avisar(`<div><b>Brillo ${it.nombre}</b><span>Se gana en el nivel ${it.nivel}.</span></div>`, 2600); return; }
         if (CC.elegirMarco(it.id)) { CC.vibrar(10); pintarPersonaje(); }
       });
       box.appendChild(b);
@@ -1048,12 +1076,12 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   function pintarTitulos(p, box) {
     for (const it of CC.TITULOS) {
       const libre = CC.libre(it), b = document.createElement('button');
-      b.type = 'button'; b.className = 'item titulo' + (libre ? '' : ' lock') + (it.pase ? ' pase' : '');
+      b.type = 'button'; b.className = 'item titulo' + (libre ? '' : ' lock');
       b.setAttribute('aria-pressed', String(p.titulo.id === it.id));
       b.innerHTML = `<span></span>${libre ? '' : `<small>Nivel ${it.nivel}</small>`}`;
       b.querySelector('span').textContent = it.nombre;
       b.addEventListener('click', () => {
-        if (!libre) { CC.avisar(`<div><b>${it.nombre}</b><span>Se gana en el nivel ${it.nivel} del pase.</span></div>`, 2600); return; }
+        if (!libre) { CC.avisar(`<div><b>${it.nombre}</b><span>Se gana en el nivel ${it.nivel}.</span></div>`, 2600); return; }
         if (CC.elegirTitulo(it.id)) { CC.vibrar(10); pintarPersonaje(); }
       });
       box.appendChild(b);
@@ -1099,7 +1127,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   $('me').addEventListener('click', () => { abrirPersonaje(); marcarTab('personaje'); });
   $('apodoBtn').addEventListener('click', () => CC.verRanking({ juego: JUEGOS[actual].id, alCerrar: pintarPersonaje }));
 
-  // pase de batalla
+  // camino de nivel: qué da cada nivel
   const TIPO = { skin: 'Personaje', efecto: 'Efecto', titulo: 'Título', marco: 'Brillo' };
   const ICO_LISTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
   const ICO_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
@@ -1120,13 +1148,12 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   function abrirPase() {
     const p = CC.perfil(), lista = CC.pase(), box = $('pase');
     const todos = lista.flatMap(n => n.premios.map(x => ({ ...x, listo: n.listo })));
-    const exc = todos.filter(x => x.it.pase);
     $('paseNivel').textContent = p.nivel >= CC.PASE_MAX ? `Nivel ${p.nivel} · ¡completo!` : `Nivel ${p.nivel}`;
     $('paseBar').style.width = Math.round(100 * p.enNivel / p.paraSiguiente) + '%';
     $('paseXP').textContent = `${p.enNivel} / ${p.paraSiguiente} XP`;
     $('paseStats').innerHTML = `<div><b>${Math.min(p.nivel, CC.PASE_MAX)}/${CC.PASE_MAX}</b><span>Niveles</span></div>
       <div><b>${todos.filter(x => x.listo).length}/${todos.length}</b><span>Premios</span></div>
-      <div class="naranja"><b>${exc.filter(x => x.listo).length}/${exc.length}</b><span>Exclusivos</span></div>`;
+      <div><b>${p.xp.toLocaleString('es-AR')}</b><span>XP total</span></div>`;
     paseCvs = [];
     // el próximo premio, bien grande
     const sig = lista.find(n => !n.listo && n.premios.length), sb = $('paseSig');
@@ -1158,12 +1185,12 @@ ol.pase li.lock .pr.pase::after { animation: none; }
           b.setAttribute('aria-pressed', String(usa));
           b.innerHTML = (x.tipo === 'titulo' ? '<span class="tt-ico" aria-hidden="true">🏷️</span>' : '<canvas width="96" height="104"></canvas>') +
             `<span><small></small><span class="nm"></span></span>${usa ? '<span class="usando">Usando</span>' : ''}`;
-          b.querySelector('small').textContent = TIPO[x.tipo] + (x.it.pase ? ' · Exclusivo' : '');
+          b.querySelector('small').textContent = TIPO[x.tipo];
           b.querySelector('.nm').textContent = x.it.nombre;
           const cv = b.querySelector('canvas');
           if (cv) { paseCvs.push({ cv, x }); pintarPremio(cv, x, 900); }
           b.addEventListener('click', () => {
-            if (!n.listo) { CC.avisar(`<div><b>${x.it.nombre}</b><span>Se gana en el nivel ${n.nivel} del pase.</span></div>`, 2600); return; }
+            if (!n.listo) { CC.avisar(`<div><b>${x.it.nombre}</b><span>Se gana en el nivel ${n.nivel}.</span></div>`, 2600); return; }
             if (usar(x)) { CC.vibrar(10); CC.avisar(`<div><b>${x.it.nombre}</b><span>¡Puesto!</span></div>`, 1600); abrirPase(); pintarPerfil(); }
           });
           pr.appendChild(b);
@@ -1227,15 +1254,15 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   }
 
   // elegir juego (ranking / todos)
-  let modoJuegos = 'ranking', vista = 'rankings';
-  function mostrarVista(v) {
-    vista = v;
-    for (const b of $('segRank').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.r === v));
-    $('panelAmigos').hidden = v !== 'amigos';
-    $('jueTip').hidden = $('juegos').hidden = v === 'amigos';
-    if (v === 'amigos') pintarAmigos(true);
+  let modoJuegos = 'ranking';
+
+  // amigos: su propia hoja, con el botón de arriba a la derecha
+  function abrirAmigos() {
+    $('amigoMsg').textContent = '';
+    pintarAmigos(true);
+    abrir('sheetAmigos');
   }
-  for (const b of $('segRank').querySelectorAll('button')) b.addEventListener('click', () => mostrarVista(b.dataset.r));
+  $('amigosBtn').addEventListener('click', abrirAmigos);
   function pintarAmigos(refrescar) {
     const p = CC.perfil();
     $('miCodigo').textContent = p.codigoAmigo ? p.codigoAmigo.slice(0, 3) + ' ' + p.codigoAmigo.slice(3) : '';
@@ -1247,19 +1274,23 @@ ol.pase li.lock .pr.pase::after { animation: none; }
     if (!p.amigos.length) box.innerHTML = '<div class="vacio-amigos">Todavía no agregaste a nadie.<br>Pedile a un amigo su código y ponelo arriba.</div>';
     for (const a of p.amigos) {
       const el = document.createElement('div'); el.className = 'amigo';
-      el.innerHTML = `<canvas width="72" height="80"></canvas><span class="nm"><span class="ap"></span><small></small></span><button class="vs" type="button">⚔️ Versus</button><button class="quitar" type="button" aria-label="Quitar amigo">✕</button>`;
+      el.innerHTML = `<canvas width="72" height="80"></canvas><span class="nm"><span class="ap"></span><small></small></span><button class="retar" type="button">⚔️ Retar</button><button class="vs" type="button">Versus</button><button class="quitar" type="button" aria-label="Quitar amigo">✕</button>`;
       const ap = el.querySelector('.ap'), sk = CC.SKINS.find(s => s.id === a.skin) || CC.SKINS[0];
       ap.textContent = a.apodo; ap.className = 'ap ' + CC.claseNombre(sk);
       el.querySelector('small').textContent = a.titulo || 'Amigo';
       const c = el.querySelector('canvas').getContext('2d'); c.scale(2, 2); CC.dibujarCubo(c, 18, 37, 22, { skin: sk, t: 900, efecto: false });
       el.querySelector('.vs').addEventListener('click', () => abrirVersus(a));
+      el.querySelector('.retar').addEventListener('click', () => {
+        if (window.CuboDuelo) window.CuboDuelo.elegirJuego(a);
+        else CC.avisar('<div><b>Sin conexión</b><span>Para retar a un amigo hace falta internet.</span></div>');
+      });
       el.querySelector('.quitar').addEventListener('click', () => {
         if (!confirm(`¿Quitar a ${a.apodo} de tus amigos?`)) return;
         CC.quitarAmigo(a.codigo); pintarAmigos();
       });
       box.appendChild(el);
     }
-    if (refrescar && p.amigos.length) CC.refrescarAmigos().then(() => { if (vista === 'amigos' && abierta && abierta.id === 'sheetJuegos') pintarAmigos(); });
+    if (refrescar && p.amigos.length) CC.refrescarAmigos().then(() => { if (abierta && abierta.id === 'sheetAmigos') pintarAmigos(); });
   }
   $('copiarCodigo').addEventListener('click', async () => {
     const c = CC.perfil().codigoAmigo;
@@ -1319,8 +1350,6 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   function abrirJuegos(modo) {
     modoJuegos = modo;
     const p = CC.perfil();
-    $('segRank').hidden = modo !== 'ranking';
-    mostrarVista(modo === 'ranking' ? vista : 'rankings');
     $('tJue').textContent = modo === 'ranking' ? 'Ranking' : 'Todos los juegos';
     $('jueTip').textContent = modo === 'ranking'
       ? (p.apodo ? `Jugás como ${p.apodo}. Elegí un juego para ver el ranking online.` : 'Elegí un juego para ver el ranking. Poné tu apodo para aparecer.')
@@ -1405,6 +1434,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   let inicio = +(guardado(SLIDE_KEY) || 0) || 0;
   const porHash = JUEGOS.findIndex(g => '#' + g.id === location.hash);
   if (porHash >= 0) inicio = porHash;
+  if (location.hash === '#amigos') { history.replaceState(null, '', location.pathname); setTimeout(abrirAmigos, 50); }   // al volver de un duelo
   pintarPerfil(); avatar(0);
   requestAnimationFrame(() => { todo(); ir(Math.min(Math.max(0, inicio), JUEGOS.length - 1), false); setTimeout(() => { listo = true; }, 400); });
   requestAnimationFrame(frame);

@@ -28,11 +28,11 @@ Controles: `←` `→` o `A` `D` en la compu, `R` reinicia; botones grandes y �
 
 - **XP:** depende de qué tan bien jugaste (por ejemplo, en Sprint 100 un tiempo más bajo da más XP). Récord personal +25 %. Dificultad: Fácil ×1, Normal ×1,5, Difícil ×2, Extremo ×3, Maestro ×4.
 - **Personajes, efectos y títulos:** 39 personajes, 19 efectos y 22 títulos; la mayoría se desbloquea por nivel y algunos solo con logros.
-- **Pase de batalla:** del nivel 1 al 50, cada nivel da un premio (personaje, efecto o título). Los naranjas son exclusivos del pase: 5 personajes y 2 efectos que no salen de otra forma.
+- **Nivel:** un solo camino del nivel 1 al 100 (pestaña Nivel en la pantalla principal). Cada nivel da algo: personaje, efecto, brillo o título. Lo que no sale por nivel se gana con logros o códigos.
 - **Legendarias:** 6 personajes que brillan y 5 efectos. Salen con secretos (logros ocultos) o con códigos que se canjean en Personaje. Un código puede dar varias cosas: en `CODIGOS` va una lista con ids de skins o `fx:<id>` para efectos. En `cubo-comun.js` solo se guarda el hash de cada código (`CODIGOS`); para agregar uno: `node -e "console.log(require('crypto').createHash('sha256').update('cubo:' + 'MICODIGO').digest('hex'))"` (en mayúsculas, sin espacios ni guiones). Un personaje puede tener muerte propia (`muerte` en `SKINS`, por ahora solo Geo, que se parte en pedazos con una onda expansiva): los juegos llaman a `CC.morir()` cuando chocás o perdés.
 - **Logros:** bronce, plata, oro y diamante, pensados para un jugador promedio (por ejemplo, Sprint 100 en menos de 20 s, 14 s, 12 s y 11 s).
 - **Ranking:** online por juego y dificultad. Cada apodo es de una sola persona y se muestra siempre con su skin actual. Para usar el mismo apodo en otro dispositivo, el ranking te da una clave. Guarda la mejor marca de cada jugador.
-- **Amigos y versus:** cada jugador con apodo tiene un código de amigo de 6 letras. Con él se agrega a alguien (en Ranking → Amigos), se ve el ranking solo con amigos y se juega un versus: tu mejor marca contra la suya en cada modo que jugaron los dos.
+- **Amigos y versus:** cada jugador con apodo tiene un código de amigo de 6 letras. Con él se agrega a alguien (botón de amigos arriba a la derecha), se ve el ranking solo con amigos, se juega un versus (tu mejor marca contra la suya en cada modo que jugaron los dos) y se lo reta a un 1v1 en vivo en Pulseada o Escalador (`cubo-duelo.js`, por Supabase Realtime).
 
 ## Archivos
 

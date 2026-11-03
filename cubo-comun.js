@@ -98,7 +98,7 @@
     { id: 'diablito', nombre: 'Diablito', logro: 'extremo1', cuerpo: '#ff3b3b', extra: 'diablito' },
     { id: 'diamante', nombre: 'Diamante', logro: 'leyenda', cuerpo: '#7fe3ff', extra: 'diamante' },
     { id: 'sabio', nombre: 'Sabio', logro: 'maestro1', cuerpo: '#8f6bff', extra: 'sabio', sinBoca: true },
-    // Pase de temporada: exclusivas del pase (nivel = nivel del pase). No brillan, salvo Campeón.
+    // Premios grandes del camino de nivel (`pase: true` = se destacan en el camino). No brillan, salvo Campeón.
     { id: 'cristal', nombre: 'Cristal', pase: true, nivel: 23, cuerpo: '#b5e8ff', ojo: '#1d4f7a', extra: 'cristal' },
     { id: 'tigre', nombre: 'Tigre', pase: true, nivel: 28, cuerpo: '#ff9a2e', extra: 'tigre' },
     { id: 'caballero', nombre: 'Caballero', pase: true, nivel: 33, cuerpo: '#ffcf9e', extra: 'caballero' },
@@ -178,7 +178,7 @@
     { id: 'notas', nombre: 'Notas musicales', logro: 'ritmo-4' },
     { id: 'huellitas', nombre: 'Huellitas', logro: 'paseo-4' },
     { id: 'estela', nombre: 'Estela espacial', logro: 'cohete-4' },
-    // Pase de temporada
+    // Premios grandes del camino de nivel
     { id: 'nieve', nombre: 'Nieve', pase: true, nivel: 31 },
     { id: 'ki', nombre: 'Aura de ki', pase: true, nivel: 38 },
     { id: 'fuegos', nombre: 'Fuegos artificiales', pase: true, nivel: 45 },
@@ -203,7 +203,7 @@
       pista: 'Solo la tiene quien hizo el juego.' },
   ];
 
-  // Títulos: se ganan con el pase de batalla y se ven debajo de tu apodo (en el ranking también).
+  // Títulos: se ganan subiendo de nivel y se ven debajo de tu apodo (en el ranking también).
   const TITULOS = [
     { id: 'novato', nombre: 'Novato', nivel: 1 }, { id: 'saltarin', nombre: 'Saltarín', nivel: 5 },
     { id: 'constante', nombre: 'Constante', nivel: 10 }, { id: 'veterano', nombre: 'Veterano', nivel: 15 },
@@ -215,7 +215,7 @@
     { id: 'rayo', nombre: 'Rayo', nivel: 42 }, { id: 'fenomeno', nombre: 'Fenómeno', nivel: 43 },
     { id: 'imbatible', nombre: 'Imbatible', nivel: 44 }, { id: 'granmaestro', nombre: 'Gran maestro', nivel: 46 },
     { id: 'inmortal', nombre: 'Inmortal', nivel: 47 }, { id: 'supremo', nombre: 'Supremo', nivel: 48 },
-    { id: 'leyendaviva', nombre: 'Leyenda viviente', nivel: 49 }, { id: 'campeon', nombre: 'Campeón del pase', nivel: 50, pase: true },
+    { id: 'leyendaviva', nombre: 'Leyenda viviente', nivel: 49 }, { id: 'campeon', nombre: 'Gran campeón', nivel: 50, pase: true },
     ...[[51, 'Incansable'], [53, 'Maratonista'], [54, 'Ojo de halcón'], [56, 'Pulso de acero'], [57, 'Sin pestañear'], [59, 'Tormenta'],
       [60, 'Sesenta y contando'], [61, 'Indomable'], [63, 'Sabio de las flechas'], [66, 'Cometa'], [67, 'Implacable'], [69, 'Hechicero'],
       [71, 'Coloso'], [72, 'Fuera de serie'], [73, 'Estratega'], [76, 'Prodigio'], [78, 'Invencible'], [79, 'Astro'], [81, 'Héroe'],
@@ -467,7 +467,7 @@
     const x = TITULOS.find(k => k.id === datos.titulo);
     return x && libre(x) ? x : TITULOS[0];
   }
-  // El pase de batalla: qué da cada nivel, del 1 al PASE_MAX (skins, efectos y títulos que salen por nivel).
+  // El camino de nivel: qué da cada nivel, del 1 al PASE_MAX (skins, efectos, brillos y títulos que salen por nivel).
   function pase() {
     const n = nivelDe(leer().xp).nivel;
     const porNivelDe = (lista, tipo) => lista.filter(i => i.nivel && !i.logro && !i.codigo && i.id !== 'ninguno').map(it => ({ tipo, it }));
@@ -867,7 +867,7 @@
 .card button.cc-casa svg{width:25px;height:25px;margin:0}
 .card button.cc-casa:hover{background:#fff4c7!important}
 .card button.cc-casa:active{transform:translateY(2px);box-shadow:0 1px 0 ${INK}!important}
-.card button.cc-casa:focus-visible{outline:3px solid #62c6ff;outline-offset:2px}
+.card button.cc-casa:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
 /* leyenda de teclas: información, no botones (sin sombra, más tenue) */
 .cc-teclas{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin:0;font:600 12px/1.2 "Rubik",system-ui,sans-serif;color:${INK};opacity:.8}
 .cc-teclas .g{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
@@ -878,7 +878,7 @@
 .cc-teclas .g.juego kbd.f{background:#ffe27a}
 @media (pointer:coarse){.cc-teclas{display:none}}
 #cc-avisos{zoom:var(--ui,1)}
-.cc-dif:focus-visible{outline:3px solid #5cb0ff;outline-offset:2px}
+.cc-dif:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
 .cc-difs-nota{grid-column:1/-1;margin:2px 0 0;font:600 12px/1.35 "Rubik",system-ui,sans-serif;color:inherit;opacity:.85;text-align:center;min-height:16px}
 #cc-avisos{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 76px);transform:translateX(-50%);z-index:9999;
   display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:max-content;max-width:calc(100vw - 32px)}
@@ -899,11 +899,15 @@
 #cc-rank header > div{flex:1;min-width:0}
 #cc-rank h2{margin:0;font:400 26px/1 "Lilita One","Trebuchet MS",sans-serif}
 #cc-rank header small{display:block;margin-top:3px;font-size:13px;font-weight:700;opacity:.6}
-#cc-rank .x{appearance:none;flex:none;width:42px;height:42px;border-radius:50%;border:0;background:transparent;font:700 20px/1 system-ui;color:${INK};cursor:pointer}
-#cc-rank .x:hover{background:rgba(29,35,64,.08)}
+#cc-rank .x{appearance:none;flex:none;width:44px;height:44px;border-radius:12px;border:2.5px solid ${INK};background:#fff;box-shadow:0 3px 0 ${INK};
+  font:700 20px/1 system-ui;color:${INK};cursor:pointer}
+#cc-rank .x:hover{background:#fff4c7}
+#cc-rank .x:active{transform:translateY(2px);box-shadow:0 1px 0 ${INK}}
 #cc-rank .seg{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:3px;margin:0 14px 8px;padding:3px;background:#ece8dc;border:2.5px solid ${INK};border-radius:14px}
 #cc-rank .seg button{appearance:none;display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:38px;padding:4px 2px;border:0;border-radius:10px;
   background:transparent;color:${INK};font:800 12.5px "Rubik",system-ui,sans-serif;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cc-rank .seg.modos{grid-template-columns:repeat(var(--n,4),auto)}
+#cc-rank .seg.modos button{padding-inline:6px}
 #cc-rank .seg.difs button{flex-direction:column;gap:2px;min-height:46px;font-size:11px}
 #cc-rank .seg button:hover{background:rgba(255,255,255,.65)}
 #cc-rank .seg button[aria-pressed="true"]{background:#ffcc29;box-shadow:inset 0 0 0 2px ${INK}}
@@ -925,9 +929,10 @@
 #cc-rank .pie{padding:10px 14px 14px;border-top:2px dashed rgba(29,35,64,.22)}
 #cc-rank .yo-txt{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;min-height:32px}
 #cc-rank .yo-txt b{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-#cc-rank .link{appearance:none;flex:none;margin-left:auto;border:0;background:none;padding:6px 8px;border-radius:8px;font:800 13px "Rubik",system-ui,sans-serif;
-  color:${INK};text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-#cc-rank .link:hover{background:rgba(29,35,64,.08)}
+#cc-rank .link{appearance:none;flex:none;margin-left:auto;min-height:40px;border:2px solid ${INK};background:transparent;padding:6px 14px;border-radius:999px;
+  box-shadow:0 2px 0 ${INK};font:800 13px "Rubik",system-ui,sans-serif;color:${INK};cursor:pointer}
+#cc-rank .link:hover{background:#fff}
+#cc-rank .link:active{transform:translateY(2px);box-shadow:none}
 #cc-rank form{display:flex;gap:8px}
 #cc-rank input{flex:1;min-width:0;height:44px;border-radius:12px;border:2.5px solid ${INK};padding:0 12px;font:600 16px "Rubik",system-ui,sans-serif;color:${INK};background:#fff}
 #cc-rank form button{appearance:none;height:44px;padding:0 16px;border-radius:12px;border:2.5px solid ${INK};background:#ffcc29;color:${INK};
@@ -937,7 +942,9 @@
 #cc-rank .ayuda .clave{font:800 15px ui-monospace,Consolas,monospace;letter-spacing:.08em;user-select:all;white-space:nowrap}
 #cc-rank .f-clave input[name="c"]{flex:0 0 8.6em;text-transform:uppercase;letter-spacing:.06em}
 #cc-rank form button:disabled,#cc-rank input:disabled{opacity:.6}
-#cc-rank .pie .otro{display:block;margin:4px 0 0 -6px;font-size:12px}
+#cc-rank form button:disabled{cursor:not-allowed;box-shadow:none;transform:none}
+#cc-rank .pie .otro{display:block;margin:10px 0 0;font-size:12px}
+#cc-rank button:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
 /* nombres de quien usa una legendaria: con el color de su personaje */
 .cc-leg{font-weight:800}
 .cc-leg-fantasma{color:#3f6fd1;text-shadow:0 0 8px rgba(120,170,255,.75)}
@@ -2513,7 +2520,7 @@
         ctx.restore();
       },
     },
-    // ---- Pase de temporada ----
+    // ---- Premios grandes del camino de nivel ----
     cristal: {
       detras(ctx, s) {
         // cristalitos de hielo que asoman arriba
@@ -3957,4 +3964,11 @@
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
     avisar, vibrar, volver, dibujarCubo, morir,
   };
+  // Duelos 1v1 (cubo-duelo.js): usa la misma conexión a Supabase y escucha las invitaciones en todas las páginas.
+  window.CuboComun.RANKING = RANKING;
+  const cargarDuelo = () => {
+    if (!rankingActivo() || window.CuboDuelo || document.querySelector('script[src$="cubo-duelo.js"]')) return;
+    const s = document.createElement('script'); s.src = 'cubo-duelo.js'; s.async = true; document.head.appendChild(s);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cargarDuelo); else cargarDuelo();
 })();
