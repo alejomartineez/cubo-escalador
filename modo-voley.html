@@ -562,7 +562,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (G.oro) burst(b.x, 0.5, '#c9a227', 6, 0.6);
       shake = reduceMotion ? 0 : 10; sfxLose(); vibrate(40);
       banner = { text: G.lives > 0 ? (G.lives === 1 ? '¡Última vida!' : '¡Uy!') : '¡Se terminó!', t: now };
-      if (G.lives <= 0) G.done = true;
+      if (G.lives <= 0) { G.done = true; if (CC && !G.demo) CC.morir(); }   // Geo se parte en pedazos
     }
   }
 

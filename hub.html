@@ -1000,7 +1000,10 @@ ol.pase li.lock .pr.pase::after { animation: none; }
           const txt = it.legendaria ? it.pista : `Se desbloquea con ${requisito(it).replace('Logro: ', 'el logro ')}.`;
           CC.avisar(`<div><b>${nombre}</b><span>${txt}</span></div>`, 3000); return;
         }
-        if (seg === 'skins' ? CC.elegirSkin(it.id) : CC.elegirEfecto(it.id)) { CC.vibrar(10); pintarPersonaje(); }
+        if (seg === 'skins' ? CC.elegirSkin(it.id) : CC.elegirEfecto(it.id)) {
+          CC.vibrar(10); pintarPersonaje();
+          if (seg === 'skins' && it.muerte && CC.morir) CC.morir($('big'), { volver: true });   // muestra su muerte propia
+        }
       });
       box.appendChild(b);
       // al tocar un personaje con formas se despliegan todas: la base y sus transformaciones

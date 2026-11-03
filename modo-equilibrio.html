@@ -526,6 +526,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   function startFall(now) {
     const sg = Math.sign(G.th) || 1;
+    if (CC && !G.demo) CC.morir();   // personajes con muerte propia (Geo se parte en pedazos)
     G.fall = {
       t0: now, x: Math.sin(G.th) * S / 2, y: -Math.cos(G.th) * S / 2,
       vx: sg * U * 2.2, vy: -U * 1.5, rot: G.th, vr: G.om + sg * 4, bounces: 0, rest: false,

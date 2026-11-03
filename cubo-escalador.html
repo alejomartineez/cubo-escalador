@@ -510,6 +510,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function perder(now, por) {
     if (G.done) return;
     G.done = true; G.endT = now;
+    if (CC) CC.morir();   // personajes con muerte propia (Geo se parte en pedazos)
     const valor = G.i;
     let title = por === 'lava' ? '¡Te alcanzó la lava!' : por === 'derrumbe' ? '¡Se rompió el escalón!' : '¡Un error y afuera!', num, sub, isRec = false, r = null;
     if (G.mode === 'sprint') {

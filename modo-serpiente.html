@@ -535,6 +535,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function die(g, now, why) {
     g.done = true; g.why = why; g.deadT = now;
     if (g.demo) return;
+    if (CC) CC.morir();   // personajes con muerte propia (Geo se parte en pedazos)
     shake = reduceMotion ? 0 : 9; sfxBonk();
     if (CC && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) CC.vibrar(40);
     const s = settle(g);

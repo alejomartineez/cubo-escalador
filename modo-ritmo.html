@@ -804,6 +804,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   function gameOver() {
     G.over = true; state = 'over';
+    if (CC) CC.morir();   // personajes con muerte propia (Geo se parte en pedazos)
     if (bus) {
       const b = bus; bus = null;
       b.gain.setTargetAtTime(0, actx.currentTime, 0.12);

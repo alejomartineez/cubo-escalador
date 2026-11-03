@@ -143,6 +143,9 @@
       pista: 'Solo la tiene quien hizo el juego.' },
     { id: 'sonrisa', nombre: 'Sonrisa de metal', legendaria: true, exclusiva: true, codigo: true, cuerpo: '#3a3550', extra: 'sonrisa', glow: '#ffb070', sinBoca: true, sinCachetes: true,
       pista: 'Hecha a pedido para un solo jugador.' },
+    // muerte: al perder se parte en pedazos con una onda expansiva (ver morir). radio: esquinas casi rectas.
+    { id: 'geo', nombre: 'Geo', legendaria: true, codigo: true, cuerpo: '#ffb52e', extra: 'geo', glow: '#5ff5ff', radio: 0.07, muerte: 'pedazos',
+      sinOjos: true, sinBoca: true, sinCachetes: true, pista: 'Se consigue con un código.' },
   ];
   // Códigos (se guarda solo el hash: sha256('cubo:' + CÓDIGO en mayúsculas, sin espacios ni guiones)).
   // Cada uno da una o más cosas: el id de una skin, o 'fx:<id>' para un efecto.
@@ -153,6 +156,7 @@
     '4fc29aadc1cb4782ab3fb16750ccad73b99b72b671b49c69bcc46650dce3fb5d': ['fx:aurora'],
     '586d6eb5df7242531b10f2f102171007645ef9a21b08272eab5ffd8acc409a88': ['fx:alas'],
     'b1f396b676c2285c8ceb19b6406265dd4afae29521f9253a86de66a025bfca04': ['sonrisa'],   // exclusiva de nacho
+    'b96e9678392994a52ed4be7e7282ee2f6cbc80679de2c7410b85c9526afe9e23': ['geo'],
   };
 
   // Efectos: se dibujan alrededor del cubo en todos los juegos.
@@ -943,6 +947,7 @@
 .cc-leg-holograma{background:linear-gradient(90deg,#ff5d7d,#ffad4d,#3fcf8e,#3fa6ff,#a06bff,#ff5d7d);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:cc-holo 3s linear infinite}
 @keyframes cc-holo{to{background-position:200% 0}}
 .cc-leg-sombra{color:#5a2fc8;text-shadow:0 0 8px rgba(143,107,255,.85)}
+.cc-leg-geo{background:linear-gradient(180deg,#ffd21f,#ff8a1c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 3px rgba(95,245,255,.95))}
 .cc-leg-dev{background:linear-gradient(90deg,#00b4c8,#ff3bd4);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 5px rgba(95,245,255,.9))}
 @media (prefers-reduced-motion:reduce){.cc-leg-glitch,.cc-leg-holograma{animation:none}}
 `;
@@ -3110,6 +3115,28 @@
         ctx.beginPath(); ctx.ellipse(lado * s * 0.52, -s * 0.86, s * 0.07, s * 0.08, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       },
     },
+    // ---- Geo: cubo naranja de esquinas rectas, borde celeste y cara de cuadrados ----
+    geo: {
+      detras(ctx, s) {
+        // filo celeste por afuera del borde negro
+        const e = Math.max(2, s * 0.08) / 2 + s * 0.04;
+        ctx.fillStyle = '#5ff5ff'; rr(ctx, -s / 2 - e, -s - e, s + 2 * e, s + 2 * e, s * 0.1); ctx.fill();
+      },
+      piel(ctx, s) {
+        const g = ctx.createLinearGradient(0, -s, 0, 0);
+        g.addColorStop(0, '#ffe23d'); g.addColorStop(0.55, '#ffb52e'); g.addColorStop(1, '#ff8418');
+        ctx.fillStyle = g; ctx.fillRect(-s / 2, -s, s, s);
+        const luz = ctx.createRadialGradient(0, -s * 0.62, 0, 0, -s * 0.62, s * 0.5);
+        luz.addColorStop(0, 'rgba(255,250,170,.55)'); luz.addColorStop(1, 'rgba(255,250,170,0)');
+        ctx.fillStyle = luz; ctx.fillRect(-s / 2, -s, s, s);
+      },
+      encima(ctx, s, sk, t, look) {
+        // ojos cuadrados y boca ancha, celestes con borde negro
+        ctx.fillStyle = '#6ff3ff'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.lineJoin = 'miter';
+        for (const side of [-1, 1]) { ctx.beginPath(); ctx.rect(side * s * 0.19 + look - s * 0.09, -s * 0.7, s * 0.18, s * 0.18); ctx.fill(); ctx.stroke(); }
+        ctx.beginPath(); ctx.rect(look - s * 0.29, -s * 0.38, s * 0.58, s * 0.15); ctx.fill(); ctx.stroke();
+      },
+    },
     // ---- Guerrero y sus formas ----
     guerrero: {
       detras(ctx, s, sk, t, look, mirar) { guerreroColas(ctx, s, t, mirar, '#e0263a'); },
@@ -3631,6 +3658,136 @@
     },
   });
 
+  // ---------- muertes propias de un personaje (por ahora, Geo: se parte en pedazos) ----------
+  // dibujarCubo anota dónde quedó el cubo en cada canvas. Los juegos llaman a morir() cuando perdés:
+  // si tu personaje tiene muerte propia, se rompe ahí mismo en una capa encima de la página
+  // y no se vuelve a dibujar hasta que tocás algo (o sea, hasta que seguís jugando).
+  const vistos = new Map();   // canvas → { propio, otro }: el último cubo tuyo y el último de otro personaje ({ m, x, pie, s, t })
+  let muerto = null;          // { canvas, sk, t0, hasta, toco }
+  function anotar(ctx, x, pie, s, propio) {
+    const cv = ctx.canvas;
+    if (!cv || !cv.isConnected || !ctx.getTransform) return;
+    const r = vistos.get(cv) || { propio: null, otro: null };
+    r[propio ? 'propio' : 'otro'] = { m: ctx.getTransform(), x, pie, s, t: performance.now() };
+    vistos.set(cv, r);
+  }
+  function alTocar() { if (muerto && performance.now() - muerto.t0 > 150) muerto.toco = true; }
+  addEventListener('keydown', alTocar, true);
+  addEventListener('pointerdown', alTocar, true);
+
+  // canvas: el del juego (si falta, el último donde se dibujó tu cubo). o.volver: reaparece solo al terminar.
+  function morir(canvas, o = {}) {
+    const sk = skin();
+    if (!sk.muerte) return false;
+    const ahora = performance.now();
+    for (const cv of vistos.keys()) if (!cv.isConnected) vistos.delete(cv);
+    let cv = canvas, v = null, mejor = 0;
+    if (canvas) { const r = vistos.get(canvas); v = r && (r.propio || r.otro); }
+    else {
+      for (const [c, { propio: w }] of vistos) {
+        const tam = w ? w.s * Math.hypot(w.m.a, w.m.b) : 0;
+        if (w && ahora - w.t < 400 && tam > mejor) { mejor = tam; cv = c; v = w; }
+      }
+    }
+    if (!v) return false;
+    const b = cv.getBoundingClientRect();
+    if (!b.width || !cv.width) return false;
+    const kx = b.width / cv.width, ky = b.height / cv.height, m = v.m, X = v.x, Y = v.pie - v.s / 2;
+    const cx = b.left + (m.a * X + m.c * Y + m.e) * kx, cy = b.top + (m.b * X + m.d * Y + m.f) * ky;
+    const tam = v.s * Math.hypot(m.a, m.b) * kx;
+    if (!(tam > 2)) return false;
+    estallar(cx, cy, tam, sk);
+    muerto = { canvas: cv, sk, t0: ahora, hasta: ahora + 1000, toco: !!o.volver };
+    vibrar(45);
+    return true;
+  }
+
+  // Pedazos: una foto del cubo cortada en triángulos que salen volando, una onda expansiva chica,
+  // un flash y cuadraditos sueltos. Se dibuja en un canvas fijo encima de todo que se borra solo.
+  function estallar(cx, cy, S, sk) {
+    const dpr = Math.min(2, window.devicePixelRatio || 1), quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const F = S * 1.3, P = Math.ceil(F * dpr), foto = document.createElement('canvas');
+    foto.width = foto.height = P;
+    const fc = foto.getContext('2d');
+    fc.scale(P / F, P / F);
+    dibujarCubo(fc, F / 2, F / 2 + S / 2, S, { skin: sk, efecto: false, brillo: false, t: performance.now(), _foto: true });
+
+    const capa = document.createElement('canvas');
+    capa.setAttribute('aria-hidden', 'true');
+    capa.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:2147483600';
+    const W = innerWidth, H = innerHeight;
+    capa.width = Math.ceil(W * dpr); capa.height = Math.ceil(H * dpr);
+    document.body.appendChild(capa);
+    const c = capa.getContext('2d');
+
+    const rnd = (a, b) => a + Math.random() * (b - a), vel = quieto ? 0.35 : 1;
+    // 4×4 celdas, cada una partida en dos triángulos por una diagonal al azar
+    const N = 4, L = F / N, pedazos = [];
+    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+      const x0 = i * L, y0 = j * L, x1 = x0 + L, y1 = y0 + L;
+      const tris = Math.random() < 0.5
+        ? [[[x0, y0], [x1, y0], [x1, y1]], [[x0, y0], [x1, y1], [x0, y1]]]
+        : [[[x0, y0], [x1, y0], [x0, y1]], [[x1, y0], [x1, y1], [x0, y1]]];
+      for (const tri of tris) {
+        const gx = (tri[0][0] + tri[1][0] + tri[2][0]) / 3, gy = (tri[0][1] + tri[1][1] + tri[2][1]) / 3;
+        const dx = gx - F / 2, dy = gy - F / 2, d = Math.hypot(dx, dy) || 1, a = Math.atan2(dy, dx) + rnd(-0.35, 0.35);
+        const v0 = S * rnd(2.6, 6.2) * (0.6 + d / F) * vel;
+        pedazos.push({ tri, gx, gy, x: gx, y: gy, vx: Math.cos(a) * v0, vy: Math.sin(a) * v0 - S * rnd(1.5, 3.5) * vel,
+          r: 0, vr: rnd(-11, 11) * vel, vida: rnd(0.75, 1.05) });
+      }
+    }
+    const colores = ['#5ff5ff', '#ffe23d', '#ff9a1f', '#ffffff'], chispas = [];
+    for (let k = 0; k < 18; k++) {
+      const a = rnd(0, Math.PI * 2), v0 = S * rnd(3.5, 8.5) * vel;
+      chispas.push({ x: F / 2, y: F / 2, vx: Math.cos(a) * v0, vy: Math.sin(a) * v0 - S * 2 * vel, r: rnd(0, 3), vr: rnd(-12, 12),
+        l: S * rnd(0.06, 0.12), col: colores[k % colores.length], vida: rnd(0.45, 0.75) });
+    }
+    const G = S * 11 * vel, ox = cx - F / 2, oy = cy - F / 2, t0 = performance.now();
+    let antes = t0;
+    function paso(now) {
+      const dt = Math.min(0.05, (now - antes) / 1000), e = (now - t0) / 1000; antes = now;
+      c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
+      // onda expansiva: dos anillos que se abren y se apagan
+      for (const [demora, col, mul] of [[0, '#5ff5ff', 1], [0.07, '#ffd23a', 0.78]]) {
+        const p = (e - demora) / 0.6;
+        if (p <= 0 || p >= 1) continue;
+        const q = 1 - (1 - p) ** 3;
+        c.save(); c.globalAlpha = (1 - p) * 0.95; c.strokeStyle = col; c.shadowColor = col; c.shadowBlur = S * 0.35;
+        c.lineWidth = Math.max(1.5, S * 0.17 * (1 - p) * mul);
+        c.beginPath(); c.arc(cx, cy, S * (0.5 + 1.9 * q * mul), 0, Math.PI * 2); c.stroke(); c.restore();
+      }
+      // flash del primer instante
+      if (e < 0.16) {
+        const g = c.createRadialGradient(cx, cy, 0, cx, cy, S * 1.1);
+        g.addColorStop(0, `rgba(255,255,255,${0.9 * (1 - e / 0.16)})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+        c.fillStyle = g; c.beginPath(); c.arc(cx, cy, S * 1.1, 0, Math.PI * 2); c.fill();
+      }
+      let vivos = 0;
+      for (const p of pedazos) {
+        p.vy += G * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.r += p.vr * dt;
+        const f = e / p.vida;
+        if (f >= 1) continue;
+        vivos++;
+        const k = 1 - 0.35 * f;
+        c.save(); c.globalAlpha = f < 0.6 ? 1 : 1 - (f - 0.6) / 0.4;
+        c.translate(ox + p.x, oy + p.y); c.rotate(p.r); c.scale(k, k);
+        c.beginPath(); for (const [px, py] of p.tri) c.lineTo(px - p.gx, py - p.gy); c.closePath();
+        c.clip(); c.drawImage(foto, -p.gx, -p.gy, F, F);
+        c.restore();
+      }
+      for (const p of chispas) {
+        p.vy += G * 0.7 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.r += p.vr * dt;
+        const f = e / p.vida;
+        if (f >= 1) continue;
+        vivos++;
+        c.save(); c.globalAlpha = 1 - f; c.translate(ox + p.x, oy + p.y); c.rotate(p.r);
+        c.fillStyle = p.col; c.shadowColor = p.col; c.shadowBlur = S * 0.15; c.fillRect(-p.l / 2, -p.l / 2, p.l, p.l); c.restore();
+      }
+      if (vivos || e < 0.6) requestAnimationFrame(paso); else capa.remove();
+    }
+    requestAnimationFrame(paso);
+  }
+
   // Dibuja el cubo con la base apoyada en (x, pie). `lado` es el tamaño del cubo en px.
   // Opciones: mirar (-1, 0, 1), mareado, t, skin (objeto de SKINS), efecto (id, o false para no dibujarlo).
   function dibujarCubo(ctx, x, pie, s, o = {}) {
@@ -3641,7 +3798,15 @@
     const t = o.t ?? performance.now();
     const mareado = !!o.mareado, mirar = Math.max(-1, Math.min(1, o.mirar || 0));
     const lw = Math.max(2, s * 0.08);
-    const parte = PARTES[sk.extra] || {};
+    const parte = PARTES[sk.extra] || {}, rad = s * (sk.radio ?? 0.2);
+    if (!o._foto) {
+      // el cubo que acaba de partirse en pedazos no se dibuja hasta que se vuelve a jugar
+      if (muerto && ctx.canvas === muerto.canvas && sk.id === muerto.sk.id) {
+        if (performance.now() < muerto.hasta || !muerto.toco) return;
+        muerto = null;
+      }
+      anotar(ctx, x, pie, s, !o.skin);
+    }
     ctx.save();
     ctx.translate(x, pie);
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
@@ -3652,7 +3817,7 @@
     }
     if (fx && fx !== 'ninguno') { ctx.save(); efectoDetras(ctx, fx, s, t); ctx.restore(); }
 
-    ctx.fillStyle = 'rgba(29,35,64,.2)'; rr(ctx, -s / 2 + 3, -s + 4, s, s, s * 0.2); ctx.fill();
+    ctx.fillStyle = 'rgba(29,35,64,.2)'; rr(ctx, -s / 2 + 3, -s + 4, s, s, rad); ctx.fill();
     const look = mirar * s * 0.06;
     ctx.lineWidth = lw; ctx.strokeStyle = INK;
     if (parte.detras && !mareado) { ctx.save(); parte.detras(ctx, s, sk, t, look, mirar); ctx.restore(); }
@@ -3663,12 +3828,12 @@
       ctx.shadowColor = sk.extra === 'holograma' ? `hsl(${(t / 12) % 360},100%,70%)` : sk.glow;
       ctx.shadowBlur = s * (0.45 + 0.25 * Math.sin(t / 260)) * (sk.exclusiva ? 1.5 : 1);
       ctx.fillStyle = sk.glow;
-      for (let k = sk.exclusiva ? 2 : 1; k > 0; k--) { rr(ctx, -s / 2, -s, s, s, s * 0.2); ctx.fill(); }
+      for (let k = sk.exclusiva ? 2 : 1; k > 0; k--) { rr(ctx, -s / 2, -s, s, s, rad); ctx.fill(); }
       ctx.restore();
     }
     ctx.fillStyle = mareado ? '#c9d3e3' : sk.cuerpo;
     if (sk.extra === 'fantasma' && !mareado) ctx.globalAlpha = 0.82 + 0.1 * Math.sin(t / 300);
-    rr(ctx, -s / 2, -s, s, s, s * 0.2); ctx.fill();
+    rr(ctx, -s / 2, -s, s, s, rad); ctx.fill();
     ctx.globalAlpha = 1;
     ctx.save(); ctx.clip();
     if (sk.extra === 'semillas' && !mareado) {
@@ -3690,7 +3855,7 @@
     if (parte.piel && !mareado) parte.piel(ctx, s, sk, t, look, mirar);
     ctx.restore();
     ctx.strokeStyle = INK; ctx.lineWidth = lw;
-    rr(ctx, -s / 2, -s, s, s, s * 0.2); ctx.stroke();
+    rr(ctx, -s / 2, -s, s, s, rad); ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,.45)'; rr(ctx, -s * 0.36, -s * 0.9, s * 0.72, s * 0.12, s * 0.06); ctx.fill();
     if (mc && mc !== 'ninguno') { ctx.save(); marcoNivel(ctx, mc, s, t); ctx.restore(); }
 
@@ -3790,6 +3955,6 @@
     xpPara, nivelDe, perfil, skin, efecto, elegirSkin, elegirEfecto, libre, nuevos, marcarVistos,
     sumarXP, xpEscala, partida, importarRecord, anotarRecord, revisarLogros, tieneLogro,
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
-    avisar, vibrar, volver, dibujarCubo,
+    avisar, vibrar, volver, dibujarCubo, morir,
   };
 })();

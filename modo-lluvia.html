@@ -499,6 +499,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     burst(laneX(G.lane), FLOOR - cubeS() / 2, '#ffcc29', 14, 1);
     burst(laneX(b.lane), (b.y * FLOOR) + blockS() / 2, b.c[0], 10, 1);
     if (G.demo) return;
+    CC?.morir();   // personajes con muerte propia (Geo se parte en pedazos)
     shake = reduceMotion ? 0 : 10; sfxBonk(); CC?.vibrar(40);
     const D = DIFFS[G.diff], r = settle();
     $('eTitle').textContent = TITLES[Math.floor(Math.random() * TITLES.length)];

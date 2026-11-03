@@ -733,6 +733,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     burst(G.x, G.a + 0.2, '#ffcc29', 12, 1);
     if (cause === 'lava') burst(G.x, G.lava, '#ff7a3d', 16, 1.1);
     if (G.demo) return;
+    if (CC) CC.morir();   // personajes con muerte propia (Geo se parte en pedazos)
     engine(0); syncPad();
     shake = reduceMotion ? 0 : 12; vibrar(40);
     if (cause === 'lava') sfxLava(); else sfxCrash();
