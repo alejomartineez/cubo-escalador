@@ -98,7 +98,7 @@
     { id: 'diablito', nombre: 'Diablito', logro: 'extremo1', cuerpo: '#ff3b3b', extra: 'diablito' },
     { id: 'diamante', nombre: 'Diamante', logro: 'leyenda', cuerpo: '#7fe3ff', extra: 'diamante' },
     { id: 'sabio', nombre: 'Sabio', logro: 'maestro1', cuerpo: '#8f6bff', extra: 'sabio', sinBoca: true },
-    // Pase de temporada: exclusivas del pase (nivel = nivel del pase). No brillan, salvo Campeón.
+    // Premios grandes del camino de nivel (`pase: true` = se destacan en el camino). No brillan, salvo Campeón.
     { id: 'cristal', nombre: 'Cristal', pase: true, nivel: 23, cuerpo: '#b5e8ff', ojo: '#1d4f7a', extra: 'cristal' },
     { id: 'tigre', nombre: 'Tigre', pase: true, nivel: 28, cuerpo: '#ff9a2e', extra: 'tigre' },
     { id: 'caballero', nombre: 'Caballero', pase: true, nivel: 33, cuerpo: '#ffcf9e', extra: 'caballero' },
@@ -165,7 +165,7 @@
     { id: 'notas', nombre: 'Notas musicales', logro: 'ritmo-4' },
     { id: 'huellitas', nombre: 'Huellitas', logro: 'paseo-4' },
     { id: 'estela', nombre: 'Estela espacial', logro: 'cohete-4' },
-    // Pase de temporada
+    // Premios grandes del camino de nivel
     { id: 'nieve', nombre: 'Nieve', pase: true, nivel: 31 },
     { id: 'ki', nombre: 'Aura de ki', pase: true, nivel: 38 },
     { id: 'fuegos', nombre: 'Fuegos artificiales', pase: true, nivel: 45 },
@@ -182,7 +182,7 @@
       pista: 'Solo la tiene quien hizo el juego.' },
   ];
 
-  // Títulos: se ganan con el pase de batalla y se ven debajo de tu apodo (en el ranking también).
+  // Títulos: se ganan subiendo de nivel y se ven debajo de tu apodo (en el ranking también).
   const TITULOS = [
     { id: 'novato', nombre: 'Novato', nivel: 1 }, { id: 'saltarin', nombre: 'Saltarín', nivel: 5 },
     { id: 'constante', nombre: 'Constante', nivel: 10 }, { id: 'veterano', nombre: 'Veterano', nivel: 15 },
@@ -194,7 +194,7 @@
     { id: 'rayo', nombre: 'Rayo', nivel: 42 }, { id: 'fenomeno', nombre: 'Fenómeno', nivel: 43 },
     { id: 'imbatible', nombre: 'Imbatible', nivel: 44 }, { id: 'granmaestro', nombre: 'Gran maestro', nivel: 46 },
     { id: 'inmortal', nombre: 'Inmortal', nivel: 47 }, { id: 'supremo', nombre: 'Supremo', nivel: 48 },
-    { id: 'leyendaviva', nombre: 'Leyenda viviente', nivel: 49 }, { id: 'campeon', nombre: 'Campeón del pase', nivel: 50, pase: true },
+    { id: 'leyendaviva', nombre: 'Leyenda viviente', nivel: 49 }, { id: 'campeon', nombre: 'Gran campeón', nivel: 50, pase: true },
     ...[[51, 'Incansable'], [53, 'Maratonista'], [54, 'Ojo de halcón'], [56, 'Pulso de acero'], [57, 'Sin pestañear'], [59, 'Tormenta'],
       [60, 'Sesenta y contando'], [61, 'Indomable'], [63, 'Sabio de las flechas'], [66, 'Cometa'], [67, 'Implacable'], [69, 'Hechicero'],
       [71, 'Coloso'], [72, 'Fuera de serie'], [73, 'Estratega'], [76, 'Prodigio'], [78, 'Invencible'], [79, 'Astro'], [81, 'Héroe'],
@@ -446,7 +446,7 @@
     const x = TITULOS.find(k => k.id === datos.titulo);
     return x && libre(x) ? x : TITULOS[0];
   }
-  // El pase de batalla: qué da cada nivel, del 1 al PASE_MAX (skins, efectos y títulos que salen por nivel).
+  // El camino de nivel: qué da cada nivel, del 1 al PASE_MAX (skins, efectos, brillos y títulos que salen por nivel).
   function pase() {
     const n = nivelDe(leer().xp).nivel;
     const porNivelDe = (lista, tipo) => lista.filter(i => i.nivel && !i.logro && !i.codigo && i.id !== 'ninguno').map(it => ({ tipo, it }));
@@ -2022,7 +2022,7 @@
         ctx.restore();
       },
     },
-    // ---- Pase de temporada ----
+    // ---- Premios grandes del camino de nivel ----
     cristal: {
       detras(ctx, s) {
         // cristalitos de hielo que asoman arriba

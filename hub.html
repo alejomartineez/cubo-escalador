@@ -262,17 +262,6 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
 .item.leg .badge { top: auto; bottom: -8px; }
 .item.leg.lock { background: #2b2f4a; color: #c9cfe6; box-shadow: none; border-style: dashed; }
 .item.leg.lock canvas { opacity: 1; filter: brightness(0) invert(.18); }
-/* exclusivas del pase: calidad naranja */
-.sub-h.pase-h { color: #c25a00; }
-.sub-h.pase-h::after { background: linear-gradient(90deg, #ffb341, #ff7a1a); }
-.item.pase { background: linear-gradient(160deg, #fff1dc, #ffd6a3); }
-.item.pase[aria-pressed="true"] { background: linear-gradient(160deg, #ffc061, #ff9a2e); }
-.item.pase::before {
-  content: "Pase"; position: absolute; top: -9px; left: 50%; transform: translateX(-50%); white-space: nowrap;
-  padding: 1px 7px; border-radius: 99px; border: 2px solid var(--ink); background: #ff8a1f; color: var(--ink); font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
-}
-.item.pase .badge { top: auto; bottom: -8px; }
-.item.pase.lock { background: #ffe9cf; color: #9a5a1c; }
 .item .formas-n { font-size: 10px; font-weight: 800; color: #c25a00; text-transform: uppercase; letter-spacing: .04em; }
 .formas-box { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 10px; padding: 14px 10px 10px;
   border: 2.5px dashed #ff8a1f; border-radius: 16px; background: #fff6ea; position: relative; }
@@ -282,7 +271,7 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
 .seg.tres { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .seg.tres button { font-size: 13px; padding: 0 2px; }
 
-/* pase de batalla */
+/* camino de nivel */
 .pase-b { gap: 12px; }
 .pase-b > * { flex: none; }
 .pase-hero { position: relative; display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 20px; overflow: hidden;
@@ -304,7 +293,6 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
 .pase-stats div { padding: 8px 6px; border-radius: 14px; background: #fff; border: 2.5px solid var(--ink); text-align: center; }
 .pase-stats b { display: block; font-family: var(--display); font-weight: 400; font-size: 22px; line-height: 1; }
 .pase-stats span { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-.pase-stats .naranja b { color: #e06a00; }
 .pase-sig { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; background: #fff6ea; border: 2.5px dashed #ff8a1f; }
 .pase-sig canvas { width: 56px; height: 62px; flex: none; }
 .pase-sig .tt-ico { width: 56px; height: 56px; flex: none; display: grid; place-items: center; border-radius: 12px; background: #ffe2bd; font-size: 26px; }
@@ -434,8 +422,8 @@ ol.pase li.lock .pr.pase::after { animation: none; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><path d="M9 9v2.5M15 9v2.5" stroke-linecap="round"/><path d="M8.5 15q3.5 3 7 0" stroke-linecap="round"/></svg>
       <span>Personaje</span><span class="badge" id="tabBadge" hidden>!</span></button>
     <button class="tab" type="button" data-tab="pase">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M3.5 7.5a2 2 0 0 0 2-2h13a2 2 0 0 0 2 2v2a2.5 2.5 0 0 0 0 5v2a2 2 0 0 0-2 2h-13a2 2 0 0 0-2-2v-2a2.5 2.5 0 0 0 0-5z"/><path d="m12 9 .9 1.9 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3z" fill="currentColor" stroke-width="1"/></svg>
-      <span>Pase</span></button>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2.8 20 7.4v9.2l-8 4.6-8-4.6V7.4z"/><path d="m8.5 13.5 3.5-3.5 3.5 3.5" stroke-width="2.6"/></svg>
+      <span>Nivel</span></button>
     <button class="tab" type="button" data-tab="logros">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11M17 6h3v1.5A3.5 3.5 0 0 1 16.5 11M12 14v3M8 20h8M9.5 17h5v3h-5z"/></svg>
       <span>Logros</span></button>
@@ -472,24 +460,24 @@ ol.pase li.lock .pr.pase::after { animation: none; }
         <button type="submit">Canjear</button>
       </form>
       <p class="codigo-msg" id="codigoMsg" aria-live="polite"></p>
-      <p class="tip">Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 %, Extremo multiplica por 3 y Maestro por 4. Algunos personajes salen con logros, los naranjas solo con el pase y los legendarios solo con secretos o códigos.</p>
+      <p class="tip">Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 %, Extremo multiplica por 3 y Maestro por 4. Casi todo sale subiendo de nivel (en la pestaña Nivel ves qué da cada uno), algunas cosas con logros y las legendarias solo con secretos o códigos.</p>
       <div class="apodo"><span style="flex:1;min-width:0">Apodo en el ranking<b id="apodoTxt" style="display:block">—</b></span><button class="mini" type="button" id="apodoBtn">Cambiar</button></div>
     </div>
   </div>
 </div>
 
-<!-- pase de batalla -->
+<!-- camino de nivel -->
 <div class="sheet" id="sheetPase" hidden>
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="tPase">
-    <div class="card-h"><h3 id="tPase">Pase de batalla</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
+    <div class="card-h"><h3 id="tPase">Tu nivel</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
     <div class="card-b pase-b">
       <div class="pase-hero">
         <div class="ph-av"><canvas id="paseAv" width="160" height="176"></canvas></div>
-        <div class="ph-info"><small>Temporada 1</small><b id="paseNivel">Nivel 1</b><div class="ph-bar"><i id="paseBar" style="width:0%"></i><span id="paseXP"></span></div></div>
+        <div class="ph-info"><small>Camino de premios</small><b id="paseNivel">Nivel 1</b><div class="ph-bar"><i id="paseBar" style="width:0%"></i><span id="paseXP"></span></div></div>
       </div>
       <div class="pase-stats" id="paseStats"></div>
       <div class="pase-sig" id="paseSig"></div>
-      <p class="tip">Cada nivel te da un premio y se gana jugando cualquier juego. Los naranjas son exclusivos del pase: no salen de ninguna otra forma. Tocá un premio que ya tengas para usarlo.</p>
+      <p class="tip">Subís de nivel jugando cualquier juego y cada nivel te da algo nuevo. Tocá un premio que ya tengas para usarlo. Lo que sale con logros o códigos lo ves en Personaje.</p>
       <div id="pase"></div>
     </div>
   </div>
@@ -955,7 +943,6 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   let seg = 'skins', formaAbierta = null;
   function requisito(it) {
     if (it.legendaria) return it.codigo ? 'Código' : 'Secreto';
-    if (it.pase) return 'Pase · nivel ' + it.nivel;
     if (it.logro) { const l = CC.LOGROS.find(x => x.id === it.logro); return 'Logro: ' + (l ? l.nombre : it.logro); }
     return 'Nivel ' + it.nivel;
   }
@@ -966,28 +953,25 @@ ol.pase li.lock .pr.pase::after { animation: none; }
     if (seg === 'titulos') { pintarTitulos(p, box); return; }
     if (seg === 'brillos') { pintarMarcos(p, box); return; }
     const lista = seg === 'skins' ? CC.SKINS : CC.EFECTOS;
-    let conTitulo = false, conPase = false;
+    let conTitulo = false;
     const formasDe = it => (it.formas || []).map(id => lista.find(x => x.id === id)).filter(Boolean);
     const encabezado = (txt, clase) => {
       const h = document.createElement('p'); h.className = 'sub-h' + (clase ? ' ' + clase : ''); h.style.gridColumn = '1 / -1';
       h.textContent = txt; box.appendChild(h);
     };
-    // primero lo común, después las exclusivas del pase y al final las legendarias
-    const orden = [...lista.filter(i => !i.pase && !i.legendaria), ...lista.filter(i => i.pase), ...lista.filter(i => i.legendaria)];
+    // primero lo que sale por nivel (de menor a mayor), después lo de logros y al final las legendarias
+    const porNivel = i => i.nivel && !i.logro && !i.codigo && !i.legendaria;
+    const orden = [...lista.filter(porNivel).sort((a, b) => a.nivel - b.nivel), ...lista.filter(i => !porNivel(i) && !i.legendaria), ...lista.filter(i => i.legendaria)];
     for (const it of orden) {
       if (it.de) continue; // las formas se ven al tocar su personaje
       const libre = CC.libre(it), elegido = seg === 'skins' ? p.skin.id === it.id || (it.formas || []).includes(p.skin.id) : p.efecto.id === it.id;
       const nuevo = nuevos.includes(seg === 'skins' ? it.id : 'fx:' + it.id);
-      if (it.pase && !conPase) {
-        conPase = true;
-        encabezado(`Exclusivas del pase · ${lista.filter(i => i.pase && CC.libre(i)).length} de ${lista.filter(i => i.pase).length}`, 'pase-h');
-      }
       if (it.legendaria && !conTitulo) {
         conTitulo = true;
         encabezado(`Legendarias · ${lista.filter(i => i.legendaria && CC.libre(i)).length} de ${lista.filter(i => i.legendaria).length}`);
       }
       const b = document.createElement('button');
-      b.type = 'button'; b.className = 'item' + (libre ? '' : ' lock') + (it.legendaria ? ' leg' : '') + (it.pase ? ' pase' : '') + (it.exclusiva ? ' exc' : '');
+      b.type = 'button'; b.className = 'item' + (libre ? '' : ' lock') + (it.legendaria ? ' leg' : '') + (it.exclusiva ? ' exc' : '');
       b.setAttribute('aria-pressed', String(elegido));
       if (!libre) b.setAttribute('aria-disabled', 'true');
       const nombre = it.legendaria && !libre ? '???' : it.nombre;
@@ -1008,13 +992,13 @@ ol.pase li.lock .pr.pase::after { animation: none; }
         const fb = document.createElement('div'); fb.className = 'formas-box';
         for (const f of [it, ...formasDe(it)]) {
           const ok = CC.libre(f), fbtn = document.createElement('button');
-          fbtn.type = 'button'; fbtn.className = 'item pase' + (ok ? '' : ' lock');
+          fbtn.type = 'button'; fbtn.className = 'item' + (ok ? '' : ' lock');
           fbtn.setAttribute('aria-pressed', String(p.skin.id === f.id));
-          fbtn.innerHTML = `<canvas width="120" height="128"></canvas><span></span>${ok ? '' : `<small>Pase · nivel ${f.nivel}</small>`}`;
+          fbtn.innerHTML = `<canvas width="120" height="128"></canvas><span></span>${ok ? '' : `<small>Nivel ${f.nivel}</small>`}`;
           fbtn.querySelector('span').textContent = f.nombre;
           f._cv = fbtn.querySelector('canvas');
           fbtn.addEventListener('click', () => {
-            if (!ok) { CC.avisar(`<div><b>${f.nombre}</b><span>Se gana en el nivel ${f.nivel} del pase.</span></div>`, 2600); return; }
+            if (!ok) { CC.avisar(`<div><b>${f.nombre}</b><span>Se gana en el nivel ${f.nivel}.</span></div>`, 2600); return; }
             if (CC.elegirSkin(f.id)) { CC.vibrar(10); pintarPersonaje(); }
           });
           fb.appendChild(fbtn);
@@ -1030,13 +1014,13 @@ ol.pase li.lock .pr.pase::after { animation: none; }
     box.appendChild(h);
     for (const it of CC.MARCOS) {
       const libre = CC.libre(it), b = document.createElement('button');
-      b.type = 'button'; b.className = 'item' + (libre ? '' : ' lock') + (it.pase ? ' pase' : '');
+      b.type = 'button'; b.className = 'item' + (libre ? '' : ' lock');
       b.setAttribute('aria-pressed', String(p.marco && p.marco.id === it.id));
-      b.innerHTML = `<canvas width="120" height="128"></canvas><span></span>${libre ? '' : `<small>Pase · nivel ${it.nivel}</small>`}`;
+      b.innerHTML = `<canvas width="120" height="128"></canvas><span></span>${libre ? '' : `<small>Nivel ${it.nivel}</small>`}`;
       b.querySelector('span').textContent = it.nombre;
       it._cv = b.querySelector('canvas');
       b.addEventListener('click', () => {
-        if (!libre) { CC.avisar(`<div><b>Brillo ${it.nombre}</b><span>Se gana en el nivel ${it.nivel} del pase.</span></div>`, 2600); return; }
+        if (!libre) { CC.avisar(`<div><b>Brillo ${it.nombre}</b><span>Se gana en el nivel ${it.nivel}.</span></div>`, 2600); return; }
         if (CC.elegirMarco(it.id)) { CC.vibrar(10); pintarPersonaje(); }
       });
       box.appendChild(b);
@@ -1045,12 +1029,12 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   function pintarTitulos(p, box) {
     for (const it of CC.TITULOS) {
       const libre = CC.libre(it), b = document.createElement('button');
-      b.type = 'button'; b.className = 'item titulo' + (libre ? '' : ' lock') + (it.pase ? ' pase' : '');
+      b.type = 'button'; b.className = 'item titulo' + (libre ? '' : ' lock');
       b.setAttribute('aria-pressed', String(p.titulo.id === it.id));
       b.innerHTML = `<span></span>${libre ? '' : `<small>Nivel ${it.nivel}</small>`}`;
       b.querySelector('span').textContent = it.nombre;
       b.addEventListener('click', () => {
-        if (!libre) { CC.avisar(`<div><b>${it.nombre}</b><span>Se gana en el nivel ${it.nivel} del pase.</span></div>`, 2600); return; }
+        if (!libre) { CC.avisar(`<div><b>${it.nombre}</b><span>Se gana en el nivel ${it.nivel}.</span></div>`, 2600); return; }
         if (CC.elegirTitulo(it.id)) { CC.vibrar(10); pintarPersonaje(); }
       });
       box.appendChild(b);
@@ -1096,7 +1080,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   $('me').addEventListener('click', () => { abrirPersonaje(); marcarTab('personaje'); });
   $('apodoBtn').addEventListener('click', () => CC.verRanking({ juego: JUEGOS[actual].id, alCerrar: pintarPersonaje }));
 
-  // pase de batalla
+  // camino de nivel: qué da cada nivel
   const TIPO = { skin: 'Personaje', efecto: 'Efecto', titulo: 'Título', marco: 'Brillo' };
   const ICO_LISTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
   const ICO_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
@@ -1117,13 +1101,12 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   function abrirPase() {
     const p = CC.perfil(), lista = CC.pase(), box = $('pase');
     const todos = lista.flatMap(n => n.premios.map(x => ({ ...x, listo: n.listo })));
-    const exc = todos.filter(x => x.it.pase);
     $('paseNivel').textContent = p.nivel >= CC.PASE_MAX ? `Nivel ${p.nivel} · ¡completo!` : `Nivel ${p.nivel}`;
     $('paseBar').style.width = Math.round(100 * p.enNivel / p.paraSiguiente) + '%';
     $('paseXP').textContent = `${p.enNivel} / ${p.paraSiguiente} XP`;
     $('paseStats').innerHTML = `<div><b>${Math.min(p.nivel, CC.PASE_MAX)}/${CC.PASE_MAX}</b><span>Niveles</span></div>
       <div><b>${todos.filter(x => x.listo).length}/${todos.length}</b><span>Premios</span></div>
-      <div class="naranja"><b>${exc.filter(x => x.listo).length}/${exc.length}</b><span>Exclusivos</span></div>`;
+      <div><b>${p.xp.toLocaleString('es-AR')}</b><span>XP total</span></div>`;
     paseCvs = [];
     // el próximo premio, bien grande
     const sig = lista.find(n => !n.listo && n.premios.length), sb = $('paseSig');
@@ -1155,12 +1138,12 @@ ol.pase li.lock .pr.pase::after { animation: none; }
           b.setAttribute('aria-pressed', String(usa));
           b.innerHTML = (x.tipo === 'titulo' ? '<span class="tt-ico" aria-hidden="true">🏷️</span>' : '<canvas width="96" height="104"></canvas>') +
             `<span><small></small><span class="nm"></span></span>${usa ? '<span class="usando">Usando</span>' : ''}`;
-          b.querySelector('small').textContent = TIPO[x.tipo] + (x.it.pase ? ' · Exclusivo' : '');
+          b.querySelector('small').textContent = TIPO[x.tipo];
           b.querySelector('.nm').textContent = x.it.nombre;
           const cv = b.querySelector('canvas');
           if (cv) { paseCvs.push({ cv, x }); pintarPremio(cv, x, 900); }
           b.addEventListener('click', () => {
-            if (!n.listo) { CC.avisar(`<div><b>${x.it.nombre}</b><span>Se gana en el nivel ${n.nivel} del pase.</span></div>`, 2600); return; }
+            if (!n.listo) { CC.avisar(`<div><b>${x.it.nombre}</b><span>Se gana en el nivel ${n.nivel}.</span></div>`, 2600); return; }
             if (usar(x)) { CC.vibrar(10); CC.avisar(`<div><b>${x.it.nombre}</b><span>¡Puesto!</span></div>`, 1600); abrirPase(); pintarPerfil(); }
           });
           pr.appendChild(b);
