@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="Mantené el equilibrio con izquierda y derecha para que no te tire el viento.">
 <meta property="og:title" content="Equilibrio">
 <meta property="og:description" content="Mantené el equilibrio con izquierda y derecha para que no te tire el viento.">
@@ -12,15 +12,28 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%226%22%20fill%3D%22%23ffcc29%22%20stroke%3D%22%231d2340%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2210%22%20y%3D%2210%22%20width%3D%224%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%231d2340%22%2F%3E%3Crect%20x%3D%2218%22%20y%3D%2210%22%20width%3D%224%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%231d2340%22%2F%3E%3C%2Fsvg%3E">
 <link rel="apple-touch-icon" href="icono-180.png">
 <link rel="manifest" href="manifest.webmanifest">
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}
+#cargando{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+background:#62c6ff;transition:opacity .3s ease,visibility .3s}
+#cargando.fuera{opacity:0;visibility:hidden}
+#cargando i{position:relative;width:64px;height:64px;border-radius:14px;background:#ffcc29;border:4px solid #1d2340;box-shadow:0 6px 0 #1d2340;animation:cc-salto .6s cubic-bezier(.3,0,.4,1) infinite alternate}
+#cargando i::before,#cargando i::after{content:"";position:absolute;top:16px;width:9px;height:14px;border-radius:5px;background:#1d2340}
+#cargando i::before{left:14px}#cargando i::after{right:14px}
+#cargando b{font:800 15px system-ui,sans-serif;color:#1d2340;letter-spacing:.04em}
+#cargando s{display:block;width:120px;height:8px;border-radius:99px;border:2.5px solid #1d2340;background:#fffaf0;overflow:hidden;text-decoration:none}
+#cargando s::after{content:"";display:block;height:100%;width:40%;background:#ff5d7d;border-radius:99px;animation:cc-barra 1s ease-in-out infinite}
+@keyframes cc-salto{from{transform:translateY(0) scale(1.06,.94)}to{transform:translateY(-26px) rotate(8deg)}}
+@keyframes cc-barra{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
+@media (prefers-reduced-motion:reduce){#cargando i,#cargando s::after{animation:none}}</style>
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))</script>
 </head>
 <body>
+<div id="cargando" aria-hidden="true"><i></i><s></s><b>Cargando…</b></div>
 <title>Equilibrio</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:wght@400;600;800&display=swap">
+<link rel="stylesheet" media="print" data-fuentes href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:wght@400;600;800&display=swap" onload="this.onload=null;this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:wght@400;600;800&display=swap"></noscript>
 <style>
 /* Layout: canvas a pantalla completa; HUD arriba, dos botones gigantes abajo, menús como cartel de juguete centrado */
 :root {
@@ -56,7 +69,7 @@ body {
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 12px;
-  pointer-events: none;
+  pointer-events: none; zoom: var(--ui, 1);
 }
 .stat { display: flex; flex-direction: column; line-height: 1; }
 .stat.mid { align-items: center; }
@@ -82,10 +95,11 @@ body {
 .diffchip[data-d="facil"] { background: var(--good); }
 .diffchip[data-d="dificil"] { background: var(--accent); }
 .diffchip[data-d="extremo"] { background: #ff3b3b; }
+.diffchip[data-d="maestro"] { background: #b49bff; }
 .diffchip svg { vertical-align: -4px; margin-right: 4px; }
 .hbtns { display: flex; gap: 8px; }
 #btnRestart { touch-action: none; min-width: 34px; }
-.diffs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.diffs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .diff {
   display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer;
   font: inherit; color: var(--ink); background: #fff; padding: 8px 4px;
@@ -110,7 +124,7 @@ body {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
-  max-width: 560px; margin: 0 auto;
+  max-width: 560px; margin: 0 auto; zoom: var(--ui, 1);
 }
 .pad button {
   height: clamp(76px, 13vh, 116px); border-radius: 22px;
@@ -129,7 +143,7 @@ body {
   bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(76px, 13vh, 116px) + 34px);
   width: min(380px, calc(100% - 32px)); pointer-events: none;
   background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 5px 0 var(--ink);
-  padding: 12px 14px; text-align: center; font-size: 15px; line-height: 1.4;
+  padding: 12px 14px; text-align: center; font-size: 15px; line-height: 1.4; zoom: var(--ui, 1);
 }
 .help b { font-family: var(--display); font-weight: 400; font-size: 20px; display: block; line-height: 1.15; margin-bottom: 4px; }
 .help .k { display: inline-block; min-width: 26px; padding: 0 4px; border: 2px solid var(--ink); border-radius: 7px; background: var(--cube); font-weight: 800; }
@@ -150,7 +164,22 @@ body {
   margin: auto; flex: none; box-sizing: border-box; min-width: 0;
   width: min(420px, 100%); background: var(--paper);
   border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink);
-  padding: 22px; display: flex; flex-direction: column; gap: 16px;
+  padding: 22px; display: flex; flex-direction: column; gap: 16px; zoom: var(--ui, 1);
+}
+.ehead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: -6px;
+  font: 800 12px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.ehead kbd { letter-spacing: 0; }
+.difend { display: flex; flex-direction: column; gap: 8px; }
+.card .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+#end .card { gap: 12px; }
+/* compu: el menú en dos columnas (demo a la izquierda, elegir y jugar a la derecha) para que entre agrandado */
+@media (min-width: 820px) and (min-height: 600px) {
+  .card.menu { width: min(780px, 100%); flex-direction: row; flex-wrap: wrap; column-gap: 24px; }
+  .card.menu .topbar { flex: 0 0 100%; margin-bottom: 0; }
+  .card.menu .col { flex: 1 1 0; }
+  .card.menu .demo { height: 150px; }
+  .card.menu .col:last-child { justify-content: center; }
+  #end .card { width: min(460px, 100%); }
 }
 .brand { display: flex; align-items: center; gap: 14px; }
 .logo {
@@ -214,7 +243,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .zone {
   position: fixed; left: 0; right: 0; top: 24%;
   display: flex; flex-direction: column; align-items: center; gap: 2px;
-  text-align: center; pointer-events: none; opacity: 0;
+  text-align: center; pointer-events: none; opacity: 0; zoom: var(--ui, 1);
 }
 .zone strong {
   font-family: var(--display); font-weight: 400; font-size: clamp(32px, 8vw, 50px); line-height: 1.05;
@@ -262,14 +291,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 </div>
 
 <div class="overlay" id="menu">
-  <div class="card">
+  <div class="card menu">
     <div class="topbar">
       <button class="smallbtn" id="btnGames" type="button" hidden>← Juegos</button>
       <button class="smallbtn" id="btnMute" type="button" style="margin-left:auto">Sonido: sí</button>
     </div>
+    <div class="col">
     <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Equilibrio</h1></div>
     <p class="intro">Si el cubo se inclina para un lado, <b>tocá la flecha del otro lado</b>. Ojo con el viento: avisa antes de soplar.</p>
     <canvas class="demo" id="demo" aria-label="Ejemplo: el cubo se inclina a la derecha, se toca la flecha izquierda y se endereza" role="img"></canvas>
+    </div>
+    <div class="col">
     <div class="diffs" id="difs"></div>
     <button class="mode" id="btnPlay" type="button">
       <span class="key">↵</span>
@@ -277,8 +309,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="mrec">Récord<b id="mRec">—</b></span>
     </button>
     <button class="btn" id="btnRank" type="button" hidden>🏆 Ranking</button>
-    <div class="foot kbhint">
-      <span>Teclado: <kbd>←</kbd> <kbd>→</kbd> o <kbd>A</kbd> <kbd>D</kbd> · <kbd>Enter</kbd> juega · <kbd>R</kbd> reinicia</span>
+    <div class="foot kbhint" id="mKeys">
+      <span>Teclado: <kbd>←</kbd> <kbd>→</kbd> empujan · <kbd>↑</kbd> <kbd>↓</kbd> dificultad · <kbd>Enter</kbd> juega</span>
+    </div>
     </div>
   </div>
 </div>
@@ -292,12 +325,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="sub" id="eRec"></span>
       <span class="tags" id="eTags"><span class="badge" id="eBadge" hidden>Nuevo récord</span><span class="badge xp" id="eXP" hidden>+0 XP</span></span>
     </div>
-    <button class="btn primary wide" id="btnAgain" type="button">Otra vez <kbd class="kbhint">R</kbd></button>
-    <div class="row" id="eRow">
-      <button class="btn" id="btnGames2" type="button" hidden>← Juegos</button>
-      <button class="btn" id="btnMenu" type="button">Menú</button>
-      <button class="btn" id="btnRank2" type="button" hidden>🏆 Ranking</button>
+    <button class="btn primary wide" id="btnAgain" type="button">↻ Otra vez <kbd class="kbhint">R</kbd></button>
+    <div class="difend" id="eDif" hidden>
+      <div class="ehead"><span>Dificultad</span><span class="kbhint"><kbd>↑</kbd> <kbd>↓</kbd></span></div>
+      <div id="difsEnd"></div>
     </div>
+    <div class="row" id="eRow">
+      <button class="btn" id="btnRank2" type="button" hidden>🏆 Ranking</button>
+      <button class="btn" id="btnMenu" type="button">☰ Menú</button>
+      <button class="btn" id="btnGames2" type="button" hidden>⌂ Juegos</button>
+    </div>
+    <div id="eKeys"></div>
   </div>
 </div>
 
@@ -312,12 +350,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const CC = window.CuboComun || null; // perfil y personaje compartidos; sin esto el juego anda igual
 
   const INK = '#1d2340';
-  const LIMIT = 0.8;       // rad: pasado esto, el cubo se cae
   const IMP = 0.7;         // rad/s que suma cada toque
   const HOLD = 2.6;        // rad/s² mientras mantenés apretado
   const DAMP = 1.0;        // rozamiento del giro
-  const WARN = 0.9;        // s de aviso antes de cada ráfaga
-  const LEVEL_EVERY = 20;  // s por nivel
+  const FIRME = 3;         // s derecho (en la zona verde) para ganar "paso firme"
+  const FIRME_X = 1.3;     // velocidad de caminata con paso firme
 
   const SKY = [ // metros, color arriba, color abajo
     [0,   [98, 198, 255],  [201, 241, 255]],
@@ -329,17 +366,32 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   ];
   const LEAVES = ['#1fbf8a', '#ffcc29', '#ff5d7d', '#ffad4d'];
   const TITLES = ['¡Plaf!', '¡A la red!', '¡Boing!', '¡Uy, uy, uy!', '¡Se fue!'];
-  // t0: segundos de dificultad con los que arranca; ramp: qué tan rápido sube; k/wind: escala de inestabilidad y viento.
-  // Pasados ~110 s de dificultad todo llega a su tope, así que Extremo arranca directo ahí y encima más fuerte.
+  // t0: segundos de dificultad con los que arranca; ramp: qué tan rápido sube; k/wind: escala de inestabilidad y viento;
+  // gap: aire extra entre ráfagas; limit: inclinación (rad) en la que se cae; warn: s de aviso antes de cada ráfaga;
+  // first: s hasta la primera ráfaga; ev: s entre sorpresas (pájaro, ráfaga doble, cuerda floja); bird: peso del pájaro.
+  // Pasados ~110 s de dificultad todo llega a su tope y desde ahí sigue subiendo despacito (ver `extra`),
+  // así ninguna partida es eterna. Extremo arranca en el tope; Maestro más allá, con menos margen y casi sin aviso.
   const DIFFS = {
-    facil:   { name: 'Fácil',   desc: 'Cuerda más firme y viento suave.',             t0: 0,   ramp: 0.7, k: 0.8, wind: 0.6, gap: 1.2 },
-    normal:  { name: 'Normal',  desc: 'Se va poniendo difícil con el tiempo.',        t0: 0,   ramp: 1,   k: 1,   wind: 1,   gap: 0 },
-    dificil: { name: 'Difícil', desc: 'Arranca como el Normal al minuto.',            t0: 60,  ramp: 0.7, k: 1,   wind: 1,   gap: 0 },
-    extremo: { name: 'Extremo', desc: 'Todo al máximo desde el primer paso. Sin perdón.', t0: 110, ramp: 1,   k: 1.1, wind: 1.1, gap: 0 },
+    facil:   { name: 'Fácil',   desc: 'Cuerda firme, viento suave y margen de sobra. Ideal para aprender.',
+               t0: 5,   ramp: 1,    k: 0.8, wind: 0.7,  gap: 0.6, limit: 0.9, warn: 1.1,  first: 3,   ev: 15, bird: 0.9 },
+    normal:  { name: 'Normal',  desc: 'Viento desde el arranque y una sorpresa cada 15 segundos.',
+               t0: 9,   ramp: 0.95, k: 1,   wind: 1,    gap: 0.2, limit: 0.8, warn: 0.9,  first: 2.5, ev: 15, bird: 1.1 },
+    dificil: { name: 'Difícil', desc: 'Arranca como el Normal al minuto.',
+               t0: 55,  ramp: 1,    k: 1,   wind: 1,    gap: 0,   limit: 0.8, warn: 0.85, first: 2,   ev: 14, bird: 1.3 },
+    extremo: { name: 'Extremo', desc: 'Todo al máximo desde el primer paso. Sin perdón. XP ×3.',
+               t0: 105, ramp: 1,    k: 1.1, wind: 1.1,  gap: 0,   limit: 0.8, warn: 0.8,  first: 2,   ev: 12, bird: 1.5 },
+    maestro: { name: 'Maestro', desc: 'Más nervioso que Extremo, menos margen y el viento casi no avisa. XP ×4.',
+               t0: 120, ramp: 1.2,  k: 1.2, wind: 1.25, gap: 0,   limit: 0.7, warn: 0.55, first: 1.5, ev: 10, bird: 1.7 },
   };
   const DIFF_IDS = Object.keys(DIFFS);
-  // XP base según los metros (en Normal): 15 m es una partida floja y 350 m es de experto
-  const XP_MALO = 15, XP_EXPERTO = 350;
+  // sorpresas: una cada `ev` segundos (la primera siempre es el pájaro), cada una sube un nivel
+  const EVENTS = {
+    pajaro: { t: '¡Un pájaro!', s: 'pesa de un lado' },
+    doble:  { t: '¡Ráfaga doble!', s: 'una para cada lado' },
+    floja:  { t: '¡Cuerda floja!', s: 'tiembla todo un rato' },
+  };
+  // XP base según los metros (en Normal): 20 m es una partida floja y 300 m es de experto
+  const XP_MALO = 20, XP_EXPERTO = 300;
 
   // ---------- récords ----------
   const REC_KEY = 'cubo-equilibrio-records';
@@ -423,26 +475,48 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let shake = 0;
 
   function newRun(demo, D = 0) {
+    const id = demo ? 'normal' : diffId, cfg = DIFFS[id];
     G = {
       demo, started: demo, t: 0, th: demo ? 0.05 : 0, om: 0, D, face: 1,
-      gust: null, nextGust: demo ? 2.5 : 4, level: 1, nextMile: 50, nextDanger: 0,
+      gust: null, nextGust: demo ? 2.5 : cfg.first, forceDir: 0, level: 1, nextMile: 50, nextDanger: 0,
+      nextEv: cfg.ev, evN: 0, lastEv: '', bird: null, floja: 0, dbl: false, steady: 0, boost: false,
       fall: null, done: false, botT: 0, pushT: -1e9, pushDir: 0,
       dipA: 0, dipV: 0, dipX: 0,
       ph1: Math.random() * 6, ph2: Math.random() * 6,
-      diff: demo ? 'normal' : diffId,
+      diff: id, cfg,
     };
-    G.cfg = DIFFS[G.diff];
     particles = []; floats = []; leaves = [];
   }
   const diff = () => G.demo ? 14 : G.cfg.t0 + G.t * G.cfg.ramp;
-  const instab = () => Math.min(5.5, 1.5 + diff() * 0.04) * G.cfg.k;
-  const walkSpeed = () => Math.min(3, 1.3 + diff() * 0.015);
+  // pasado el tope (110), todo sigue subiendo un 0,4 % por segundo de dificultad: ninguna partida es eterna
+  const extra = d => 1 + Math.max(0, d - 110) * 0.004;
+  const instab = () => Math.min(5.5, 1.5 + diff() * 0.04) * G.cfg.k * extra(diff());
+  const walkSpeed = () => Math.min(3, 1.3 + diff() * 0.015) * (G.boost ? FIRME_X : 1);
+  // zonas del medidor, en proporción a la inclinación en la que se cae
+  const LIM = () => G.cfg.limit, VERDE = () => LIM() * 0.375, AMARILLO = () => LIM() * 0.69;
 
   function windAt(t) {
     const g = G.gust;
     if (!g || t < g.start || t > g.end) return 0;
     const env = Math.max(0, Math.min(1, (t - g.start) / 0.15, (g.end - t) / 0.2));
     return g.dir * g.str * env;
+  }
+  const birdAt = t => (G.bird && t >= G.bird.start && t < G.bird.end ? G.bird.dir * G.cfg.bird : 0);
+
+  // sorpresa nueva: sube el nivel y avisa con un cartel
+  function startEvent() {
+    const libres = Object.keys(EVENTS).filter(k => k !== G.lastEv);
+    const kind = G.evN === 0 ? 'pajaro' : libres[Math.floor(Math.random() * libres.length)];
+    G.lastEv = kind; G.evN++; G.level = G.evN + 1;
+    if (kind === 'pajaro') {
+      const s = G.t + 1.1; // llega volando en 1,1 s y se queda 3,5 a 4,5 s
+      G.bird = { dir: Math.random() < 0.5 ? -1 : 1, arrive: G.t, start: s, end: s + 3.5 + Math.random() };
+    } else if (kind === 'doble') {
+      G.dbl = true;
+      if (!G.gust) G.nextGust = Math.min(G.nextGust, G.t + G.cfg.warn + 0.4);
+    } else G.floja = G.t + 5;
+    banner(EVENTS[kind].t, `Nivel ${G.level} · ${EVENTS[kind].s}`);
+    sfxLevel();
   }
 
   function tap(d, now) {
@@ -468,7 +542,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       pole: { x: 0, y: -S * 0.55, vx: -sg * U * 1.8, vy: -U * 4, rot: G.th, vr: -sg * 7, rest: false },
       shown: false,
     };
-    G.gust = null;
+    G.gust = null; G.boost = false;
+    if (G.bird) { G.bird.start = Math.min(G.bird.start, G.t); G.bird.end = Math.min(G.bird.end, G.t); } // se asusta y se va
     if (!G.demo) {
       sfxFall(); shake = reduceMotion ? 0 : 6;
       if (CC) CC.vibrar(30);
@@ -529,13 +604,19 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('mDesc').textContent = sel ? 'Caminá la cuerda todo lo que puedas.' : DIFFS[diffId].desc;
     for (const b of document.querySelectorAll('.diff')) b.setAttribute('aria-pressed', String(b.dataset.d === diffId));
     $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+    renderAgain();
   }
-  // selector común de dificultad; sin cubo-comun.js, unos botones propios
+  // en la pantalla de fin, si elegiste otra dificultad, el botón principal lo dice
+  function renderAgain() {
+    const otra = state === 'end' && G && !G.demo && G.diff !== diffId;
+    $('btnAgain').innerHTML = (otra ? '▶ Jugar en ' + DIFFS[diffId].name : '↻ Otra vez') + ' <kbd class="kbhint">R</kbd>';
+  }
+  // selector común de dificultad (en el menú y, en chiquito, en la pantalla de fin); sin cubo-comun.js, unos botones propios
   let sel = null;
   function setDiff(id) {
     if (!DIFFS[id] || id === diffId) return;
     diffId = id; rec.diff = id; saveRec(); renderMenu();
-    beep(520 + DIFF_IDS.indexOf(id) * 140, 0.06);
+    beep(520 + DIFF_IDS.indexOf(id) * 110, 0.06);
   }
   function stepDiff(dir) {
     if (sel) sel.siguiente(dir);
@@ -550,6 +631,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       alCambiar: id => setDiff(id),
     });
     diffId = DIFFS[sel.valor()] ? sel.valor() : 'normal';
+    CC.selectorDif($('difsEnd'), { juego: 'equilibrio', compacto: true, alCambiar: id => setDiff(id) });
+    $('eDif').hidden = false; $('btnMenu').hidden = true;
+    if (CC.leyendaTeclas) {
+      $('mKeys').className = '';
+      CC.leyendaTeclas($('mKeys'), { jugar: 'empujar', extra: [['R', 'reiniciar']] });
+      CC.leyendaTeclas($('eKeys'), { jugar: 'empujar', extra: [['R', 'otra vez']] });
+    }
   } else {
     $('difs').innerHTML = DIFF_IDS.map(id => `<button class="diff" data-d="${id}" type="button" aria-pressed="false"><span class="dname">${DIFFS[id].name}</span></button>`).join('');
     for (const b of document.querySelectorAll('.diff')) b.addEventListener('click', () => setDiff(b.dataset.d));
@@ -587,6 +675,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showEnd() {
     state = 'end';
+    renderAgain();
     $('end').hidden = false; $('pad').hidden = true; $('help').hidden = true;
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
   }
@@ -605,28 +694,32 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     flashT[d] = performance.now();
     tap(d, performance.now());
   }
+  // Teclas: ← → (A/D) son solo del juego; en el menú y en la pantalla de fin ↑ ↓ eligen la dificultad,
+  // Enter/Espacio juegan, Esc vuelve a Juegos. En el menú ← → también arrancan (el primer toque ya empuja).
   addEventListener('keydown', e => {
     const k = e.key;
     // con el ranking abierto o escribiendo el apodo, el teclado no es del juego
     if (document.getElementById('cc-rank') || (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName))) return;
     const dir = (k === 'ArrowLeft' || k === 'a' || k === 'A') ? -1 : (k === 'ArrowRight' || k === 'd' || k === 'D') ? 1 : 0;
-    if ((k === 'r' || k === 'R') && (state === 'play' || state === 'end')) {
-      e.preventDefault(); if (!e.repeat) restart();
-    } else if (state === 'play') {
-      if (dir) { e.preventDefault(); keys[dir < 0 ? 'L' : 'R'] = true; if (!e.repeat) input(dir); }
+    if (state === 'play') {
+      if (k === 'r' || k === 'R') { e.preventDefault(); if (!e.repeat) restart(); }
+      else if (dir) { e.preventDefault(); keys[dir < 0 ? 'L' : 'R'] = true; if (!e.repeat) input(dir); }
       else if (k === 'Escape') showMenu();
-    } else if (state === 'menu') {
-      const ae = document.activeElement, onDiff = ae && ae.classList && (ae.classList.contains('diff') || ae.classList.contains('cc-dif'));
-      if (dir) {
-        e.preventDefault();
-        stepDiff(dir);
-        if (onDiff) { const b = document.querySelector(`#difs [data-d="${diffId}"]`); if (b) b.focus({ preventScroll: true }); }
-      }
-      else if ((k === 'Enter' && (ae === document.body || onDiff)) || (k === ' ' && ae === document.body)) { e.preventDefault(); start(); }
-      else if (k === 'Escape' && CC) CC.volver();
-    } else if (state === 'end') {
-      if (k === 'Escape') showMenu();
-      else if ((k === 'Enter' || k === ' ') && document.activeElement === document.body) { e.preventDefault(); start(); }
+      return;
+    }
+    const ae = document.activeElement, onDiff = !!(ae && ae.closest && ae.closest('.diff, .cc-dif'));
+    const libre = !ae || ae === document.body || onDiff;
+    if (k === 'ArrowUp' || k === 'ArrowDown') {
+      e.preventDefault();
+      stepDiff(k === 'ArrowUp' ? -1 : 1);
+      if (onDiff) { const b = ae.parentElement.querySelector(`[data-d="${diffId}"]`); if (b) b.focus({ preventScroll: true }); }
+    } else if ((k === 'r' || k === 'R') && state === 'end') { e.preventDefault(); if (!e.repeat) start(); }
+    else if ((k === 'Enter' || k === ' ') && libre) { e.preventDefault(); if (!e.repeat) start(); }
+    else if (k === 'Escape') { if (CC) CC.volver(); else if (state === 'end') showMenu(); }
+    else if (dir && state === 'menu' && !e.repeat) {
+      e.preventDefault();
+      start();
+      if (rec.ayuda) { keys[dir < 0 ? 'L' : 'R'] = true; input(dir); } // la primera vez espera, para leer la ayuda
     }
   });
   addEventListener('keyup', e => {
@@ -650,9 +743,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   $('btnRestart').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (state === 'play') restart(); });
   if (CC) {
     for (const id of ['btnGames', 'btnGames2', 'btnRank', 'btnRank2']) $(id).hidden = false;
-    $('eRow').classList.add('three');
     for (const id of ['btnGames', 'btnGames2']) $(id).addEventListener('click', () => CC.volver());
-    for (const id of ['btnRank', 'btnRank2']) $(id).addEventListener('click', () => CC.verRanking({ juego: 'equilibrio', tabla: state === 'end' && G ? G.diff : diffId }));
+    for (const id of ['btnRank', 'btnRank2']) $(id).addEventListener('click', () => CC.verRanking({ juego: 'equilibrio', tabla: diffId }));
   } else $('eRow').style.gridTemplateColumns = '1fr';
   $('btnMute').addEventListener('click', () => {
     muted = !muted; rec.muted = muted; saveRec(); renderMenu();
@@ -727,21 +819,33 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     else { c.fillStyle = '#ffcc29'; c.lineWidth = 3; c.strokeStyle = INK; c.beginPath(); c.roundRect ? c.roundRect(-s / 2, -s, s, s, s * 0.2) : c.rect(-s / 2, -s, s, s); c.fill(); c.stroke(); }
     c.restore();
 
-    // teclas a los costados
-    const kw = Math.min(58, w * 0.17), kh = Math.min(46, h * 0.42);
+    // los mismos dos botones del juego (flecha + "Izquierda"/"Derecha"), arriba a cada lado
+    const kw = Math.min(108, w * 0.3), kh = Math.min(38, h * 0.32), ky0 = h * 0.1;
+    const box = (x, y, bw, bh) => { c.beginPath(); c.roundRect ? c.roundRect(x, y, bw, bh, 11) : c.rect(x, y, bw, bh); };
     for (const d of [-1, 1]) {
-      const on = pressed === d, kx = d < 0 ? 12 : w - 12 - kw, ky = h * 0.2 + (on ? 3 : 0);
-      c.fillStyle = INK; c.beginPath(); c.roundRect ? c.roundRect(kx, h * 0.2 + 4, kw, kh, 10) : c.rect(kx, h * 0.2 + 4, kw, kh); c.fill();
+      const on = pressed === d, kx = d < 0 ? 10 : w - 10 - kw, ky = ky0 + (on ? 3 : 0);
+      c.fillStyle = INK; box(kx, ky0 + 4, kw, kh); c.fill();
       c.fillStyle = on ? '#ffcc29' : '#fffaf0'; c.strokeStyle = INK; c.lineWidth = 3;
-      c.beginPath(); c.roundRect ? c.roundRect(kx, ky, kw, kh, 10) : c.rect(kx, ky, kw, kh); c.fill(); c.stroke();
-      c.fillStyle = INK; c.font = `${Math.round(kh * 0.5)}px "Lilita One", "Trebuchet MS", sans-serif`;
-      c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText(d < 0 ? '◀' : '▶', kx + kw / 2, ky + kh / 2 + 1);
+      box(kx, ky, kw, kh); c.fill(); c.stroke();
+      const fs = Math.round(Math.min(15, kh * 0.42));
+      c.font = `${fs}px "Lilita One", "Trebuchet MS", sans-serif`;
+      const label = d < 0 ? 'Izquierda' : 'Derecha', tw = c.measureText(label).width, aw = fs * 0.7;
+      const x0 = kx + (kw - tw - aw - 4) / 2, cy = ky + kh / 2;
+      // chevron como el SVG de los botones
+      c.strokeStyle = INK; c.lineWidth = 3; c.lineCap = 'round'; c.lineJoin = 'round';
+      const ax = d < 0 ? x0 : x0 + tw + 4;
+      c.beginPath();
+      if (d < 0) { c.moveTo(ax + aw * 0.75, cy - aw * 0.6); c.lineTo(ax + aw * 0.15, cy); c.lineTo(ax + aw * 0.75, cy + aw * 0.6); }
+      else { c.moveTo(ax + aw * 0.25, cy - aw * 0.6); c.lineTo(ax + aw * 0.85, cy); c.lineTo(ax + aw * 0.25, cy + aw * 0.6); }
+      c.stroke();
+      c.fillStyle = INK; c.textAlign = 'left'; c.textBaseline = 'middle';
+      c.fillText(label, d < 0 ? x0 + aw + 4 : x0, cy + 1);
       if (on) {
-        c.font = `${Math.round(Math.min(16, h * 0.15))}px "Lilita One", "Trebuchet MS", sans-serif`;
+        c.font = `${Math.round(Math.min(15, h * 0.13))}px "Lilita One", "Trebuchet MS", sans-serif`;
+        c.textAlign = 'center';
         c.lineWidth = 4; c.lineJoin = 'round'; c.strokeStyle = INK; c.fillStyle = '#fffaf0';
-        const ly = ky + kh + 16;
-        c.strokeText('¡Tocá!', kx + kw / 2, ly); c.fillText('¡Tocá!', kx + kw / 2, ly);
+        const ly = ky + kh + 15, lt = d < 0 ? '¡Tocá! empuja ←' : '¡Tocá! empuja →';
+        c.strokeText(lt, kx + kw / 2, ly); c.fillText(lt, kx + kw / 2, ly);
       }
     }
   }
@@ -758,11 +862,16 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (G.started && !G.fall) {
       G.t += dt;
       const d = diff();
+      // sorpresas (cada una sube un nivel)
+      if (!G.demo && G.t >= G.nextEv) { G.nextEv += G.cfg.ev; startEvent(); }
+      if (G.bird && G.t > G.bird.end + 1.2) G.bird = null;
       // ráfagas
-      if (!G.gust && G.t >= G.nextGust - WARN) {
-        const str = Math.min(4.2, 1.4 + d * 0.03) * (0.75 + Math.random() * 0.45) * G.cfg.wind;
+      if (!G.gust && G.t >= G.nextGust - G.cfg.warn) {
+        const str = Math.min(4.2, 1.4 + d * 0.03) * (0.75 + Math.random() * 0.45) * G.cfg.wind * extra(d);
         const dur = 0.6 + Math.random() * 0.6 + Math.min(0.6, d * 0.006);
-        G.gust = { dir: Math.random() < 0.5 ? -1 : 1, str, warn: G.t, start: G.nextGust, end: G.nextGust + dur, blown: false };
+        const dir = G.forceDir || (Math.random() < 0.5 ? -1 : 1);
+        G.forceDir = 0;
+        G.gust = { dir, str, warn: G.t, start: G.nextGust, end: G.nextGust + dur, blown: false };
         if (!G.demo) sfxWarn();
         // en la primera partida, explicamos la primera ráfaga
         if (G.tutorial && !G.windTip) { G.windTip = true; banner(G.gust.dir > 0 ? '¡Viento →!' : '¡← Viento!', `Tocá ${G.gust.dir > 0 ? '◀' : '▶'} para aguantar`); }
@@ -772,19 +881,31 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         if (!G.demo) whoosh(G.gust.end - G.gust.start + 0.3, G.gust.dir > 0 ? 500 : 900, G.gust.dir > 0 ? 1400 : 380, 0.12);
       }
       if (G.gust && G.t > G.gust.end) {
-        G.nextGust = G.t + Math.max(1.5, 5 - d * 0.035) + G.cfg.gap + Math.random() * 1.2;
+        if (G.dbl) { G.dbl = false; G.forceDir = -G.gust.dir; G.nextGust = G.t + G.cfg.warn + 0.35; } // la segunda, del otro lado
+        else G.nextGust = G.t + Math.max(1.5, 5 - d * 0.035) + G.cfg.gap + Math.random() * 1.2;
         G.gust = null;
       }
       // péndulo invertido
       const K = instab(), hold = G.demo ? 0 : holdDir();
-      const na = Math.min(1.2, 0.35 + d * 0.01) * G.cfg.k;
+      const na = Math.min(1.2, 0.35 + d * 0.01) * G.cfg.k * (G.t < G.floja ? 2.2 : 1);
       const n = 4, h = dt / n;
       for (let i = 0; i < n; i++) {
         const tt = G.t - dt + h * (i + 1);
         const noise = na * (Math.sin(tt * 1.3 + G.ph1) + 0.6 * Math.sin(tt * 2.9 + G.ph2));
-        const acc = K * Math.sin(G.th) - DAMP * G.om + windAt(tt) + hold * HOLD + noise;
+        const acc = K * Math.sin(G.th) - DAMP * G.om + windAt(tt) + birdAt(tt) + hold * HOLD + noise;
         G.om = Math.max(-4, Math.min(4, G.om + acc * h));
         G.th += G.om * h;
+      }
+
+      if (!G.demo) {
+        // paso firme: 3 s derecho en la zona verde y camina más rápido, hasta que se vuelva a inclinar
+        if (Math.abs(G.th) < VERDE()) G.steady += dt;
+        else { G.steady = 0; G.boost = false; }
+        if (!G.boost && G.steady >= FIRME) {
+          G.boost = true;
+          floats.push({ text: '¡Paso firme!', x: W / 2, y: ropeY - S * 1.5, t: now });
+          [784, 1046].forEach((f, i) => setTimeout(() => beep(f, 0.09, 'triangle', 0.05), i * 70));
+        }
       }
       G.D += walkSpeed() * dt;
 
@@ -793,11 +914,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
           floats.push({ text: G.nextMile + ' m', x: W / 2, y: ropeY - S * 1.6, t: now, big: true });
           G.nextMile += 50; sfxMile();
         }
-        const lv = 1 + Math.floor(G.t / LEVEL_EVERY);
-        if (lv > G.level) { G.level = lv; banner('Nivel ' + lv, lv % 2 ? 'Más inestable' : 'Más viento'); sfxLevel(); }
-        if (Math.abs(G.th) > 0.55 && now >= G.nextDanger) { sfxDanger(); G.nextDanger = now + 320; }
+        if (Math.abs(G.th) > AMARILLO() && now >= G.nextDanger) { sfxDanger(); G.nextDanger = now + 320; }
       }
-      if (Math.abs(G.th) > LIMIT) startFall(now);
+      if (Math.abs(G.th) > LIM()) startFall(now);
     }
 
     if (G.fall) updateFall(now, dt);
@@ -833,6 +952,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (state === 'play' || state === 'end') {
       let chip = 'Nivel ' + G.level, hot = false;
       if (g) { chip = g.dir > 0 ? '¡Viento! →' : '← ¡Viento!'; hot = true; }
+      else if (G.bird && G.t >= G.bird.start && G.t < G.bird.end) { chip = G.bird.dir > 0 ? 'Pájaro →' : '← Pájaro'; hot = true; }
+      else if (G.t < G.floja) { chip = 'Cuerda floja'; hot = true; }
+      else if (G.boost) { chip = 'Paso firme ×1,3'; hot = true; }
       const sig = Math.floor(G.D) + '|' + G.t.toFixed(1) + '|' + chip;
       if (sig !== hudCache) {
         hudCache = sig;
@@ -975,7 +1097,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
     // cuerda (se hunde un poco bajo el cubo)
     const dip = G.fall ? 0 : U * 0.1;
-    const ropeAt = x => ropeY + dip * Math.exp(-(((x - W / 2) / (U * 2.6)) ** 2));
+    // cuerda floja: la cuerda ondea mientras dura
+    const wob = !G.fall && G.t < G.floja ? U * (reduceMotion ? 0.025 : 0.07) * Math.min(1, G.floja - G.t) : 0;
+    const ropeAt = x => ropeY + dip * Math.exp(-(((x - W / 2) / (U * 2.6)) ** 2)) + (wob ? wob * Math.sin(x * 0.045 + now * 0.025) : 0);
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     for (const [c, w] of [['#1d2340', Math.max(5, U * 0.1)], ['#e8c58a', Math.max(2, U * 0.04)]]) {
       ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath();
@@ -1004,7 +1128,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       ctx.save(); ctx.translate(fx, fy); ctx.rotate(G.th);
       const pt = (now - G.pushT) / 160, kick = pt >= 0 && pt < 1 ? Math.sin(Math.PI * pt) * G.pushDir * U * 0.06 : 0;
       drawPole(0, -S * 0.42, 0, G.om);
-      const worried = Math.abs(G.th) > 0.45, look = Math.max(-1, Math.min(1, G.th * 2));
+      const worried = Math.abs(G.th) > LIM() * 0.56, look = Math.max(-1, Math.min(1, G.th * 2));
       if (CC) {
         CC.dibujarCubo(ctx, kick, 0, S, { mirar: look, t: now });
         ctx.translate(kick, -S / 2);
@@ -1015,6 +1139,21 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       }
       drawHands();
       ctx.restore();
+      // punta de la pértiga donde se para el pájaro (en coordenadas de pantalla)
+      if (G.bird) {
+        const L = U * 1.55, lx = G.bird.dir * L, ly = -S * 0.42 + U * 0.1, c = Math.cos(G.th), s = Math.sin(G.th);
+        G.bird.x = fx + lx * c - ly * s; G.bird.y = fy + lx * s + ly * c;
+      }
+      // paso firme: rayitas de velocidad detrás del cubo
+      if (G.boost && !reduceMotion) {
+        ctx.strokeStyle = 'rgba(255,250,240,.85)'; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(2.5, U * 0.05);
+        for (let k = 0; k < 3; k++) {
+          const ph = ((now / 260) + k / 3) % 1, x0 = fx - S * (0.75 + ph * 0.9), y0 = fy - S * (0.25 + k * 0.28);
+          ctx.globalAlpha = 1 - ph;
+          ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 - S * 0.45, y0); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
       drawGauge(now);
     } else {
       const F = G.fall, P = F.pole;
@@ -1040,6 +1179,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       }
     }
 
+    if (G.bird && G.bird.x != null) drawBird(now);
+
     // partículas
     for (const p of particles) {
       ctx.globalAlpha = 1 - p.age / p.life; ctx.fillStyle = p.c; ctx.strokeStyle = '#1d2340'; ctx.lineWidth = 1.5;
@@ -1064,7 +1205,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (g && !G.fall && (state !== 'menu' || G.t >= g.start)) drawWindSign(now, g);
 
     // borde rojo cuando estás por caerte
-    const danger = G.fall ? 0 : clamp01((Math.abs(G.th) - 0.45) / 0.3);
+    const danger = G.fall ? 0 : clamp01((Math.abs(G.th) - LIM() * 0.56) / (LIM() * 0.375));
     if (danger > 0 && !G.demo) {
       const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
       vg.addColorStop(0, 'rgba(255,93,125,0)'); vg.addColorStop(1, `rgba(255,93,125,${0.5 * danger})`);
@@ -1120,6 +1261,39 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     ctx.strokeStyle = '#ff5d7d'; ctx.lineWidth = Math.max(2, U * 0.035); ctx.beginPath();
     for (let x = -10; x <= W + 10; x += 10) ctx.lineTo(x, yAt(x));
     ctx.stroke();
+  }
+
+  // pájaro: llega volando desde su costado, se para en la punta de la pértiga y después se va para arriba
+  function drawBird(now) {
+    const B = G.bird, r = U * 0.2, dir = B.dir;
+    const t = G.fall ? B.end + (now - G.fall.t0) / 1000 : G.t; // al caerse el reloj del juego se frena
+    if (t > B.end + 1.2) return;
+    let x = B.x, y = B.y - r * 0.9, flying = true;
+    const ease = q => 1 - Math.pow(1 - q, 3);
+    if (t < B.start) {
+      const q = ease(clamp01((t - B.arrive) / (B.start - B.arrive)));
+      x = lerp(dir > 0 ? W + U : -U, x, q); y = lerp(ropeY - U * 3.2, y, q);
+    } else if (t >= B.end) {
+      const q = clamp01((t - B.end) / 1.2);
+      x += dir * q * U * 5; y -= q * q * U * 6 + q * U;
+    } else flying = false;
+    const flap = flying ? Math.sin(now / 45) : 0.15 * Math.sin(now / 300);
+    ctx.save(); ctx.translate(x, y); ctx.scale(-dir, 1); // mira hacia el cubo
+    ctx.lineWidth = 2.5; ctx.strokeStyle = INK; ctx.lineJoin = 'round';
+    if (!flying) { // patitas
+      ctx.beginPath(); ctx.moveTo(-r * 0.25, r * 0.8); ctx.lineTo(-r * 0.25, r * 1.1); ctx.moveTo(r * 0.2, r * 0.8); ctx.lineTo(r * 0.2, r * 1.1); ctx.stroke();
+    }
+    ctx.fillStyle = '#5cb0ff'; // cola
+    ctx.beginPath(); ctx.moveTo(r * 0.7, -r * 0.1); ctx.lineTo(r * 1.45, -r * 0.45); ctx.lineTo(r * 1.35, r * 0.25); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0, 0, r * 1.05, r * 0.9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffcc29'; // pico
+    ctx.beginPath(); ctx.moveTo(-r * 0.95, -r * 0.2); ctx.lineTo(-r * 1.55, r * 0.02); ctx.lineTo(-r * 0.92, r * 0.22); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(-r * 0.45, -r * 0.25, r * 0.14, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fffaf0'; // ala
+    ctx.save(); ctx.translate(r * 0.15, -r * 0.05); ctx.rotate(-0.3 - flap * 0.9);
+    ctx.beginPath(); ctx.ellipse(r * 0.35, 0, r * 0.62, r * 0.3, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.restore();
+    ctx.restore();
   }
 
   // pértiga de equilibrista, en coordenadas locales del cubo
@@ -1192,13 +1366,19 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function drawGauge(now) {
     if (G.demo) return;
     const cx = W / 2, cy = ropeY - U * 2.0, r = U * 0.62, base = -Math.PI / 2;
-    const segs = [[-LIMIT, -0.55, '#ff5d7d'], [-0.55, -0.3, '#ffcc29'], [-0.3, 0.3, '#1fbf8a'], [0.3, 0.55, '#ffcc29'], [0.55, LIMIT, '#ff5d7d']];
+    const L = LIM(), v = VERDE(), y = AMARILLO();
+    const segs = [[-L, -y, '#ff5d7d'], [-y, -v, '#ffcc29'], [-v, v, G.boost ? '#7dffc4' : '#1fbf8a'], [v, y, '#ffcc29'], [y, L, '#ff5d7d']];
     ctx.lineCap = 'butt';
     ctx.strokeStyle = '#1d2340'; ctx.lineWidth = U * 0.2;
-    ctx.beginPath(); ctx.arc(cx, cy, r, base - LIMIT - 0.04, base + LIMIT + 0.04); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, r, base - L - 0.04, base + L + 0.04); ctx.stroke();
     ctx.lineWidth = U * 0.12;
     for (const [a, b, c] of segs) { ctx.strokeStyle = c; ctx.beginPath(); ctx.arc(cx, cy, r, base + a, base + b); ctx.stroke(); }
-    const a = base + Math.max(-LIMIT, Math.min(LIMIT, G.th));
+    // carga del paso firme: un arquito que se llena mientras seguís derecho
+    if (!G.boost && G.steady > 0.4) {
+      ctx.strokeStyle = '#fffaf0'; ctx.lineWidth = U * 0.06; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(cx, cy, r + U * 0.2, base - v, base - v + 2 * v * clamp01(G.steady / FIRME)); ctx.stroke();
+    }
+    const a = base + Math.max(-L, Math.min(L, G.th));
     ctx.lineCap = 'round'; ctx.strokeStyle = '#1d2340'; ctx.lineWidth = Math.max(3, U * 0.06);
     ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * r * 1.12, cy + Math.sin(a) * r * 1.12); ctx.stroke();
     ctx.fillStyle = '#fffaf0'; ctx.lineWidth = 2.5;
@@ -1235,5 +1415,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 })();
 </script>
 
+<script>(function(){var el=document.getElementById('cargando');if(!el)return;
+function fuera(){if(!el)return;el.classList.add('fuera');var e=el;el=null;setTimeout(function(){e.remove()},400)}
+var l=document.querySelector('link[data-fuentes]'),esperas=[];
+if(l)esperas.push(new Promise(function(r){if(l.sheet)r();l.addEventListener('load',r);l.addEventListener('error',r)}).then(function(){return document.fonts&&document.fonts.ready}));
+Promise.race([Promise.all(esperas),new Promise(function(r){setTimeout(r,2500)})]).then(function(){setTimeout(fuera,60)});})();</script>
 </body>
 </html>

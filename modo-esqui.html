@@ -37,7 +37,7 @@ body {
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
-  pointer-events: none;
+  pointer-events: none; zoom: var(--ui, 1);
 }
 .stat { display: flex; flex-direction: column; line-height: 1; }
 .stat.mid { align-items: center; }
@@ -79,7 +79,7 @@ body {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
-  max-width: 560px; margin: 0 auto;
+  max-width: 560px; margin: 0 auto; zoom: var(--ui, 1);
 }
 .pad.off { visibility: hidden; }
 .pad button {
@@ -96,23 +96,32 @@ body {
 .tip {
   position: fixed; left: 50%; transform: translateX(-50%);
   bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(76px, 13vh, 116px) + 40px);
-  width: max-content; max-width: calc(100vw - 32px);
+  width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box;
   background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 5px 0 var(--ink);
   padding: 10px 16px; font-weight: 600; font-size: 15px; line-height: 1.4; text-align: center; pointer-events: none;
+  zoom: var(--ui, 1);
 }
 .tip b { font-family: var(--display); font-weight: 400; font-size: 18px; }
 
 .overlay {
-  position: fixed; inset: 0; display: grid; place-items: center; overflow-y: auto;
+  position: fixed; inset: 0; display: flex; overflow-y: auto;
   padding-block: 24px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   background: rgba(29, 35, 64, .28);
 }
 .card {
-  width: min(410px, 100%); background: var(--paper);
+  width: min(410px, 100%); margin: auto; background: var(--paper);
   border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink);
   padding: 20px; display: flex; flex-direction: column; gap: 14px;
+  zoom: var(--ui, 1);
+}
+.col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+/* compu apaisada: el menú en dos columnas (cómo se juega | elegir y jugar) */
+@media (min-width: 820px) and (min-height: 560px) and (orientation: landscape) {
+  .card.menu { width: min(760px, 100%); display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; align-items: start; }
+  .card.menu #demo { height: 150px; }
+  .card.fin { width: min(440px, 100%); }
 }
 .brand { display: flex; align-items: center; gap: 14px; }
 .logo {
@@ -160,8 +169,13 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 }
 .btn.primary { background: var(--cube); font: 400 22px var(--display); padding: 12px 10px; }
 .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.btn.primary kbd { font-size: 13px; margin-left: 8px; vertical-align: 3px; }
+.difbox { display: flex; flex-direction: column; gap: 6px; }
+.difbox > span { font-weight: 800; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: center; }
+.teclas:empty { display: none; }
+@media (pointer: coarse) { .kbd-only { display: none; } }
 button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-@media (max-width: 380px) { .card { padding: 16px; gap: 12px; } #demo { height: 104px; } }
+@media (max-width: 380px) { .card { padding: 16px; gap: 12px; } .col { gap: 12px; } #demo { height: 104px; } }
 </style>
 
 <canvas id="cv"></canvas>
@@ -186,26 +200,30 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 <div class="tip" id="tip" hidden>Mantené <b>◀</b> o <b>▶</b> para doblar.<br>Pasá entre las banderas marcadas.</div>
 
 <div class="overlay" id="menu">
-  <div class="card">
-    <button class="smallbtn back" id="btnBack" type="button">← Juegos</button>
-    <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Esquí</h1></div>
-    <p class="intro">Mantené <b>◀</b> o <b>▶</b> para doblar y pasá entre cada par de <b>banderas</b>. Si salteás una, perdés una vida.</p>
-    <canvas id="demo" aria-hidden="true"></canvas>
-    <div id="difs"></div>
-    <div class="go">
-      <span class="best">Récord<b id="mBest">—</b></span>
-      <button class="btn primary" id="btnPlay" type="button">Jugar</button>
+  <div class="card menu">
+    <div class="col">
+      <button class="smallbtn back" id="btnBack" type="button">← Juegos</button>
+      <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Esquí</h1></div>
+      <p class="intro">Mantené <b>◀</b> o <b>▶</b> para doblar y pasá entre cada par de <b>banderas</b>. Si salteás una, perdés una vida.</p>
+      <canvas id="demo" aria-hidden="true"></canvas>
     </div>
-    <button class="btn" id="btnRank" type="button">Ranking</button>
-    <div class="foot">
-      <span>Teclado: <kbd>←</kbd> <kbd>→</kbd> o <kbd>A</kbd> <kbd>D</kbd> · <kbd>R</kbd> reinicia</span>
-      <button class="smallbtn" id="btnMute" type="button">Sonido: sí</button>
+    <div class="col">
+      <div id="difs"></div>
+      <div class="go">
+        <span class="best">Récord<b id="mBest">—</b></span>
+        <button class="btn primary" id="btnPlay" type="button">Jugar</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="btnRank" type="button">🏆 Ranking</button>
+        <button class="btn" id="btnMute" type="button">Sonido: sí</button>
+      </div>
+      <p class="teclas" id="mTeclas"></p>
     </div>
   </div>
 </div>
 
 <div class="overlay" id="end" hidden>
-  <div class="card">
+  <div class="card fin">
     <div class="result">
       <h2 id="eTitle">¡Qué bajada!</h2>
       <span class="num" id="eNum">0 m</span>
@@ -215,11 +233,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="badge" id="eBadge" hidden>Nuevo récord</span>
       <div class="logros" id="eLogros" hidden></div>
     </div>
-    <button class="btn primary" id="btnAgain" type="button">Otra vez</button>
+    <button class="btn primary" id="btnAgain" type="button">↻ Otra vez<kbd class="kbd-only">R</kbd></button>
+    <div class="difbox"><span>Dificultad</span><div id="eDifs"></div></div>
     <div class="row">
-      <button class="btn" id="btnRank2" type="button">Ranking</button>
-      <button class="btn" id="btnHome" type="button">← Juegos</button>
+      <button class="btn" id="btnRank2" type="button">🏆 Ranking</button>
+      <button class="btn" id="btnHome" type="button">⌂ Juegos</button>
     </div>
+    <p class="teclas" id="eTeclas"></p>
   </div>
 </div>
 
@@ -240,15 +260,24 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const HALF = 11;          // media pista, hasta las redes
   const PR = 0.55;          // radio del esquiador para chocar
   const MAX_A = 1.3;        // ángulo máximo de los esquís (no se puede ir para arriba)
-  // velocidad inicial y tope (m/s), cuánto sube cada 100 m, ancho de puertas, separación, zigzag (desvío / separación),
-  // obstáculos por tramo y qué tan rápido giran los esquís (rad/s)
+  // velocidad inicial y tope (m/s), cuánto sube cada 100 m, ancho de puertas (y cuánto se angostan hasta los 3000 m),
+  // separación, zigzag (desvío / separación), obstáculos por tramo, qué tan rápido giran los esquís (rad/s),
+  // vidas, cada cuántas puertas seguidas recuperás una (0 = nunca) y si se marca la próxima puerta con una flecha
   const DIFS = {
-    facil:   { nombre: 'Fácil',   v0: 7,  grow: 0.6, cap: 15, gw: 7.2, sp: 22, off: 0.42, obst: 0.5, turn: 2.0 },
-    normal:  { nombre: 'Normal',  v0: 9,  grow: 1.0, cap: 20, gw: 5.8, sp: 20, off: 0.55, obst: 1.0, turn: 2.3 },
-    dificil: { nombre: 'Difícil', v0: 13, grow: 1.0, cap: 23, gw: 4.7, sp: 19, off: 0.66, obst: 1.6, turn: 2.7 },
-    extremo: { nombre: 'Extremo', v0: 17, grow: 1.2, cap: 27, gw: 3.8, sp: 18, off: 0.6, obst: 1.9, turn: 3.6, zig: true },
+    facil:   { nombre: 'Fácil',   v0: 8.5, grow: 1.2, cap: 16, gw: 7.0, nar: 0.2,  sp: 21, off: 0.5,  obst: 0.6, turn: 2.1, vidas: 4, racha: 8 },
+    normal:  { nombre: 'Normal',  v0: 11,  grow: 1.5, cap: 21, gw: 5.6, nar: 0.3,  sp: 20, off: 0.58, obst: 1.0, turn: 2.4, vidas: 3, racha: 10 },
+    dificil: { nombre: 'Difícil', v0: 14,  grow: 1.3, cap: 24, gw: 4.6, nar: 0.28, sp: 19, off: 0.66, obst: 1.5, turn: 2.8, vidas: 3, racha: 10 },
+    extremo: { nombre: 'Extremo', v0: 17,  grow: 1.3, cap: 27, gw: 3.8, nar: 0.22, sp: 18, off: 0.62, obst: 1.9, turn: 3.6, vidas: 2, racha: 12, zig: true },
+    maestro: { nombre: 'Maestro', v0: 19,  grow: 1.3, cap: 29, gw: 3.5, nar: 0.18, sp: 19, off: 0.6,  obst: 2.1, turn: 4.2, vidas: 1, racha: 0, zig: true, sinFlecha: true },
   };
-  const VIDAS = 3, RACHA_VIDA = 10;
+  // Tramos especiales que se alternan con tramos comunes (más o menos cada 15 s): cambian la forma de la bajada.
+  const TRAMOS = {
+    zigzag:  { txt: '¡Zigzag!', sub: 'curvas cerradas', off: 1.3, sp: 0.9, big: true },
+    bosque:  { txt: '¡Bosque!', sub: 'esquivá los árboles', obst: 2.4 },
+    turbo:   { txt: '¡Turbo!', sub: 'más velocidad, más metros', off: 0.3, sp: 1.25, obst: 0.4, vel: 1.25 },
+    finitas: { txt: '¡Puertas finitas!', sub: 'apuntá al medio', gw: 0.72, sp: 1.1 },
+  };
+  const EVENTOS = Object.keys(TRAMOS), LARGO_EVENTO = 6, LARGO_CALMA = 5, PRIMER_TRAMO = 4;
   const TITLES = ['¡Qué bajada!', '¡Fin de la pista!', '¡Uy, la nieve!', '¡Zas!'];
   const GATE_COLORS = ['#ff5d7d', '#5b8cff'];
 
@@ -260,17 +289,24 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const fmtN = n => Math.floor(n).toLocaleString('es-AR');
 
   // ---------- dificultad ----------
+  const NOTAS = {
+    facil: 'Puertas anchas y 4 vidas, pero acelera rápido.',
+    normal: 'Arranca andando y cada tanto viene un tramo distinto.',
+    dificil: 'Arranca rápido, puertas más angostas y más árboles.',
+    extremo: 'Rapidísimo, zigzag cerrado y solo 2 vidas. XP ×3.',
+    maestro: 'Una sola vida, sin flecha guía y a toda velocidad. XP ×4.',
+  };
   const sel = CC ? CC.selectorDif($('difs'), {
     juego: 'esqui',
-    notas: {
-      facil: 'Puertas anchas, poca velocidad y casi sin árboles.',
-      normal: 'La bajada de siempre: se pone rápida de a poco.',
-      dificil: 'Arranca rápido, puertas más angostas y más árboles.',
-      extremo: 'Rapidísimo, puertas finitas y zigzag cerrado. XP ×3.',
-    },
+    notas: NOTAS,
     alCambiar: () => { renderMenu(); if (state === 'menu') newRun(true); },
   }) : { valor: () => 'normal', siguiente() {} };
-  if (!CC) $('difs').hidden = true;
+  if (CC) CC.selectorDif($('eDifs'), { juego: 'esqui', compacto: true, alCambiar: renderMenu });
+  if (CC && CC.leyendaTeclas) {
+    CC.leyendaTeclas($('mTeclas'), { jugar: 'doblar' });
+    CC.leyendaTeclas($('eTeclas'), { jugar: 'doblar', extra: [['R', 'otra vez']] });
+  }
+  if (!CC) { $('difs').hidden = true; $('eDifs').parentNode.hidden = true; }
   const difId = () => (DIFS[sel.valor()] ? sel.valor() : 'normal');
 
   // ---------- sonido ----------
@@ -315,6 +351,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const sfxLife = () => [784, 988, 1319].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'square', 0.04), i * 70));
   const sfxCount = go => beep(go ? 880 : 520, go ? 0.25 : 0.1, 'triangle', 0.07);
   const sfxCrash = () => { beep(180, 0.45, 'sawtooth', 0.06, 0.35); swish(0.1, 0.45, 700); };
+  const sfxEvento = () => [523, 659, 784].forEach((f, i) => setTimeout(() => beep(f, 0.1, 'triangle', 0.05), i * 60));
 
   // ---------- canvas y cámara ----------
   // Perspectiva leve: lo que está más adelante (más abajo en la pantalla) se ve más chico.
@@ -329,8 +366,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // en el celu la pista termina arriba de los botones; en pantallas anchas los botones tapan poco y se usa todo el alto
     const bottom = Math.max(Y0 + 160, W > 700 ? H - 8 : $('pad').getBoundingClientRect().top - 8);
     PPM = Math.max(10, Math.min(30, (bottom - Y0) / (L * Math.log(1 + AHEAD / L)), (W - 12) / (2 * HALF + 1.5)));
-    const r = dcv.getBoundingClientRect();
-    if (r.width) { dcv.width = Math.round(r.width * dpr); dcv.height = Math.round(r.height * dpr); dctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+    // la demo está dentro de la tarjeta con zoom: se dibuja en px de CSS y se escala por el zoom para que se vea nítida
+    const cw = dcv.clientWidth, ch = dcv.clientHeight;
+    if (cw) {
+      const s = dpr * ((dcv.getBoundingClientRect().width / cw) || 1);
+      dcv.width = Math.round(cw * s); dcv.height = Math.round(ch * s); dctx.setTransform(s, 0, 0, s, 0, 0);
+    }
   }
   addEventListener('resize', resize);
   // mundo → pantalla: [x, y, escala]
@@ -352,9 +393,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     G = {
       demo, dif: d, D, t: 0, count: demo ? 0 : 2.4, lastCount: 4,
       x: 0, y: 0, a: 0, w: 0, v: D.v0 * 0.45,
-      dizzy: 0, edgeCd: 0, lives: VIDAS, streak: 0, bestStreak: 0, passed: 0, missed: 0, hits: 0,
+      dizzy: 0, edgeCd: 0, lives: D.vidas, streak: 0, bestStreak: 0, passed: 0, missed: 0, hits: 0,
       gates: [], obst: [], deco: [], trail: [], side: Math.random() < 0.5 ? -1 : 1,
       genY: 0, decoY: -40, done: false, deadT: 0, settled: false, r: null, lastDir: 0, sprayT: 0,
+      tipo: 'comun', trLeft: PRIMER_TRAMO, ultimoEv: null, eventos: 0,
     };
     camX = 0; camY = 0;
     particles = []; floats = []; banner = null;
@@ -362,31 +404,44 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
 
   // puertas en zigzag y, en cada tramo, árboles y piedras lejos del camino entre puertas
+  // tramos: comunes y especiales alternados; el primero especial llega a los ~8 s
+  function nextTramo(prev) {
+    if (G.tipo === 'comun') {
+      const opts = EVENTOS.filter(t => t !== G.ultimoEv);
+      G.tipo = G.ultimoEv = opts[Math.floor(Math.random() * opts.length)];
+      G.trLeft = LARGO_EVENTO;
+      if (prev) prev.aviso = G.tipo; // se anuncia una puerta antes
+    } else { G.tipo = 'comun'; G.trLeft = LARGO_CALMA; }
+  }
   function addGate() {
     const D = G.D, last = G.gates[G.gates.length - 1] || { y: 0, cx: 0 };
-    const vm = vmaxAt(D, last.y);
-    const sp = (D.sp + (vm - D.v0) * 0.8) * rnd(0.92, 1.08);
+    if (G.gates.length && G.trLeft <= 0) nextTramo(G.gates.length ? last : null);
+    G.trLeft--;
+    const T = TRAMOS[G.tipo] || {};
+    const vm = vmaxAt(D, last.y) * (T.vel || 1);
+    const sp = (D.sp + (vm - D.v0) * 0.8) * (T.sp || 1) * rnd(0.92, 1.08);
     const y = last.y + (G.gates.length ? sp : 26);
-    const gw = D.gw * (1 - 0.15 * Math.min(1, y / 1500));
+    // se angostan hasta los 3000 m y después siguen de a poco (así ninguna bajada es eterna)
+    const gw = D.gw * Math.max(0.45, 1 - D.nar * Math.min(1, y / 3000) - 0.1 * Math.max(0, y - 3000) / 3000) * (T.gw || 1);
     const lim = HALF - gw / 2 - 0.8;
     let cx;
     if (!G.gates.length) cx = rnd(-3, 3);
     else {
-      const big = D.zig || Math.random() > 0.15;
-      const off = sp * D.off * (D.zig ? rnd(0.9, 1) : big ? rnd(0.6, 1) : rnd(0.1, 0.3));
+      const big = T.big || D.zig || Math.random() > 0.15;
+      const off = sp * D.off * (T.off || 1) * (D.zig || T.big ? rnd(0.9, 1) : big ? rnd(0.6, 1) : rnd(0.1, 0.3));
       G.side = -G.side;
       cx = last.cx + G.side * off;
       if (Math.abs(cx) > lim) { // contra la red: para el otro lado
         G.side = -G.side; cx = Math.max(-lim, Math.min(lim, last.cx + G.side * off));
       }
     }
-    const g = { y, cx, gw, n: G.gates.length, c: GATE_COLORS[G.gates.length % 2], state: 0, t: 0 };
+    const g = { y, cx, gw, n: G.gates.length, c: GATE_COLORS[G.gates.length % 2], state: 0, t: 0, tr: G.tipo };
     G.gates.push(g);
-    if (G.gates.length > 1) addObstacles(last, g);
+    if (G.gates.length > 1) addObstacles(last, g, T.obst || 1);
   }
-  function addObstacles(A, B) {
+  function addObstacles(A, B, mult = 1) {
     const D = G.D;
-    const dens = D.obst * Math.min(2, 1 + B.y / 1500);
+    const dens = D.obst * Math.min(2, 1 + B.y / 1500) * mult;
     const n = Math.floor(dens + Math.random());
     for (let k = 0; k < n; k++) {
       for (let tries = 0; tries < 8; tries++) {
@@ -489,6 +544,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showEnd() {
     state = 'end';
+    keyL = keyR = false; pointers.clear();
     $('end').hidden = false; $('pad').classList.add('off'); $('tip').hidden = true;
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
   }
@@ -521,17 +577,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (left) { e.preventDefault(); if (!keyL) { keyL = true; pressed(-1); } }
       else if (right) { e.preventDefault(); if (!keyR) { keyR = true; pressed(1); } }
       else if (k === 'Escape') showMenu();
-    } else if (state === 'menu') {
-      const a = document.activeElement;
+    } else if (state === 'menu' || state === 'end') {
+      // menú y fin: ↑ ↓ eligen la dificultad, Enter/Espacio juegan, Esc vuelve a Juegos. ← → no hacen nada acá.
       if (document.getElementById('cc-rank')) return; // el ranking abierto maneja sus teclas
-      if (k === 'Escape') { if (CC) CC.volver(); }
-      else if (left || right) { e.preventDefault(); sel.siguiente(left ? -1 : 1); const b = document.querySelector('.cc-dif[aria-checked="true"]'); if (a && a.classList && a.classList.contains('cc-dif') && b) b.focus(); }
-      else if (k === 'Enter' && (a === document.body || a === $('btnPlay') || (a && a.classList && a.classList.contains('cc-dif')))) { e.preventDefault(); start(); }
-      else if (k === ' ' && a === document.body) { e.preventDefault(); start(); }
-    } else if (state === 'end') {
-      if (document.getElementById('cc-rank')) return;
-      if (k === 'Escape') showMenu();
-      else if ((k === 'Enter' || k === ' ') && document.activeElement === document.body) { e.preventDefault(); start(); }
+      const a = document.activeElement, enDif = !!(a && a.classList && a.classList.contains('cc-dif'));
+      if (k === 'Escape') { e.preventDefault(); leave(); }
+      else if (k === 'ArrowUp' || k === 'ArrowDown') {
+        e.preventDefault(); sel.siguiente(k === 'ArrowUp' ? -1 : 1);
+        if (enDif) { const b = a.parentNode.querySelector('.cc-dif[aria-checked="true"]'); if (b) b.focus(); }
+      }
+      else if (left || right) e.preventDefault();
+      else if ((k === 'Enter' || k === ' ') && (a === document.body || !a || enDif || a === $('btnPlay') || a === $('btnAgain'))) { e.preventDefault(); if (!e.repeat) start(); }
     }
   });
   addEventListener('keyup', e => {
@@ -606,7 +662,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     G.w += (tw - G.w) * (1 - Math.exp(-dt * 9));
     G.a += G.w * dt;
     if (Math.abs(G.a) > MAX_A) { G.a = Math.sign(G.a) * MAX_A; G.w = 0; }
-    const vm = vmaxAt(D, G.y);
+    const ng0 = nextGate();
+    G.turbo = !!ng0 && ng0.tr === 'turbo';
+    const vm = vmaxAt(D, G.y) * (G.turbo ? TRAMOS.turbo.vel : 1);
     const vt = G.done ? 0 : vm * (0.42 + 0.58 * Math.cos(G.a)) * (1 - Math.min(0.08, Math.abs(G.w) * 0.025));
     G.v += (vt - G.v) * (G.v < vt ? 1.1 : 1.8) * dt;
     const py = G.y, px = G.x;
@@ -651,7 +709,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         burst(cx, g.y, g.c, 8, 0.6);
         if (!G.demo) {
           sfxGate(G.streak);
-          const extra = G.streak % RACHA_VIDA === 0 && G.lives < VIDAS;
+          const extra = D.racha > 0 && G.streak % D.racha === 0 && G.lives < D.vidas;
           floats.push({ text: G.streak >= 3 ? `¡Racha ${G.streak}!` : '¡Bien!', x: g.cx, y: g.y, t: now, c: CREMA });
           if (extra) { G.lives++; sfxLife(); banner = { text: '¡+1 vida!', t: now }; }
         }
@@ -663,6 +721,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         }
         if (G.lives <= 0) { die(now); return; }
       }
+    }
+
+    // aviso del tramo especial que viene (cuando la puerta anterior pasa a ser la próxima)
+    const ng = nextGate();
+    if (ng && ng.aviso && !ng.avisado) {
+      ng.avisado = true; G.eventos++;
+      if (!G.demo) { const T = TRAMOS[ng.aviso]; banner = { text: T.txt, sub: T.sub, t: now, ev: true }; sfxEvento(); }
     }
 
     // huella
@@ -716,11 +781,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         $('hScore').textContent = fmtN(meters);
         $('hStreak').textContent = 'racha ' + G.streak;
         let hs = '';
-        for (let k = 0; k < VIDAS; k++) hs += `<svg viewBox="0 0 26 24" class="${k < G.lives ? '' : 'off'}" aria-hidden="true"><path d="M13 22 3.6 12.6A5.6 5.6 0 0 1 13 5.2a5.6 5.6 0 0 1 9.4 7.4z" fill="#ff5d7d" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/></svg>`;
+        for (let k = 0; k < G.D.vidas; k++) hs += `<svg viewBox="0 0 26 24" class="${k < G.lives ? '' : 'off'}" aria-hidden="true"><path d="M13 22 3.6 12.6A5.6 5.6 0 0 1 13 5.2a5.6 5.6 0 0 1 9.4 7.4z" fill="#ff5d7d" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/></svg>`;
         $('hLives').innerHTML = hs;
         $('hLives').setAttribute('aria-label', `${G.lives} ${G.lives === 1 ? 'vida' : 'vidas'}`);
         $('hDif').innerHTML = (CC ? CC.iconoDif(G.dif, 20) : '') + G.D.nombre;
-        $('hDif').classList.toggle('hot', G.streak >= RACHA_VIDA);
+        $('hDif').classList.toggle('hot', G.streak >= 10);
       }
       const d = state === 'play' ? heldDir() : 0;
       $('bL').classList.toggle('on', d < 0); $('bR').classList.toggle('on', d > 0);
@@ -848,8 +913,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         ctx.fillStyle = 'rgba(255,204,41,.6)';
         ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, m * 0.12);
         rr(ctx, lx, ly - m * (0.45 + pulse), rx - lx, m * (0.9 + pulse * 2), m * 0.4); ctx.fill(); ctx.stroke();
-      } else if (g === ng2 || g.state === 0) {
-        ctx.strokeStyle = g === ng2 ? 'rgba(29,35,64,.4)' : 'rgba(29,35,64,.2)'; ctx.lineWidth = Math.max(1.5, m * 0.12);
+      } else if (g.state === 0) {
+        ctx.strokeStyle = g === ng2 && !G.D.sinFlecha ? 'rgba(29,35,64,.4)' : 'rgba(29,35,64,.2)'; ctx.lineWidth = Math.max(1.5, m * 0.12);
         ctx.setLineDash([m * 0.5, m * 0.4]);
         ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(rx, ry); ctx.stroke(); ctx.setLineDash([]);
       } else if (g.state === 1 && now - g.t < 500) {
@@ -886,7 +951,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const col = g.state === 2 ? '#c9d3e3' : g.c;
       drawFlag(lx, ly, m, -1, col, big, now);
       drawFlag(rx, ry, m, 1, col, big, now);
-      if (isNext) { // flecha que salta arriba del medio de la puerta
+      if (isNext && !G.D.sinFlecha) { // flecha que salta arriba del medio de la puerta (en Maestro no hay)
         const cx = (lx + rx) / 2, bob = reduceMotion ? 0 : Math.abs(Math.sin(now / 200)) * m * 0.5;
         const ay = ly - m * 4.6 - bob, s = Math.max(14, m * 1.1);
         ctx.fillStyle = '#ffcc29'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, s * 0.22); ctx.lineJoin = 'round';
@@ -960,12 +1025,28 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         ctx.font = `${Math.round(sz)}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.lineWidth = Math.max(6, sz * 0.09);
         ctx.strokeText(String(c), W / 2, H * 0.52); ctx.fillText(String(c), W / 2, H * 0.52);
       } else if (banner) {
-        const a = (now - banner.t) / 1100, pop = a < 0.15 ? 0.6 + a / 0.15 * 0.4 : 1;
+        const a = (now - banner.t) / 1100, pop = reduceMotion ? 1 : a < 0.15 ? 0.6 + a / 0.15 * 0.4 : 1;
         ctx.globalAlpha = a > 0.75 ? (1 - a) / 0.25 : 1;
-        const sz = Math.min(W, H) * 0.12 * pop;
+        // los avisos de tramo van más arriba y más chicos para no tapar las puertas que vienen
+        const sz = Math.min(W, H, 760) * (banner.ev ? 0.095 : 0.12) * pop, by = banner.ev ? Y0 + (H - Y0) * 0.22 : H * 0.5;
         ctx.font = `${Math.round(sz)}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.lineWidth = Math.max(5, sz * 0.12);
-        ctx.strokeText(banner.text, W / 2, H * 0.5); ctx.fillText(banner.text, W / 2, H * 0.5);
+        if (banner.ev) ctx.fillStyle = '#ffcc29';
+        ctx.strokeText(banner.text, W / 2, by); ctx.fillText(banner.text, W / 2, by);
+        if (banner.sub) {
+          const s2 = Math.max(15, sz * 0.36);
+          ctx.font = `800 ${Math.round(s2)}px "Rubik", system-ui, sans-serif`; ctx.lineWidth = 4; ctx.fillStyle = CREMA;
+          ctx.strokeText(banner.sub, W / 2, by + sz * 0.62 + s2 * 0.4); ctx.fillText(banner.sub, W / 2, by + sz * 0.62 + s2 * 0.4);
+        }
         ctx.globalAlpha = 1;
+      }
+      // turbo: rayitas de velocidad a los costados
+      if (G.turbo && !G.done && !reduceMotion) {
+        ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        for (let k = 0; k < 10; k++) {
+          const side = k % 2 ? 1 : -1, x = W / 2 + side * (W * 0.32 + hash(k) * W * 0.16);
+          const y = H - ((now * 0.9 + hash(k + 7) * H) % (H + 80));
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + 46); ctx.stroke();
+        }
       }
     }
   }
@@ -1050,15 +1131,19 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     drawSkis(c, x, y, a, sz / 2.0);
     if (CC) { c.save(); c.translate(x, y + sz * 0.12); c.rotate(press * 0.15); CC.dibujarCubo(c, 0, 0, sz, { mirar: Math.sign(a), efecto: false, t: now }); c.restore(); }
     else { c.fillStyle = '#ffcc29'; c.strokeStyle = INK; c.lineWidth = 2; rr(c, x - sz / 2, y - sz, sz, sz, sz * 0.2); c.fill(); c.stroke(); }
-    // teclas
-    const kw = Math.min(50, w * 0.14), kh = 40;
+    // los mismos botones que abajo en el juego: flecha + "Doblar", se prende el que se mantiene apretado
+    const kw = 84, kh = 40;
     for (const d of [-1, 1]) {
-      const kx = d < 0 ? 10 : w - 10 - kw, ky = (h - kh) / 2, on = press === d;
-      c.fillStyle = INK; rr(c, kx, ky + (on ? 4 : 4), kw, kh, 10); c.fill();
+      const kx = d < 0 ? 8 : w - 8 - kw, ky = h - kh - 12, on = press === d, oy = on ? 3 : 0;
+      c.fillStyle = INK; rr(c, kx, ky + 4, kw, kh, 11); c.fill();
       c.fillStyle = on ? '#ffcc29' : CREMA; c.strokeStyle = INK; c.lineWidth = 2.5;
-      rr(c, kx, ky + (on ? 3 : 0), kw, kh, 10); c.fill(); c.stroke();
-      c.fillStyle = INK; c.font = '20px "Lilita One", "Trebuchet MS", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText(d < 0 ? '◀' : '▶', kx + kw / 2, ky + kh / 2 + (on ? 3 : 0) + 1);
+      rr(c, kx, ky + oy, kw, kh, 11); c.fill(); c.stroke();
+      const cy = ky + oy + kh / 2, ax = d < 0 ? kx + 15 : kx + kw - 15;
+      c.lineWidth = 3; c.lineCap = 'round'; c.lineJoin = 'round';
+      c.beginPath(); c.moveTo(ax - d * 4, cy - 8); c.lineTo(ax + d * 4, cy); c.lineTo(ax - d * 4, cy + 8); c.stroke();
+      c.fillStyle = INK; c.font = '15px "Lilita One", "Trebuchet MS", sans-serif'; c.textBaseline = 'middle';
+      c.textAlign = d < 0 ? 'left' : 'right';
+      c.fillText('Doblar', d < 0 ? kx + 27 : kx + kw - 27, cy + 1);
     }
   }
 

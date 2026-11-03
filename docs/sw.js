@@ -1,5 +1,5 @@
 // Generado por build.mjs
-const CACHE = 'cubo-ec7ad527cf';
+const CACHE = 'cubo-440084cc5c';
 const ARCHIVOS = ["./","index.html","escalador.html","lluvia.html","clasificador.html","equilibrio.html","ritmo.html","voley.html","paseo.html","serpiente.html","cohete.html","esqui.html","pulseada.html","cubo-comun.js","icono-180.png","icono-192.png","icono-512.png","manifest.webmanifest"];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));
@@ -23,9 +23,17 @@ self.addEventListener('fetch', e => {
     return;
   }
   if (u.origin !== location.origin) return;
-  // Páginas y archivos propios: primero la red (para tener lo último), y si no hay conexión, la caché.
-  e.respondWith(fetch(r).then(res => {
+  // Páginas y archivos propios: primero la red (para tener lo último). Si tarda más de 1,5 s o no hay conexión,
+  // se usa lo guardado y la respuesta de la red queda guardada para la próxima.
+  const red = fetch(r).then(res => {
     if (res.ok) { const copia = res.clone(); caches.open(CACHE).then(c => c.put(r, copia)); }
     return res;
-  }).catch(() => caches.match(r, { ignoreSearch: true }).then(hit => hit || caches.match('./'))));
+  });
+  const guardado = () => caches.match(r, { ignoreSearch: true });
+  e.respondWith(new Promise(ok => {
+    let listo = false;
+    const dar = res => { if (!listo && res) { listo = true; ok(res); } };
+    red.then(dar, () => guardado().then(hit => dar(hit || caches.match('./'))));
+    setTimeout(() => guardado().then(dar), 1500);
+  }));
 });

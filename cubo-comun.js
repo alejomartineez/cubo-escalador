@@ -5,8 +5,13 @@
 //   const CC = window.CuboComun;                       // puede no existir: el juego tiene que andar igual
 //   CC.dibujarCubo(ctx, x, pie, lado, { mirar: -1|0|1, mareado: bool, t: performance.now() });
 //
-//   // Menú: selector de dificultad común (Fácil, Normal, Difícil, Extremo). Recuerda la última elegida.
+//   // Menú: selector de dificultad común (Fácil, Normal, Difícil, Extremo, Maestro). Recuerda la última elegida.
 //   const sel = CC.selectorDif(elemento, { juego: 'lluvia', alCambiar: id => ... });   sel.valor() → 'normal'
+//   // En la pantalla de fin, el mismo selector en chiquito (comparte la elección con el del menú):
+//   CC.selectorDif(otroElemento, { juego: 'lluvia', compacto: true, alCambiar: id => ... });
+//   // Teclas: en el MENÚ se elige con ↑ ↓ (sel.siguiente(±1)); ← → quedan solo para jugar.
+//   CC.leyendaTeclas(elemento, { jugar: 'moverte' });     // leyenda "En el juego / En el menú" (se oculta en el celu)
+//   // En la compu los paneles se agrandan solos: usá `zoom: var(--ui, 1)` en menú, fin y HUD (nunca en el canvas).
 //
 //   // Fin de partida: UNA llamada. Suma XP (con el multiplicador de dificultad y bonus por récord),
 //   // guarda el récord, revisa logros, sube al ranking y muestra los carteles.
@@ -31,8 +36,20 @@
     { id: 'normal', nombre: 'Normal', xp: 1.5 },
     { id: 'dificil', nombre: 'Difícil', xp: 2 },
     { id: 'extremo', nombre: 'Extremo', xp: 3 },
+    { id: 'maestro', nombre: 'Maestro', xp: 4 },
   ];
+  const DURAS = ['extremo', 'maestro'];
   function iconoDif(id, tam = 22) {
+    if (id === 'maestro') {
+      // sabio de capucha violeta y barba blanca, con los ojos cerrados
+      return `<svg class="cc-ico" viewBox="0 0 24 24" width="${tam}" height="${tam}" aria-hidden="true">` +
+        `<circle cx="12" cy="3" r="1.7" fill="#ffcc29" stroke="${INK}" stroke-width="1.1"/>` +
+        `<path d="M12 4.6C6.4 4.6 3.6 9.6 3.6 15.4V22h16.8v-6.6C20.4 9.6 17.6 4.6 12 4.6z" fill="#8f6bff" stroke="${INK}" stroke-width="1.7" stroke-linejoin="round"/>` +
+        `<path d="M6.9 13.2c0-3.4 2.2-5.6 5.1-5.6s5.1 2.2 5.1 5.6v2.2H6.9z" fill="#ffd9b3" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>` +
+        `<path d="M8.6 11.6q1 .9 2 0M13.4 11.6q1 .9 2 0" fill="none" stroke="${INK}" stroke-width="1.3" stroke-linecap="round"/>` +
+        `<path d="M6.6 13.6q5.4 2.2 10.8 0Q17.6 19.4 12 22.6 6.4 19.4 6.6 13.6z" fill="${CREMA}" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round"/>` +
+        `<path d="M10.2 14.6q1.8 1 3.6 0" fill="none" stroke="${INK}" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+    }
     if (id === 'extremo') {
       return `<svg class="cc-ico" viewBox="0 0 24 24" width="${tam}" height="${tam}" aria-hidden="true">` +
         `<path d="M6.2 9.2 3.4 2.6l6 3.6zM17.8 9.2l2.8-6.6-6 3.6z" fill="#ff3b3b" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/>` +
@@ -80,7 +97,27 @@
     { id: 'galaxia', nombre: 'Galaxia', nivel: 35, cuerpo: '#2a1a5e', ojo: CREMA, extra: 'galaxia' },
     { id: 'diablito', nombre: 'Diablito', logro: 'extremo1', cuerpo: '#ff3b3b', extra: 'diablito' },
     { id: 'diamante', nombre: 'Diamante', logro: 'leyenda', cuerpo: '#7fe3ff', extra: 'diamante' },
+    { id: 'sabio', nombre: 'Sabio', logro: 'maestro1', cuerpo: '#8f6bff', extra: 'sabio', sinBoca: true },
+    // Legendarias: brillan. Se consiguen con un código o con un secreto (logro oculto). `pista` se muestra bloqueada.
+    { id: 'fantasma', nombre: 'Fantasma', legendaria: true, logro: 'secreto-fantasma', cuerpo: '#eef3ff', extra: 'fantasma', glow: '#bfe0ff',
+      pista: 'Los botones de la pantalla principal esconden una combinación.' },
+    { id: 'fenix', nombre: 'Fénix', legendaria: true, logro: 'secreto-fenix', cuerpo: '#ff7a3d', extra: 'fenix', glow: '#ffad4d',
+      pista: 'Escapá muy, muy lejos de la lava.' },
+    { id: 'glitch', nombre: 'Glitch', legendaria: true, logro: 'secreto-espejo', cuerpo: '#2b3470', ojo: '#5ff5ff', extra: 'glitch', glow: '#ff3bd4',
+      pista: 'Hay minutos que se leen igual al derecho y al revés. Terminá una partida en uno.' },
+    { id: 'holograma', nombre: 'Holograma', legendaria: true, codigo: true, cuerpo: '#9fe8ff', extra: 'holograma', glow: '#9fe8ff',
+      pista: 'Se consigue con un código.' },
+    { id: 'sombra', nombre: 'Sombra', legendaria: true, codigo: true, cuerpo: '#14152a', ojo: '#c08bff', extra: 'sombra', glow: '#8f6bff', sinCachetes: true,
+      pista: 'Se consigue con un código.' },
+    { id: 'dev', nombre: 'Dev', legendaria: true, exclusiva: true, codigo: true, cuerpo: '#12142a', ojo: '#5ff5ff', extra: 'dev', glow: '#5ff5ff', sinCachetes: true, sinBoca: true,
+      pista: 'Solo la tiene quien hizo el juego.' },
   ];
+  // Códigos (se guarda solo el hash: sha256('cubo:' + CÓDIGO en mayúsculas, sin espacios ni guiones)).
+  const CODIGOS = {
+    '17e8e8ae058bd488c12616cbae5b9b9c1e98e999d02a48f0d6525c6883c3dc58': 'dev',
+    '84c0cefa4e4958365252de6bce1d43f433b042cc385b04b95f8a25017d803b2f': 'holograma',
+    'f84cf38b4df650d7c292d2a23967e20fe305e40099116526a7e6dd642ba675ff': 'sombra',
+  };
 
   // Efectos: se dibujan alrededor del cubo en todos los juegos.
   const EFECTOS = [
@@ -96,6 +133,7 @@
     { id: 'cometa', nombre: 'Cometa', logro: 'explorador' },
     { id: 'rayos', nombre: 'Rayos', logro: 'escalador-11' },
     { id: 'infierno', nombre: 'Infierno', logro: 'extremo5' },
+    { id: 'halo', nombre: 'Halo', logro: 'maestro3' },
   ];
 
   // ---------- juegos y tablas de récords ----------
@@ -109,6 +147,12 @@
       { id: 'sprint-x', nombre: 'Sprint 100 Extremo', orden: 'menor', formato: 'ms', dif: 'extremo' },
       { id: 'time-x', nombre: '30 segundos Extremo', orden: 'mayor', formato: 'num', unidad: 'esc.', dif: 'extremo' },
       { id: 'free-x', nombre: 'Libre Extremo', orden: 'mayor', formato: 'num', unidad: 'esc.', dif: 'extremo' },
+      { id: 'lava', nombre: 'Lava', orden: 'mayor', formato: 'num', unidad: 'esc.', dif: 'normal' },
+      { id: 'lava-x', nombre: 'Lava Extremo', orden: 'mayor', formato: 'num', unidad: 'esc.', dif: 'extremo' },
+      { id: 'sprint-m', nombre: 'Sprint 100 Maestro', orden: 'menor', formato: 'ms', dif: 'maestro' },
+      { id: 'time-m', nombre: '30 segundos Maestro', orden: 'mayor', formato: 'num', unidad: 'esc.', dif: 'maestro' },
+      { id: 'free-m', nombre: 'Libre Maestro', orden: 'mayor', formato: 'num', unidad: 'esc.', dif: 'maestro' },
+      { id: 'lava-m', nombre: 'Lava Maestro', orden: 'mayor', formato: 'num', unidad: 'esc.', dif: 'maestro' },
     ] },
     { id: 'lluvia', nombre: 'Lluvia', archivo: 'lluvia.html', color: '#3fc1c9', tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'clasificador', nombre: 'Clasificador', archivo: 'clasificador.html', color: '#ffad4d', tablas: tablasDif('mayor', 'num', 'cubos') },
@@ -141,15 +185,15 @@
   // bronce sale en las primeras partidas, plata con práctica, oro es muy bueno y diamante es para pocos.
   // Cuentan las partidas en Normal o más difícil.
   const UMBRALES = {
-    lluvia: [100, 400, 1000, 2000],
-    clasificador: [15, 40, 80, 140],
-    equilibrio: [100, 400, 1000, 2000],
-    ritmo: [5000, 20000, 60000, 120000],
-    voley: [5, 15, 35, 70],
-    paseo: [100, 400, 1000, 2000],
+    lluvia: [100, 300, 700, 1500],
+    clasificador: [15, 35, 65, 100],
+    equilibrio: [40, 100, 200, 350],
+    ritmo: [5000, 25000, 70000, 160000],
+    voley: [5, 12, 20, 32],
+    paseo: [100, 250, 500, 1000],
     serpiente: [8, 20, 40, 70],
     cohete: [200, 800, 2000, 4500],
-    esqui: [300, 1000, 2500, 5000],
+    esqui: [250, 1000, 2500, 5000],
     pulseada: [2, 5, 9, 14],
   };
   const NOMBRES_TIER = ['Primeros pasos', 'Le agarraste la mano', 'Crack', 'Leyenda'];
@@ -165,6 +209,7 @@
     return m;
   };
   const mejorTabla = (p, jid, tid) => p.mejores[jid + ':' + tid];
+  const lavaMax = p => Math.max(0, ...['lava', 'lava-x', 'lava-m'].map(t => mejorTabla(p, 'escalador', t) || 0));
 
   const LOGROS = [
     { id: 'primera', nombre: 'Arrancamos', desc: 'Jugá tu primera partida.', medalla: 'bronce', prueba: p => p.total >= 1 },
@@ -178,6 +223,10 @@
       prueba: p => Object.keys(p.extremo).length >= 1 },
     { id: 'extremo5', nombre: 'Sin miedo', desc: 'Jugá en Extremo en 5 juegos distintos.', medalla: 'oro',
       progreso: p => [Object.keys(p.extremo).length, 5] },
+    { id: 'maestro1', nombre: 'Iluminado', desc: 'Terminá una partida en Maestro.', medalla: 'oro',
+      prueba: p => Object.keys(p.maestro).length >= 1 },
+    { id: 'maestro3', nombre: 'Gran maestro', desc: 'Jugá en Maestro en 3 juegos distintos.', medalla: 'diamante',
+      progreso: p => [Object.keys(p.maestro).length, 3] },
     { id: 'logros10', nombre: 'Coleccionista', desc: 'Conseguí 10 logros.', medalla: 'plata',
       progreso: p => [Object.keys(p.logros).length, 10] },
     { id: 'leyenda', nombre: 'Leyenda viva', desc: 'Conseguí una medalla de diamante en cualquier juego.', medalla: 'diamante',
@@ -205,6 +254,17 @@
       prueba: p => !!p.marcas['tps10'] },
     { id: 'escalador-x', juego: 'escalador', nombre: 'Escalera del infierno', desc: 'Sprint 100 en Extremo en menos de 15 s.', medalla: 'oro',
       prueba: p => mejorTabla(p, 'escalador', 'sprint-x') < 15000 },
+    { id: 'escalador-lava', juego: 'escalador', nombre: 'Pies calientes', desc: 'Escapá de la lava por 150 escalones.', medalla: 'bronce',
+      prueba: p => lavaMax(p) >= 150 },
+    { id: 'escalador-lava2', juego: 'escalador', nombre: 'Volcanólogo', desc: 'Escapá de la lava por 300 escalones.', medalla: 'oro',
+      prueba: p => lavaMax(p) >= 300 },
+    // Ocultos: no se ven en la lista hasta que salen.
+    { id: 'secreto-fantasma', oculto: true, nombre: 'Combinación secreta', desc: 'Encontraste la combinación de los botones.', medalla: 'oro',
+      prueba: p => !!p.marcas['fantasma'] },
+    { id: 'secreto-fenix', oculto: true, juego: 'escalador', nombre: 'Renacer', desc: 'Escapaste de la lava por 450 escalones.', medalla: 'diamante',
+      prueba: p => lavaMax(p) >= 450 },
+    { id: 'secreto-espejo', oculto: true, nombre: 'Hora espejo', desc: 'Terminaste una partida a una hora capicúa, como las 12:21.', medalla: 'oro',
+      prueba: p => !!p.marcas['espejo'] },
   ];
   for (const [jid, u] of Object.entries(UMBRALES)) {
     const j = juego(jid), tb = j.tablas[1];
@@ -236,6 +296,8 @@
       logros: obj(p.logros),
       marcas: obj(p.marcas),
       extremo: obj(p.extremo),
+      maestro: obj(p.maestro),
+      codigos: Array.isArray(p.codigos) ? p.codigos.filter(c => typeof c === 'string') : [],
       vistos: Array.isArray(p.vistos) ? p.vistos : null,
       apodo: typeof p.apodo === 'string' ? p.apodo : '',
       id: typeof p.id === 'string' ? p.id : '',
@@ -255,7 +317,8 @@
     while (resto >= xpPara(n)) { resto -= xpPara(n); n++; }
     return { nivel: n, enNivel: resto, paraSiguiente: xpPara(n) };
   }
-  const libre = (item, p = datos) => (item.logro ? !!p.logros[item.logro] : nivelDe(p.xp).nivel >= (item.nivel || 1));
+  const libre = (item, p = datos) => (item.codigo ? p.codigos.includes(item.id)
+    : item.logro ? !!p.logros[item.logro] : nivelDe(p.xp).nivel >= (item.nivel || 1));
   // Lo desbloqueado que todavía no se vio en la pantalla de personajes, para marcarlo como nuevo.
   function nuevos() {
     datos = leer();
@@ -278,7 +341,8 @@
     return {
       xp: datos.xp, ...nivelDe(datos.xp), skin: skin(), efecto: efecto(), records: { ...datos.records },
       mejores: { ...datos.mejores }, partidas: { ...datos.partidas }, total: datos.total,
-      logros: { ...datos.logros }, extremo: { ...datos.extremo }, marcas: { ...datos.marcas }, apodo: datos.apodo, id: datos.id,
+      logros: { ...datos.logros }, extremo: { ...datos.extremo }, maestro: { ...datos.maestro }, marcas: { ...datos.marcas },
+      codigos: [...datos.codigos], apodo: datos.apodo, id: datos.id,
     };
   }
   function elegirSkin(id) {
@@ -287,6 +351,32 @@
     if (!s || !libre(s)) return false;
     datos.skin = id; guardar();
     return true;
+  }
+  // Canjea un código. Devuelve { ok, skin } o { ok: false, msg }.
+  async function canjear(texto) {
+    const limpio = String(texto || '').toUpperCase().replace(/[\s-]/g, '');
+    if (!limpio) return { ok: false, msg: 'Escribí un código.' };
+    let hash = '';
+    try {
+      const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('cubo:' + limpio));
+      hash = [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (e) { return { ok: false, msg: 'No se pudo revisar el código en este navegador.' }; }
+    const id = CODIGOS[hash], sk = SKINS.find(k => k.id === id);
+    if (!sk) return { ok: false, msg: 'Ese código no existe.' };
+    datos = leer();
+    if (datos.codigos.includes(id)) return { ok: true, skin: sk, ya: true };
+    datos.codigos.push(id); datos.skin = id; guardar();
+    avisar(`<canvas width="96" height="104" style="width:48px;height:52px;flex:none"></canvas><div><b>¡${sk.nombre}!</b><span>Personaje legendario desbloqueado</span></div>`, 4200);
+    const cv = document.querySelector('#cc-avisos .cc-aviso:last-child canvas');
+    if (cv) { const c = cv.getContext('2d'); c.scale(2, 2); dibujarCubo(c, 24, 46, 28, { skin: sk, t: 0, efecto: false }); }
+    return { ok: true, skin: sk };
+  }
+  // Para secretos que se descubren fuera de una partida (por ejemplo, en la pantalla principal).
+  function marcar(m) {
+    datos = leer();
+    if (datos.marcas[m]) return [];
+    datos.marcas[m] = 1; guardar();
+    return revisarLogros();
   }
   function elegirEfecto(id) {
     datos = leer();
@@ -366,7 +456,11 @@
     }
     datos.partidas[o.juego] = (datos.partidas[o.juego] || 0) + 1;
     datos.total++;
-    if (dif && dif.id === 'extremo') datos.extremo[o.juego] = 1;
+    if (dif && DURAS.includes(dif.id)) datos.extremo[o.juego] = 1;
+    if (dif && dif.id === 'maestro') datos.maestro[o.juego] = 1;
+    // hora capicúa (se lee igual al revés): 11:11, 12:21, 20:02… son 16 minutos por día
+    const ahora = new Date(), hhmm = String(ahora.getHours()).padStart(2, '0') + String(ahora.getMinutes()).padStart(2, '0');
+    if (hhmm === [...hhmm].reverse().join('')) datos.marcas['espejo'] = 1;
     for (const m of o.marcas || []) datos.marcas[m] = 1;
     const base = Math.max(0, Math.round(+o.xp || 0));
     let xp = Math.round(base * (dif ? dif.xp : 1));
@@ -409,11 +503,15 @@
     if (!r.ok) throw new Error('ranking ' + r.status);
     return r.status === 204 ? null : r.json();
   }
-  let subiendo = false;
-  async function subirPendientes() {
+  // La subida va por detrás; `subiendo` es la promesa en curso, así el ranking espera a que termine antes de cargar.
+  let subiendo = null;
+  function subirPendientes() {
+    if (!subiendo) subiendo = subir().finally(() => { subiendo = null; });
+    return subiendo;
+  }
+  async function subir() {
     datos = leer();
-    if (!rankingActivo() || subiendo || !datos.apodo || !datos.pendientes.length || navigator.onLine === false) return;
-    subiendo = true;
+    if (!rankingActivo() || !datos.apodo || !datos.pendientes.length || navigator.onLine === false) return;
     try {
       while (true) {
         datos = leer();
@@ -425,8 +523,9 @@
         datos = leer(); datos.pendientes = datos.pendientes.filter(y => y !== x && !(y.j === x.j && y.t === x.t && y.v === x.v)); guardar();
       }
     } catch (e) { /* sin conexión o servidor caído: queda en la cola */ }
-    subiendo = false;
   }
+  // Espera la subida en curso (o la arranca si quedó algo en la cola), como mucho `ms`.
+  const esperarSubida = (ms = 5000) => Promise.race([subirPendientes(), new Promise(r => setTimeout(r, ms))]);
   addEventListener('online', subirPendientes);
   setTimeout(subirPendientes, 1500);
 
@@ -469,8 +568,8 @@
     datos.apodo = a;
     // Al estrenar o cambiar el apodo se suben todos tus récords.
     if (cambio) for (const [k, v] of Object.entries(datos.mejores)) { const [j, t] = k.split(':'); if (tablaDe(j, t)) encolar(j, t, v); }
-    guardar(); subirPendientes();
-    return true;
+    guardar();
+    return subirPendientes().then(() => true);
   }
 
   // ---------- estilos de lo que dibuja esta librería en la página ----------
@@ -479,15 +578,29 @@
     const st = document.createElement('style');
     st.id = 'cc-estilos';
     st.textContent = `
-.cc-difs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%}
-.cc-dif{appearance:none;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:68px;
-  padding:8px 4px 7px;border:3px solid ${INK};border-radius:14px;background:${CREMA};color:${INK};box-shadow:0 4px 0 ${INK};
-  font-family:"Lilita One","Trebuchet MS",sans-serif;font-size:15px;line-height:1;transition:transform .08s,box-shadow .08s,background .15s}
-.cc-dif small{font-family:"Rubik",system-ui,sans-serif;font-weight:700;font-size:11px;opacity:.75}
+.cc-difs{display:grid;grid-template-columns:repeat(var(--n,5),minmax(0,1fr));gap:6px;width:100%}
+.cc-dif{appearance:none;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:68px;min-width:0;
+  padding:8px 2px 7px;border:3px solid ${INK};border-radius:14px;background:${CREMA};color:${INK};box-shadow:0 4px 0 ${INK};
+  font-family:"Lilita One","Trebuchet MS",sans-serif;font-size:clamp(12px,3.5vw,15px);line-height:1;transition:transform .08s,box-shadow .08s,background .15s}
+.cc-dif small{font-family:"Rubik",system-ui,sans-serif;font-weight:700;font-size:10.5px;opacity:.75;white-space:nowrap}
+.cc-difs.compacto{gap:5px}
+.cc-difs.compacto .cc-dif{min-height:50px;padding:5px 2px;border-radius:12px;font-size:12px;box-shadow:0 3px 0 ${INK}}
+.cc-difs.compacto .cc-dif small{display:none}
 .cc-dif:active{transform:translateY(3px);box-shadow:0 1px 0 ${INK}}
 .cc-dif[aria-checked="true"]{background:#ffcc29}
 .cc-dif[data-d="extremo"]{color:#b3122a}
 .cc-dif[data-d="extremo"][aria-checked="true"]{background:#ff3b3b;color:${INK}}
+.cc-dif[data-d="maestro"]{color:#5b2bbf}
+.cc-dif[data-d="maestro"][aria-checked="true"]{background:#b49bff;color:${INK}}
+.cc-teclas{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin:0;font:600 12px/1.2 "Rubik",system-ui,sans-serif;color:${INK}}
+.cc-teclas .g{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:center}
+.cc-teclas .t{font:800 10px/1 "Rubik",system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:3px 6px;border-radius:6px;background:${INK};color:${CREMA}}
+.cc-teclas .g.menu .t{background:transparent;color:${INK};border:1.5px dashed ${INK}}
+.cc-teclas kbd{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border:2px solid ${INK};border-radius:6px;
+  background:#fff;box-shadow:0 2px 0 ${INK};font:800 12px/1 "Rubik",system-ui,sans-serif;color:${INK}}
+.cc-teclas .g.juego kbd.f{background:#ffcc29}
+@media (pointer:coarse){.cc-teclas{display:none}}
+#cc-avisos{zoom:var(--ui,1)}
 .cc-dif:focus-visible{outline:3px solid #5cb0ff;outline-offset:2px}
 .cc-difs-nota{grid-column:1/-1;margin:2px 0 0;font:600 12px/1.35 "Rubik",system-ui,sans-serif;color:inherit;opacity:.85;text-align:center;min-height:16px}
 #cc-avisos{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 76px);transform:translateX(-50%);z-index:9999;
@@ -498,9 +611,10 @@
 .cc-aviso span{display:block;font-size:13px;font-weight:600;margin-top:2px}
 .cc-medalla{flex:none;width:40px;height:40px;border-radius:50%;border:3px solid ${INK};display:grid;place-items:center;
   font-family:"Lilita One","Trebuchet MS",sans-serif;font-size:18px;color:${INK}}
+#cc-rank .card{zoom:var(--ui,1)}
 #cc-rank{position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:center;background:rgba(29,35,64,.55);
   padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));font-family:"Rubik",system-ui,sans-serif;color:${INK}}
-#cc-rank .card{width:100%;max-width:440px;max-height:min(640px,calc(100dvh - 32px));display:flex;flex-direction:column;background:${CREMA};
+#cc-rank .card{width:100%;max-width:440px;max-height:min(640px,calc((100dvh - 32px) / var(--ui,1)));display:flex;flex-direction:column;background:${CREMA};
   border:3px solid ${INK};border-radius:22px;box-shadow:0 6px 0 ${INK};overflow:hidden}
 #cc-rank header{display:flex;align-items:center;gap:10px;padding:14px 14px 8px 18px}
 #cc-rank h2{margin:0;flex:1;font:400 26px/1 "Lilita One","Trebuchet MS",sans-serif}
@@ -515,6 +629,17 @@
 #cc-rank li .p{width:30px;text-align:right;font:400 18px "Lilita One","Trebuchet MS",sans-serif}
 #cc-rank li .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #cc-rank li .v{font-variant-numeric:tabular-nums;font-weight:800}
+/* nombres de quien usa una legendaria: con el color de su personaje */
+.cc-leg{font-weight:800}
+.cc-leg-fantasma{color:#3f6fd1;text-shadow:0 0 8px rgba(120,170,255,.75)}
+.cc-leg-fenix{background:linear-gradient(90deg,#e0203a,#ff7a3d,#f5a000);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 4px rgba(255,122,61,.6))}
+.cc-leg-glitch{color:#2b3470;text-shadow:-1.5px 0 #ff3bd4,1.5px 0 #00c8e0;animation:cc-glitch 1.6s steps(1) infinite}
+@keyframes cc-glitch{0%,86%,100%{text-shadow:-1.5px 0 #ff3bd4,1.5px 0 #00c8e0}90%{text-shadow:2.5px 0 #ff3bd4,-2.5px 0 #00c8e0}}
+.cc-leg-holograma{background:linear-gradient(90deg,#ff5d7d,#ffad4d,#3fcf8e,#3fa6ff,#a06bff,#ff5d7d);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:cc-holo 3s linear infinite}
+@keyframes cc-holo{to{background-position:200% 0}}
+.cc-leg-sombra{color:#5a2fc8;text-shadow:0 0 8px rgba(143,107,255,.85)}
+.cc-leg-dev{background:linear-gradient(90deg,#00b4c8,#ff3bd4);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 5px rgba(95,245,255,.9))}
+@media (prefers-reduced-motion:reduce){.cc-leg-glitch,.cc-leg-holograma{animation:none}}
 #cc-rank li canvas{width:26px;height:30px;flex:none}
 #cc-rank li.msg{display:block;padding:22px 18px;text-align:center;font-weight:600;line-height:1.4}
 #cc-rank form{display:flex;gap:8px;padding:12px 14px 14px;border-top:2.5px dashed rgba(29,35,64,.3)}
@@ -532,34 +657,83 @@
     normal: 'La experiencia de siempre.',
     dificil: 'Arranca rápido desde el primer segundo.',
     extremo: 'Para dedos de acero: todo al máximo y sin perdón. XP ×3.',
+    maestro: 'Más allá de Extremo. Casi nadie lo termina. XP ×4.',
   };
+  // o.difs: subconjunto de ids (por ejemplo ['normal', 'extremo', 'maestro']). o.compacto: versión chica para la pantalla de fin.
+  // Todos los selectores del mismo juego en la página comparten la elección.
+  const selectores = [];
   function selectorDif(el, o = {}) {
     estilos();
     const key = 'cubo-dif-' + (o.juego || 'x');
+    const lista = o.difs ? DIFS.filter(d => o.difs.includes(d.id)) : DIFS;
     let v = o.valor;
     if (!v) { try { v = localStorage.getItem(key); } catch (e) {} }
-    if (!DIFS.some(d => d.id === v)) v = 'normal';
+    if (!lista.some(d => d.id === v)) v = lista.some(d => d.id === 'normal') ? 'normal' : lista[0].id;
     el.classList.add('cc-difs');
+    el.classList.toggle('compacto', !!o.compacto);
+    el.style.setProperty('--n', lista.length);
     el.setAttribute('role', 'radiogroup');
     el.setAttribute('aria-label', 'Dificultad');
-    el.innerHTML = DIFS.map(d => `<button type="button" class="cc-dif" role="radio" data-d="${d.id}" aria-checked="${d.id === v}">` +
-      `${iconoDif(d.id, 24)}${d.nombre}<small>XP ×${String(d.xp).replace('.', ',')}</small></button>`).join('') +
-      (o.sinNota ? '' : '<p class="cc-difs-nota" aria-live="polite"></p>');
+    el.innerHTML = lista.map(d => `<button type="button" class="cc-dif" role="radio" data-d="${d.id}" aria-checked="${d.id === v}">` +
+      `${iconoDif(d.id, o.compacto ? 20 : 24)}${d.nombre}<small>XP ×${String(d.xp).replace('.', ',')}</small></button>`).join('') +
+      (o.sinNota || o.compacto ? '' : '<p class="cc-difs-nota" aria-live="polite"></p>');
     const nota = el.querySelector('.cc-difs-nota');
-    function poner(id, avisar) {
-      if (!DIFS.some(d => d.id === id)) return;
+    function pintar(id) {
       v = id;
-      try { localStorage.setItem(key, id); } catch (e) {}
       for (const b of el.querySelectorAll('.cc-dif')) b.setAttribute('aria-checked', String(b.dataset.d === id));
       if (nota) nota.textContent = (o.notas && o.notas[id]) || NOTAS_DIF[id];
+    }
+    function poner(id, avisar) {
+      if (!lista.some(d => d.id === id)) return;
+      pintar(id);
+      try { localStorage.setItem(key, id); } catch (e) {}
+      for (const s of selectores) if (s.key === key && s !== yo && s.lista.some(d => d.id === id)) s.pintar(id);
       if (avisar && o.alCambiar) o.alCambiar(id);
     }
     el.addEventListener('click', e => { const b = e.target.closest('.cc-dif'); if (b) { poner(b.dataset.d, true); vibrar(8); } });
+    const yo = { key, lista, pintar };
+    selectores.push(yo);
     poner(v, false);
     return { valor: () => v, poner: id => poner(id, true), siguiente(paso = 1) {
-      const k = DIFS.findIndex(d => d.id === v); poner(DIFS[(k + paso + DIFS.length) % DIFS.length].id, true);
+      const k = lista.findIndex(d => d.id === v); poner(lista[Math.max(0, Math.min(lista.length - 1, k + paso))].id, true);
     } };
   }
+
+  // Leyenda de teclas para la compu: qué se usa EN EL JUEGO y qué EN EL MENÚ. En el celu no se muestra.
+  // o.jugar: qué hacen ← → ('moverte'). o.menu: false para no mostrar la parte del menú. o.extra: [['R', 'reiniciar']].
+  function leyendaTeclas(el, o = {}) {
+    estilos();
+    el.classList.add('cc-teclas');
+    const extra = (o.extra || [['R', 'reiniciar']]).map(([k, t]) => `<kbd>${k}</kbd>${t}`).join(' ');
+    el.innerHTML = `<span class="g juego"><span class="t">En el juego</span><kbd class="f">←</kbd><kbd class="f">→</kbd>${o.jugar || 'moverte'} ${extra}</span>` +
+      (o.menu === false ? '' : `<span class="g menu"><span class="t">En el menú</span><kbd>↑</kbd><kbd>↓</kbd>${o.elegir || 'dificultad'} <kbd>Enter</kbd>jugar <kbd>Esc</kbd>salir</span>`);
+  }
+
+  // En pantallas grandes los paneles se agrandan con `zoom: var(--ui, 1)`.
+  function escalaUI() {
+    const w = innerWidth, h = innerHeight;
+    const k = w >= 820 && h >= 600 ? Math.max(1, Math.min(1.7, w / 640, h / 700)) : 1;
+    document.documentElement.style.setProperty('--ui', k.toFixed(3));
+  }
+  escalaUI();
+  addEventListener('resize', escalaUI);
+
+  // Sin zoom con dos dedos ni doble toque: es un juego, no una página para leer.
+  (function sinZoom() {
+    const st = document.createElement('style');
+    st.textContent = 'html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}';
+    (document.head || document.documentElement).appendChild(st);
+    const no = e => e.preventDefault();
+    for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, no, { passive: false });
+    document.addEventListener('touchmove', e => { if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault(); }, { passive: false });
+    let ultimo = 0;
+    document.addEventListener('touchend', e => {
+      const t = Date.now();
+      if (t - ultimo < 320 && !e.target.closest('input,textarea,select')) e.preventDefault();
+      ultimo = t;
+    }, { passive: false });
+    addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+  })();
 
   // ---------- avisos (nivel y logros), uno debajo del otro ----------
   function avisar(html, ms = 3200) {
@@ -595,11 +769,14 @@
       `<span>Logro ${m.nombre.toLowerCase()} · +${m.xp} XP${premio.length ? ' · Desbloqueaste ' + premio.join(', ') : ''}</span></div>`, 3800);
   }
 
+  // Clase CSS para pintar un apodo con el color de su personaje (solo legendarias; si no, '').
+  const claseNombre = sk => (sk && sk.legendaria ? 'cc-leg cc-leg-' + sk.id : '');
+
   // ---------- ventana de ranking ----------
   function verRanking(o = {}) {
     estilos();
     const j = juego(o.juego) || JUEGOS[0];
-    let tid = o.tabla && tablaDe(j.id, o.tabla) ? o.tabla : j.tablas[j.tablas.length > 4 ? 0 : 1].id;
+    let tid = o.tabla && tablaDe(j.id, o.tabla) ? o.tabla : (j.tablas.find(t => t.dif === 'normal') || j.tablas[0]).id;
     const previo = document.activeElement;
     const box = document.createElement('div');
     box.id = 'cc-rank';
@@ -620,7 +797,7 @@
     for (const tb of j.tablas) {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'chip'; b.dataset.t = tb.id;
-      b.innerHTML = (tb.dif && j.tablas.length === 4 ? iconoDif(tb.dif, 16) : tb.dif === 'extremo' ? iconoDif('extremo', 16) : '') + tb.nombre.replace(' Extremo', '');
+      b.innerHTML = (tb.dif && (tb.dif !== 'normal' || tb.id === 'normal') ? iconoDif(tb.dif, 16) : '') + tb.nombre.replace(/ (Extremo|Maestro)$/, '');
       b.addEventListener('click', () => { tid = tb.id; cargar(); });
       chips.appendChild(b);
     }
@@ -635,6 +812,8 @@
       msg('Cargando…');
       const n = ++pedido;
       try {
+        await esperarSubida();
+        if (n !== pedido) return;
         const { lista, yo } = await top(j.id, tid);
         if (n !== pedido) return;
         if (!lista.length) { msg(`Todavía nadie jugó este modo. ¡Sé el primero!<br>${tuyo}`); return; }
@@ -642,7 +821,10 @@
         const fila = f => {
           const li = document.createElement('li'); if (f.yo) li.className = 'yo';
           li.innerHTML = `<span class="p">${f.puesto}</span><canvas width="52" height="60"></canvas><span class="n"></span><span class="v">${formato(f.valor, tb)}</span>`;
-          li.querySelector('.n').textContent = f.apodo + (f.yo ? ' (vos)' : '');
+          const n = li.querySelector('.n'), sk = SKINS.find(s => s.id === f.skin);
+          if (sk && sk.legendaria) { const t = document.createElement('span'); t.className = claseNombre(sk); t.textContent = f.apodo; n.appendChild(t); }
+          else n.textContent = f.apodo;
+          if (f.yo) n.append(' (vos)');
           const c = li.querySelector('canvas').getContext('2d'); c.scale(2, 2);
           dibujarCubo(c, 13, 28, 18, { skin: SKINS.find(s => s.id === f.skin) || SKINS[0], t: 0, efecto: false });
           ol.appendChild(li);
@@ -660,8 +842,11 @@
     box.addEventListener('click', e => { if (e.target === box) cerrar(); });
     $('form').addEventListener('submit', e => {
       e.preventDefault();
-      if (!ponerApodo(input.value)) { ayuda.textContent = 'El apodo tiene que tener entre 3 y 14 letras o números.'; input.focus(); return; }
-      input.value = leer().apodo; pintarAyuda(); input.blur(); setTimeout(cargar, 900);
+      const r = ponerApodo(input.value);
+      if (!r) { ayuda.textContent = 'El apodo tiene que tener entre 3 y 14 letras o números.'; input.focus(); return; }
+      input.value = leer().apodo; pintarAyuda(); input.blur();
+      msg('Subiendo tus récords…');
+      r.then(cargar, cargar);
     });
     cargar();
     $('.x').focus();
@@ -715,6 +900,13 @@
         }
         ctx.globalAlpha = 1;
       }
+    } else if (id === 'halo') {
+      ctx.save(); ctx.shadowColor = '#ffe14d'; ctx.shadowBlur = s * 0.4;
+      ctx.strokeStyle = '#ffcc29'; ctx.lineWidth = Math.max(2.5, s * 0.08);
+      ctx.beginPath(); ctx.ellipse(0, -s * (1.42 + 0.04 * Math.sin(t / 400)), s * 0.42, s * 0.12, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+      ctx.globalAlpha = 0.18; ctx.fillStyle = '#ffe14d';
+      ctx.beginPath(); ctx.arc(0, -s * 0.5, s * (0.95 + 0.06 * Math.sin(t / 300)), 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
     } else if (id === 'aura') {
       ctx.lineWidth = Math.max(2, s * 0.05);
       for (let k = 0; k < 2; k++) {
@@ -945,6 +1137,131 @@
     },
   };
 
+  Object.assign(PARTES, {
+    sabio: {
+      encima(ctx, s) {
+        // capucha y barba larga
+        ctx.fillStyle = '#6a4bd6'; ctx.strokeStyle = INK;
+        ctx.beginPath(); ctx.moveTo(-s * 0.58, -s * 0.42); ctx.lineTo(-s * 0.58, -s * 0.9); ctx.quadraticCurveTo(-s * 0.5, -s * 1.36, 0, -s * 1.38);
+        ctx.quadraticCurveTo(s * 0.5, -s * 1.36, s * 0.58, -s * 0.9); ctx.lineTo(s * 0.58, -s * 0.42); ctx.lineTo(s * 0.44, -s * 0.42);
+        ctx.lineTo(s * 0.44, -s * 0.84); ctx.quadraticCurveTo(0, -s * 1.0, -s * 0.44, -s * 0.84); ctx.lineTo(-s * 0.44, -s * 0.42); ctx.closePath(); ctx.fill(); ctx.stroke();
+        // cejas blancas
+        ctx.strokeStyle = CREMA; ctx.lineWidth = Math.max(2, s * 0.06);
+        for (const side of [-1, 1]) { ctx.beginPath(); ctx.moveTo(side * s * 0.1, -s * 0.74); ctx.quadraticCurveTo(side * s * 0.2, -s * 0.8, side * s * 0.32, -s * 0.72); ctx.stroke(); }
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, s * 0.08);
+        ctx.fillStyle = CREMA;
+        ctx.beginPath(); ctx.moveTo(-s * 0.36, -s * 0.4); ctx.quadraticCurveTo(-s * 0.3, s * 0.02, 0, s * 0.14);
+        ctx.quadraticCurveTo(s * 0.3, s * 0.02, s * 0.36, -s * 0.4); ctx.quadraticCurveTo(0, -s * 0.28, -s * 0.36, -s * 0.4); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#ffcc29'; ctx.beginPath(); ctx.arc(0, -s * 1.42, s * 0.08, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      },
+    },
+    fantasma: {
+      encima(ctx, s, sk, t) {
+        // boquita de "uh" y ondas abajo
+        ctx.fillStyle = INK; ctx.beginPath(); ctx.ellipse(0, -s * 0.3, s * 0.06, s * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(191,224,255,.7)';
+        for (let k = 0; k < 3; k++) {
+          const f = fase(t, 1600, k / 3);
+          ctx.globalAlpha = 1 - f; ctx.beginPath(); ctx.arc((k - 1) * s * 0.4, -s * (1.05 + f * 0.5), s * (0.05 + f * 0.05), 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      },
+    },
+    fenix: {
+      detras(ctx, s, sk, t) {
+        const aleteo = Math.sin(t / 160) * 0.18;
+        for (const side of [-1, 1]) {
+          ctx.save(); ctx.translate(side * s * 0.45, -s * 0.6); ctx.rotate(side * (-0.35 + aleteo));
+          ctx.fillStyle = '#ffad4d'; ctx.strokeStyle = INK;
+          ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(side * s * 0.5, -s * 0.45, side * s * 0.62, -s * 0.05);
+          ctx.quadraticCurveTo(side * s * 0.45, -s * 0.02, side * s * 0.5, s * 0.14); ctx.quadraticCurveTo(side * s * 0.3, s * 0.08, 0, s * 0.18); ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.restore();
+        }
+      },
+      piel(ctx, s) {
+        const g = ctx.createLinearGradient(0, -s, 0, 0); g.addColorStop(0, '#ffcc29'); g.addColorStop(1, '#ff3b3b');
+        ctx.fillStyle = g; ctx.globalAlpha = 0.7; ctx.fillRect(-s / 2, -s, s, s); ctx.globalAlpha = 1;
+      },
+      encima(ctx, s, sk, t) {
+        ctx.strokeStyle = INK;
+        for (const [x, h, c] of [[-0.18, 0.34, '#ff3b3b'], [0.18, 0.34, '#ff3b3b'], [0, 0.46, '#ffcc29']]) {
+          const w = Math.sin(t / 120 + x * 9) * s * 0.03;
+          ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x * s - s * 0.1, -s * 0.98);
+          ctx.quadraticCurveTo(x * s - s * 0.08 + w, -s * (0.98 + h * 0.6), x * s + w, -s * (0.98 + h));
+          ctx.quadraticCurveTo(x * s + s * 0.1 + w, -s * (0.98 + h * 0.5), x * s + s * 0.1, -s * 0.98); ctx.closePath(); ctx.fill(); ctx.stroke();
+        }
+        for (let k = 0; k < 4; k++) {
+          const f = fase(t, 900, k / 4), x = Math.sin(k * 3.1 + t / 400) * s * 0.55;
+          ctx.globalAlpha = 1 - f; ctx.fillStyle = k % 2 ? '#ffe14d' : '#ff7a3d'; ctx.fillRect(x, -s * (0.3 + f * 1.3), s * 0.05, s * 0.05);
+        }
+        ctx.globalAlpha = 1;
+      },
+    },
+    glitch: {
+      piel(ctx, s, sk, t) {
+        const k = Math.floor(t / 90);
+        for (let i = 0; i < 4; i++) {
+          const r = Math.sin(k * 12.9898 + i * 78.233) * 43758.5453, f = r - Math.floor(r);
+          ctx.fillStyle = i % 2 ? 'rgba(255,59,212,.55)' : 'rgba(95,245,255,.55)';
+          ctx.fillRect(-s / 2 + (f - 0.5) * s * 0.2, -s + f * s * 0.9, s, s * 0.06 + f * s * 0.05);
+        }
+      },
+      encima(ctx, s, sk, t) {
+        const j = Math.floor(t / 120) % 5 === 0 ? s * 0.05 : s * 0.025;
+        ctx.lineWidth = Math.max(1.5, s * 0.04);
+        ctx.strokeStyle = 'rgba(255,59,212,.85)'; rr(ctx, -s / 2 - j, -s, s, s, s * 0.2); ctx.stroke();
+        ctx.strokeStyle = 'rgba(95,245,255,.85)'; rr(ctx, -s / 2 + j, -s, s, s, s * 0.2); ctx.stroke();
+      },
+    },
+    holograma: {
+      piel(ctx, s, sk, t) {
+        const g = ctx.createLinearGradient(-s / 2, -s, s / 2, 0);
+        for (let k = 0; k <= 4; k++) g.addColorStop(k / 4, `hsl(${(t / 12 + k * 70) % 360},95%,72%)`);
+        ctx.fillStyle = g; ctx.globalAlpha = 0.85; ctx.fillRect(-s / 2, -s, s, s);
+        ctx.globalAlpha = 0.18; ctx.fillStyle = '#fff';
+        const off = (t / 40) % (s * 0.16);
+        for (let y = -s + off; y < 0; y += s * 0.16) ctx.fillRect(-s / 2, y, s, s * 0.05);
+        ctx.globalAlpha = 1;
+      },
+    },
+    sombra: {
+      detras(ctx, s, sk, t) {
+        for (let k = 0; k < 5; k++) {
+          const f = fase(t, 1400, k / 5), x = (k - 2) * s * 0.26 + Math.sin(t / 300 + k) * s * 0.06;
+          ctx.globalAlpha = 0.5 * (1 - f); ctx.fillStyle = '#3a2b6e';
+          ctx.beginPath(); ctx.arc(x, -s * (0.2 + f * 1.1), s * (0.12 + f * 0.12), 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      },
+      encima(ctx, s, sk, t, look) {
+        ctx.save(); ctx.shadowColor = '#c08bff'; ctx.shadowBlur = s * 0.3; ctx.fillStyle = '#e2d1ff';
+        for (const side of [-1, 1]) { rr(ctx, side * s * 0.2 + look - s * 0.06, -s * 0.66, s * 0.12, s * 0.2, s * 0.06); ctx.fill(); }
+        ctx.restore();
+      },
+    },
+    dev: {
+      piel(ctx, s, sk, t) {
+        // líneas de código que suben
+        ctx.fillStyle = 'rgba(95,245,255,.22)';
+        const off = (t / 30) % (s * 0.14);
+        for (let k = 0, y = -s + off; y < 0; y += s * 0.14, k++) {
+          const w = s * (0.25 + 0.45 * Math.abs(Math.sin(k * 1.7)));
+          ctx.fillRect(-s * 0.38 + (k % 3) * s * 0.06, y, w, s * 0.04);
+        }
+      },
+      encima(ctx, s, sk, t, look) {
+        // ojos que brillan, sonrisa de cursor y "</>" flotando
+        ctx.save(); ctx.shadowColor = '#5ff5ff'; ctx.shadowBlur = s * 0.35; ctx.fillStyle = '#5ff5ff';
+        for (const side of [-1, 1]) { rr(ctx, side * s * 0.2 + look - s * 0.06, -s * 0.66, s * 0.12, s * 0.2, s * 0.06); ctx.fill(); }
+        if (Math.floor(t / 450) % 2) ctx.fillRect(look - s * 0.1, -s * 0.3, s * 0.2, s * 0.06);
+        const y = -s * 1.28 + Math.sin(t / 400) * s * 0.05;
+        ctx.font = `800 ${Math.round(s * 0.36)}px "Rubik",ui-monospace,monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ff3bd4'; ctx.shadowColor = '#ff3bd4'; ctx.fillText('</>', 0, y);
+        ctx.restore();
+      },
+    },
+  });
+
   // Dibuja el cubo con la base apoyada en (x, pie). `lado` es el tamaño del cubo en px.
   // Opciones: mirar (-1, 0, 1), mareado, t, skin (objeto de SKINS), efecto (id, o false para no dibujarlo).
   function dibujarCubo(ctx, x, pie, s, o = {}) {
@@ -957,6 +1274,11 @@
     ctx.save();
     ctx.translate(x, pie);
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    if (sk.extra === 'fantasma' && !mareado) {
+      // flota: sombrita en el piso y el cubo un poco arriba
+      ctx.fillStyle = 'rgba(29,35,64,.16)'; ctx.beginPath(); ctx.ellipse(0, 0, s * 0.42, s * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.translate(0, -s * (0.12 + 0.06 * Math.sin(t / 380)));
+    }
     if (fx && fx !== 'ninguno') { ctx.save(); efectoDetras(ctx, fx, s, t); ctx.restore(); }
 
     ctx.fillStyle = 'rgba(29,35,64,.2)'; rr(ctx, -s / 2 + 3, -s + 4, s, s, s * 0.2); ctx.fill();
@@ -964,9 +1286,19 @@
     ctx.lineWidth = lw; ctx.strokeStyle = INK;
     if (parte.detras && !mareado) { ctx.save(); parte.detras(ctx, s, sk, t, look, mirar); ctx.restore(); }
 
-    // cuerpo
+    // cuerpo (las legendarias brillan)
+    if (sk.glow && !mareado && o.brillo !== false) {
+      ctx.save();
+      ctx.shadowColor = sk.extra === 'holograma' ? `hsl(${(t / 12) % 360},100%,70%)` : sk.glow;
+      ctx.shadowBlur = s * (0.45 + 0.25 * Math.sin(t / 260)) * (sk.exclusiva ? 1.5 : 1);
+      ctx.fillStyle = sk.glow;
+      for (let k = sk.exclusiva ? 2 : 1; k > 0; k--) { rr(ctx, -s / 2, -s, s, s, s * 0.2); ctx.fill(); }
+      ctx.restore();
+    }
     ctx.fillStyle = mareado ? '#c9d3e3' : sk.cuerpo;
+    if (sk.extra === 'fantasma' && !mareado) ctx.globalAlpha = 0.82 + 0.1 * Math.sin(t / 300);
     rr(ctx, -s / 2, -s, s, s, s * 0.2); ctx.fill();
+    ctx.globalAlpha = 1;
     ctx.save(); ctx.clip();
     if (sk.extra === 'semillas' && !mareado) {
       ctx.fillStyle = '#2fb36b'; ctx.fillRect(-s / 2, -s * 0.17, s, s * 0.17);
@@ -1081,10 +1413,10 @@
   function volver() { location.href = 'index.html'; }
 
   window.CuboComun = {
-    SKINS, EFECTOS, DIFS, JUEGOS, LOGROS, MEDALLAS, UMBRALES,
+    SKINS, EFECTOS, DIFS, DURAS, JUEGOS, LOGROS, MEDALLAS, UMBRALES, canjear, marcar, leyendaTeclas, escalaUI,
     xpPara, nivelDe, perfil, skin, efecto, elegirSkin, elegirEfecto, libre, nuevos, marcarVistos,
     sumarXP, xpEscala, partida, importarRecord, anotarRecord, revisarLogros, tieneLogro,
-    juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, limpiarApodo, rankingActivo, subirPendientes,
+    claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, limpiarApodo, rankingActivo, subirPendientes,
     avisar, vibrar, volver, dibujarCubo,
   };
 })();

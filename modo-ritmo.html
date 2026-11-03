@@ -37,7 +37,7 @@ body {
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 10px 12px;
-  pointer-events: none;
+  pointer-events: none; zoom: var(--ui, 1);
 }
 .stat { display: flex; flex-direction: column; line-height: 1; }
 .stat.mid { align-items: center; }
@@ -62,6 +62,7 @@ body {
 }
 .chip.hot { background: var(--cube); }
 .chip.ext { background: #ff3b3b; }
+.chip.mae { background: #b49bff; }
 .smallbtn {
   pointer-events: auto; font: 800 13px var(--body); color: var(--ink);
   background: var(--paper); border: 2px solid var(--ink); border-radius: 999px;
@@ -86,7 +87,7 @@ body {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
-  max-width: 560px; margin: 0 auto;
+  max-width: 560px; margin: 0 auto; zoom: var(--ui, 1);
 }
 .pad button {
   height: clamp(76px, 13vh, 116px); border-radius: 22px;
@@ -103,24 +104,41 @@ body {
 .tip {
   position: fixed; left: 50%; transform: translateX(-50%); width: min(300px, calc(100% - 32px));
   background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink);
-  padding: 10px 14px; font: 600 15px/1.35 var(--body); text-align: center; pointer-events: none;
+  padding: 10px 14px; font: 600 15px/1.35 var(--body); text-align: center; pointer-events: none; zoom: var(--ui, 1);
 }
 .tip b { font-family: var(--display); font-weight: 400; font-size: 19px; }
 .tip .l { color: #d94a6c; } .tip .r { color: #2f7fe0; }
 
 .overlay {
-  position: fixed; inset: 0; display: grid; place-items: center; overflow-y: auto;
-  padding-block: 24px;
+  position: fixed; inset: 0; display: flex; flex-direction: column; overflow-y: auto;
+  padding-block: 16px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   background: rgba(29, 35, 64, .28);
 }
 .card {
-  width: min(420px, 100%); background: var(--paper);
+  margin: auto; flex: none; width: min(420px, 100%); box-sizing: border-box; min-width: 0; background: var(--paper);
   border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink);
-  padding: 22px; display: flex; flex-direction: column; gap: 14px;
+  padding: 22px; display: flex; flex-direction: column; gap: 14px; zoom: var(--ui, 1);
 }
-.back { align-self: flex-start; }
+.card .col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.ehead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: -6px;
+  font: 800 12px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.ehead kbd { letter-spacing: 0; }
+.difend { display: flex; flex-direction: column; gap: 8px; }
+#end .card { gap: 11px; }
+#end .result { gap: 4px; }
+.btn kbd { margin-left: 6px; vertical-align: 3px; }
+/* compu: el menú en dos columnas para que entre agrandado */
+@media (min-width: 820px) and (min-height: 600px) {
+  .card.menu { width: min(760px, 100%); flex-direction: row; flex-wrap: wrap; column-gap: 24px; }
+  .card.menu > .topbar { flex: 0 0 100%; }
+  .card.menu .col { flex: 1 1 0; justify-content: center; }
+  .card.menu .demo { height: 150px; }
+  #end .card { width: min(460px, 100%); }
+}
+@media (pointer: coarse) { .kbhint { display: none; } }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .demo {
   display: block; width: 100%; height: 112px; background: var(--sky);
   border: 3px solid var(--ink); border-radius: 14px;
@@ -128,7 +146,7 @@ body {
 .recline { margin: 0; text-align: center; font-size: 14px; font-weight: 600; color: var(--muted); }
 .recline b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .go { display: flex; gap: 10px; }
-.go .btn { flex: 1; }
+.go .btn { flex: 1; white-space: nowrap; padding-inline: 6px; }
 .go .primary { flex: 2; }
 .brand { display: flex; align-items: center; gap: 14px; }
 .logo {
@@ -169,9 +187,9 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .btn.big { font: 400 24px var(--display); padding: 14px; }
 .tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .badge.xp { background: var(--cube); }
-.diffs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.diffs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .diff {
-  font: 400 19px var(--display); color: var(--ink); padding: 9px 4px 7px; cursor: pointer; line-height: 1;
+  font: 400 15px var(--display); color: var(--ink); padding: 9px 4px 7px; cursor: pointer; line-height: 1;
   background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
   display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
@@ -209,20 +227,24 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 <div class="tip" id="tip" hidden>Cuando una baldosa pisa la línea, tocá su flecha: <b class="l">◀</b> rosa o <b class="r">▶</b> azul</div>
 
 <div class="overlay" id="start">
-  <div class="card">
-    <button class="smallbtn back" id="btnBack" type="button" hidden>← Juegos</button>
-    <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Ritmo</h1></div>
-    <p class="intro">Tocá <b>◀</b> o <b>▶</b> justo cuando su baldosa pisa la línea.</p>
-    <canvas class="demo" id="demo" aria-hidden="true"></canvas>
-    <div id="diffs"></div>
-    <p class="recline" id="recline"></p>
-    <div class="go">
-      <button class="btn" id="btnRank" type="button" hidden>Ranking</button>
-      <button class="btn primary big" id="btnPlay" type="button">Jugar</button>
+  <div class="card menu">
+    <div class="topbar">
+      <button class="smallbtn" id="btnBack" type="button" hidden>← Juegos</button>
+      <button class="smallbtn" id="btnMute" type="button" style="margin-left:auto">Sonido: sí</button>
     </div>
-    <div class="foot">
-      <span><kbd>←</kbd> <kbd>→</kbd> o <kbd>A</kbd> <kbd>D</kbd> · <kbd>Enter</kbd> juega</span>
-      <button class="smallbtn" id="btnMute" type="button">Sonido: sí</button>
+    <div class="col">
+      <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Ritmo</h1></div>
+      <p class="intro">Tocá <b>◀</b> o <b>▶</b> justo cuando su baldosa pisa la línea. Las <b>doradas</b> de la ráfaga valen doble.</p>
+      <canvas class="demo" id="demo" aria-hidden="true"></canvas>
+    </div>
+    <div class="col">
+      <div id="diffs"></div>
+      <p class="recline" id="recline"></p>
+      <div class="go">
+        <button class="btn" id="btnRank" type="button" hidden>🏆 Ranking</button>
+        <button class="btn primary big" id="btnPlay" type="button">Jugar</button>
+      </div>
+      <div class="foot kbhint" id="mKeys"><span><kbd>←</kbd> <kbd>→</kbd> tocan · <kbd>↑</kbd> <kbd>↓</kbd> dificultad · <kbd>Enter</kbd> juega</span></div>
     </div>
   </div>
 </div>
@@ -257,12 +279,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       </div>
       <ul class="logros" id="eLogros" hidden></ul>
     </div>
-    <button class="btn primary big" id="btnAgain" type="button">Otra vez</button>
-    <div class="row">
-      <button class="btn" id="btnHome" type="button">Menú</button>
-      <button class="btn" id="btnRank2" type="button" hidden>Ranking</button>
+    <button class="btn primary big" id="btnAgain" type="button">↻ Otra vez <kbd class="kbhint">R</kbd></button>
+    <div class="difend" id="eDif" hidden>
+      <div class="ehead"><span>Dificultad</span><span class="kbhint"><kbd>↑</kbd> <kbd>↓</kbd></span></div>
+      <div id="diffsEnd"></div>
     </div>
-    <p class="hint"><kbd>R</kbd> o <kbd>Enter</kbd> otra vez · <kbd>Esc</kbd> menú</p>
+    <div class="row">
+      <button class="btn" id="btnRank2" type="button" hidden>🏆 Ranking</button>
+      <button class="btn" id="btnHome" type="button">☰ Menú</button>
+      <button class="btn" id="btnGames2" type="button" hidden>⌂ Juegos</button>
+    </div>
+    <div id="eKeys"><p class="hint kbhint"><kbd>R</kbd> o <kbd>Enter</kbd> otra vez · <kbd>Esc</kbd> menú</p></div>
   </div>
 </div>
 
@@ -280,22 +307,28 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // rápido y la distancia entre notas queda igual, como un piano tiles. Siempre se ven D.ver tiempos.
   const LOOKAHEAD = 0.15;     // cuánto audio se agenda por adelantado
   const BARS_PER_LEVEL = 8;
-  const XP_MALO = 4000, XP_EXPERTO = 120000; // puntaje en Normal de una partida floja y de una de experto
+  const RAFAGA = 2; // los últimos 2 compases de cada nivel son una ráfaga: más notas, doradas y valen doble
+  const XP_MALO = 4000, XP_EXPERTO = 180000; // puntaje en Normal de una partida floja y de una de experto
   // bpm: [inicial, suba por nivel, hasta dónde sube así, tope]; pasado el primer tramo sube de a 6 por nivel,
-  // así la canción termina ganando siempre. Lo único que sube es la velocidad: la cantidad de notas es fija.
+  // y el tope está tan arriba que la canción termina ganando siempre. Lo que más sube es la velocidad:
+  // fuera de las ráfagas, la cantidad de notas es fija (pocas notas que caen rápido).
   // ver = tiempos visibles en la pista (menos = caen más rápido); win = ventanas Perfecto/Bien/Fallaste en s;
   // dmg = vida que saca [nota fallada, toque al aire]; heal = vida que da [Perfecto, Bien].
   // Ritmo: q = chance de nota en cada negra (el 1 siempre tiene), e = corcheas, x = semicorcheas,
-  // dbl = dobles (las dos flechas juntas, nunca dos seguidas), stay = repetir carril en notas separadas.
+  // dbl = dobles (las dos flechas juntas, nunca dos seguidas), stay = repetir carril en notas separadas;
+  // raf = [q, e, x] de los compases de ráfaga.
   const DIFFS = {
-    facil:   { name: 'Fácil', bpm: [100, 6, 148, 300], ver: 2.4, win: [0.06, 0.12, 0.17], dmg: [8, 3], heal: [2, 1],
-               q: 0.5, e: 0, x: 0, dbl: 0, stay: 0.3 },
-    normal:  { name: 'Normal', bpm: [116, 8, 180, 300], ver: 2, win: [0.045, 0.095, 0.14], dmg: [10, 4], heal: [2, 1],
-               q: 0.65, e: 0.1, x: 0, dbl: 0.05, stay: 0.35 },
-    dificil: { name: 'Difícil', bpm: [140, 8, 196, 300], ver: 1.8, win: [0.04, 0.085, 0.13], dmg: [12, 5], heal: [2, 1],
-               q: 0.75, e: 0.22, x: 0, dbl: 0.07, stay: 0.4 },
-    extremo: { name: 'Extremo', bpm: [156, 8, 212, 320], ver: 1.7, win: [0.03, 0.065, 0.1], dmg: [16, 6], heal: [1, 0],
-               q: 0.85, e: 0.3, x: 0.05, dbl: 0.08, stay: 0.45 },
+    facil:   { name: 'Fácil', bpm: [104, 8, 160, 360], ver: 2.4, win: [0.06, 0.12, 0.17], dmg: [8, 3], heal: [2, 1],
+               q: 0.55, e: 0, x: 0, dbl: 0, stay: 0.3, raf: [0.8, 0.35, 0] },
+    normal:  { name: 'Normal', bpm: [124, 8, 188, 380], ver: 2, win: [0.045, 0.095, 0.14], dmg: [10, 4], heal: [2, 1],
+               q: 0.65, e: 0.1, x: 0, dbl: 0.05, stay: 0.35, raf: [0.9, 0.45, 0] },
+    dificil: { name: 'Difícil', bpm: [144, 8, 200, 400], ver: 1.8, win: [0.04, 0.085, 0.13], dmg: [12, 5], heal: [2, 1],
+               q: 0.75, e: 0.22, x: 0, dbl: 0.07, stay: 0.4, raf: [0.95, 0.55, 0.05] },
+    extremo: { name: 'Extremo', bpm: [160, 8, 216, 420], ver: 1.65, win: [0.03, 0.065, 0.1], dmg: [16, 6], heal: [1, 0],
+               q: 0.85, e: 0.3, x: 0.05, dbl: 0.08, stay: 0.45, raf: [1, 0.6, 0.12] },
+    // Maestro: arranca más rápido que el tope de Normal, cae en 1,4 tiempos, ventana de 25 ms y 4 errores te sacan
+    maestro: { name: 'Maestro', bpm: [176, 8, 240, 440], ver: 1.4, win: [0.025, 0.05, 0.075], dmg: [25, 10], heal: [1, 0],
+               q: 0.9, e: 0.38, x: 0.12, dbl: 0.1, stay: 0.5, raf: [1, 0.7, 0.25] },
   };
   const DIFF_IDS = Object.keys(DIFFS);
   function bpmAt(D, L) {
@@ -449,7 +482,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     G = {
       diff, D: DIFFS[diff], intro: rec.ayuda ? 1 : 3, // la primera vez hay dos compases más para leer la ayuda
       bars: [], notes: [], sb: 0, ss: 0, t0: actx.currentTime + 0.3, vis: 0, over: false,
-      score: 0, combo: 0, maxCombo: 0, life: 100, perfect: 0, good: 0, miss: 0, shownLevel: 0, shownBpm: 0,
+      score: 0, combo: 0, maxCombo: 0, shownRaf: -1, life: 100, perfect: 0, good: 0, miss: 0, shownLevel: 0, shownBpm: 0,
       lastLane: Math.random() < 0.5 ? -1 : 1, lastT: -9, run: 1, pi: 4, rhythm: null, lastDbl: -9,
       face: 1, hitP: -1e9, missP: -1e9, ghostP: { [-1]: -1e9, [1]: -1e9 },
     };
@@ -462,7 +495,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const i = G.bars.length, prev = G.bars[i - 1], intro = i < G.intro;
     const level = intro ? 0 : Math.floor((i - G.intro) / BARS_PER_LEVEL);
     const bpm = bpmAt(G.D, level);
-    const bar = { i, intro, level, bpm, sd: 60 / bpm / 4, t0: prev ? prev.t0 + 16 * prev.sd : G.t0,
+    const raf = !intro && (i - G.intro) % BARS_PER_LEVEL >= BARS_PER_LEVEL - RAFAGA;
+    const bar = { i, intro, level, bpm, raf, sd: 60 / bpm / 4, t0: prev ? prev.t0 + 16 * prev.sd : G.t0,
       b0: prev ? prev.b0 + 4 : 0, chord: CHORDS[(i - G.intro + 400) % 4] };
     G.bars.push(bar);
     if (!intro) chart(bar);
@@ -474,9 +508,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const D = G.D;
     let steps = (bar.i - G.intro) % 2 === 1 ? G.rhythm : null; // cada compás par repite el ritmo del anterior
     if (!steps) {
+      const [q, e, x] = bar.raf ? D.raf : [D.q, D.e, D.x];
       steps = [0];
-      for (let s = 2; s < 16; s += 2) if (Math.random() < (s % 4 === 0 ? D.q : D.e)) steps.push(s);
-      if (D.x) for (const s of steps.slice()) if (s % 4 === 0 && Math.random() < D.x) steps.push(s + 1);
+      for (let s = 2; s < 16; s += 2) if (Math.random() < (s % 4 === 0 ? q : e)) steps.push(s);
+      if (x) for (const s of steps.slice()) if (s % 4 === 0 && Math.random() < x) steps.push(s + 1);
       if (steps.length < 2) steps.push(8);
       steps.sort((a, b) => a - b);
       G.rhythm = steps;
@@ -499,11 +534,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       }
       G.pi = pi; G.lastLane = lane; G.lastT = t;
       const b = bar.b0 + s / 4;
-      G.notes.push({ t, b, lane, m: SCALE[pi], res: null });
+      G.notes.push({ t, b, lane, m: SCALE[pi], res: null, raf: bar.raf });
       // doble: solo en una negra con aire antes y después, y nunca en dos compases seguidos
       const airy = !close && !steps.some(x => x > s && x < s + 4);
       if (s % 4 === 0 && airy && bar.i - G.lastDbl >= 2 && Math.random() < D.dbl) {
-        G.notes.push({ t, b, lane: -lane, m: SCALE[Math.max(0, pi - 2)], res: null });
+        G.notes.push({ t, b, lane: -lane, m: SCALE[Math.max(0, pi - 2)], res: null, raf: bar.raf });
         G.lastDbl = bar.i;
       }
     }
@@ -570,7 +605,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const perfect = res === 'perfect';
       G.combo++; G.maxCombo = Math.max(G.maxCombo, G.combo);
       if (perfect) G.perfect++; else G.good++;
-      G.score += (perfect ? 100 : 50) * mult();
+      G.score += (perfect ? 100 : 50) * mult() * (n.raf ? 2 : 1);
       G.life = Math.min(100, G.life + G.D.heal[perfect ? 0 : 1]);
       G.hitP = p;
       playLead(n.m, perfect);
@@ -594,6 +629,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   function watchLevel(now) {
     const b = barAt(now);
+    // aviso de ráfaga un tiempo antes de que lleguen sus notas a la línea
+    const nb = G.bars.find(x => x.raf && x.i > G.shownRaf && x.t0 - 60 / x.bpm * G.D.ver <= now);
+    if (nb) {
+      G.shownRaf = nb.i + RAFAGA - 1; // los compases de ráfaga van seguidos
+      banner = { text: '¡Ráfaga! · ×2', t: performance.now(), gold: true };
+      sfxUp();
+    }
     if (b && b.level > G.shownLevel) {
       G.shownLevel = b.level;
       if (b.bpm === G.shownBpm) return; // ya está al tope
@@ -667,7 +709,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // ayuda de la primera partida: se va sola cuando llegan las primeras notas o con la primera pulsación
   function showTip(on) {
     $('tip').hidden = !on;
-    if (on) $('tip').style.bottom = Math.round(H - hitY + NH / 2 + cubeS * 1.5) + 'px';
+    // el cartel tiene zoom: su 'bottom' también se agranda, así que va dividido por --ui
+    const ui = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui')) || 1;
+    if (on) $('tip').style.bottom = Math.round((H - hitY + NH / 2 + cubeS * 1.5) / ui) + 'px';
   }
   function hideTip() {
     if ($('tip').hidden) return;
@@ -681,10 +725,20 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     normal: 'Rápido pero con aire entre nota y nota.',
     dificil: 'Arranca rápido y con corcheas desde el primer compás.',
     extremo: 'Rapidísimo, ventana de acierto mínima y cada error duele. XP ×3.',
+    maestro: 'Más rápido que el tope de Normal desde el arranque, 25 ms de margen y 4 errores te sacan. XP ×4.',
   };
-  const sel = CC ? CC.selectorDif($('diffs'), { juego: 'ritmo', notas: NOTAS, alCambiar: id => { diff = id; renderRecs(); } }) : null;
-  if (sel) diff = sel.valor();
-  else {
+  const alCambiar = id => { diff = id; renderRecs(); renderAgain(); };
+  const sel = CC ? CC.selectorDif($('diffs'), { juego: 'ritmo', notas: NOTAS, alCambiar }) : null;
+  if (sel) {
+    diff = sel.valor();
+    CC.selectorDif($('diffsEnd'), { juego: 'ritmo', compacto: true, alCambiar });
+    $('eDif').hidden = false;
+    if (CC.leyendaTeclas) {
+      $('mKeys').className = '';
+      CC.leyendaTeclas($('mKeys'), { jugar: 'tocar', extra: [['R', 'reiniciar']] });
+      CC.leyendaTeclas($('eKeys'), { jugar: 'tocar', extra: [['R', 'otra vez']] });
+    }
+  } else {
     $('diffs').className = 'diffs';
     $('diffs').setAttribute('role', 'radiogroup'); $('diffs').setAttribute('aria-label', 'Dificultad');
     for (const id of DIFF_IDS) {
@@ -698,7 +752,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function setDiff(id) {
     if (!DIFFS[id]) return;
     if (sel) { sel.poner(id); return; }
-    diff = id; rec.diff = id; saveRec(); renderRecs();
+    diff = id; rec.diff = id; saveRec(); renderRecs(); renderAgain();
+  }
+  // en la pantalla de fin, si elegiste otra dificultad, el botón principal lo dice
+  function renderAgain() {
+    const otra = state === 'end' && G && G.diff !== diff;
+    $('btnAgain').innerHTML = (otra ? '▶ Jugar en ' + DIFFS[diff].name : '↻ Otra vez') + ' <kbd class="kbhint">R</kbd>';
   }
   function stepDiff(d) {
     if (sel) sel.siguiente(d);
@@ -735,9 +794,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     state = 'play'; hudCache = '';
     $('hDiff').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + G.D.name;
     $('hDiff').classList.toggle('ext', G.diff === 'extremo');
+    $('hDiff').classList.toggle('mae', G.diff === 'maestro');
     blur(); schedule();
   }
-  const verRanking = () => CC.verRanking({ juego: 'ritmo', tabla: G ? G.diff : diff });
+  const verRanking = () => CC.verRanking({ juego: 'ritmo', tabla: diff });
   function pauseGame() {
     if (state !== 'play') return;
     state = 'pause';
@@ -760,6 +820,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showEnd() {
     state = 'end';
+    renderAgain();
     $('end').hidden = false;
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
   }
@@ -771,25 +832,24 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (e.target && e.target.tagName === 'INPUT') return; // escribiendo el apodo del ranking
     const k = e.key;
     const L = k === 'ArrowLeft' || k === 'a' || k === 'A', R = k === 'ArrowRight' || k === 'd' || k === 'D';
+    // Teclas: ← → (A/D) son solo del juego; en el menú y en la pantalla de fin ↑ ↓ eligen la dificultad,
+    // Enter/Espacio juegan y Esc vuelve a Juegos. En el menú ← → también arrancan (el conteo da tiempo).
+    if (document.getElementById('cc-rank')) return; // el ranking abierto maneja sus teclas
     if ((k === 'r' || k === 'R') && state !== 'start') { if (!e.repeat) restart(); return; }
     if (state === 'play') {
       if (L || R) { e.preventDefault(); if (!e.repeat) hit(L ? -1 : 1, stamp(e)); }
       else if (k === 'Escape' || k === 'p' || k === 'P') pauseGame();
     } else if (state === 'pause') {
       if (k === 'Escape' || k === 'p' || k === 'P') resumeGame();
-    } else if (state === 'start') {
-      if (document.getElementById('cc-rank')) return; // el ranking abierto maneja sus teclas
-      const el = document.activeElement, onDiff = el && el.closest && el.closest('.diff, .cc-dif');
-      if (L || R) {
+    } else if (state === 'start' || state === 'end') {
+      const el = document.activeElement, onDiff = !!(el && el.closest && el.closest('.diff, .cc-dif'));
+      if (k === 'ArrowUp' || k === 'ArrowDown') {
         e.preventDefault();
-        stepDiff(L ? -1 : 1);
-        if (onDiff) $('diffs').querySelector('[aria-checked="true"]').focus({ preventScroll: true });
-      } else if ((k === 'Enter' || k === ' ') && (onDiff || !isBtn(el))) { e.preventDefault(); start(); }
-      else if (k === 'Escape' && CC) salir();
-    } else if (state === 'end') {
-      if (document.getElementById('cc-rank')) return;
-      if ((k === 'Enter' || k === ' ') && !isBtn(document.activeElement)) { e.preventDefault(); start(); }
-      else if (k === 'Escape') showStart();
+        stepDiff(k === 'ArrowUp' ? -1 : 1);
+        if (onDiff) { const b = el.parentElement.querySelector('[aria-checked="true"]'); if (b) b.focus({ preventScroll: true }); }
+      } else if ((k === 'Enter' || k === ' ') && (onDiff || !isBtn(el))) { e.preventDefault(); if (!e.repeat) start(); }
+      else if (k === 'Escape') { if (CC) salir(); else if (state === 'end') showStart(); }
+      else if ((L || R) && state === 'start' && !e.repeat) { e.preventDefault(); start(); }
     }
   });
   // vibra solo si se juega tocando la pantalla (con teclado el navegador lo bloquea y llena la consola de avisos)
@@ -804,12 +864,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   $('btnAgain').addEventListener('click', start);
   // con la librería común: volver a la pantalla de juegos y ranking online
   if (CC) {
-    for (const id of ['btnBack', 'btnHudBack', 'btnRank', 'btnRank2']) $(id).hidden = false;
-    $('btnHome').textContent = '← Juegos';
+    for (const id of ['btnBack', 'btnHudBack', 'btnRank', 'btnRank2', 'btnGames2']) $(id).hidden = false;
+    $('btnHome').hidden = true; // el menú no tiene nada más que elegir: la dificultad se cambia acá mismo
   }
+  $('btnGames2').addEventListener('click', salir);
   $('btnBack').addEventListener('click', salir);
   $('btnHudBack').addEventListener('click', salir);
-  $('btnHome').addEventListener('click', () => (CC ? salir() : showStart()));
+  $('btnHome').addEventListener('click', showStart);
   $('btnRank').addEventListener('click', verRanking);
   $('btnRank2').addEventListener('click', verRanking);
   $('btnPause').addEventListener('click', () => { pauseGame(); });
@@ -854,9 +915,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     ctx.lineTo(b, y + a * 0.4); ctx.lineTo(b, y + a); ctx.closePath();
   }
   // nota: baldosa apaisada (ancho w, alto h) con su flecha
-  function tile(x, y, w, h, dir, [c1, c2]) {
+  function tile(x, y, w, h, dir, [c1, c2], gold) {
     const r = h * 0.3;
     ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(2.5, w * 0.05); ctx.strokeStyle = '#1d2340';
+    if (gold) { // nota de ráfaga: marco dorado, vale doble
+      const m = Math.max(4, h * 0.14);
+      ctx.fillStyle = '#ffcc29'; rb(x - w / 2 - m, y - h / 2 - m, w + 2 * m, h + 2 * m, r + m); ctx.fill(); ctx.stroke();
+    }
     ctx.fillStyle = 'rgba(29,35,64,.22)'; rb(x - w / 2 + 2, y - h / 2 + h * 0.12, w, h, r); ctx.fill();
     ctx.fillStyle = c2; rb(x - w / 2, y - h / 2, w, h, r); ctx.fill();
     ctx.fillStyle = c1; rb(x - w / 2, y - h / 2, w, h * 0.64, r); ctx.fill();
@@ -924,13 +989,23 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       rb(lx[face] - tw / 2 - ago * 20, hy - th / 2 - ago * 10, tw + ago * 40, th + ago * 20, 9); ctx.stroke();
       ctx.globalAlpha = 1;
     }
-    // las teclas de abajo, como los botones del celu
+    // las teclas de abajo, iguales a los botones del juego: flecha de color + "Izquierda"/"Derecha"
+    const kw = Math.min(104, gap * 2 - 40);
     for (const lane of [-1, 1]) {
-      const on = pressed === lane, kx = lx[lane] - lw / 2, ky = DH - 32 + (on ? 3 : 0);
-      ctx.fillStyle = '#1d2340'; rb(kx, DH - 32 + 4, lw, 26, 8); ctx.fill();
+      const on = pressed === lane, kx = lx[lane] - kw / 2, ky = DH - 32 + (on ? 3 : 0);
+      ctx.fillStyle = '#1d2340'; rb(kx, DH - 32 + 4, kw, 26, 8); ctx.fill();
       ctx.fillStyle = on ? '#ffcc29' : '#fffaf0'; ctx.strokeStyle = '#1d2340'; ctx.lineWidth = 2.5;
-      rb(kx, ky, lw, 26, 8); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = LANE_COL[lane][1]; arrowPath(lx[lane], ky + 13, 8, lane); ctx.fill();
+      rb(kx, ky, kw, 26, 8); ctx.fill(); ctx.stroke();
+      ctx.font = '13px "Lilita One", "Trebuchet MS", sans-serif';
+      const label = lane < 0 ? 'Izquierda' : 'Derecha', tw = ctx.measureText(label).width, aw = 9;
+      const x0 = lx[lane] - (tw + aw + 4) / 2, cy = ky + 13, ax = lane < 0 ? x0 : x0 + tw + 4;
+      ctx.strokeStyle = LANE_COL[lane][1]; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      if (lane < 0) { ctx.moveTo(ax + aw * 0.8, cy - 6); ctx.lineTo(ax + aw * 0.1, cy); ctx.lineTo(ax + aw * 0.8, cy + 6); }
+      else { ctx.moveTo(ax + aw * 0.2, cy - 6); ctx.lineTo(ax + aw * 0.9, cy); ctx.lineTo(ax + aw * 0.2, cy + 6); }
+      ctx.stroke();
+      ctx.fillStyle = '#1d2340'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(label, lane < 0 ? x0 + aw + 4 : x0, cy + 1);
     }
     if (CC) CC.dibujarCubo(ctx, DW / 2, DH - 4, 30, { mirar: face, t: p });
     ctx = main;
@@ -1066,7 +1141,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
           const a = clamp01(1 - (now - n.t - WIN_MISS) / 0.35);
           if (a <= 0) continue;
           ctx.globalAlpha = a; tile(laneX[n.lane], y, NS * 0.92, NH * 0.92, n.lane, GONE_COL); ctx.globalAlpha = 1;
-        } else tile(laneX[n.lane], y, NS * 0.92, NH * 0.92, n.lane, LANE_COL[n.lane]);
+        } else tile(laneX[n.lane], y, NS * 0.92, NH * 0.92, n.lane, LANE_COL[n.lane], n.raf);
       }
       ctx.restore();
     }
@@ -1095,7 +1170,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
     if (banner && p - banner.t < 1400) {
       const a = (p - banner.t) / 1400, pop = 1 + 0.25 * clamp01(1 - (p - banner.t) / 120);
-      textPop(banner.text, mid, midY - U * 0.9, Math.min(U * 0.55, W / 13) * pop, '#fffaf0', 1 - Math.pow(a, 4));
+      textPop(banner.text, mid, midY - U * 0.9, Math.min(U * 0.55, W / 13) * pop, banner.gold ? '#ffcc29' : '#fffaf0', 1 - Math.pow(a, 4));
     }
     if (G && G.bars.length >= G.intro) { // conteo de entrada, en el último compás antes de las notas
       const b0 = G.bars[G.intro - 1], k = Math.floor((now - b0.t0) / (b0.sd * 4));

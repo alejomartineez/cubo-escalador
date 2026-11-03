@@ -37,7 +37,7 @@ body {
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 12px;
-  pointer-events: none;
+  pointer-events: none; zoom: var(--ui, 1);
 }
 .stat { display: flex; flex-direction: column; line-height: 1; }
 .stat.mid { align-items: center; }
@@ -78,7 +78,7 @@ body {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   padding-top: 18px;
   display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
-  max-width: 560px; margin: 0 auto;
+  max-width: 560px; margin: 0 auto; zoom: var(--ui, 1);
 }
 .pad.off { visibility: hidden; }
 .pad button {
@@ -103,7 +103,7 @@ body {
 @keyframes sacudir { 25% { translate: -5px 0; } 75% { translate: 5px 0; } }
 
 .overlay {
-  position: fixed; inset: 0; display: grid; place-items: center;
+  position: fixed; inset: 0; display: flex;
   padding-block: 24px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -111,10 +111,21 @@ body {
   overflow-y: auto;
 }
 .card {
-  width: min(420px, 100%); background: var(--paper);
+  width: min(420px, 100%); margin: auto; background: var(--paper);
   border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink);
   padding: 22px; display: flex; flex-direction: column; gap: 14px;
+  zoom: var(--ui, 1);
 }
+.col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+/* compu apaisada: el menú en dos columnas (cómo se juega | elegir y jugar) */
+@media (min-width: 820px) and (min-height: 560px) and (orientation: landscape) {
+  .card.menu { width: min(780px, 100%); display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; align-items: start; }
+  .card.fin { width: min(450px, 100%); }
+}
+.btn.big kbd { font-size: 13px; margin-left: 8px; vertical-align: 4px; }
+.difbox { display: flex; flex-direction: column; gap: 6px; }
+.difbox > span { font-weight: 800; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: center; }
+.teclas:empty { display: none; }
 .brand { display: flex; align-items: center; gap: 14px; }
 .logo {
   width: 48px; height: 48px; flex: none; border-radius: 10px; background: var(--cube);
@@ -129,7 +140,7 @@ h1 { font-size: clamp(32px, 9vw, 42px); }
 h2 { font-size: 32px; }
 .intro { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.45; }
 .intro b { color: var(--ink); }
-#demo { width: 100%; height: 92px; display: block; border: 3px solid var(--ink); border-radius: 14px; background: #fff3d6; }
+#demo { width: 100%; height: 104px; display: block; border: 3px solid var(--ink); border-radius: 14px; background: #fff3d6; }
 .go { display: grid; grid-template-columns: auto auto 1fr; gap: 10px; align-items: stretch; }
 .best {
   display: flex; flex-direction: column; justify-content: center; padding: 6px 12px;
@@ -172,10 +183,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 /* cartel de cada rival, entre ronda y ronda */
 .cartel {
   position: fixed; left: 50%; top: 30%; transform: translate(-50%, -50%);
-  width: min(340px, calc(100% - 32px)); pointer-events: none;
+  width: min(340px, calc(100% - 32px)); pointer-events: none; box-sizing: border-box;
   background: var(--paper); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink);
   padding: 12px 16px; display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 12px;
+  zoom: var(--ui, 1);
 }
+.cartel.jefe { background: #ffcc29; }
+.cartel.jefe .k { color: var(--ink); }
 .cartel > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .cartel h2 { font-size: 28px; }
 .cartel.pop { animation: pop .28s ease-out; }
@@ -188,9 +202,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 /* ayuda de la primera vez */
 .tip {
   position: fixed; left: 50%; transform: translateX(-50%); bottom: 170px;
-  width: min(340px, calc(100% - 32px)); pointer-events: none; text-align: center;
+  width: min(340px, calc(100% - 32px)); pointer-events: none; text-align: center; box-sizing: border-box;
   background: var(--ink); color: var(--paper); border-radius: 16px; padding: 12px 14px;
   font-size: 15px; line-height: 1.4; font-weight: 600;
+  zoom: var(--ui, 1);
 }
 .tip b { color: var(--cube); }
 .tip::after {
@@ -235,29 +250,31 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 <div class="tip" id="tip" hidden>Alterná <b>◀ ▶ ◀ ▶</b> lo más rápido que puedas.<br>Repetir la misma flecha <b>no suma</b>.</div>
 
 <div class="overlay" id="menu">
-  <div class="card">
-    <button class="smallbtn back" id="btnBack" type="button">← Juegos</button>
-    <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Pulseada</h1></div>
-    <p class="intro">Alterná <b>◀ ▶ ◀ ▶</b> lo más rápido que puedas para tumbarle el brazo a cada rival. Repetir la misma flecha <b>no suma</b>.</p>
-    <canvas id="demo" aria-label="Demo: alternar izquierda y derecha empuja la barra; repetir la misma flecha no hace nada"></canvas>
-    <div id="difs"></div>
-    <div class="go">
-      <span class="best">Récord<b id="mBest">—</b></span>
-      <span class="best">Mejor ritmo<b id="mTps">—</b></span>
-      <button class="btn primary big" id="btnPlay" type="button">Jugar</button>
+  <div class="card menu">
+    <div class="col">
+      <button class="smallbtn back" id="btnBack" type="button">← Juegos</button>
+      <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Pulseada</h1></div>
+      <p class="intro">Alterná <b>◀ ▶ ◀ ▶</b> lo más rápido que puedas para tumbarle el brazo a cada rival. Repetir la misma flecha <b>no suma</b>.</p>
+      <canvas id="demo" aria-label="Demo: alternar izquierda y derecha empuja la barra; repetir la misma flecha no hace nada"></canvas>
     </div>
-    <div class="row">
-      <button class="btn small" id="btnRank" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v3M8 20h8l-1-3H9z"/></svg>Ranking</button>
-      <button class="btn small" id="btnMute" type="button">Sonido: sí</button>
-    </div>
-    <div class="foot kbd-only">
-      <span>Teclado: <kbd>←</kbd> <kbd>→</kbd> o <kbd>A</kbd> <kbd>D</kbd> · <kbd>Enter</kbd> juega · <kbd>R</kbd> reinicia</span>
+    <div class="col">
+      <div id="difs"></div>
+      <div class="go">
+        <span class="best">Récord<b id="mBest">—</b></span>
+        <span class="best">Mejor ritmo<b id="mTps">—</b></span>
+        <button class="btn primary big" id="btnPlay" type="button">Jugar</button>
+      </div>
+      <div class="row">
+        <button class="btn small" id="btnRank" type="button">🏆 Ranking</button>
+        <button class="btn small" id="btnMute" type="button">Sonido: sí</button>
+      </div>
+      <p class="teclas" id="mTeclas"></p>
     </div>
   </div>
 </div>
 
 <div class="overlay" id="end" hidden>
-  <div class="card">
+  <div class="card fin">
     <div class="result">
       <h2 id="eTitle">¡Te ganó!</h2>
       <span class="num" id="eNum">0</span>
@@ -267,12 +284,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="xp" id="eXP" hidden>+0 XP</span>
       <div class="badges" id="eBadges"></div>
     </div>
-    <button class="btn primary big" id="btnAgain" type="button">Otra vez</button>
+    <button class="btn primary big" id="btnAgain" type="button">↻ Otra vez<kbd class="kbd-only">R</kbd></button>
+    <div class="difbox" id="eDifBox"><span>Dificultad</span><div id="eDifs"></div></div>
     <div class="row">
-      <button class="btn small" id="btnRankEnd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v3M8 20h8l-1-3H9z"/></svg>Ranking</button>
-      <button class="btn small" id="btnHome" type="button">← Juegos</button>
+      <button class="btn small" id="btnRankEnd" type="button">🏆 Ranking</button>
+      <button class="btn small" id="btnHome" type="button">⌂ Juegos</button>
     </div>
-    <p class="foot kbd-only" style="justify-content:center;margin:0"><span><kbd>R</kbd> o <kbd>Enter</kbd> otra vez · <kbd>Esc</kbd> menú</span></p>
+    <p class="teclas" id="eTeclas"></p>
   </div>
 </div>
 
@@ -287,20 +305,23 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
   const INK = '#1d2340', PAPER = '#fffaf0', GOLD = '#f5b84a';
 
-  // Cada rival pide base + inc × (rivales ya vencidos) toques por segundo.
+  // Cada rival pide base + inc × (rivales ya vencidos) toques por segundo; cada 5.º es un jefe que pide `jefe` más.
   // Referencia: alternando con dos dedos un promedio hace 6 a 8, alguien bueno 9 o 10 y uno de élite 12 o más.
-  // pen: cuánto te hace retroceder repetir la flecha (en Difícil y Extremo se castiga).
+  // pen: cuánto te hace retroceder repetir la flecha. ayuda: el botón que toca se resalta ("¡Ahora!").
   const DIFS = {
-    facil:   { name: 'Fácil',   base: 3, inc: 0.4, pen: 0,     round: 8 },
-    normal:  { name: 'Normal',  base: 4, inc: 0.5, pen: 0,     round: 7 },
-    dificil: { name: 'Difícil', base: 6, inc: 0.5, pen: 0.025, round: 7 },
-    extremo: { name: 'Extremo', base: 9, inc: 0.5, pen: 0.05,  round: 7 },
+    facil:   { name: 'Fácil',   base: 3.5, inc: 0.4,  jefe: 0.4, pen: 0,     round: 8,   ayuda: true },
+    normal:  { name: 'Normal',  base: 4.8, inc: 0.45, jefe: 0.5, pen: 0,     round: 7,   ayuda: true },
+    dificil: { name: 'Difícil', base: 6.2, inc: 0.45, jefe: 0.6, pen: 0.025, round: 7,   ayuda: true },
+    extremo: { name: 'Extremo', base: 8,   inc: 0.45, jefe: 0.6, pen: 0.05,  round: 6.5, ayuda: true },
+    maestro: { name: 'Maestro', base: 9.6, inc: 0.4,  jefe: 0.6, pen: 0.12,  round: 6,   ayuda: false },
   };
   const DIFF_IDS = Object.keys(DIFS);
   const K = 0.16;                     // cuánto se mueve la barra por segundo por cada toque/s de ventaja
   const TAU1 = 0.5, TAU2 = 0.25;      // suavizado de la fuerza (igual para vos y para el rival)
   const ANG = 1.15;                   // inclinación máxima de los brazos (rad)
-  const T_INTRO = 1.7, T_COUNT = 1.5, T_WON = 1.3, T_LOST = 1.2;
+  // la presentación del primer rival es tranquila; de ahí en más, más corta para no cortar el ritmo
+  const T_INTRO = 1.7, T_COUNT = 1.5, T_INTRO2 = 1.15, T_COUNT2 = 0.9, T_WON = 1.3, T_LOST = 1.2;
+  const tIntro = () => (G && G.idx > 0 ? T_INTRO2 : T_INTRO), tCount = () => (G && G.idx > 0 ? T_COUNT2 : T_COUNT);
 
   // o: ojos · x: detalles · e: estilo de fuerza
   const RIVALES = [
@@ -326,11 +347,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     tirones: 'Pega tirones de golpe.',
   };
   const ROMANOS = ['', ' II', ' III', ' IV', ' V', ' VI'];
+  const esJefe = i => i % 5 === 4;
   function rivalDe(i) {
     const r = RIVALES[i % RIVALES.length], v = Math.floor(i / RIVALES.length);
-    return { ...r, nombre: r.n + (ROMANOS[v] ?? ' ' + (v + 1)) };
+    return { ...r, nombre: r.n + (ROMANOS[v] ?? ' ' + (v + 1)), jefe: esJefe(i) };
   }
-  const rivalTps = (d, i) => DIFS[d].base + DIFS[d].inc * i;
+  const rivalTps = (d, i) => DIFS[d].base + DIFS[d].inc * i + (esJefe(i) ? DIFS[d].jefe : 0);
   // multiplicador de la fuerza del rival según su estilo (en promedio da ~1)
   function forma(e, t) {
     if (e === 'arranque') return { m: t < 2.2 ? 1.15 : 0.94, tiron: false };
@@ -367,6 +389,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const sfxWin = () => { beep(110, 0.18, 'square', 0.05, 0.5); [659, 784, 988, 1319].forEach((f, i) => beep(f, 0.12, 'triangle', 0.06, 0, 0.12 + i * 0.08)); };
   const sfxLose = () => { beep(110, 0.2, 'square', 0.05, 0.5); [392, 330, 262].forEach((f, i) => beep(f, 0.16, 'triangle', 0.06, 0, 0.1 + i * 0.12)); };
   const sfxTiron = () => beep(180, 0.12, 'sawtooth', 0.03, 1.4);
+  const sfxJefe = () => [196, 196, 262].forEach((f, i) => beep(f, i < 2 ? 0.1 : 0.22, 'square', 0.045, 0, i * 0.13));
 
   // ---------- canvas y medidas ----------
   // todo se mide en U (una décima del ancho de la escena) para que entre igual en el celu y en la compu
@@ -384,8 +407,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     U = Math.max(14, Math.min(W * 0.1, 56, sh / (COMP + 0.2)));
     CX = W / 2; TOP = top;
     Y0 = top + Math.max(0, (sh - COMP * U) / 2);
-    $('tip').style.bottom = Math.round(H - padTop + 30) + 'px';
-    $('cartel').style.top = Math.round(Y0 + 1.7 * U) + 'px';
+    // .tip y .cartel tienen zoom: sus medidas en px se multiplican por --ui, así que se dividen acá
+    const ui = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui')) || 1;
+    $('tip').style.bottom = Math.round((H - padTop + 30) / ui) + 'px';
+    $('cartel').style.top = Math.round((Y0 + 1.7 * U) / ui) + 'px';
   }
   addEventListener('resize', resize);
 
@@ -415,7 +440,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   function showCartel() {
     const r = G.rival, c = $('cartel');
-    $('cNum').textContent = 'Rival ' + (G.idx + 1);
+    $('cNum').textContent = 'Rival ' + (G.idx + 1) + (r.jefe ? ' · ¡Jefe!' : '');
+    c.classList.toggle('jefe', !!r.jefe);
+    if (r.jefe && G.idx > 0) sfxJefe();
     $('cName').textContent = r.nombre;
     $('cPide').textContent = 'Pide unos ' + fmt1(rivalTps(G.diff, G.idx)) + ' toques/s';
     $('cEstilo').textContent = ESTILOS[r.e];
@@ -512,21 +539,30 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // ---------- pantallas ----------
   // selector común; sin la librería, uno mínimo con los mismos ids
   const NOTAS = {
-    facil: 'El primer rival pide unos 3 toques/s. Ideal para aprender.',
-    normal: 'El primer rival pide unos 4 toques/s y cada uno pide medio más.',
+    facil: 'El primer rival pide unos 3,5 toques/s. Ideal para aprender.',
+    normal: 'Arranca en casi 5 toques/s y cada 5 rivales viene un jefe.',
     dificil: 'Arrancan en 6 toques/s y repetir flecha te hace retroceder.',
-    extremo: 'Arrancan en 9 toques/s y cada error te hunde. XP ×3.',
+    extremo: 'Arrancan en 8 toques/s y cada error te hunde. XP ×3.',
+    maestro: 'Casi 10 toques/s desde el primero, sin ayuda y cada error pesa el doble. XP ×4.',
   };
   const sel = CC ? CC.selectorDif($('difs'), { juego: 'pulseada', notas: NOTAS, alCambiar: renderMenu }) : (() => {
+    // sin la librería: uno mínimo con las mismas dificultades
     let v = 'normal';
     const el = $('difs');
     el.className = 'row';
-    el.innerHTML = DIFF_IDS.map(id => `<button class="btn" type="button" data-d="${id}">${DIFS[id].name}</button>`).join('');
+    el.style.gridTemplateColumns = `repeat(${DIFF_IDS.length}, 1fr)`;
+    el.innerHTML = DIFF_IDS.map(id => `<button class="btn small" type="button" data-d="${id}">${DIFS[id].name}</button>`).join('');
     const pintar = () => { for (const b of el.children) b.classList.toggle('primary', b.dataset.d === v); };
     el.addEventListener('click', e => { const b = e.target.closest('button'); if (b) { v = b.dataset.d; pintar(); renderMenu(); } });
     pintar();
-    return { valor: () => v, siguiente(p = 1) { v = DIFF_IDS[(DIFF_IDS.indexOf(v) + p + 4) % 4]; pintar(); renderMenu(); } };
+    return { valor: () => v, siguiente(p = 1) { v = DIFF_IDS[Math.max(0, Math.min(DIFF_IDS.length - 1, DIFF_IDS.indexOf(v) + p))]; pintar(); renderMenu(); } };
   })();
+  if (CC) CC.selectorDif($('eDifs'), { juego: 'pulseada', compacto: true, alCambiar: renderMenu });
+  else $('eDifBox').hidden = true;
+  if (CC && CC.leyendaTeclas) {
+    CC.leyendaTeclas($('mTeclas'), { jugar: 'alternar' });
+    CC.leyendaTeclas($('eTeclas'), { jugar: 'alternar', extra: [['R', 'otra vez']] });
+  }
 
   function renderMenu() {
     const d = sel.valor();
@@ -542,7 +578,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     newRun(sel.valor());
     const D = sel.valor();
     $('hDiff').innerHTML = (CC ? CC.iconoDif(D, 16) : '') + DIFS[D].name;
-    $('hDiff').classList.toggle('hot', D === 'extremo');
+    $('hDiff').classList.toggle('hot', D === 'extremo' || D === 'maestro');
     let seen = false;
     try { seen = !!localStorage.getItem('cubo-pulseada-ayuda'); } catch (e) {}
     showTip(!seen);
@@ -573,7 +609,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const bad = d => { const b = d < 0 ? bL : bR; b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad'); setTimeout(() => b.classList.remove('bad'), 200); };
   let padSig = '';
   function paintPad() {
-    const fight = state === 'play' && G && G.phase === 'fight';
+    // en Maestro no se marca qué botón toca
+    const fight = state === 'play' && G && G.phase === 'fight' && DIFS[G.diff].ayuda;
     const nx = fight ? G.next : 9;
     const sig = String(nx);
     if (sig === padSig) return;
@@ -597,15 +634,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       else if (right) { e.preventDefault(); if (!e.repeat) press(1, performance.now()); }
       else if (k === 'Escape') showMenu();
       else if (k === ' ') e.preventDefault();
-    } else if (state === 'menu') {
-      const a = document.activeElement;
-      if (k === 'Escape' && CC) CC.volver();
-      else if (left || right) { e.preventDefault(); sel.siguiente(left ? -1 : 1); }
-      else if (k === 'Enter' && (a === document.body || a === $('btnPlay'))) { e.preventDefault(); start(); }
-      else if (k === ' ' && a === document.body) { e.preventDefault(); start(); }
-    } else if (state === 'end') {
-      if (k === 'Escape') showMenu();
-      else if ((k === 'Enter' || k === ' ') && document.activeElement === document.body) { e.preventDefault(); start(); }
+    } else if (state === 'menu' || state === 'end') {
+      // menú y fin: ↑ ↓ eligen la dificultad, Enter/Espacio juegan, Esc vuelve a Juegos.
+      // ← → no hacen nada acá (así, si seguís alternando cuando termina, no cambia nada sin querer).
+      const a = document.activeElement, enDif = !!(a && a.classList && a.classList.contains('cc-dif'));
+      if (k === 'Escape') { e.preventDefault(); CC ? CC.volver() : showMenu(); }
+      else if (k === 'ArrowUp' || k === 'ArrowDown') {
+        e.preventDefault(); sel.siguiente(k === 'ArrowUp' ? -1 : 1);
+        if (enDif) { const b = a.parentNode.querySelector('.cc-dif[aria-checked="true"]'); if (b) b.focus(); }
+      }
+      else if (left || right) e.preventDefault();
+      else if ((k === 'Enter' || k === ' ') && (!a || a === document.body || enDif || a === $('btnPlay') || a === $('btnAgain'))) { e.preventDefault(); if (!e.repeat) start(); }
     }
   });
   const bindPad = (el, d) => el.addEventListener('pointerdown', e => { e.preventDefault(); press(d, performance.now()); });
@@ -667,11 +706,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (G.phase === 'intro') {
       G.p *= Math.exp(-dt * 5);
       G.slide = Math.max(0, G.slide - dt * 2.6);
-      if (G.pt >= T_INTRO) { G.phase = 'count'; G.pt = 0; $('cartel').hidden = true; G.lastCount = 4; }
+      if (G.pt >= tIntro()) { G.phase = 'count'; G.pt = 0; $('cartel').hidden = true; G.lastCount = 4; }
     } else if (G.phase === 'count') {
-      const n = 3 - Math.floor(G.pt / (T_COUNT / 3));
+      const n = 3 - Math.floor(G.pt / (tCount() / 3));
       if (n !== G.lastCount && n > 0) { G.lastCount = n; sfxCount(n); }
-      if (G.pt >= T_COUNT) {
+      if (G.pt >= tCount()) {
         G.phase = 'fight'; G.pt = 0; G.p = 0;
         sfxCount(0); banner = { text: '¡Ya!', t: now, ms: 600 };
       }
@@ -815,7 +854,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     ctx.globalAlpha = 1;
     let big = null;
     if (state === 'play' && G && G.phase === 'count') {
-      const k = G.pt / (T_COUNT / 3), n = 3 - Math.floor(k);
+      const k = G.pt / (tCount() / 3), n = 3 - Math.floor(k);
       if (n > 0) big = { text: String(n), a: k % 1 };
     }
     if (big) {
@@ -1045,16 +1084,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // ---------- demo del menú: alternar suma, repetir no ----------
   const dm = $('demo'), dctx = dm.getContext('2d');
   function drawDemo(now) {
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
     const w = dm.clientWidth, h = dm.clientHeight;
     if (!w) return;
-    if (dm.width !== Math.round(w * dpr)) { dm.width = Math.round(w * dpr); dm.height = Math.round(h * dpr); }
+    // la tarjeta tiene zoom: se dibuja en px de CSS y el lienzo se escala por dpr × zoom para que se vea nítido
+    const sc = Math.min(2, window.devicePixelRatio || 1) * ((dm.getBoundingClientRect().width / w) || 1);
+    if (dm.width !== Math.round(w * sc) || dm.height !== Math.round(h * sc)) { dm.width = Math.round(w * sc); dm.height = Math.round(h * sc); }
     const c = dctx;
-    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.setTransform(sc, 0, 0, sc, 0, 0);
     c.clearRect(0, 0, w, h);
     const cyc = 4.4, t = reduceMotion ? 1.1 : (now / 1000) % cyc, alt = t < 2.8;
-    // teclas
-    const ks = 40, gap = 10, kx0 = 14, ky = 14;
+    // los mismos botones que abajo en el juego (flecha + texto); el que toca, en dorado
+    const ks = 62, kh = 50, gap = 8, kx0 = 12, ky = 18;
     let pressed = 0, next = 0, fill;
     if (alt) {
       const k = Math.floor(t * 4), ph = (t * 4) % 1;
@@ -1070,22 +1110,23 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     for (const d of [-1, 1]) {
       const x = kx0 + (d > 0 ? ks + gap : 0), on = pressed === d, y = ky + (on ? 3 : 0);
       const wrong = on && !alt;
-      c.fillStyle = INK; rr(c, x, ky + 4, ks, ks, 9); c.fill();
-      c.fillStyle = wrong ? '#ff4f5e' : next === d && alt ? GOLD : '#fff';
-      rr(c, x, y, ks, ks, 9); c.fill(); c.strokeStyle = INK; c.lineWidth = 2.5; c.stroke();
+      c.fillStyle = INK; rr(c, x, ky + 4, ks, kh, 11); c.fill();
+      c.fillStyle = wrong ? '#ff4f5e' : next === d && alt ? GOLD : PAPER;
+      rr(c, x, y, ks, kh, 11); c.fill(); c.strokeStyle = INK; c.lineWidth = 2.5; c.stroke();
       c.lineWidth = 3.5; c.beginPath();
-      const ax = x + ks / 2, ay = y + ks / 2;
-      if (d < 0) { c.moveTo(ax + 5, ay - 9); c.lineTo(ax - 5, ay); c.lineTo(ax + 5, ay + 9); }
-      else { c.moveTo(ax - 5, ay - 9); c.lineTo(ax + 5, ay); c.lineTo(ax - 5, ay + 9); }
+      const ax = x + ks / 2, ay = y + 17;
+      c.moveTo(ax - d * 5, ay - 8); c.lineTo(ax + d * 5, ay); c.lineTo(ax - d * 5, ay + 8);
       c.stroke();
+      c.fillStyle = INK; c.font = '800 10.5px "Rubik", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+      c.fillText(d < 0 ? 'Izquierda' : 'Derecha', ax, y + kh - 8);
       if (on) {
         c.font = '16px "Lilita One", "Trebuchet MS", sans-serif'; c.textAlign = 'center';
         c.lineWidth = 4; c.strokeStyle = INK; c.fillStyle = wrong ? '#ff4f5e' : '#8ff0b8';
-        c.strokeText(wrong ? '✕' : '+1', ax, ky - 1 + 4); c.fillText(wrong ? '✕' : '+1', ax, ky - 1 + 4);
+        c.strokeText(wrong ? "✕" : "+1", ax, ky - 3); c.fillText(wrong ? "✕" : "+1", ax, ky - 3);
       }
     }
     // barra
-    const bx = kx0 + ks * 2 + gap + 18, bw = Math.max(40, w - bx - 14), by = ky + 10, bh = 20;
+    const bx = kx0 + ks * 2 + gap + 18, bw = Math.max(40, w - bx - 14), by = ky + kh / 2 - 10, bh = 20;
     c.save(); rr(c, bx, by, bw, bh, bh / 2); c.clip();
     c.fillStyle = RIVALES[0].c; c.fillRect(bx, by, bw, bh);
     c.fillStyle = playerColor(); c.fillRect(bx, by, bw * fill, bh);

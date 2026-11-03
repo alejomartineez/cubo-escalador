@@ -87,3 +87,26 @@ insert into public.limites (tabla, minimo, maximo, orden) values
   ('cohete:facil', null, 60000, 'mayor'), ('cohete:normal', null, 60000, 'mayor'), ('cohete:dificil', null, 60000, 'mayor'), ('cohete:extremo', null, 60000, 'mayor'),
   ('esqui:facil', null, 40000, 'mayor'), ('esqui:normal', null, 40000, 'mayor'), ('esqui:dificil', null, 40000, 'mayor'), ('esqui:extremo', null, 40000, 'mayor')
 on conflict (tabla) do update set minimo = excluded.minimo, maximo = excluded.maximo, orden = excluded.orden;
+
+-- Ronda 2: Lava en el Escalador y dificultad Maestro.
+insert into public.limites (tabla, minimo, maximo, orden) values
+  ('escalador:lava',     null, 2500, 'mayor'),
+  ('escalador:lava-x',   null, 2000, 'mayor'),
+  ('escalador:lava-m',   null, 1800, 'mayor'),
+  ('escalador:sprint-m', 7000, null, 'menor'),
+  ('escalador:time-m',   null, 420,  'mayor')
+on conflict (tabla) do update set minimo = excluded.minimo, maximo = excluded.maximo, orden = excluded.orden;
+
+-- Ronda 2: topes nuevos por juego (las curvas cambiaron) y las tablas de Maestro.
+insert into public.limites (tabla, minimo, maximo, orden) values
+  ('lluvia:facil', null, 6000, 'mayor'), ('lluvia:normal', null, 4000, 'mayor'), ('lluvia:dificil', null, 4000, 'mayor'), ('lluvia:extremo', null, 4000, 'mayor'), ('lluvia:maestro', null, 3000, 'mayor'),
+  ('clasificador:facil', null, 220, 'mayor'), ('clasificador:normal', null, 220, 'mayor'), ('clasificador:dificil', null, 220, 'mayor'), ('clasificador:extremo', null, 220, 'mayor'), ('clasificador:maestro', null, 180, 'mayor'),
+  ('equilibrio:facil', null, 3000, 'mayor'), ('equilibrio:normal', null, 2000, 'mayor'), ('equilibrio:dificil', null, 1500, 'mayor'), ('equilibrio:extremo', null, 1000, 'mayor'), ('equilibrio:maestro', null, 600, 'mayor'),
+  ('ritmo:facil', null, 700000, 'mayor'), ('ritmo:normal', null, 700000, 'mayor'), ('ritmo:dificil', null, 750000, 'mayor'), ('ritmo:extremo', null, 750000, 'mayor'), ('ritmo:maestro', null, 600000, 'mayor'),
+  ('voley:facil', null, 300, 'mayor'), ('voley:normal', null, 80, 'mayor'), ('voley:dificil', null, 60, 'mayor'), ('voley:extremo', null, 60, 'mayor'), ('voley:maestro', null, 40, 'mayor'),
+  ('paseo:facil', null, 10000, 'mayor'), ('paseo:normal', null, 4000, 'mayor'), ('paseo:dificil', null, 2500, 'mayor'), ('paseo:extremo', null, 1200, 'mayor'), ('paseo:maestro', null, 600, 'mayor'),
+  ('serpiente:facil', null, 260, 'mayor'), ('serpiente:normal', null, 260, 'mayor'), ('serpiente:dificil', null, 260, 'mayor'), ('serpiente:extremo', null, 260, 'mayor'), ('serpiente:maestro', null, 260, 'mayor'),
+  ('cohete:maestro', null, 60000, 'mayor'),
+  ('esqui:facil', null, 30000, 'mayor'), ('esqui:normal', null, 20000, 'mayor'), ('esqui:dificil', null, 15000, 'mayor'), ('esqui:extremo', null, 12000, 'mayor'), ('esqui:maestro', null, 10000, 'mayor'),
+  ('pulseada:facil', null, 35, 'mayor'), ('pulseada:normal', null, 28, 'mayor'), ('pulseada:dificil', null, 25, 'mayor'), ('pulseada:extremo', null, 22, 'mayor'), ('pulseada:maestro', null, 20, 'mayor')
+on conflict (tabla) do update set minimo = excluded.minimo, maximo = excluded.maximo, orden = excluded.orden;

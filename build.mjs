@@ -40,19 +40,43 @@ const ICON = 'data:image/svg+xml,' + encodeURIComponent(
 
 const esc = s => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
+// Pantalla de carga: aparece al instante (va en el <head>) y se va cuando la página y las fuentes están listas.
+// Las fuentes de Google se cargan sin frenar el dibujo de la página (antes la dejaban en blanco hasta bajarlas).
+const CARGA_CSS = `#cargando{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+background:#62c6ff;transition:opacity .3s ease,visibility .3s}
+#cargando.fuera{opacity:0;visibility:hidden}
+#cargando i{position:relative;width:64px;height:64px;border-radius:14px;background:#ffcc29;border:4px solid #1d2340;box-shadow:0 6px 0 #1d2340;animation:cc-salto .6s cubic-bezier(.3,0,.4,1) infinite alternate}
+#cargando i::before,#cargando i::after{content:"";position:absolute;top:16px;width:9px;height:14px;border-radius:5px;background:#1d2340}
+#cargando i::before{left:14px}#cargando i::after{right:14px}
+#cargando b{font:800 15px system-ui,sans-serif;color:#1d2340;letter-spacing:.04em}
+#cargando s{display:block;width:120px;height:8px;border-radius:99px;border:2.5px solid #1d2340;background:#fffaf0;overflow:hidden;text-decoration:none}
+#cargando s::after{content:"";display:block;height:100%;width:40%;background:#ff5d7d;border-radius:99px;animation:cc-barra 1s ease-in-out infinite}
+@keyframes cc-salto{from{transform:translateY(0) scale(1.06,.94)}to{transform:translateY(-26px) rotate(8deg)}}
+@keyframes cc-barra{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
+@media (prefers-reduced-motion:reduce){#cargando i,#cargando s::after{animation:none}}`;
+const CARGA_HTML = '<div id="cargando" aria-hidden="true"><i></i><s></s><b>Cargando…</b></div>';
+const CARGA_JS = `<script>(function(){var el=document.getElementById('cargando');if(!el)return;
+function fuera(){if(!el)return;el.classList.add('fuera');var e=el;el=null;setTimeout(function(){e.remove()},400)}
+var l=document.querySelector('link[data-fuentes]'),esperas=[];
+if(l)esperas.push(new Promise(function(r){if(l.sheet)r();l.addEventListener('load',r);l.addEventListener('error',r)}).then(function(){return document.fonts&&document.fonts.ready}));
+Promise.race([Promise.all(esperas),new Promise(function(r){setTimeout(r,2500)})]).then(function(){setTimeout(fuera,60)});})();</script>`;
+const FUENTES = /<link rel="stylesheet" href="(https:\/\/fonts\.googleapis\.com\/[^"]+)">/;
+
 rmSync('docs', { recursive: true, force: true });
 mkdirSync('docs');
 
 const salida = [];
 for (const p of PAGES) {
   if (!existsSync(p.src)) { console.warn(`Falta ${p.src}, lo salteo`); continue; }
-  const body = readFileSync(p.src, 'utf8');
+  let body = readFileSync(p.src, 'utf8');
+  body = body.replace(FUENTES, (_, href) => `<link rel="stylesheet" media="print" data-fuentes href="${href}" onload="this.onload=null;this.media='all'">` +
+    `<noscript><link rel="stylesheet" href="${href}"></noscript>`);
   const title = (body.match(/<title>([^<]*)<\/title>/) || [, 'Juego'])[1];
   const html = `<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="${esc(p.desc)}">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(p.desc)}">
@@ -62,11 +86,14 @@ for (const p of PAGES) {
 <link rel="icon" href="${ICON}">
 <link rel="apple-touch-icon" href="icono-180.png">
 <link rel="manifest" href="manifest.webmanifest">
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}
+${CARGA_CSS}</style>
 <script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))</script>
 </head>
 <body>
+${CARGA_HTML}
 ${body}
+${CARGA_JS}
 </body>
 </html>
 `;
@@ -159,11 +186,19 @@ self.addEventListener('fetch', e => {
     return;
   }
   if (u.origin !== location.origin) return;
-  // Páginas y archivos propios: primero la red (para tener lo último), y si no hay conexión, la caché.
-  e.respondWith(fetch(r).then(res => {
+  // Páginas y archivos propios: primero la red (para tener lo último). Si tarda más de 1,5 s o no hay conexión,
+  // se usa lo guardado y la respuesta de la red queda guardada para la próxima.
+  const red = fetch(r).then(res => {
     if (res.ok) { const copia = res.clone(); caches.open(CACHE).then(c => c.put(r, copia)); }
     return res;
-  }).catch(() => caches.match(r, { ignoreSearch: true }).then(hit => hit || caches.match('./'))));
+  });
+  const guardado = () => caches.match(r, { ignoreSearch: true });
+  e.respondWith(new Promise(ok => {
+    let listo = false;
+    const dar = res => { if (!listo && res) { listo = true; ok(res); } };
+    red.then(dar, () => guardado().then(hit => dar(hit || caches.match('./'))));
+    setTimeout(() => guardado().then(dar), 1500);
+  }));
 });
 `);
 console.log(`docs/sw.js  (caché ${version}, ${salida.length + 1} archivos)`);

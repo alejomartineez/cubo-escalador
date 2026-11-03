@@ -70,7 +70,7 @@ button { font: inherit; color: var(--ink); }
 .slide {
   flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
-  padding: 6px var(--gy) 8px var(--gx); min-height: 0;
+  padding: 6px var(--gy) 8px var(--gx); min-height: 0; min-width: 0; overflow: hidden;
 }
 .head { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .slide h2 {
@@ -228,6 +228,38 @@ button { font: inherit; color: var(--ink); }
 @keyframes deslizar { 0%, 100% { transform: translateX(8px); } 50% { transform: translateX(-8px); } }
 
 button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+/* en la compu todo un poco más grande (--ui lo calcula cubo-comun.js) */
+.top, .pager, .info, .tabs, .coach, .sheet .card { zoom: var(--ui, 1); }
+.stage { width: min(calc(480px * var(--ui, 1)), 100%); max-height: calc(330px * var(--ui, 1)); }
+.slide h2 { font-size: clamp(38px, 10.5vw, calc(60px * var(--ui, 1))); }
+.card { max-height: calc((100dvh - 32px) / var(--ui, 1)); }
+
+/* legendarias */
+.sub-h { margin: 6px 0 0; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #6a3fd6; }
+.sub-h::after { content: ""; flex: 1; height: 2.5px; border-radius: 2px; background: linear-gradient(90deg, #ffcc29, #ff5d7d, #8f6bff, #5ff5ff); }
+.item.leg { background: linear-gradient(160deg, #fff6d6, #f1e6ff 55%, #dcf7ff); }
+.item.leg[aria-pressed="true"] { background: linear-gradient(160deg, #ffe07a, #d8c4ff 55%, #a8eeff); }
+.item.leg::before {
+  content: "Legendaria"; position: absolute; top: -9px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+  padding: 1px 7px; border-radius: 99px; border: 2px solid var(--ink); background: #8f6bff; color: var(--paper); font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+}
+.item.leg.exc::before { content: "Exclusiva"; background: #12142a; color: #5ff5ff; }
+.item.leg .badge { top: auto; bottom: -8px; }
+.item.leg.lock { background: #2b2f4a; color: #c9cfe6; box-shadow: none; border-style: dashed; }
+.item.leg.lock canvas { opacity: 1; filter: brightness(0) invert(.18); }
+.codigo { display: flex; gap: 8px; align-items: center; padding: 10px 12px; border-radius: 14px; background: #2b2f4a; color: var(--paper); }
+.codigo label { flex: none; font-size: 13px; font-weight: 800; line-height: 1.15; }
+.codigo input {
+  flex: 1; min-width: 0; height: 42px; padding: 0 12px; border-radius: 12px; border: 2.5px solid var(--ink); background: #fff; color: var(--ink);
+  font: 800 16px var(--body); letter-spacing: .08em; text-transform: uppercase;
+}
+.codigo button { flex: none; height: 42px; padding: 0 14px; border-radius: 12px; border: 2.5px solid var(--ink); background: #ffcc29; box-shadow: 0 3px 0 var(--ink); font-weight: 800; font-size: 14px; cursor: pointer; }
+.codigo button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.codigo-msg { margin: -6px 2px 0; min-height: 16px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.logro.secreto { background: #2b2f4a; border-color: var(--ink); border-style: solid; color: var(--paper); }
+.logro.secreto .t span { color: #c9cfe6; }
+.logro.secreto .m { background: #8f6bff !important; border-color: var(--ink); color: var(--paper); }
 @media (max-height: 700px) { .info p { display: none; } .slide { gap: 8px; } }
 @media (max-height: 600px) { .tab { height: 48px; } .tab span { display: none; } }
 @media (max-width: 400px) { .brand { font-size: 18px; } .bar { width: 64px; } .install span { display: none; } .all span { display: none; } }
@@ -291,7 +323,13 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
         <button type="button" data-seg="efectos" aria-pressed="false">Efectos</button>
       </div>
       <div class="grid" id="items"></div>
-      <p class="tip">Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 % y Extremo multiplica por 3. Algunos personajes y efectos solo salen con logros.</p>
+      <form class="codigo" id="codigoForm" autocomplete="off">
+        <label for="codigo">¿Tenés un<br>código?</label>
+        <input id="codigo" maxlength="20" placeholder="CÓDIGO" spellcheck="false" autocapitalize="characters">
+        <button type="submit">Canjear</button>
+      </form>
+      <p class="codigo-msg" id="codigoMsg" aria-live="polite"></p>
+      <p class="tip">Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 %, Extremo multiplica por 3 y Maestro por 4. Algunos personajes salen con logros, y los legendarios solo con secretos o códigos.</p>
       <div class="apodo"><span style="flex:1;min-width:0">Apodo en el ranking<b id="apodoTxt" style="display:block">—</b></span><button class="mini" type="button" id="apodoBtn">Cambiar</button></div>
     </div>
   </div>
@@ -590,7 +628,7 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
   const DIBUJOS = { escalador: ilEscalador, lluvia: ilLluvia, clasificador: ilClasificador, equilibrio: ilEquilibrio, ritmo: ilRitmo,
     voley: ilVoley, paseo: ilPaseo, serpiente: ilSerpiente, cohete: ilCohete, esqui: ilEsqui, pulseada: ilPulseada };
   const DESC = {
-    escalador: 'Tocá el lado donde está el próximo escalón. Si errás, te mareás medio segundo. Sprint 100: ¿bajás de 11 segundos?',
+    escalador: 'Tocá el lado donde está el próximo escalón. Si errás, te mareás. Sprint 100, 30 segundos, Libre y el nuevo modo Lava: subí antes de que te alcance.',
     lluvia: 'Movete entre carriles y esquivá los bloques que caen cada vez más rápido.',
     clasificador: 'Mandá cada cubo a la caja de su color con ◀ o ▶. Mirá la fila para leer adelante.',
     equilibrio: 'Corregí la tabla con izquierda y derecha para que no te tire el viento.',
@@ -629,7 +667,7 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
     s.querySelector('.play').addEventListener('click', () => jugar(i));
     s.querySelector('canvas').addEventListener('click', () => jugar(i));
     s.querySelector('[data-rank]').addEventListener('click', () => CC.verRanking({ juego: g.id }));
-    for (const b of s.querySelectorAll('[data-ir]')) b.addEventListener('click', () => ir(actual + +b.dataset.ir));
+    for (const b of s.querySelectorAll('[data-ir]')) b.addEventListener('click', () => { combinacion(+b.dataset.ir); ir(actual + +b.dataset.ir); });
     const dots = s.querySelector('.dots');
     JUEGOS.forEach((_, k) => { const d = document.createElement('button'); d.type = 'button'; d.tabIndex = -1; if (k === i) d.setAttribute('aria-current', 'true'); d.addEventListener('click', () => ir(k)); dots.appendChild(d); });
     slides.appendChild(s);
@@ -641,6 +679,17 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
     b.type = 'button'; b.className = 'all'; b.innerHTML = `${ICO_ALL}<span>Todos</span>`; b.setAttribute('aria-label', 'Ver todos los juegos');
     b.addEventListener('click', () => abrirJuegos('todos'));
     p.insertBefore(b, p.lastElementChild);
+  }
+
+  // ◀ ◀ ▶ ▶ ◀ ▶ ◀ ▶ con las flechas de arriba (o con el teclado), sin pausas largas.
+  const SECRETO = [-1, -1, 1, 1, -1, 1, -1, 1];
+  let secuencia = [], ultimaFlecha = 0;
+  function combinacion(d) {
+    const t = performance.now();
+    if (t - ultimaFlecha > 1500) secuencia = [];
+    ultimaFlecha = t;
+    secuencia = [...secuencia, d].slice(-SECRETO.length);
+    if (secuencia.join() === SECRETO.join()) { secuencia = []; CC.marcar('fantasma'); pintarPerfil(); }
   }
 
   const SLIDE_KEY = 'cubo-hub-slide';
@@ -724,6 +773,7 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
   // personaje
   let seg = 'skins';
   function requisito(it) {
+    if (it.legendaria) return it.codigo ? 'Código' : 'Secreto';
     if (it.logro) { const l = CC.LOGROS.find(x => x.id === it.logro); return 'Logro: ' + (l ? l.nombre : it.logro); }
     return 'Nivel ' + it.nivel;
   }
@@ -732,30 +782,49 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
     box.innerHTML = '';
     for (const b of document.querySelectorAll('[data-seg]')) b.setAttribute('aria-pressed', String(b.dataset.seg === seg));
     const lista = seg === 'skins' ? CC.SKINS : CC.EFECTOS;
+    let titulo = false;
     for (const it of lista) {
       const libre = CC.libre(it), elegido = seg === 'skins' ? p.skin.id === it.id : p.efecto.id === it.id;
       const nuevo = nuevos.includes(seg === 'skins' ? it.id : 'fx:' + it.id);
+      if (it.legendaria && !titulo) {
+        titulo = true;
+        const h = document.createElement('p'); h.className = 'sub-h'; h.style.gridColumn = '1 / -1';
+        h.textContent = `Legendarias · ${lista.filter(i => i.legendaria && CC.libre(i)).length} de ${lista.filter(i => i.legendaria).length}`;
+        box.appendChild(h);
+      }
       const b = document.createElement('button');
-      b.type = 'button'; b.className = 'item' + (libre ? '' : ' lock');
+      b.type = 'button'; b.className = 'item' + (libre ? '' : ' lock') + (it.legendaria ? ' leg' : '') + (it.exclusiva ? ' exc' : '');
       b.setAttribute('aria-pressed', String(elegido));
       if (!libre) b.setAttribute('aria-disabled', 'true');
-      b.innerHTML = `<canvas width="120" height="128"></canvas><span>${it.nombre}</span>${libre ? '' : `<small>${requisito(it)}</small>`}${nuevo ? '<span class="badge">Nuevo</span>' : ''}`;
+      const nombre = it.legendaria && !libre ? '???' : it.nombre;
+      b.innerHTML = `<canvas width="120" height="128"></canvas><span>${nombre}</span>${libre ? '' : `<small>${requisito(it)}</small>`}${nuevo ? '<span class="badge">Nuevo</span>' : ''}`;
       it._cv = b.querySelector('canvas');
       b.addEventListener('click', () => {
-        if (!libre) { CC.avisar(`<div><b>${it.nombre}</b><span>Se desbloquea con ${requisito(it).replace('Logro: ', 'el logro ')}.</span></div>`, 2400); return; }
+        if (!libre) {
+          const txt = it.legendaria ? it.pista : `Se desbloquea con ${requisito(it).replace('Logro: ', 'el logro ')}.`;
+          CC.avisar(`<div><b>${nombre}</b><span>${txt}</span></div>`, 3000); return;
+        }
         if (seg === 'skins' ? CC.elegirSkin(it.id) : CC.elegirEfecto(it.id)) { CC.vibrar(10); pintarPersonaje(); }
       });
       box.appendChild(b);
     }
   }
+  $('codigoForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const r = await CC.canjear($('codigo').value);
+    $('codigoMsg').textContent = r.ok ? (r.ya ? `Ya tenías a ${r.skin.nombre}.` : `¡Listo! Ya tenés a ${r.skin.nombre} puesto.`) : r.msg;
+    if (r.ok) { $('codigo').value = ''; $('codigo').blur(); CC.elegirSkin(r.skin.id); seg = 'skins'; pintarPersonaje(); pintarPerfil(); }
+  });
   function pintarPersonaje() {
     const p = CC.perfil();
     $('bigName').textContent = p.skin.nombre + (p.efecto.id !== 'ninguno' ? ' · ' + p.efecto.nombre : '');
     $('bigLvl').textContent = `Nivel ${p.nivel} · ${p.enNivel} / ${p.paraSiguiente} XP`;
     $('bigBar').style.width = Math.round(100 * p.enNivel / p.paraSiguiente) + '%';
-    const todos = [...CC.SKINS, ...CC.EFECTOS].filter(i => !i.logro && i.nivel > p.nivel).sort((a, b) => a.nivel - b.nivel);
+    const todos = [...CC.SKINS, ...CC.EFECTOS].filter(i => !i.logro && !i.codigo && i.nivel > p.nivel).sort((a, b) => a.nivel - b.nivel);
     $('bigNext').textContent = todos.length ? `En nivel ${todos[0].nivel} desbloqueás ${todos.filter(i => i.nivel === todos[0].nivel).map(i => i.nombre).join(' y ')}.` : 'Ya desbloqueaste todo lo que da el nivel.';
     $('apodoTxt').textContent = p.apodo || 'Todavía no tenés';
+    CC.estilos();
+    $('apodoTxt').className = p.apodo ? CC.claseNombre(p.skin) : '';
     pintarItems();
   }
   function abrirPersonaje() {
@@ -774,14 +843,22 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
     const cuenta = m => hechos.filter(l => l.medalla === m).length;
     box.innerHTML = `<div class="resumen"><b>${hechos.length} / ${total}</b><div class="medallas">${Object.entries(CC.MEDALLAS).map(([k, m]) =>
       `<span class="med"><i style="background:${m.color}"></i>${cuenta(k)}</span>`).join('')}</div></div>
-      <p class="tip">Bronce sale jugando, plata con práctica, oro es para muy buenos y diamante, para muy pocos. Cada logro da XP y algunos desbloquean personajes y efectos.</p>`;
-    const grupos = [['General', CC.LOGROS.filter(l => !l.juego)], ...JUEGOS.map(g => [g.nombre, CC.LOGROS.filter(l => l.juego === g.id)])];
+      <p class="tip">Bronce sale jugando, plata con práctica, oro es para muy buenos y diamante, para muy pocos. Cada logro da XP y algunos desbloquean personajes y efectos. Los secretos no dicen qué hay que hacer.</p>`;
+    const grupos = [['General', CC.LOGROS.filter(l => !l.juego && !l.oculto)], ...JUEGOS.map(g => [g.nombre, CC.LOGROS.filter(l => l.juego === g.id && !l.oculto)]),
+      ['Secretos', CC.LOGROS.filter(l => l.oculto)]];
     for (const [nombre, ls] of grupos) {
       if (!ls.length) continue;
       const g = document.createElement('div'); g.className = 'grupo';
       g.innerHTML = `<h4>${nombre}</h4>`;
       for (const l of ls) {
         const m = CC.MEDALLAS[l.medalla], ok = !!p.logros[l.id];
+        if (l.oculto && !ok) {
+          const el = document.createElement('div');
+          el.className = 'logro secreto';
+          el.innerHTML = `<span class="m">?</span><span class="t"><b>Logro secreto</b><span>Seguí jugando para descubrirlo. Da un personaje legendario.</span></span><span class="xp">+${m.xp}</span>`;
+          g.appendChild(el);
+          continue;
+        }
         const premio = [...CC.SKINS, ...CC.EFECTOS].filter(i => i.logro === l.id).map(i => i.nombre);
         let prog = '';
         if (!ok && l.progreso) { try { const [a, b] = l.progreso(p); prog = `<div class="prog"><i style="width:${Math.min(100, Math.round(100 * a / b))}%"></i></div>`; } catch (e) {} }
@@ -826,8 +903,8 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
     if (document.getElementById('cc-rank')) return;
     if (abierta) { if (e.key === 'Escape') cerrar(); return; }
     const s = slides.children[actual];
-    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { e.preventDefault(); flash(s.querySelector('[data-ir="-1"]')); ir(actual - 1); }
-    else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { e.preventDefault(); flash(s.querySelector('[data-ir="1"]')); ir(actual + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { e.preventDefault(); flash(s.querySelector('[data-ir="-1"]')); combinacion(-1); ir(actual - 1); }
+    else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { e.preventDefault(); flash(s.querySelector('[data-ir="1"]')); combinacion(1); ir(actual + 1); }
     else if ((e.key === 'Enter' || e.key === ' ') && (document.activeElement === document.body || document.activeElement?.classList.contains('arrow'))) { e.preventDefault(); jugar(actual); }
   });
 
@@ -867,7 +944,7 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
         for (const it of (seg === 'skins' ? CC.SKINS : CC.EFECTOS)) {
           if (!it._cv) continue;
           const k = it._cv.getContext('2d'); k.setTransform(2, 0, 0, 2, 0, 0); k.clearRect(0, 0, 60, 64);
-          if (seg === 'skins') CC.dibujarCubo(k, 30, 58, 30, { skin: it, t: reduceMotion ? 0 : now, efecto: false });
+          if (seg === 'skins') CC.dibujarCubo(k, 30, 58, 30, { skin: it, t: reduceMotion ? 0 : now, efecto: false, brillo: CC.libre(it) });
           else CC.dibujarCubo(k, 30, 56, 26, { t: reduceMotion ? 900 : now, efecto: it.id });
         }
       }

@@ -37,6 +37,7 @@ body {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 12px;
   pointer-events: none;
+  zoom: var(--ui, 1);
 }
 .stat { display: flex; flex-direction: column; line-height: 1; }
 .stat.mid { align-items: center; }
@@ -76,6 +77,7 @@ body {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
   max-width: 560px; margin: 0 auto;
+  zoom: var(--ui, 1);
 }
 .pad.off { visibility: hidden; }
 .pad button {
@@ -92,14 +94,17 @@ body {
 .pad.wait button { animation: latido 1.1s ease-in-out infinite; }
 @keyframes latido { 50% { background: #fff1b8; transform: translateY(-3px); } }
 
-.help {
-  position: fixed; left: 50%; top: 30%; transform: translateX(-50%);
-  width: min(320px, calc(100% - 32px)); text-align: center; pointer-events: none;
+.help { position: fixed; left: 0; right: 0; top: 30%; display: flex; justify-content: center; padding: 0 16px; pointer-events: none; }
+.help[hidden] { display: none; }
+.help > div {
+  zoom: var(--ui, 1);
+  width: 320px; max-width: 100%; text-align: center;
   background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 6px 0 var(--ink);
   padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;
 }
 .help b { font: 400 22px/1.1 var(--display); }
 .help span { font-size: 14px; line-height: 1.4; color: var(--muted); font-weight: 600; }
+.vidas { letter-spacing: 1px; color: #e0324f; }
 
 .overlay {
   position: fixed; inset: 0; display: flex; overflow-y: auto; touch-action: pan-y;
@@ -110,9 +115,10 @@ body {
   background: rgba(29, 35, 64, .28);
 }
 .card {
-  width: min(400px, 100%); margin: auto; background: var(--paper);
+  width: min(420px, 100%); margin: auto; background: var(--paper);
   border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink);
   padding: 20px; display: flex; flex-direction: column; gap: 14px;
+  zoom: var(--ui, 1);
 }
 .brand { display: flex; align-items: center; gap: 14px; }
 .logo {
@@ -147,15 +153,22 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 /* mini demo del menú: los carriles con el cubo esquivando y las dos teclas que se prenden */
 .howto { display: flex; flex-direction: column; gap: 8px; }
 #mini { box-sizing: border-box; width: 100%; height: 84px; display: block; border: 3px solid var(--ink); border-radius: 14px; background: #9fdfff; }
-.keys { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* las teclas de la demo son una copia en chico de los botones de abajo del juego */
+.keys { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px; }
 .key {
-  display: flex; align-items: center; justify-content: center; gap: 4px; height: 38px;
-  font: 400 17px var(--display); background: #fff; border: 3px solid var(--ink); border-radius: 12px;
-  box-shadow: 0 4px 0 var(--ink); transition: transform .08s, box-shadow .08s, background .08s;
+  display: flex; align-items: center; justify-content: center; gap: 4px; height: 46px;
+  font: 400 19px var(--display); background: var(--paper); border: 3px solid var(--ink); border-radius: 16px;
+  box-shadow: 0 5px 0 var(--ink); transition: transform .08s, box-shadow .08s, background .08s;
 }
-.key svg { width: 20px; height: 20px; flex: none; }
-.key.on { background: var(--cube); transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-.diffs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.key svg { width: 24px; height: 24px; flex: none; }
+.key kbd { margin: 0 2px; }
+.key.on { background: var(--cube); transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+@media (pointer: coarse) { .key kbd { display: none; } }
+.lbl-dif { margin: 0 0 -6px; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: center; }
+.cc-teclas.avisa .g.menu { animation: avisa .9s ease-out; border-radius: 8px; }
+@keyframes avisa { 0%, 60% { background: #ffe58a; box-shadow: 0 0 0 5px #ffe58a; } 100% { background: transparent; box-shadow: 0 0 0 5px transparent; } }
+.btn kbd { font-family: var(--body); }
+.diffs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .diffs-nota { grid-column: 1 / -1; margin: 2px 0 0; font-size: 12px; font-weight: 600; text-align: center; color: var(--muted); min-height: 16px; }
 .diff {
   font: 800 15px var(--body); color: var(--ink); cursor: pointer; padding: 9px 4px 8px;
@@ -194,9 +207,12 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 @media (max-width: 380px) { .card { padding: 16px; gap: 12px; } }
 @media (pointer: coarse) { .kbd-only { display: none; } }
+/* en la compu la tarjeta se agranda con --ui: un poco más compacta para que entre entera en la pantalla */
+@media (pointer: fine) { .card { gap: 12px; } #mini { height: 72px; } }
 @media (prefers-reduced-motion: reduce) {
   .pad.wait button { animation: none; background: #fff1b8; }
   .key, .pad button, .btn { transition: none; }
+  .cc-teclas.avisa .g.menu { animation: none; background: #ffe58a; }
 }
 </style>
 
@@ -220,15 +236,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 </div>
 
 <div class="help" id="help" role="status" hidden>
-  <b id="helpT">Tocá un botón para cambiar de carril</b>
-  <span id="helpS">Esquivá los bloques que caen y juntá monedas. Arranca con tu primer toque.</span>
+  <div>
+    <b id="helpT">Tocá un botón para cambiar de carril</b>
+    <span id="helpS">Esquivá los bloques que caen y juntá monedas. Arranca con tu primer toque.</span>
+  </div>
 </div>
 
 <div class="overlay" id="menu">
   <div class="card">
     <button class="smallbtn back" id="btnBack" type="button">← Juegos</button>
     <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Lluvia</h1></div>
-    <p class="intro">Cambiá de carril con <b>izquierda</b> y <b>derecha</b> y que no te toque ningún bloque. Cada <b>moneda</b> suma 5.</p>
+    <p class="intro">Cambiá de carril y que no te toque ningún bloque. Cada <b>moneda</b> suma 5.</p>
     <div class="howto" aria-hidden="true">
       <canvas id="mini"></canvas>
       <div class="keys">
@@ -245,9 +263,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <button class="btn small rank" id="btnRank" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v3M8 20h8l-1-3H9z"/></svg>Ranking</button>
       <button class="btn small" id="btnMute" type="button">Sonido: sí</button>
     </div>
-    <div class="foot kbd-only">
-      <span>Teclado: <kbd>←</kbd> <kbd>→</kbd> o <kbd>A</kbd> <kbd>D</kbd> · <kbd>Enter</kbd> juega · <kbd>R</kbd> reinicia</span>
-    </div>
+    <div id="leyenda"></div>
   </div>
 </div>
 
@@ -263,12 +279,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="sub" id="eXPd" hidden></span>
       <div class="logros" id="eLogros" hidden></div>
     </div>
-    <button class="btn primary big" id="btnAgain" type="button">Otra vez</button>
+    <button class="btn primary big" id="btnAgain" type="button">↻ Otra vez <kbd class="kbd-only">R</kbd></button>
+    <p class="lbl-dif" id="eDifL">Dificultad</p>
+    <div id="diffs2"></div>
     <div class="row">
       <button class="btn small rank" id="btnRank2" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M12 14v3M8 20h8l-1-3H9z"/></svg>Ranking</button>
-      <button class="btn small" id="btnHome" type="button">← Juegos</button>
+      <button class="btn small" id="btnHome" type="button">⌂ Juegos</button>
     </div>
-    <p class="foot kbd-only" style="justify-content:center;margin:0"><span><kbd>R</kbd> o <kbd>Enter</kbd> otra vez · <kbd>Esc</kbd> menú</span></p>
+    <div id="leyenda2"></div>
   </div>
 </div>
 
@@ -284,31 +302,38 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   const LANES = 4;
   const TWEEN = 70;        // ms del saltito visual (la lógica cambia de carril al instante)
-  const LEVEL_EVERY = 15;  // segundos por nivel
+  const LEVEL_EVERY = 15;  // segundos por nivel; cada nivel nuevo trae un evento de EVENT_LEN segundos
+  const EVENT_LEN = 4;
   const COIN_PTS = 5;
+  const GOLD = ['#ffd84d', '#e0a000']; // bloques de la ráfaga: valen doble
   const COLORS = [
     ['#ff7a95', '#d94a6c'], ['#ffad4d', '#d9801c'], ['#3fdca8', '#16a676'],
     ['#5cb0ff', '#2f7fe0'], ['#c08bff', '#8f55e0'],
   ];
   const TITLES = ['¡Plaf!', '¡Te dio!', '¡Auch!', '¡Bonk!'];
-  // la dificultad corre un "reloj efectivo" (t0 + t * rate) que decide velocidad y densidad:
-  // Difícil arranca donde Normal llega al minuto; Extremo arranca con todo al tope y encima más rápido y más junto;
-  // Fácil avanza más lento y con todo más tranquilo
+  // la dificultad corre un "reloj efectivo" (t0 + t * rate) que decide velocidad y densidad.
+  // Normal arranca ya con algo de presión (como el segundo 15 de antes) y avanza 1,25 veces más rápido;
+  // Fácil tiene 3 vidas y bloques más lentos, pero también sube; Difícil arranca cerca del tope;
+  // Extremo arranca al tope, más rápido y más junto; Maestro es más rápido todavía, sin monedas,
+  // con más filas de 3 bloques y el carril libre cambia en cada fila (no hay respiro quedándose quieto).
+  // vidas: golpes que aguanta · coinP: chance de moneda por fila · p3Add: filas de 3 extra · mover: el carril libre nunca se repite
   const DIFFS = {
-    facil:   { name: 'Fácil',   t0: 0,  rate: 0.6, vMul: 0.82, ivMul: 1.15 },
-    normal:  { name: 'Normal',  t0: 0,  rate: 1,   vMul: 1,    ivMul: 1 },
-    dificil: { name: 'Difícil', t0: 60, rate: 1,   vMul: 1,    ivMul: 1 },
-    extremo: { name: 'Extremo', t0: 90, rate: 1,   vMul: 1.15, ivMul: 0.88 },
+    facil:   { name: 'Fácil',   t0: 10,  rate: 1.4,  vMul: 0.85, ivMul: 1.1,  vidas: 3, coinP: 0.3 },
+    normal:  { name: 'Normal',  t0: 15,  rate: 1.25, vMul: 1,    ivMul: 1,    vidas: 1, coinP: 0.24 },
+    dificil: { name: 'Difícil', t0: 55,  rate: 1.1,  vMul: 1.05, ivMul: 0.95, vidas: 1, coinP: 0.22 },
+    extremo: { name: 'Extremo', t0: 90,  rate: 1,    vMul: 1.15, ivMul: 0.88, vidas: 1, coinP: 0.2 },
+    maestro: { name: 'Maestro', t0: 95,  rate: 1,    vMul: 1.22, ivMul: 0.85, vidas: 1, coinP: 0, p3Add: 0.15, mover: true },
   };
   const DIFF_IDS = Object.keys(DIFFS);
   const NOTAS = {
-    facil: 'Bloques más lentos y más lugar entre filas. Ideal para aprender.',
-    normal: 'Arranca tranqui y se pone bravo con el tiempo.',
-    dificil: 'Arranca rápido: como Normal después de un minuto.',
+    facil: 'Tres vidas y bloques más lentos. Ideal para aprender.',
+    normal: 'Arranca con ritmo y cada 15 s pasa algo: monedas o ráfagas.',
+    dificil: 'Arranca rápido y con filas de a tres desde el principio.',
     extremo: 'Velocidad al tope y filas pegadas desde el segundo 0. XP ×3.',
+    maestro: 'Más rápido que Extremo, sin monedas y te tenés que mover en cada fila. XP ×4.',
   };
-  // XP por partida (antes del multiplicador): 6 para una floja (unos 20 s en Normal), 60 para una de experto (unos 3 min)
-  const XP_MALO = 40, XP_EXPERTO = 1200;
+  // XP por partida (antes del multiplicador): 6 para una floja (unos 30 s en Normal), 60 para una de experto (unos 2:40 en Normal)
+  const XP_MALO = 100, XP_EXPERTO = 1300;
 
   // ---------- récords ----------
   // copia local por dificultad (sirve sin la librería); con la librería, el récord oficial es el del perfil
@@ -363,6 +388,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const blockS = () => LW * 0.76;
 
   // ---------- estado ----------
+  let hudCache = '';
   let state = 'menu';       // menu | play | end
   let G = null, shake = 0, particles = [], floats = [], banner = null, rainT = 0;
 
@@ -372,31 +398,39 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       demo, diff: d, t: 0, lane, rl: lane, fromL: lane, tw0: -1e9, arc: 0, face: 1, landT: -1e9,
       bonkT: -1e9, bonkDir: 0, ghosts: [], blocks: [], coins: [], rows: 0, safe: lane,
       nextSpawn: 0.8, score: 0, dodged: 0, coinsN: 0, level: 1, done: false, deadT: 0, botNext: 0,
+      vidas: DIFFS[d].vidas, invUntil: -1e9, ev: null, evT: -1e9,
       wait: !demo, // la partida arranca con el primer toque
     };
     particles = []; floats = []; banner = null;
   }
 
-  // en pisos por segundo; pasado el tope sigue subiendo despacito para que ninguna partida sea eterna
-  const speedAt = t => Math.min(1.6, 0.5 + 0.013 * t) + Math.max(0, t - 85) * 0.002;
+  // en pisos por segundo; pasado el tope sigue subiendo para que ninguna partida sea eterna
+  const speedAt = t => Math.min(1.6, 0.5 + 0.013 * t) + Math.max(0, t - 85) * 0.004;
   const intervalAt = t => Math.max(0.34, 0.95 - 0.011 * t);    // segundos entre filas
   const effT = () => DIFFS[G.diff].t0 + G.t * DIFFS[G.diff].rate;
   const speedNow = () => speedAt(effT()) * DIFFS[G.diff].vMul;
-  const intervalNow = () => intervalAt(effT()) * DIFFS[G.diff].ivMul;
+  // evento en curso: 'monedas' (cada fila trae moneda) o 'rafaga' (filas más seguidas, doradas, valen doble)
+  const evNow = () => (G.ev && G.t - G.evT < EVENT_LEN ? G.ev : null);
+  const intervalNow = () => intervalAt(effT()) * DIFFS[G.diff].ivMul * (evNow() === 'rafaga' ? 0.7 : 1);
 
   function spawnRow() {
-    const t = effT();
-    const p3 = Math.max(0, Math.min(0.3, (t - 35) * 0.005));
+    const t = effT(), D = DIFFS[G.diff], ev = evNow();
+    // durante un evento no hay filas de 3: el foco está en las monedas o en el ritmo
+    const p3 = ev ? 0 : Math.max(0, Math.min(0.3, (t - 35) * 0.005)) + (D.p3Add || 0);
     const p2 = Math.min(0.55, 0.12 + t * 0.007);
     const r = Math.random(), n = r < p3 ? 3 : r < p3 + p2 ? 2 : 1;
-    // carril libre garantizado, a no más de 2 del anterior para que siempre se pueda llegar
-    const safe = Math.max(0, Math.min(LANES - 1, G.safe + Math.floor(Math.random() * 5) - 2));
+    // carril libre garantizado, a no más de 2 del anterior para que siempre se pueda llegar (en Maestro, nunca el mismo)
+    let safe;
+    do safe = Math.max(0, Math.min(LANES - 1, G.safe + Math.floor(Math.random() * 5) - 2));
+    while (D.mover && safe === G.safe);
     G.safe = safe;
     const others = [0, 1, 2, 3].filter(l => l !== safe).sort(() => Math.random() - 0.5);
     const blocked = others.slice(0, n);
-    const bf = blockS() / FLOOR, y0 = -bf - 0.03, c = COLORS[G.rows++ % COLORS.length];
-    for (const l of blocked) G.blocks.push({ lane: l, y: y0, c });
-    if (Math.random() < 0.24) {
+    const bf = blockS() / FLOOR, y0 = -bf - 0.03, x2 = ev === 'rafaga';
+    const c = x2 ? GOLD : COLORS[G.rows % COLORS.length];
+    G.rows++;
+    for (const l of blocked) G.blocks.push({ lane: l, y: y0, c, x2 });
+    if (Math.random() < (ev === 'monedas' ? 1 : D.coinP)) {
       const free = [0, 1, 2, 3].filter(l => !blocked.includes(l));
       G.coins.push({ lane: free[Math.floor(Math.random() * free.length)], y: y0 + bf / 2, spin: Math.random() * 6 });
     }
@@ -431,8 +465,21 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       xp: CC.xpEscala(G.score, XP_MALO, XP_EXPERTO) });
   }
 
+  // golpe: con vidas de sobra (Fácil) el bloque se rompe y quedás un ratito invulnerable; si no, se terminó
+  function hit(now, b) {
+    if (G.vidas > 1 && !G.demo) {
+      G.vidas--; G.invUntil = now + 1300;
+      G.blocks = G.blocks.filter(x => x !== b);
+      burst(laneX(b.lane), (b.y * FLOOR) + blockS() / 2, b.c[0], 12, 1);
+      shake = reduceMotion ? 0 : 7; sfxBonk(); CC?.vibrar(30);
+      banner = { text: G.vidas === 1 ? '¡Última vida!' : `¡Te quedan ${G.vidas}!`, t: now };
+      hudCache = '';
+      return;
+    }
+    die(now, b);
+  }
   function die(now, b) {
-    G.done = true; G.deadT = now;
+    G.done = true; G.deadT = now; G.vidas = 0;
     burst(laneX(G.lane), FLOOR - cubeS() / 2, '#ffcc29', 14, 1);
     burst(laneX(b.lane), (b.y * FLOOR) + blockS() / 2, b.c[0], 10, 1);
     if (G.demo) return;
@@ -469,7 +516,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     let guardada = null;
     try { guardada = localStorage.getItem('cubo-dif-lluvia'); } catch (e) {}
     sel = CC.selectorDif(selBox, { juego: 'lluvia', notas: NOTAS, valor: guardada ? undefined : rec.diff, alCambiar: () => renderMenu() });
+    // en la pantalla de fin, el mismo selector en chico: la próxima partida usa lo que elijas ahí
+    CC.selectorDif($('diffs2'), { juego: 'lluvia', compacto: true, alCambiar: () => renderMenu() });
+    CC.leyendaTeclas($('leyenda'), { jugar: 'cambiar de carril' });
+    CC.leyendaTeclas($('leyenda2'), { jugar: 'cambiar de carril', extra: [['R', 'otra vez']] });
   } else {
+    $('diffs2').hidden = $('eDifL').hidden = true;
     let v = DIFFS[rec.diff] ? rec.diff : 'normal';
     selBox.className = 'diffs'; selBox.setAttribute('role', 'radiogroup'); selBox.setAttribute('aria-label', 'Dificultad');
     selBox.innerHTML = DIFF_IDS.map(d => `<button class="diff" type="button" role="radio" data-d="${d}">${DIFFS[d].name}</button>`).join('') +
@@ -481,7 +533,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       renderMenu();
     };
     selBox.addEventListener('click', e => { const b = e.target.closest('.diff'); if (b) poner(b.dataset.d); });
-    sel = { valor: () => v, poner };
+    sel = { valor: () => v, poner, siguiente: k => poner(DIFF_IDS[Math.max(0, Math.min(DIFF_IDS.length - 1, DIFF_IDS.indexOf(v) + k))]) };
     poner(v);
   }
 
@@ -541,24 +593,29 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const k = e.key;
     const left = k === 'ArrowLeft' || k === 'a' || k === 'A', right = k === 'ArrowRight' || k === 'd' || k === 'D';
     if ((k === 'r' || k === 'R') && (state === 'play' || state === 'end')) { e.preventDefault(); if (!e.repeat) restart(); return; }
+    const up = k === 'ArrowUp', down = k === 'ArrowDown';
     if (state === 'play') {
       if (left) { e.preventDefault(); if (!e.repeat) input(-1); }
       else if (right) { e.preventDefault(); if (!e.repeat) input(1); }
       else if (k === 'Escape') showMenu();
-    } else if (state === 'menu') {
-      const a = document.activeElement;
-      if (k === 'Escape' && CC) CC.volver();
-      else if (left || right) {
-        e.preventDefault();
-        const i = Math.max(0, Math.min(DIFF_IDS.length - 1, DIFF_IDS.indexOf(diffNow()) + (left ? -1 : 1)));
-        sel.poner(DIFF_IDS[i]);
-        if (a && a.closest && a.closest('#diffs')) { const b = selBox.querySelector(`[data-d="${DIFF_IDS[i]}"]`); if (b) b.focus(); }
-      }
-      else if (k === 'Enter' && !(a && a.matches && a.matches('#btnBack, #btnMute, #btnRank'))) { e.preventDefault(); start(); }
-      else if (k === ' ' && a === document.body) { e.preventDefault(); start(); }
-    } else if (state === 'end') {
-      if (k === 'Escape') showMenu();
-      else if ((k === 'Enter' || k === ' ') && document.activeElement === document.body) { e.preventDefault(); start(); }
+      return;
+    }
+    // menú y fin: ↑ ↓ eligen dificultad, Enter/Espacio juegan, Esc sale. ← → son solo del juego: acá no hacen nada (y lo avisan)
+    const a = document.activeElement;
+    if (up || down) {
+      e.preventDefault();
+      sel.siguiente(up ? -1 : 1);
+      const box = a && a.closest && a.closest('#diffs, #diffs2');
+      if (box) { const b = box.querySelector('[aria-checked="true"]'); if (b) b.focus({ preventScroll: true }); }
+    } else if (left || right) {
+      e.preventDefault();
+      for (const id of ['leyenda', 'leyenda2']) { const el = $(id); el.classList.remove('avisa'); void el.offsetWidth; el.classList.add('avisa'); }
+    } else if (k === 'Escape') {
+      if (state === 'end') showMenu(); else if (CC) CC.volver();
+    } else if (k === 'Enter' || k === ' ') {
+      // con foco en otro botón (Ranking, Sonido, Juegos…), que ese botón haga lo suyo
+      if (a && a !== document.body && a.matches && a.matches('button') && a.id !== 'btnPlay' && a.id !== 'btnAgain' && !a.closest('#diffs, #diffs2')) return;
+      e.preventDefault(); if (!e.repeat) start();
     }
   });
   const bindPad = (el, d) => el.addEventListener('pointerdown', e => { e.preventDefault(); input(d); });
@@ -632,7 +689,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (far) press(Math.sign(far), now);
   }
 
-  let hudCache = '';
   function update(now, dt) {
     const v = speedNow();
     rainT += dt * (G.done || G.wait ? 0.3 : v);
@@ -648,13 +704,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const bf = blockS() / FLOOR, sf = cubeS() / FLOOR, top = 1 - sf * 0.86;
       for (const b of G.blocks) b.y += v * dt;
       for (const c of G.coins) { c.y += v * dt; c.spin += dt * 5; }
-      for (const b of G.blocks) {
-        if (b.lane === G.lane && b.y + bf * 0.92 > top && b.y < 1) { die(now, b); break; }
+      if (now >= G.invUntil) for (const b of G.blocks) {
+        if (b.lane === G.lane && b.y + bf * 0.92 > top && b.y < 1) { hit(now, b); break; }
       }
       if (!G.done) {
         G.blocks = G.blocks.filter(b => {
           if (b.y + bf < 1) return true;
-          G.dodged++; G.score++;
+          G.dodged++; G.score += b.x2 ? 2 : 1;
           burst(laneX(b.lane), FLOOR, b.c[0], 6, 0.6);
           return false;
         });
@@ -668,10 +724,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
           }
           return c.y - cr < 1;
         });
+        // cada 15 s: nivel nuevo y un evento (monedas y ráfagas se turnan; Maestro, sin monedas, solo ráfagas)
         const lvl = 1 + Math.floor(G.t / LEVEL_EVERY);
         if (lvl > G.level) {
           G.level = lvl;
-          if (!G.demo) { sfxLevel(); banner = { text: '¡Nivel ' + lvl + '!', t: now }; }
+          G.ev = lvl % 2 === 0 && DIFFS[G.diff].coinP > 0 ? 'monedas' : 'rafaga'; G.evT = G.t;
+          if (!G.demo) { sfxLevel(); banner = { text: G.ev === 'monedas' ? '¡Lluvia de monedas!' : '¡Ráfaga dorada ×2!', t: now }; }
         }
       }
     } else if (G.demo && G.done && now - G.deadT > 900) newRun(true);
@@ -688,11 +746,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (banner && now - banner.t > 1100) banner = null;
 
     if (state === 'play' || state === 'end') {
-      const sig = G.score + '|' + G.t.toFixed(1) + '|' + G.level + '|' + G.diff;
+      const sig = G.score + '|' + G.t.toFixed(1) + '|' + G.level + '|' + G.diff + '|' + G.vidas;
       if (sig !== hudCache) {
         hudCache = sig;
         $('hScore').textContent = fmtN(G.score); $('hTime').textContent = G.t.toFixed(1);
-        $('hLevel').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + DIFFS[G.diff].name + ' · Nivel ' + G.level;
+        const D = DIFFS[G.diff], vv = Math.max(0, G.vidas);
+        $('hLevel').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + D.name + ' · Nivel ' + G.level +
+          (D.vidas > 1 ? ` <span class="vidas" aria-label="${vv} vidas">${'♥'.repeat(vv)}${'♡'.repeat(D.vidas - vv)}</span>` : '');
         $('hLevel').classList.toggle('hot', G.level >= 5);
       }
     }
@@ -829,9 +889,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function sizeMini() {
     const r = mini.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
     if (!r.width) return;
-    MW = r.width - 6; MH = r.height - 6; // menos el borde
-    mini.width = Math.round(MW * dpr); mini.height = Math.round(MH * dpr);
-    mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // la tarjeta tiene zoom en la compu: se dibuja en px de CSS y el lienzo se agranda para que quede nítido
+    const z = mini.offsetWidth ? r.width / mini.offsetWidth : 1;
+    MW = r.width / z - 6; MH = r.height / z - 6; // menos el borde
+    mini.width = Math.round(MW * z * dpr); mini.height = Math.round(MH * z * dpr);
+    mctx.setTransform(dpr * z, 0, 0, dpr * z, 0, 0);
   }
   addEventListener('resize', () => { if (state === 'menu') sizeMini(); });
   const PATH = [1, 2, 3, 2, 1, 0]; // carriles que recorre el cubo
@@ -881,6 +943,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   function drawCube(now) {
     const dead = G.done;
+    if (!dead && now < G.invUntil && !reduceMotion && Math.floor(now / 90) % 2) return; // titila mientras es invulnerable
     const s = cubeS();
     const bt = clamp01((now - G.bonkT) / 160);
     const bonk = bt < 1 ? Math.sin(Math.PI * bt) * LW * 0.14 * G.bonkDir : 0;
