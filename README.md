@@ -17,7 +17,6 @@ La pantalla principal muestra un juego por slide. Todos los juegos suman XP al m
 | Ritmo | Tocá el lado de cada nota justo cuando llega a la línea. Modo Infinito (el BPM sube) y modo Canciones: 3 temas CC0 de Juhani Junkala con la partitura sacada del audio y estrellas por precisión. Tiene un calibrador en dos pruebas, como Clone Hero o Rhythm Quest (aparece la primera vez y queda en el menú): con el sonido mide cuánto te adelantás o atrasás, y con la imagen si tu pantalla o tus auriculares tienen demora, y corre las notas para que coincidan. Al terminar una partida, si tocaste corrido para un lado, ofrece corregirlo. |
 | Vóley | Movete y devolvé la pelota a rivales cada vez mejores. |
 | Paseo | Alterná las flechas para caminar con tu mascota sin que se escape. |
-| Serpiente | Doblás a la izquierda o a la derecha según hacia dónde vas. |
 | Cohete | Cada flecha prende un propulsor. |
 | Esquí | Slalom entre banderas, cada vez más rápido. |
 | Pulseada | Alterná lo más rápido que puedas para ganarle al rival. |

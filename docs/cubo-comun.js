@@ -98,7 +98,7 @@
     { id: 'diablito', nombre: 'Diablito', logro: 'extremo1', cuerpo: '#ff3b3b', extra: 'diablito' },
     { id: 'diamante', nombre: 'Diamante', logro: 'leyenda', cuerpo: '#7fe3ff', extra: 'diamante' },
     { id: 'sabio', nombre: 'Sabio', logro: 'maestro1', cuerpo: '#8f6bff', extra: 'sabio', sinBoca: true },
-    // Pase de temporada: exclusivas del pase (nivel = nivel del pase). No brillan, salvo Campeón.
+    // Premios grandes del camino de nivel (`pase: true` = se destacan en el camino). No brillan, salvo Campeón.
     { id: 'cristal', nombre: 'Cristal', pase: true, nivel: 23, cuerpo: '#b5e8ff', ojo: '#1d4f7a', extra: 'cristal' },
     { id: 'tigre', nombre: 'Tigre', pase: true, nivel: 28, cuerpo: '#ff9a2e', extra: 'tigre' },
     { id: 'caballero', nombre: 'Caballero', pase: true, nivel: 33, cuerpo: '#ffcf9e', extra: 'caballero' },
@@ -125,7 +125,6 @@
     { id: 'caja', nombre: 'Cajita', logro: 'clasificador-4', cuerpo: '#dba268', extra: 'caja' },
     { id: 'equilibrista', nombre: 'Equilibrista', logro: 'equilibrio-4', cuerpo: '#c7a6ff', extra: 'equilibrista' },
     { id: 'playero', nombre: 'Playero', logro: 'voley-4', cuerpo: '#f0ae7c', extra: 'playero' },
-    { id: 'cobra', nombre: 'Cobra', logro: 'serpiente-4', cuerpo: '#52b947', extra: 'cobra' },
     { id: 'esquiador', nombre: 'Esquiador', logro: 'esqui-4', cuerpo: '#fdf4ee', extra: 'esquiador' },
     { id: 'luchador', nombre: 'Luchador', logro: 'pulseada-4', cuerpo: '#ffc79a', extra: 'luchador', sinCachetes: true },
     // Legendarias: brillan. Se consiguen con un código o con un secreto (logro oculto). `pista` se muestra bloqueada.
@@ -143,6 +142,9 @@
       pista: 'Solo la tiene quien hizo el juego.' },
     { id: 'sonrisa', nombre: 'Sonrisa de metal', legendaria: true, exclusiva: true, codigo: true, cuerpo: '#3a3550', extra: 'sonrisa', glow: '#ffb070', sinBoca: true, sinCachetes: true,
       pista: 'Hecha a pedido para un solo jugador.' },
+    // muerte: al perder se parte en pedazos con una onda expansiva (ver morir). radio: esquinas casi rectas.
+    { id: 'geo', nombre: 'Geo', legendaria: true, codigo: true, cuerpo: '#ffb52e', extra: 'geo', glow: '#5ff5ff', radio: 0.07, muerte: 'pedazos',
+      sinOjos: true, sinBoca: true, sinCachetes: true, pista: 'Se consigue con un código.' },
   ];
   // Códigos (se guarda solo el hash: sha256('cubo:' + CÓDIGO en mayúsculas, sin espacios ni guiones)).
   // Cada uno da una o más cosas: el id de una skin, o 'fx:<id>' para un efecto.
@@ -153,6 +155,7 @@
     '4fc29aadc1cb4782ab3fb16750ccad73b99b72b671b49c69bcc46650dce3fb5d': ['fx:aurora'],
     '586d6eb5df7242531b10f2f102171007645ef9a21b08272eab5ffd8acc409a88': ['fx:alas'],
     'b1f396b676c2285c8ceb19b6406265dd4afae29521f9253a86de66a025bfca04': ['sonrisa'],   // exclusiva de nacho
+    'b96e9678392994a52ed4be7e7282ee2f6cbc80679de2c7410b85c9526afe9e23': ['geo'],
   };
 
   // Efectos: se dibujan alrededor del cubo en todos los juegos.
@@ -174,7 +177,7 @@
     { id: 'notas', nombre: 'Notas musicales', logro: 'ritmo-4' },
     { id: 'huellitas', nombre: 'Huellitas', logro: 'paseo-4' },
     { id: 'estela', nombre: 'Estela espacial', logro: 'cohete-4' },
-    // Pase de temporada
+    // Premios grandes del camino de nivel
     { id: 'nieve', nombre: 'Nieve', pase: true, nivel: 31 },
     { id: 'ki', nombre: 'Aura de ki', pase: true, nivel: 38 },
     { id: 'fuegos', nombre: 'Fuegos artificiales', pase: true, nivel: 45 },
@@ -199,7 +202,7 @@
       pista: 'Solo la tiene quien hizo el juego.' },
   ];
 
-  // Títulos: se ganan con el pase de batalla y se ven debajo de tu apodo (en el ranking también).
+  // Títulos: se ganan subiendo de nivel y se ven debajo de tu apodo (en el ranking también).
   const TITULOS = [
     { id: 'novato', nombre: 'Novato', nivel: 1 }, { id: 'saltarin', nombre: 'Saltarín', nivel: 5 },
     { id: 'constante', nombre: 'Constante', nivel: 10 }, { id: 'veterano', nombre: 'Veterano', nivel: 15 },
@@ -211,7 +214,7 @@
     { id: 'rayo', nombre: 'Rayo', nivel: 42 }, { id: 'fenomeno', nombre: 'Fenómeno', nivel: 43 },
     { id: 'imbatible', nombre: 'Imbatible', nivel: 44 }, { id: 'granmaestro', nombre: 'Gran maestro', nivel: 46 },
     { id: 'inmortal', nombre: 'Inmortal', nivel: 47 }, { id: 'supremo', nombre: 'Supremo', nivel: 48 },
-    { id: 'leyendaviva', nombre: 'Leyenda viviente', nivel: 49 }, { id: 'campeon', nombre: 'Campeón del pase', nivel: 50, pase: true },
+    { id: 'leyendaviva', nombre: 'Leyenda viviente', nivel: 49 }, { id: 'campeon', nombre: 'Gran campeón', nivel: 50, pase: true },
     ...[[51, 'Incansable'], [53, 'Maratonista'], [54, 'Ojo de halcón'], [56, 'Pulso de acero'], [57, 'Sin pestañear'], [59, 'Tormenta'],
       [60, 'Sesenta y contando'], [61, 'Indomable'], [63, 'Sabio de las flechas'], [66, 'Cometa'], [67, 'Implacable'], [69, 'Hechicero'],
       [71, 'Coloso'], [72, 'Fuera de serie'], [73, 'Estratega'], [76, 'Prodigio'], [78, 'Invencible'], [79, 'Astro'], [81, 'Héroe'],
@@ -252,7 +255,6 @@
     { id: 'ritmo', nombre: 'Ritmo', archivo: 'ritmo.html', color: '#8f6bff', tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'voley', nombre: 'Vóley', archivo: 'voley.html', color: '#ff7a59', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'paseo', nombre: 'Paseo', archivo: 'paseo.html', color: '#e98fd0', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
-    { id: 'serpiente', nombre: 'Serpiente', archivo: 'serpiente.html', color: '#a3e048', nuevo: true, tablas: tablasDif('mayor', 'num', 'frutas') },
     { id: 'cohete', nombre: 'Cohete', archivo: 'cohete.html', color: '#ff5d7d', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'esqui', nombre: 'Esquí', archivo: 'esqui.html', color: '#5b8cff', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
     { id: 'pulseada', nombre: 'Pulseada', archivo: 'pulseada.html', color: '#f5b84a', nuevo: true, tablas: tablasDif('mayor', 'num', 'rivales') },
@@ -283,7 +285,6 @@
     ritmo: [5000, 25000, 70000, 160000],
     voley: [5, 12, 20, 32],
     paseo: [100, 250, 500, 1000],
-    serpiente: [8, 20, 40, 70],
     cohete: [200, 800, 2000, 4500],
     esqui: [250, 1000, 2500, 5000],
     pulseada: [2, 5, 9, 14],
@@ -364,7 +365,7 @@
       prueba: p => !!p.marcas['espejo'] },
     { id: 'secreto-cosquillas', oculto: true, nombre: 'Cosquillas', desc: 'Le hiciste cosquillas a tu personaje.', medalla: 'oro',
       prueba: p => !!p.marcas['cosquillas'] },
-    { id: 'secreto-maestro11', oculto: true, nombre: 'Maestro de todo', desc: 'Jugaste los 11 juegos en Maestro.', medalla: 'diamante',
+    { id: 'secreto-maestro11', oculto: true, nombre: 'Maestro de todo', desc: 'Jugaste todos los juegos en Maestro.', medalla: 'diamante',
       prueba: p => JUEGOS.every(j => p.maestro[j.id]) },
   ];
   for (const [jid, u] of Object.entries(UMBRALES)) {
@@ -463,7 +464,7 @@
     const x = TITULOS.find(k => k.id === datos.titulo);
     return x && libre(x) ? x : TITULOS[0];
   }
-  // El pase de batalla: qué da cada nivel, del 1 al PASE_MAX (skins, efectos y títulos que salen por nivel).
+  // El camino de nivel: qué da cada nivel, del 1 al PASE_MAX (skins, efectos, brillos y títulos que salen por nivel).
   function pase() {
     const n = nivelDe(leer().xp).nivel;
     const porNivelDe = (lista, tipo) => lista.filter(i => i.nivel && !i.logro && !i.codigo && i.id !== 'ninguno').map(it => ({ tipo, it }));
@@ -863,7 +864,7 @@
 .card button.cc-casa svg{width:25px;height:25px;margin:0}
 .card button.cc-casa:hover{background:#fff4c7!important}
 .card button.cc-casa:active{transform:translateY(2px);box-shadow:0 1px 0 ${INK}!important}
-.card button.cc-casa:focus-visible{outline:3px solid #62c6ff;outline-offset:2px}
+.card button.cc-casa:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
 /* leyenda de teclas: información, no botones (sin sombra, más tenue) */
 .cc-teclas{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin:0;font:600 12px/1.2 "Rubik",system-ui,sans-serif;color:${INK};opacity:.8}
 .cc-teclas .g{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
@@ -874,7 +875,7 @@
 .cc-teclas .g.juego kbd.f{background:#ffe27a}
 @media (pointer:coarse){.cc-teclas{display:none}}
 #cc-avisos{zoom:var(--ui,1)}
-.cc-dif:focus-visible{outline:3px solid #5cb0ff;outline-offset:2px}
+.cc-dif:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
 .cc-difs-nota{grid-column:1/-1;margin:2px 0 0;font:600 12px/1.35 "Rubik",system-ui,sans-serif;color:inherit;opacity:.85;text-align:center;min-height:16px}
 #cc-avisos{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 76px);transform:translateX(-50%);z-index:9999;
   display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:max-content;max-width:calc(100vw - 32px)}
@@ -895,11 +896,15 @@
 #cc-rank header > div{flex:1;min-width:0}
 #cc-rank h2{margin:0;font:400 26px/1 "Lilita One","Trebuchet MS",sans-serif}
 #cc-rank header small{display:block;margin-top:3px;font-size:13px;font-weight:700;opacity:.6}
-#cc-rank .x{appearance:none;flex:none;width:42px;height:42px;border-radius:50%;border:0;background:transparent;font:700 20px/1 system-ui;color:${INK};cursor:pointer}
-#cc-rank .x:hover{background:rgba(29,35,64,.08)}
+#cc-rank .x{appearance:none;flex:none;width:44px;height:44px;border-radius:12px;border:2.5px solid ${INK};background:#fff;box-shadow:0 3px 0 ${INK};
+  font:700 20px/1 system-ui;color:${INK};cursor:pointer}
+#cc-rank .x:hover{background:#fff4c7}
+#cc-rank .x:active{transform:translateY(2px);box-shadow:0 1px 0 ${INK}}
 #cc-rank .seg{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:3px;margin:0 14px 8px;padding:3px;background:#ece8dc;border:2.5px solid ${INK};border-radius:14px}
 #cc-rank .seg button{appearance:none;display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:38px;padding:4px 2px;border:0;border-radius:10px;
   background:transparent;color:${INK};font:800 12.5px "Rubik",system-ui,sans-serif;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cc-rank .seg.modos{grid-template-columns:repeat(var(--n,4),auto)}
+#cc-rank .seg.modos button{padding-inline:6px}
 #cc-rank .seg.difs button{flex-direction:column;gap:2px;min-height:46px;font-size:11px}
 #cc-rank .seg button:hover{background:rgba(255,255,255,.65)}
 #cc-rank .seg button[aria-pressed="true"]{background:#ffcc29;box-shadow:inset 0 0 0 2px ${INK}}
@@ -921,9 +926,10 @@
 #cc-rank .pie{padding:10px 14px 14px;border-top:2px dashed rgba(29,35,64,.22)}
 #cc-rank .yo-txt{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;min-height:32px}
 #cc-rank .yo-txt b{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-#cc-rank .link{appearance:none;flex:none;margin-left:auto;border:0;background:none;padding:6px 8px;border-radius:8px;font:800 13px "Rubik",system-ui,sans-serif;
-  color:${INK};text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-#cc-rank .link:hover{background:rgba(29,35,64,.08)}
+#cc-rank .link{appearance:none;flex:none;margin-left:auto;min-height:40px;border:2px solid ${INK};background:transparent;padding:6px 14px;border-radius:999px;
+  box-shadow:0 2px 0 ${INK};font:800 13px "Rubik",system-ui,sans-serif;color:${INK};cursor:pointer}
+#cc-rank .link:hover{background:#fff}
+#cc-rank .link:active{transform:translateY(2px);box-shadow:none}
 #cc-rank form{display:flex;gap:8px}
 #cc-rank input{flex:1;min-width:0;height:44px;border-radius:12px;border:2.5px solid ${INK};padding:0 12px;font:600 16px "Rubik",system-ui,sans-serif;color:${INK};background:#fff}
 #cc-rank form button{appearance:none;height:44px;padding:0 16px;border-radius:12px;border:2.5px solid ${INK};background:#ffcc29;color:${INK};
@@ -933,7 +939,9 @@
 #cc-rank .ayuda .clave{font:800 15px ui-monospace,Consolas,monospace;letter-spacing:.08em;user-select:all;white-space:nowrap}
 #cc-rank .f-clave input[name="c"]{flex:0 0 8.6em;text-transform:uppercase;letter-spacing:.06em}
 #cc-rank form button:disabled,#cc-rank input:disabled{opacity:.6}
-#cc-rank .pie .otro{display:block;margin:4px 0 0 -6px;font-size:12px}
+#cc-rank form button:disabled{cursor:not-allowed;box-shadow:none;transform:none}
+#cc-rank .pie .otro{display:block;margin:10px 0 0;font-size:12px}
+#cc-rank button:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
 /* nombres de quien usa una legendaria: con el color de su personaje */
 .cc-leg{font-weight:800}
 .cc-leg-fantasma{color:#3f6fd1;text-shadow:0 0 8px rgba(120,170,255,.75)}
@@ -943,6 +951,7 @@
 .cc-leg-holograma{background:linear-gradient(90deg,#ff5d7d,#ffad4d,#3fcf8e,#3fa6ff,#a06bff,#ff5d7d);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:cc-holo 3s linear infinite}
 @keyframes cc-holo{to{background-position:200% 0}}
 .cc-leg-sombra{color:#5a2fc8;text-shadow:0 0 8px rgba(143,107,255,.85)}
+.cc-leg-geo{background:linear-gradient(180deg,#ffd21f,#ff8a1c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 3px rgba(95,245,255,.95))}
 .cc-leg-dev{background:linear-gradient(90deg,#00b4c8,#ff3bd4);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 5px rgba(95,245,255,.9))}
 @media (prefers-reduced-motion:reduce){.cc-leg-glitch,.cc-leg-holograma{animation:none}}
 `;
@@ -2508,7 +2517,7 @@
         ctx.restore();
       },
     },
-    // ---- Pase de temporada ----
+    // ---- Premios grandes del camino de nivel ----
     cristal: {
       detras(ctx, s) {
         // cristalitos de hielo que asoman arriba
@@ -2910,59 +2919,6 @@
         }
       },
     },
-    cobra: {
-      detras(ctx, s, sk, t) {
-        // capucha de cobra que se infla despacito
-        const a = 1 + 0.035 * Math.sin(t / 600);
-        const capucha = (k, col) => {
-          ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-s * 0.3 * k, -s * 0.2);
-          ctx.bezierCurveTo(-s * 0.72 * a * k, -s * 0.36, -s * 0.98 * a * k, -s * 0.62, -s * 0.66 * a * k, -s * 0.98);
-          ctx.quadraticCurveTo(-s * 0.4 * k, -s * (1.0 + 0.1 * k), 0, -s * (1.02 + 0.08 * k));
-          ctx.quadraticCurveTo(s * 0.4 * k, -s * (1.0 + 0.1 * k), s * 0.66 * a * k, -s * 0.98);
-          ctx.bezierCurveTo(s * 0.98 * a * k, -s * 0.62, s * 0.72 * a * k, -s * 0.36, s * 0.3 * k, -s * 0.2);
-          ctx.closePath(); ctx.fill();
-        };
-        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, s * 0.06);
-        capucha(1, '#3a9a3e'); ctx.stroke();
-        capucha(0.86, '#bfe87a');
-        ctx.fillStyle = '#3a9a3e';
-        for (const side of [-1, 1]) { ctx.beginPath(); ctx.ellipse(side * s * 0.68 * a, -s * 0.62, s * 0.05, s * 0.08, side * 0.3, 0, Math.PI * 2); ctx.fill(); }
-      },
-      piel(ctx, s) {
-        // escamas en filas alternadas
-        ctx.strokeStyle = 'rgba(20,90,40,.4)'; ctx.lineWidth = Math.max(1, s * 0.025);
-        for (let fila = 0; fila < 7; fila++) {
-          const y = -s + fila * s * 0.15 + s * 0.05;
-          for (let c = -4; c <= 4; c++) {
-            const x = c * s * 0.15 + (fila % 2) * s * 0.075;
-            ctx.beginPath(); ctx.arc(x, y, s * 0.075, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
-          }
-        }
-      },
-      ojo: '#ffe14d',
-      encima(ctx, s, sk, t, look) {
-        // ojos amarillos con pupila de rendija
-        for (const side of [-1, 1]) {
-          const x = side * s * 0.2 + look;
-          ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1, s * 0.03);
-          rr(ctx, x - s * 0.06, -s * 0.66, s * 0.12, s * 0.2, s * 0.06); ctx.stroke();
-          ctx.fillStyle = INK; ctx.beginPath(); ctx.ellipse(x, -s * 0.56, Math.max(0.8, s * 0.022), s * 0.085, 0, 0, Math.PI * 2); ctx.fill();
-        }
-        // lengüita bífida que sale cada tanto
-        const f = fase(t, 2400);
-        if (f < 0.22) {
-          const ext = Math.sin((f / 0.22) * Math.PI), L = s * 0.22 * ext, ond = Math.sin(t / 25) * s * 0.025 * ext;
-          const x0 = look, y0 = -s * 0.25, x1 = x0 + ond, y1 = y0 + L;
-          const lengua = () => {
-            ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(x0 - ond, y0 + L * 0.5, x1, y1);
-            ctx.lineTo(x1 - s * 0.055 * ext, y1 + s * 0.06 * ext); ctx.moveTo(x1, y1); ctx.lineTo(x1 + s * 0.055 * ext, y1 + s * 0.06 * ext);
-          };
-          ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-          ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2.5, s * 0.075); lengua(); ctx.stroke();
-          ctx.strokeStyle = '#ff4f6d'; ctx.lineWidth = Math.max(1.2, s * 0.035); lengua(); ctx.stroke();
-        }
-      },
-    },
     esquiador: {
       encima(ctx, s, sk, t, look) {
         ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.5, s * 0.05);
@@ -3108,6 +3064,28 @@
         for (const [x, y] of [[-0.3, -0.98], [0.02, -1.03], [0.3, -0.96], [-0.12, -0.9], [0.16, -0.89]]) { ctx.beginPath(); ctx.arc(x * s, y * s, s * 0.022, 0, Math.PI * 2); ctx.fill(); }
         ctx.fillStyle = '#25305a'; ctx.lineWidth = Math.max(1.5, s * 0.04);
         ctx.beginPath(); ctx.ellipse(lado * s * 0.52, -s * 0.86, s * 0.07, s * 0.08, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      },
+    },
+    // ---- Geo: cubo naranja de esquinas rectas, borde celeste y cara de cuadrados ----
+    geo: {
+      detras(ctx, s) {
+        // filo celeste por afuera del borde negro
+        const e = Math.max(2, s * 0.08) / 2 + s * 0.04;
+        ctx.fillStyle = '#5ff5ff'; rr(ctx, -s / 2 - e, -s - e, s + 2 * e, s + 2 * e, s * 0.1); ctx.fill();
+      },
+      piel(ctx, s) {
+        const g = ctx.createLinearGradient(0, -s, 0, 0);
+        g.addColorStop(0, '#ffe23d'); g.addColorStop(0.55, '#ffb52e'); g.addColorStop(1, '#ff8418');
+        ctx.fillStyle = g; ctx.fillRect(-s / 2, -s, s, s);
+        const luz = ctx.createRadialGradient(0, -s * 0.62, 0, 0, -s * 0.62, s * 0.5);
+        luz.addColorStop(0, 'rgba(255,250,170,.55)'); luz.addColorStop(1, 'rgba(255,250,170,0)');
+        ctx.fillStyle = luz; ctx.fillRect(-s / 2, -s, s, s);
+      },
+      encima(ctx, s, sk, t, look) {
+        // ojos cuadrados y boca ancha, celestes con borde negro
+        ctx.fillStyle = '#6ff3ff'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.lineJoin = 'miter';
+        for (const side of [-1, 1]) { ctx.beginPath(); ctx.rect(side * s * 0.19 + look - s * 0.09, -s * 0.7, s * 0.18, s * 0.18); ctx.fill(); ctx.stroke(); }
+        ctx.beginPath(); ctx.rect(look - s * 0.29, -s * 0.38, s * 0.58, s * 0.15); ctx.fill(); ctx.stroke();
       },
     },
     // ---- Guerrero y sus formas ----
@@ -3631,6 +3609,136 @@
     },
   });
 
+  // ---------- muertes propias de un personaje (por ahora, Geo: se parte en pedazos) ----------
+  // dibujarCubo anota dónde quedó el cubo en cada canvas. Los juegos llaman a morir() cuando perdés:
+  // si tu personaje tiene muerte propia, se rompe ahí mismo en una capa encima de la página
+  // y no se vuelve a dibujar hasta que tocás algo (o sea, hasta que seguís jugando).
+  const vistos = new Map();   // canvas → { propio, otro }: el último cubo tuyo y el último de otro personaje ({ m, x, pie, s, t })
+  let muerto = null;          // { canvas, sk, t0, hasta, toco }
+  function anotar(ctx, x, pie, s, propio) {
+    const cv = ctx.canvas;
+    if (!cv || !cv.isConnected || !ctx.getTransform) return;
+    const r = vistos.get(cv) || { propio: null, otro: null };
+    r[propio ? 'propio' : 'otro'] = { m: ctx.getTransform(), x, pie, s, t: performance.now() };
+    vistos.set(cv, r);
+  }
+  function alTocar() { if (muerto && performance.now() - muerto.t0 > 150) muerto.toco = true; }
+  addEventListener('keydown', alTocar, true);
+  addEventListener('pointerdown', alTocar, true);
+
+  // canvas: el del juego (si falta, el último donde se dibujó tu cubo). o.volver: reaparece solo al terminar.
+  function morir(canvas, o = {}) {
+    const sk = skin();
+    if (!sk.muerte) return false;
+    const ahora = performance.now();
+    for (const cv of vistos.keys()) if (!cv.isConnected) vistos.delete(cv);
+    let cv = canvas, v = null, mejor = 0;
+    if (canvas) { const r = vistos.get(canvas); v = r && (r.propio || r.otro); }
+    else {
+      for (const [c, { propio: w }] of vistos) {
+        const tam = w ? w.s * Math.hypot(w.m.a, w.m.b) : 0;
+        if (w && ahora - w.t < 400 && tam > mejor) { mejor = tam; cv = c; v = w; }
+      }
+    }
+    if (!v) return false;
+    const b = cv.getBoundingClientRect();
+    if (!b.width || !cv.width) return false;
+    const kx = b.width / cv.width, ky = b.height / cv.height, m = v.m, X = v.x, Y = v.pie - v.s / 2;
+    const cx = b.left + (m.a * X + m.c * Y + m.e) * kx, cy = b.top + (m.b * X + m.d * Y + m.f) * ky;
+    const tam = v.s * Math.hypot(m.a, m.b) * kx;
+    if (!(tam > 2)) return false;
+    estallar(cx, cy, tam, sk);
+    muerto = { canvas: cv, sk, t0: ahora, hasta: ahora + 1000, toco: !!o.volver };
+    vibrar(45);
+    return true;
+  }
+
+  // Pedazos: una foto del cubo cortada en triángulos que salen volando, una onda expansiva chica,
+  // un flash y cuadraditos sueltos. Se dibuja en un canvas fijo encima de todo que se borra solo.
+  function estallar(cx, cy, S, sk) {
+    const dpr = Math.min(2, window.devicePixelRatio || 1), quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const F = S * 1.3, P = Math.ceil(F * dpr), foto = document.createElement('canvas');
+    foto.width = foto.height = P;
+    const fc = foto.getContext('2d');
+    fc.scale(P / F, P / F);
+    dibujarCubo(fc, F / 2, F / 2 + S / 2, S, { skin: sk, efecto: false, brillo: false, t: performance.now(), _foto: true });
+
+    const capa = document.createElement('canvas');
+    capa.setAttribute('aria-hidden', 'true');
+    capa.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:2147483600';
+    const W = innerWidth, H = innerHeight;
+    capa.width = Math.ceil(W * dpr); capa.height = Math.ceil(H * dpr);
+    document.body.appendChild(capa);
+    const c = capa.getContext('2d');
+
+    const rnd = (a, b) => a + Math.random() * (b - a), vel = quieto ? 0.35 : 1;
+    // 4×4 celdas, cada una partida en dos triángulos por una diagonal al azar
+    const N = 4, L = F / N, pedazos = [];
+    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+      const x0 = i * L, y0 = j * L, x1 = x0 + L, y1 = y0 + L;
+      const tris = Math.random() < 0.5
+        ? [[[x0, y0], [x1, y0], [x1, y1]], [[x0, y0], [x1, y1], [x0, y1]]]
+        : [[[x0, y0], [x1, y0], [x0, y1]], [[x1, y0], [x1, y1], [x0, y1]]];
+      for (const tri of tris) {
+        const gx = (tri[0][0] + tri[1][0] + tri[2][0]) / 3, gy = (tri[0][1] + tri[1][1] + tri[2][1]) / 3;
+        const dx = gx - F / 2, dy = gy - F / 2, d = Math.hypot(dx, dy) || 1, a = Math.atan2(dy, dx) + rnd(-0.35, 0.35);
+        const v0 = S * rnd(2.6, 6.2) * (0.6 + d / F) * vel;
+        pedazos.push({ tri, gx, gy, x: gx, y: gy, vx: Math.cos(a) * v0, vy: Math.sin(a) * v0 - S * rnd(1.5, 3.5) * vel,
+          r: 0, vr: rnd(-11, 11) * vel, vida: rnd(0.75, 1.05) });
+      }
+    }
+    const colores = ['#5ff5ff', '#ffe23d', '#ff9a1f', '#ffffff'], chispas = [];
+    for (let k = 0; k < 18; k++) {
+      const a = rnd(0, Math.PI * 2), v0 = S * rnd(3.5, 8.5) * vel;
+      chispas.push({ x: F / 2, y: F / 2, vx: Math.cos(a) * v0, vy: Math.sin(a) * v0 - S * 2 * vel, r: rnd(0, 3), vr: rnd(-12, 12),
+        l: S * rnd(0.06, 0.12), col: colores[k % colores.length], vida: rnd(0.45, 0.75) });
+    }
+    const G = S * 11 * vel, ox = cx - F / 2, oy = cy - F / 2, t0 = performance.now();
+    let antes = t0;
+    function paso(now) {
+      const dt = Math.min(0.05, (now - antes) / 1000), e = (now - t0) / 1000; antes = now;
+      c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
+      // onda expansiva: dos anillos que se abren y se apagan
+      for (const [demora, col, mul] of [[0, '#5ff5ff', 1], [0.07, '#ffd23a', 0.78]]) {
+        const p = (e - demora) / 0.6;
+        if (p <= 0 || p >= 1) continue;
+        const q = 1 - (1 - p) ** 3;
+        c.save(); c.globalAlpha = (1 - p) * 0.95; c.strokeStyle = col; c.shadowColor = col; c.shadowBlur = S * 0.35;
+        c.lineWidth = Math.max(1.5, S * 0.17 * (1 - p) * mul);
+        c.beginPath(); c.arc(cx, cy, S * (0.5 + 1.9 * q * mul), 0, Math.PI * 2); c.stroke(); c.restore();
+      }
+      // flash del primer instante
+      if (e < 0.16) {
+        const g = c.createRadialGradient(cx, cy, 0, cx, cy, S * 1.1);
+        g.addColorStop(0, `rgba(255,255,255,${0.9 * (1 - e / 0.16)})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+        c.fillStyle = g; c.beginPath(); c.arc(cx, cy, S * 1.1, 0, Math.PI * 2); c.fill();
+      }
+      let vivos = 0;
+      for (const p of pedazos) {
+        p.vy += G * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.r += p.vr * dt;
+        const f = e / p.vida;
+        if (f >= 1) continue;
+        vivos++;
+        const k = 1 - 0.35 * f;
+        c.save(); c.globalAlpha = f < 0.6 ? 1 : 1 - (f - 0.6) / 0.4;
+        c.translate(ox + p.x, oy + p.y); c.rotate(p.r); c.scale(k, k);
+        c.beginPath(); for (const [px, py] of p.tri) c.lineTo(px - p.gx, py - p.gy); c.closePath();
+        c.clip(); c.drawImage(foto, -p.gx, -p.gy, F, F);
+        c.restore();
+      }
+      for (const p of chispas) {
+        p.vy += G * 0.7 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.r += p.vr * dt;
+        const f = e / p.vida;
+        if (f >= 1) continue;
+        vivos++;
+        c.save(); c.globalAlpha = 1 - f; c.translate(ox + p.x, oy + p.y); c.rotate(p.r);
+        c.fillStyle = p.col; c.shadowColor = p.col; c.shadowBlur = S * 0.15; c.fillRect(-p.l / 2, -p.l / 2, p.l, p.l); c.restore();
+      }
+      if (vivos || e < 0.6) requestAnimationFrame(paso); else capa.remove();
+    }
+    requestAnimationFrame(paso);
+  }
+
   // Dibuja el cubo con la base apoyada en (x, pie). `lado` es el tamaño del cubo en px.
   // Opciones: mirar (-1, 0, 1), mareado, t, skin (objeto de SKINS), efecto (id, o false para no dibujarlo).
   function dibujarCubo(ctx, x, pie, s, o = {}) {
@@ -3641,7 +3749,15 @@
     const t = o.t ?? performance.now();
     const mareado = !!o.mareado, mirar = Math.max(-1, Math.min(1, o.mirar || 0));
     const lw = Math.max(2, s * 0.08);
-    const parte = PARTES[sk.extra] || {};
+    const parte = PARTES[sk.extra] || {}, rad = s * (sk.radio ?? 0.2);
+    if (!o._foto) {
+      // el cubo que acaba de partirse en pedazos no se dibuja hasta que se vuelve a jugar
+      if (muerto && ctx.canvas === muerto.canvas && sk.id === muerto.sk.id) {
+        if (performance.now() < muerto.hasta || !muerto.toco) return;
+        muerto = null;
+      }
+      anotar(ctx, x, pie, s, !o.skin);
+    }
     ctx.save();
     ctx.translate(x, pie);
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
@@ -3652,7 +3768,7 @@
     }
     if (fx && fx !== 'ninguno') { ctx.save(); efectoDetras(ctx, fx, s, t); ctx.restore(); }
 
-    ctx.fillStyle = 'rgba(29,35,64,.2)'; rr(ctx, -s / 2 + 3, -s + 4, s, s, s * 0.2); ctx.fill();
+    ctx.fillStyle = 'rgba(29,35,64,.2)'; rr(ctx, -s / 2 + 3, -s + 4, s, s, rad); ctx.fill();
     const look = mirar * s * 0.06;
     ctx.lineWidth = lw; ctx.strokeStyle = INK;
     if (parte.detras && !mareado) { ctx.save(); parte.detras(ctx, s, sk, t, look, mirar); ctx.restore(); }
@@ -3663,12 +3779,12 @@
       ctx.shadowColor = sk.extra === 'holograma' ? `hsl(${(t / 12) % 360},100%,70%)` : sk.glow;
       ctx.shadowBlur = s * (0.45 + 0.25 * Math.sin(t / 260)) * (sk.exclusiva ? 1.5 : 1);
       ctx.fillStyle = sk.glow;
-      for (let k = sk.exclusiva ? 2 : 1; k > 0; k--) { rr(ctx, -s / 2, -s, s, s, s * 0.2); ctx.fill(); }
+      for (let k = sk.exclusiva ? 2 : 1; k > 0; k--) { rr(ctx, -s / 2, -s, s, s, rad); ctx.fill(); }
       ctx.restore();
     }
     ctx.fillStyle = mareado ? '#c9d3e3' : sk.cuerpo;
     if (sk.extra === 'fantasma' && !mareado) ctx.globalAlpha = 0.82 + 0.1 * Math.sin(t / 300);
-    rr(ctx, -s / 2, -s, s, s, s * 0.2); ctx.fill();
+    rr(ctx, -s / 2, -s, s, s, rad); ctx.fill();
     ctx.globalAlpha = 1;
     ctx.save(); ctx.clip();
     if (sk.extra === 'semillas' && !mareado) {
@@ -3690,7 +3806,7 @@
     if (parte.piel && !mareado) parte.piel(ctx, s, sk, t, look, mirar);
     ctx.restore();
     ctx.strokeStyle = INK; ctx.lineWidth = lw;
-    rr(ctx, -s / 2, -s, s, s, s * 0.2); ctx.stroke();
+    rr(ctx, -s / 2, -s, s, s, rad); ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,.45)'; rr(ctx, -s * 0.36, -s * 0.9, s * 0.72, s * 0.12, s * 0.06); ctx.fill();
     if (mc && mc !== 'ninguno') { ctx.save(); marcoNivel(ctx, mc, s, t); ctx.restore(); }
 
@@ -3790,6 +3906,13 @@
     xpPara, nivelDe, perfil, skin, efecto, elegirSkin, elegirEfecto, libre, nuevos, marcarVistos,
     sumarXP, xpEscala, partida, importarRecord, anotarRecord, revisarLogros, tieneLogro,
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
-    avisar, vibrar, volver, dibujarCubo,
+    avisar, vibrar, volver, dibujarCubo, morir,
   };
+  // Duelos 1v1 (cubo-duelo.js): usa la misma conexión a Supabase y escucha las invitaciones en todas las páginas.
+  window.CuboComun.RANKING = RANKING;
+  const cargarDuelo = () => {
+    if (!rankingActivo() || window.CuboDuelo || document.querySelector('script[src$="cubo-duelo.js"]')) return;
+    const s = document.createElement('script'); s.src = 'cubo-duelo.js'; s.async = true; document.head.appendChild(s);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cargarDuelo); else cargarDuelo();
 })();

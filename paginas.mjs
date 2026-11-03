@@ -16,8 +16,6 @@ export const PAGES = [
     desc: 'Vóley con dos flechas: movete, devolvé la pelota y ganale a rivales cada vez mejores.' },
   { src: 'modo-paseo.html', out: 'paseo.html',
     desc: 'Sacá a pasear a tu mascota alternando izquierda y derecha sin que se te escape.' },
-  { src: 'modo-serpiente.html', out: 'serpiente.html',
-    desc: 'La serpiente de siempre, pero doblás con izquierda y derecha.' },
   { src: 'modo-cohete.html', out: 'cohete.html',
     desc: 'Cada flecha prende un propulsor. Esquivá asteroides y no te estrelles.' },
   { src: 'modo-esqui.html', out: 'esqui.html',

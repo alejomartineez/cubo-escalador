@@ -125,7 +125,6 @@
     { id: 'caja', nombre: 'Cajita', logro: 'clasificador-4', cuerpo: '#dba268', extra: 'caja' },
     { id: 'equilibrista', nombre: 'Equilibrista', logro: 'equilibrio-4', cuerpo: '#c7a6ff', extra: 'equilibrista' },
     { id: 'playero', nombre: 'Playero', logro: 'voley-4', cuerpo: '#f0ae7c', extra: 'playero' },
-    { id: 'cobra', nombre: 'Cobra', logro: 'serpiente-4', cuerpo: '#52b947', extra: 'cobra' },
     { id: 'esquiador', nombre: 'Esquiador', logro: 'esqui-4', cuerpo: '#fdf4ee', extra: 'esquiador' },
     { id: 'luchador', nombre: 'Luchador', logro: 'pulseada-4', cuerpo: '#ffc79a', extra: 'luchador', sinCachetes: true },
     // Legendarias: brillan. Se consiguen con un código o con un secreto (logro oculto). `pista` se muestra bloqueada.
@@ -256,7 +255,6 @@
     { id: 'ritmo', nombre: 'Ritmo', archivo: 'ritmo.html', color: '#8f6bff', tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'voley', nombre: 'Vóley', archivo: 'voley.html', color: '#ff7a59', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'paseo', nombre: 'Paseo', archivo: 'paseo.html', color: '#e98fd0', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
-    { id: 'serpiente', nombre: 'Serpiente', archivo: 'serpiente.html', color: '#a3e048', nuevo: true, tablas: tablasDif('mayor', 'num', 'frutas') },
     { id: 'cohete', nombre: 'Cohete', archivo: 'cohete.html', color: '#ff5d7d', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'esqui', nombre: 'Esquí', archivo: 'esqui.html', color: '#5b8cff', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
     { id: 'pulseada', nombre: 'Pulseada', archivo: 'pulseada.html', color: '#f5b84a', nuevo: true, tablas: tablasDif('mayor', 'num', 'rivales') },
@@ -287,7 +285,6 @@
     ritmo: [5000, 25000, 70000, 160000],
     voley: [5, 12, 20, 32],
     paseo: [100, 250, 500, 1000],
-    serpiente: [8, 20, 40, 70],
     cohete: [200, 800, 2000, 4500],
     esqui: [250, 1000, 2500, 5000],
     pulseada: [2, 5, 9, 14],
@@ -368,7 +365,7 @@
       prueba: p => !!p.marcas['espejo'] },
     { id: 'secreto-cosquillas', oculto: true, nombre: 'Cosquillas', desc: 'Le hiciste cosquillas a tu personaje.', medalla: 'oro',
       prueba: p => !!p.marcas['cosquillas'] },
-    { id: 'secreto-maestro11', oculto: true, nombre: 'Maestro de todo', desc: 'Jugaste los 11 juegos en Maestro.', medalla: 'diamante',
+    { id: 'secreto-maestro11', oculto: true, nombre: 'Maestro de todo', desc: 'Jugaste todos los juegos en Maestro.', medalla: 'diamante',
       prueba: p => JUEGOS.every(j => p.maestro[j.id]) },
   ];
   for (const [jid, u] of Object.entries(UMBRALES)) {
@@ -2919,59 +2916,6 @@
           ctx.beginPath(); ctx.moveTo(rx, -s * 0.48); ctx.lineTo(rx + s * 0.08, -s * 0.73); ctx.lineTo(rx + s * 0.15, -s * 0.73); ctx.lineTo(rx + s * 0.07, -s * 0.48); ctx.closePath(); ctx.fill();
           ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.arc(x - s * 0.08, -s * 0.66, s * 0.03, 0, Math.PI * 2); ctx.fill();
           ctx.restore();
-        }
-      },
-    },
-    cobra: {
-      detras(ctx, s, sk, t) {
-        // capucha de cobra que se infla despacito
-        const a = 1 + 0.035 * Math.sin(t / 600);
-        const capucha = (k, col) => {
-          ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-s * 0.3 * k, -s * 0.2);
-          ctx.bezierCurveTo(-s * 0.72 * a * k, -s * 0.36, -s * 0.98 * a * k, -s * 0.62, -s * 0.66 * a * k, -s * 0.98);
-          ctx.quadraticCurveTo(-s * 0.4 * k, -s * (1.0 + 0.1 * k), 0, -s * (1.02 + 0.08 * k));
-          ctx.quadraticCurveTo(s * 0.4 * k, -s * (1.0 + 0.1 * k), s * 0.66 * a * k, -s * 0.98);
-          ctx.bezierCurveTo(s * 0.98 * a * k, -s * 0.62, s * 0.72 * a * k, -s * 0.36, s * 0.3 * k, -s * 0.2);
-          ctx.closePath(); ctx.fill();
-        };
-        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, s * 0.06);
-        capucha(1, '#3a9a3e'); ctx.stroke();
-        capucha(0.86, '#bfe87a');
-        ctx.fillStyle = '#3a9a3e';
-        for (const side of [-1, 1]) { ctx.beginPath(); ctx.ellipse(side * s * 0.68 * a, -s * 0.62, s * 0.05, s * 0.08, side * 0.3, 0, Math.PI * 2); ctx.fill(); }
-      },
-      piel(ctx, s) {
-        // escamas en filas alternadas
-        ctx.strokeStyle = 'rgba(20,90,40,.4)'; ctx.lineWidth = Math.max(1, s * 0.025);
-        for (let fila = 0; fila < 7; fila++) {
-          const y = -s + fila * s * 0.15 + s * 0.05;
-          for (let c = -4; c <= 4; c++) {
-            const x = c * s * 0.15 + (fila % 2) * s * 0.075;
-            ctx.beginPath(); ctx.arc(x, y, s * 0.075, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
-          }
-        }
-      },
-      ojo: '#ffe14d',
-      encima(ctx, s, sk, t, look) {
-        // ojos amarillos con pupila de rendija
-        for (const side of [-1, 1]) {
-          const x = side * s * 0.2 + look;
-          ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1, s * 0.03);
-          rr(ctx, x - s * 0.06, -s * 0.66, s * 0.12, s * 0.2, s * 0.06); ctx.stroke();
-          ctx.fillStyle = INK; ctx.beginPath(); ctx.ellipse(x, -s * 0.56, Math.max(0.8, s * 0.022), s * 0.085, 0, 0, Math.PI * 2); ctx.fill();
-        }
-        // lengüita bífida que sale cada tanto
-        const f = fase(t, 2400);
-        if (f < 0.22) {
-          const ext = Math.sin((f / 0.22) * Math.PI), L = s * 0.22 * ext, ond = Math.sin(t / 25) * s * 0.025 * ext;
-          const x0 = look, y0 = -s * 0.25, x1 = x0 + ond, y1 = y0 + L;
-          const lengua = () => {
-            ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(x0 - ond, y0 + L * 0.5, x1, y1);
-            ctx.lineTo(x1 - s * 0.055 * ext, y1 + s * 0.06 * ext); ctx.moveTo(x1, y1); ctx.lineTo(x1 + s * 0.055 * ext, y1 + s * 0.06 * ext);
-          };
-          ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-          ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2.5, s * 0.075); lengua(); ctx.stroke();
-          ctx.strokeStyle = '#ff4f6d'; ctx.lineWidth = Math.max(1.2, s * 0.035); lengua(); ctx.stroke();
         }
       },
     },

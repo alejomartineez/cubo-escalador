@@ -565,7 +565,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 
 <div class="coach" id="coach" hidden>
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5A6.5 6.5 0 0 1 11.5 21h-.6a6 6 0 0 1-4.6-2.2L3.6 15.4a1.6 1.6 0 0 1 2.4-2.1L9 16"/></svg>
-  <span id="coachTxt">Deslizá para ver los 11 juegos</span>
+  <span id="coachTxt">Deslizá para ver los 10 juegos</span>
 </div>
 
 <script src="cubo-comun.js"></script>
@@ -729,32 +729,6 @@ ol.pase li.lock .pr.pase::after { animation: none; }
     c.beginPath(); c.arc(ms * 0.75, -ms * 0.5, ms * 0.08, 0, Math.PI * 2); c.fill();
     c.restore();
   }
-  function ilSerpiente(c, w, h, t) {
-    sky(c, w, h, '#a3e048', '#e3f7c2');
-    const cel = Math.min(w / 10, h / 6);
-    c.strokeStyle = 'rgba(29,35,64,.08)'; c.lineWidth = 1;
-    for (let x = 0; x < w; x += cel) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
-    for (let y = 0; y < h; y += cel) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
-    // camino en circuito: recorre un rectángulo
-    const cols = 6, rows = 3, ox = (w - cols * cel) / 2, oy = (h - rows * cel) / 2 + cel * 0.4;
-    const per = [];
-    for (let i = 0; i < cols; i++) per.push([i, 0]);
-    for (let j = 1; j < rows; j++) per.push([cols - 1, j]);
-    for (let i = cols - 2; i >= 0; i--) per.push([i, rows - 1]);
-    for (let j = rows - 2; j > 0; j--) per.push([0, j]);
-    const pos = t / 220, largo = 7, cuerpo = CC.skin().cuerpo;
-    const at = k => { const n = per.length, a = ((Math.floor(k) % n) + n) % n, b = (a + 1) % n, f = k - Math.floor(k);
-      return [ox + (per[a][0] + (per[b][0] - per[a][0]) * f) * cel + cel / 2, oy + (per[a][1] + (per[b][1] - per[a][1]) * f) * cel + cel / 2]; };
-    for (let k = largo; k >= 1; k--) {
-      const [x, y] = at(pos - k * 0.9); c.fillStyle = cuerpo; c.strokeStyle = INK; c.lineWidth = 2.5;
-      rr(c, x - cel * 0.38, y - cel * 0.38, cel * 0.76, cel * 0.76, cel * 0.18); c.fill(); c.stroke();
-    }
-    const fx = ox + 2.5 * cel + cel / 2, fy = oy + 1 * cel + cel / 2;
-    c.fillStyle = '#ff5d7d'; c.strokeStyle = INK; c.lineWidth = 2.5; c.beginPath(); c.arc(fx, fy, cel * 0.3, 0, Math.PI * 2); c.fill(); c.stroke();
-    c.strokeStyle = '#2fb36b'; c.lineWidth = 3; c.beginPath(); c.moveTo(fx, fy - cel * 0.3); c.lineTo(fx + cel * 0.12, fy - cel * 0.5); c.stroke();
-    const [hx, hy] = at(pos), [nx] = at(pos + 0.3);
-    CC.dibujarCubo(c, hx, hy + cel * 0.48, cel * 0.95, { mirar: Math.sign(nx - hx), t });
-  }
   function ilCohete(c, w, h, t) {
     sky(c, w, h, '#2a1a5e', '#ff5d7d');
     c.fillStyle = PAPER;
@@ -838,7 +812,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   }
 
   const DIBUJOS = { escalador: ilEscalador, lluvia: ilLluvia, clasificador: ilClasificador, equilibrio: ilEquilibrio, ritmo: ilRitmo,
-    voley: ilVoley, paseo: ilPaseo, serpiente: ilSerpiente, cohete: ilCohete, esqui: ilEsqui, pulseada: ilPulseada };
+    voley: ilVoley, paseo: ilPaseo, cohete: ilCohete, esqui: ilEsqui, pulseada: ilPulseada };
   const DESC = {
     escalador: 'Tocá el lado donde está el próximo escalón. Si errás, te mareás. Sprint 100, 30 segundos, Libre y el nuevo modo Lava: subí antes de que te alcance.',
     lluvia: 'Movete entre carriles y esquivá los bloques que caen cada vez más rápido.',
@@ -847,7 +821,6 @@ ol.pase li.lock .pr.pase::after { animation: none; }
     ritmo: 'Tocá el lado de cada nota justo cuando llega a la línea, al ritmo de la música.',
     voley: 'Movete con ◀ ▶ y el cubo devuelve solo. Pegale con el borde para cruzarla. ¿Cuántos puntos le hacés al rival?',
     paseo: 'Alterná ◀ ▶ para caminar con tu mascota. Cuando se distraiga, tocá la flecha grande para tirar de la correa.',
-    serpiente: '◀ dobla a la izquierda y ▶ a la derecha, según hacia dónde vas. Comé y no te choques la cola.',
     cohete: 'Cada flecha prende un propulsor y te lleva para ese lado; las dos juntas suben derecho. Escapá de la lava por la cueva.',
     esqui: 'Mantené ◀ o ▶ para doblar y pasá entre las banderas. Cada vez más rápido.',
     pulseada: 'Alterná ◀ ▶ lo más rápido que puedas para ganarle la fuerza al rival. ¿Cuántos toques por segundo hacés?',
