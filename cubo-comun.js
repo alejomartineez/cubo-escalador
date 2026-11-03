@@ -195,8 +195,21 @@
     { id: 'imbatible', nombre: 'Imbatible', nivel: 44 }, { id: 'granmaestro', nombre: 'Gran maestro', nivel: 46 },
     { id: 'inmortal', nombre: 'Inmortal', nivel: 47 }, { id: 'supremo', nombre: 'Supremo', nivel: 48 },
     { id: 'leyendaviva', nombre: 'Leyenda viviente', nivel: 49 }, { id: 'campeon', nombre: 'Campeón del pase', nivel: 50, pase: true },
+    ...[[51, 'Incansable'], [53, 'Maratonista'], [54, 'Ojo de halcón'], [56, 'Pulso de acero'], [57, 'Sin pestañear'], [59, 'Tormenta'],
+      [60, 'Sesenta y contando'], [61, 'Indomable'], [63, 'Sabio de las flechas'], [66, 'Cometa'], [67, 'Implacable'], [69, 'Hechicero'],
+      [71, 'Coloso'], [72, 'Fuera de serie'], [73, 'Estratega'], [76, 'Prodigio'], [78, 'Invencible'], [79, 'Astro'], [81, 'Héroe'],
+      [82, 'Titánico'], [84, 'Elegido'], [87, 'Majestad'], [88, 'Ocho infinito'], [90, 'Noventa y pico'], [91, 'Semidiós'], [93, 'Deidad'],
+      [94, 'Eterno'], [97, 'Casi leyenda'], [98, 'Al borde'], [99, 'Uno más'], [100, 'Centenario']]
+      .map(([nivel, nombre]) => ({ id: 't' + nivel, nombre, nivel, pase: nivel === 100 })),
   ];
-  const PASE_MAX = 50;
+  const PASE_MAX = 100;
+  // Brillos de nivel: un marco que se suma a cualquier personaje y sube de rango con el nivel.
+  const MARCOS = [
+    { id: 'ninguno', nombre: 'Sin brillo', nivel: 1 },
+    { id: 'bronce', nombre: 'Bronce', nivel: 55, pase: true }, { id: 'plata', nombre: 'Plata', nivel: 65, pase: true },
+    { id: 'oro', nombre: 'Oro', nivel: 75, pase: true }, { id: 'platino', nombre: 'Platino', nivel: 85, pase: true },
+    { id: 'diamante', nombre: 'Diamante', nivel: 95, pase: true }, { id: 'cosmico', nombre: 'Cósmico', nivel: 100, pase: true },
+  ];
 
   // ---------- juegos y tablas de récords ----------
   // formato 'ms' → 10.61 s · 'num' → 1.234 + unidad. orden 'menor' = gana el número más chico.
@@ -376,6 +389,7 @@
       skinSubida: typeof p.skinSubida === 'string' ? p.skinSubida : '',
       apodoPerdido: typeof p.apodoPerdido === 'string' ? p.apodoPerdido : '',
       titulo: typeof p.titulo === 'string' ? p.titulo : 'novato',
+      marco: typeof p.marco === 'string' ? p.marco : '',
       codigoAmigo: typeof p.codigoAmigo === 'string' ? p.codigoAmigo : '',
       amigos: Array.isArray(p.amigos) ? p.amigos.filter(a => a && typeof a.codigo === 'string' && typeof a.huella === 'string').slice(0, 50) : [],
       pendientes: Array.isArray(p.pendientes) ? p.pendientes.slice(-40) : [],
@@ -415,6 +429,19 @@
     const e = EFECTOS.find(k => k.id === datos.efecto);
     return e && libre(e) ? e : EFECTOS[0];
   }
+  // sin elegir, se usa el mejor brillo que tengas
+  function marco() {
+    const libres = MARCOS.filter(m => libre(m));
+    const x = MARCOS.find(k => k.id === datos.marco);
+    return x && libre(x) ? x : libres[libres.length - 1];
+  }
+  function elegirMarco(id) {
+    datos = leer();
+    const x = MARCOS.find(k => k.id === id);
+    if (!x || !libre(x)) return false;
+    datos.marco = id; guardar();
+    return true;
+  }
   function titulo() {
     const x = TITULOS.find(k => k.id === datos.titulo);
     return x && libre(x) ? x : TITULOS[0];
@@ -423,7 +450,7 @@
   function pase() {
     const n = nivelDe(leer().xp).nivel;
     const porNivelDe = (lista, tipo) => lista.filter(i => i.nivel && !i.logro && !i.codigo && i.id !== 'ninguno').map(it => ({ tipo, it }));
-    const todos = [...porNivelDe(SKINS, 'skin'), ...porNivelDe(EFECTOS, 'efecto'), ...porNivelDe(TITULOS, 'titulo')];
+    const todos = [...porNivelDe(SKINS, 'skin'), ...porNivelDe(EFECTOS, 'efecto'), ...porNivelDe(MARCOS, 'marco'), ...porNivelDe(TITULOS, 'titulo')];
     return Array.from({ length: PASE_MAX }, (_, k) => ({ nivel: k + 1, listo: n >= k + 1, premios: todos.filter(x => x.it.nivel === k + 1) }));
   }
   function perfil() {
@@ -432,7 +459,7 @@
       xp: datos.xp, ...nivelDe(datos.xp), skin: skin(), efecto: efecto(), records: { ...datos.records },
       mejores: { ...datos.mejores }, partidas: { ...datos.partidas }, total: datos.total,
       logros: { ...datos.logros }, extremo: { ...datos.extremo }, maestro: { ...datos.maestro }, marcas: { ...datos.marcas },
-      codigos: [...datos.codigos], apodo: datos.apodo, id: datos.id, titulo: titulo(),
+      codigos: [...datos.codigos], apodo: datos.apodo, id: datos.id, titulo: titulo(), marco: marco(),
       codigoAmigo: datos.codigoAmigo, amigos: datos.amigos.map(a => ({ ...a })),
     };
   }
@@ -494,7 +521,7 @@
     return true;
   }
   // Lo que desbloquea pasar del nivel a al b
-  const porNivel = (a, b) => [...SKINS, ...EFECTOS, ...TITULOS].filter(i => i.nivel > a && i.nivel <= b && !i.logro && !i.codigo);
+  const porNivel = (a, b) => [...SKINS, ...EFECTOS, ...TITULOS, ...MARCOS].filter(i => i.nivel > a && i.nivel <= b && !i.logro && !i.codigo);
 
   // Suma XP sin pasar por partida(). Devuelve { ganada, nivel, subio, desbloqueadas }.
   function sumarXP(n, silencioso) {
@@ -2875,7 +2902,7 @@
 
   window.CuboComun = {
     SKINS, EFECTOS, TITULOS, PASE_MAX, DIFS, DURAS, JUEGOS, LOGROS, MEDALLAS, UMBRALES, canjear, marcar, leyendaTeclas, escalaUI,
-    titulo, elegirTitulo, pase, agregarAmigo, quitarAmigo, refrescarAmigos, versus,
+    titulo, elegirTitulo, pase, MARCOS, marco, elegirMarco, agregarAmigo, quitarAmigo, refrescarAmigos, versus,
     xpPara, nivelDe, perfil, skin, efecto, elegirSkin, elegirEfecto, libre, nuevos, marcarVistos,
     sumarXP, xpEscala, partida, importarRecord, anotarRecord, revisarLogros, tieneLogro,
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,

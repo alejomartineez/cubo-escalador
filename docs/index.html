@@ -327,10 +327,40 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
 .seg.tres { grid-template-columns: repeat(3, 1fr); }
 
 /* pase de batalla */
-.pase-top { display: grid; gap: 6px; padding: 12px 14px; border-radius: 16px; background: linear-gradient(135deg, #ffb341, #ff7a1a); border: 2.5px solid var(--ink); box-shadow: 0 3px 0 var(--ink); }
-.pase-top b { font-family: var(--display); font-weight: 400; font-size: 26px; line-height: 1; }
-.pase-top .bar { height: 12px; background: rgba(255,255,255,.55); }
-.pase-top span { font-size: 13px; font-weight: 700; }
+.pase-b { gap: 12px; }
+.pase-b > * { flex: none; }
+.pase-hero { position: relative; display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 20px; overflow: hidden;
+  border: 3px solid var(--ink); box-shadow: 0 4px 0 var(--ink); color: var(--ink);
+  background: repeating-linear-gradient(-45deg, rgba(255,255,255,.14) 0 14px, transparent 14px 28px), linear-gradient(135deg, #ffd23f 0%, #ff9a2e 45%, #ff5d7d 100%); }
+.pase-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.45) 50%, transparent 65%);
+  transform: translateX(-100%); animation: brillo-pase 3.2s ease-in-out infinite; pointer-events: none; }
+@keyframes brillo-pase { 55%, 100% { transform: translateX(100%); } }
+.ph-av { flex: none; width: 84px; height: 84px; border-radius: 50%; background: radial-gradient(circle at 50% 40%, #fff 0, #fff6d6 60%, #ffd98a 100%);
+  border: 3px solid var(--ink); display: grid; place-items: center; overflow: hidden; }
+.ph-av canvas { width: 80px; height: 88px; margin-top: 6px; }
+.ph-info { position: relative; z-index: 1; flex: 1; min-width: 0; display: grid; gap: 4px; }
+.ph-info small { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; opacity: .8; }
+.ph-info b { font-family: var(--display); font-weight: 400; font-size: 32px; line-height: 1; color: var(--paper); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+.ph-bar { position: relative; height: 18px; border-radius: 99px; background: rgba(255,255,255,.6); border: 2.5px solid var(--ink); overflow: hidden; }
+.ph-bar i { display: block; height: 100%; background: linear-gradient(90deg, #6be0b5, #3fc1c9); border-right: 2.5px solid var(--ink); }
+.ph-bar span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 11px; font-weight: 800; }
+.pase-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pase-stats div { padding: 8px 6px; border-radius: 14px; background: #fff; border: 2.5px solid var(--ink); text-align: center; }
+.pase-stats b { display: block; font-family: var(--display); font-weight: 400; font-size: 22px; line-height: 1; }
+.pase-stats span { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.pase-stats .naranja b { color: #e06a00; }
+.pase-sig { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; background: #fff6ea; border: 2.5px dashed #ff8a1f; }
+.pase-sig canvas { width: 56px; height: 62px; flex: none; }
+.pase-sig .tt-ico { width: 56px; height: 56px; flex: none; display: grid; place-items: center; border-radius: 12px; background: #ffe2bd; font-size: 26px; }
+.pase-sig small { display: block; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #c25a00; }
+.pase-sig b { display: block; font-family: var(--display); font-weight: 400; font-size: 20px; line-height: 1.1; }
+.pase-sig span { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.tramo { display: grid; gap: 10px; }
+.tramo h4 { margin: 6px 0 0; display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 400; font-size: 19px; }
+.tramo h4 .mini { flex: 1; height: 8px; border-radius: 99px; background: #e5dfcf; overflow: hidden; }
+.tramo h4 .mini i { display: block; height: 100%; background: #ff9a2e; }
+.tramo h4 small { font-family: var(--body); font-size: 12px; font-weight: 800; color: var(--muted); }
+.tramo.hecho h4 small { color: #1f9e6e; }
 ol.pase { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 ol.pase li { position: relative; display: flex; align-items: center; gap: 10px; }
 ol.pase li::before { content: ""; position: absolute; left: 21px; top: -10px; bottom: -10px; width: 4px; background: #d8d2c2; z-index: 0; }
@@ -339,21 +369,37 @@ ol.pase li:first-child::before { top: 50%; }
 ol.pase li:last-child::before { bottom: 50%; }
 ol.pase .num { position: relative; z-index: 1; flex: none; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%;
   border: 2.5px solid var(--ink); background: #ece8dc; font-family: var(--display); font-size: 19px; color: var(--muted); }
-ol.pase li.listo .num { background: #ffb341; color: var(--ink); }
-ol.pase li.actual .num { background: var(--paper); color: var(--ink); box-shadow: 0 0 0 4px #ff9a2e; }
+ol.pase .num svg { position: absolute; right: -5px; bottom: -5px; width: 20px; height: 20px; padding: 2px; border-radius: 50%; border: 2px solid var(--ink); }
+ol.pase li.listo .num { background: linear-gradient(160deg, #ffd23f, #ff9a2e); color: var(--ink); }
+ol.pase li.listo .num svg { background: #6be0b5; }
+ol.pase li.lock .num svg { background: #fff; color: var(--muted); }
+ol.pase li.actual .num { background: var(--paper); color: var(--ink); animation: latido 1.2s ease-in-out infinite; }
+@keyframes latido { 0%, 100% { box-shadow: 0 0 0 3px #ff9a2e; } 50% { box-shadow: 0 0 0 8px rgba(255,154,46,.35); } }
+ol.pase li.actual .num::after { content: "Estás acá"; position: absolute; top: -18px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+  padding: 1px 6px; border-radius: 99px; background: var(--ink); color: var(--paper); font: 800 9.5px var(--body); letter-spacing: .04em; text-transform: uppercase; }
 ol.pase .premios { flex: 1; min-width: 0; display: flex; gap: 8px; flex-wrap: wrap; }
-ol.pase .pr { position: relative; display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 140px; padding: 6px 10px 6px 6px; cursor: pointer; text-align: left;
-  background: #fff; border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 0 3px 0 var(--ink); font-weight: 700; font-size: 13px; }
-ol.pase .pr canvas { width: 40px; height: 44px; flex: none; }
-ol.pase .pr .tt-ico { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 10px; background: #ece8dc; font-size: 20px; }
+ol.pase li.hito .premios { padding: 6px; border-radius: 16px; background: linear-gradient(135deg, #fff3c4, #ffd98a); border: 2.5px solid #e0a400; position: relative; }
+ol.pase li.hito .premios::before { content: "Hito"; position: absolute; top: -10px; right: 10px; padding: 0 7px; border-radius: 99px; background: #e0a400; border: 2px solid var(--ink);
+  font: 800 10px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+ol.pase li.hito .num { width: 52px; height: 52px; margin-left: -3px; font-size: 21px; }
+ol.pase .pr { position: relative; overflow: hidden; display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 150px; padding: 6px 10px 6px 6px; cursor: pointer; text-align: left;
+  background: #fff; border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 0 3px 0 var(--ink); font-weight: 700; font-size: 13px; color: var(--ink); }
+ol.pase .pr canvas { width: 48px; height: 52px; flex: none; border-radius: 10px; background: #e9f6ff; }
+ol.pase .pr .tt-ico { width: 48px; height: 48px; flex: none; display: grid; place-items: center; border-radius: 10px; background: #ece8dc; font-size: 22px; }
+ol.pase .pr .nm { display: block; font-family: var(--display); font-weight: 400; font-size: 16px; line-height: 1.1; }
 ol.pase .pr small { display: block; font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-ol.pase .pr.pase { background: linear-gradient(160deg, #fff1dc, #ffd6a3); }
-ol.pase .pr.pase small { color: #c25a00; }
+ol.pase .pr.pase { background: linear-gradient(160deg, #fff1dc, #ffc98a); }
+ol.pase .pr.pase canvas { background: #fff3e0; }
+ol.pase .pr.pase small { color: #b35000; }
+ol.pase .pr.pase::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.7) 48%, transparent 66%);
+  transform: translateX(-120%); animation: brillo-pase 2.8s ease-in-out infinite; pointer-events: none; }
 ol.pase .pr[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--ink), 0 3px 0 var(--ink); background: var(--cube); }
+ol.pase .pr .usando { position: absolute; top: 4px; right: 6px; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
 ol.pase li.lock .pr { box-shadow: none; border-style: dashed; cursor: default; }
-ol.pase li.lock .pr canvas { opacity: .45; filter: grayscale(.6); }
-ol.pase li.lock .pr.pase canvas { filter: none; opacity: .75; }
-ol.pase .vacio { font-size: 13px; font-weight: 600; color: var(--muted); }
+ol.pase li.lock .pr canvas { opacity: .5; filter: grayscale(.7); }
+ol.pase li.lock .pr.pase canvas { filter: none; opacity: .8; }
+ol.pase li.lock .pr.pase::after { animation: none; }
+@media (prefers-reduced-motion: reduce) { .pase-hero::after, ol.pase .pr.pase::after, ol.pase li.actual .num { animation: none; } }
 
 /* amigos y versus */
 .mi-codigo { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 16px; background: #2b2f4a; color: var(--paper); }
@@ -479,10 +525,15 @@ ol.pase .vacio { font-size: 13px; font-weight: 600; color: var(--muted); }
 <div class="sheet" id="sheetPase" hidden>
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="tPase">
     <div class="card-h"><h3 id="tPase">Pase de batalla</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
-    <div class="card-b">
-      <div class="pase-top"><b id="paseNivel">Nivel 1</b><div class="bar"><i id="paseBar" style="width:0%"></i></div><span id="paseSig"></span></div>
+    <div class="card-b pase-b">
+      <div class="pase-hero">
+        <div class="ph-av"><canvas id="paseAv" width="160" height="176"></canvas></div>
+        <div class="ph-info"><small>Temporada 1</small><b id="paseNivel">Nivel 1</b><div class="ph-bar"><i id="paseBar" style="width:0%"></i><span id="paseXP"></span></div></div>
+      </div>
+      <div class="pase-stats" id="paseStats"></div>
+      <div class="pase-sig" id="paseSig"></div>
       <p class="tip">Cada nivel te da un premio y se gana jugando cualquier juego. Los naranjas son exclusivos del pase: no salen de ninguna otra forma. Tocá un premio que ya tengas para usarlo.</p>
-      <ol class="pase" id="pase"></ol>
+      <div id="pase"></div>
     </div>
   </div>
 </div>
@@ -1069,48 +1120,94 @@ ol.pase .vacio { font-size: 13px; font-weight: 600; color: var(--muted); }
   $('apodoBtn').addEventListener('click', () => CC.verRanking({ juego: JUEGOS[actual].id, alCerrar: pintarPersonaje }));
 
   // pase de batalla
-  const pintarPremio = (cv, x) => {
-    const c = cv.getContext('2d'); c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, 40, 44);
-    if (x.tipo === 'skin') CC.dibujarCubo(c, 20, 40, 22, { skin: x.it, t: 900, efecto: false });
-    else CC.dibujarCubo(c, 20, 39, 18, { t: 900, efecto: x.it.id });
+  const TIPO = { skin: 'Personaje', efecto: 'Efecto', titulo: 'Título', marco: 'Brillo' };
+  const ICO_LISTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+  const ICO_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+  let paseCvs = [];
+  const pintarPremio = (cv, x, t, w = 48, h = 52) => {
+    const c = cv.getContext('2d'); c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, w, h);
+    const k = w / 48;
+    if (x.tipo === 'skin') CC.dibujarCubo(c, w / 2, h - 7 * k, 24 * k, { skin: x.it, t, efecto: false });
+    else if (x.tipo === 'marco') CC.dibujarCubo(c, w / 2, h - 8 * k, 24 * k, { t, efecto: 'ninguno', marco: x.it.id });
+    else CC.dibujarCubo(c, w / 2, h - 9 * k, 20 * k, { t, efecto: x.it.id });
   };
+  const elegido = (p, x) => x.tipo === 'skin' ? p.skin.id === x.it.id : x.tipo === 'efecto' ? p.efecto.id === x.it.id
+    : x.tipo === 'marco' ? p.marco && p.marco.id === x.it.id : p.titulo.id === x.it.id;
+  function usar(x) {
+    return x.tipo === 'skin' ? CC.elegirSkin(x.it.id) : x.tipo === 'efecto' ? CC.elegirEfecto(x.it.id)
+      : x.tipo === 'marco' ? CC.elegirMarco(x.it.id) : CC.elegirTitulo(x.it.id);
+  }
   function abrirPase() {
     const p = CC.perfil(), lista = CC.pase(), box = $('pase');
-    $('paseNivel').textContent = p.nivel > CC.PASE_MAX ? `Nivel ${p.nivel} · ¡pase completo!` : `Nivel ${p.nivel} de ${CC.PASE_MAX}`;
+    const todos = lista.flatMap(n => n.premios.map(x => ({ ...x, listo: n.listo })));
+    const exc = todos.filter(x => x.it.pase);
+    $('paseNivel').textContent = p.nivel >= CC.PASE_MAX ? `Nivel ${p.nivel} · ¡completo!` : `Nivel ${p.nivel}`;
     $('paseBar').style.width = Math.round(100 * p.enNivel / p.paraSiguiente) + '%';
-    const sig = lista.find(n => !n.listo && n.premios.length);
-    $('paseSig').textContent = sig ? `Faltan ${p.paraSiguiente - p.enNivel} XP para el nivel ${p.nivel + 1}. Próximo premio: ${sig.premios.map(x => x.it.nombre).join(' y ')} (nivel ${sig.nivel}).`
-      : 'Ganaste todos los premios del pase. ¡Sos de lo mejor!';
+    $('paseXP').textContent = `${p.enNivel} / ${p.paraSiguiente} XP`;
+    $('paseStats').innerHTML = `<div><b>${Math.min(p.nivel, CC.PASE_MAX)}/${CC.PASE_MAX}</b><span>Niveles</span></div>
+      <div><b>${todos.filter(x => x.listo).length}/${todos.length}</b><span>Premios</span></div>
+      <div class="naranja"><b>${exc.filter(x => x.listo).length}/${exc.length}</b><span>Exclusivos</span></div>`;
+    paseCvs = [];
+    // el próximo premio, bien grande
+    const sig = lista.find(n => !n.listo && n.premios.length), sb = $('paseSig');
+    if (sig) {
+      const x = sig.premios.find(q => q.it.pase) || sig.premios[0];
+      let falta = p.paraSiguiente - p.enNivel;
+      for (let n = p.nivel + 1; n < sig.nivel; n++) falta += 80 + 40 * (n - 1);
+      sb.innerHTML = (x.tipo === 'titulo' ? '<span class="tt-ico">🏷️</span>' : '<canvas width="112" height="124"></canvas>') +
+        `<div><small>Próximo premio · nivel ${sig.nivel}</small><b></b><span>Te faltan ${falta.toLocaleString('es-AR')} XP</span></div>`;
+      sb.querySelector('b').textContent = sig.premios.map(q => q.it.nombre).join(' + ');
+      const cv = sb.querySelector('canvas'); if (cv) paseCvs.push({ cv, x, w: 56, h: 62 });
+      sb.hidden = false;
+    } else sb.hidden = true;
     box.innerHTML = '';
-    for (const n of lista) {
-      const li = document.createElement('li');
-      li.className = n.listo ? 'listo' : 'lock';
-      if (n.nivel === Math.min(p.nivel, CC.PASE_MAX)) li.classList.add('actual');
-      li.innerHTML = `<span class="num">${n.nivel}</span><div class="premios"></div>`;
-      const pr = li.querySelector('.premios');
-      for (const x of n.premios) {
-        const elegido = x.tipo === 'skin' ? p.skin.id === x.it.id : x.tipo === 'efecto' ? p.efecto.id === x.it.id : p.titulo.id === x.it.id;
-        const b = document.createElement('button');
-        b.type = 'button'; b.className = 'pr' + (x.it.pase ? ' pase' : '');
-        b.setAttribute('aria-pressed', String(n.listo && elegido));
-        const tipo = { skin: 'Personaje', efecto: 'Efecto', titulo: 'Título' }[x.tipo] + (x.it.pase ? ' · Pase' : '');
-        b.innerHTML = (x.tipo === 'titulo' ? '<span class="tt-ico" aria-hidden="true">🏷️</span>' : '<canvas width="80" height="88"></canvas>') + '<span><small></small><span class="nm"></span></span>';
-        b.querySelector('small').textContent = tipo;
-        b.querySelector('.nm').textContent = x.it.nombre;
-        const cv = b.querySelector('canvas'); if (cv) pintarPremio(cv, x);
-        b.addEventListener('click', () => {
-          if (!n.listo) { CC.avisar(`<div><b>${x.it.nombre}</b><span>Se gana en el nivel ${n.nivel} del pase.</span></div>`, 2600); return; }
-          const ok = x.tipo === 'skin' ? CC.elegirSkin(x.it.id) : x.tipo === 'efecto' ? CC.elegirEfecto(x.it.id) : CC.elegirTitulo(x.it.id);
-          if (ok) { CC.vibrar(10); CC.avisar(`<div><b>${x.it.nombre}</b><span>¡Puesto!</span></div>`, 1600); abrirPase(); pintarPerfil(); }
-        });
-        pr.appendChild(b);
+    const actual = Math.min(p.nivel, CC.PASE_MAX);
+    for (let d = 0; d < lista.length; d += 10) {
+      const tramo = lista.slice(d, d + 10), hechos = tramo.filter(n => n.listo).length;
+      const sec = document.createElement('section'); sec.className = 'tramo' + (hechos === tramo.length ? ' hecho' : '');
+      sec.innerHTML = `<h4>Niveles ${d + 1}–${d + tramo.length}<span class="mini"><i style="width:${hechos * 10}%"></i></span><small>${hechos === tramo.length ? '✓ Completo' : hechos + '/' + tramo.length}</small></h4><ol class="pase"></ol>`;
+      const ol = sec.querySelector('ol');
+      for (const n of tramo) {
+        const li = document.createElement('li');
+        li.className = (n.listo ? 'listo' : 'lock') + (n.nivel % 10 === 0 || n.premios.some(x => x.it.pase && x.tipo !== 'titulo') ? ' hito' : '') + (n.nivel === actual ? ' actual' : '');
+        li.innerHTML = `<span class="num">${n.nivel}${n.listo ? ICO_LISTO : ICO_LOCK}</span><div class="premios"></div>`;
+        const pr = li.querySelector('.premios');
+        for (const x of n.premios) {
+          const b = document.createElement('button'), usa = n.listo && elegido(p, x);
+          b.type = 'button'; b.className = 'pr' + (x.it.pase ? ' pase' : '');
+          b.setAttribute('aria-pressed', String(usa));
+          b.innerHTML = (x.tipo === 'titulo' ? '<span class="tt-ico" aria-hidden="true">🏷️</span>' : '<canvas width="96" height="104"></canvas>') +
+            `<span><small></small><span class="nm"></span></span>${usa ? '<span class="usando">Usando</span>' : ''}`;
+          b.querySelector('small').textContent = TIPO[x.tipo] + (x.it.pase ? ' · Exclusivo' : '');
+          b.querySelector('.nm').textContent = x.it.nombre;
+          const cv = b.querySelector('canvas');
+          if (cv) { paseCvs.push({ cv, x }); pintarPremio(cv, x, 900); }
+          b.addEventListener('click', () => {
+            if (!n.listo) { CC.avisar(`<div><b>${x.it.nombre}</b><span>Se gana en el nivel ${n.nivel} del pase.</span></div>`, 2600); return; }
+            if (usar(x)) { CC.vibrar(10); CC.avisar(`<div><b>${x.it.nombre}</b><span>¡Puesto!</span></div>`, 1600); abrirPase(); pintarPerfil(); }
+          });
+          pr.appendChild(b);
+        }
+        if (!n.premios.length) pr.innerHTML = '<span class="tip">—</span>';
+        ol.appendChild(li);
       }
-      box.appendChild(li);
+      box.appendChild(sec);
     }
     if (abierta && abierta.id === 'sheetPase') return;
     abrir('sheetPase');
-    const actual = box.querySelector('li.actual');
-    if (actual) actual.scrollIntoView({ block: 'center' });
+    const li = box.querySelector('li.actual');
+    if (li) li.scrollIntoView({ block: 'center' });
+  }
+  // anima tu personaje de arriba y los premios que se ven
+  function animarPase(now) {
+    const a = $('paseAv').getContext('2d'); a.setTransform(2, 0, 0, 2, 0, 0); a.clearRect(0, 0, 80, 88);
+    CC.dibujarCubo(a, 40, 80 - bob(now) * 5, 40, { t: now, mirar: Math.sin(now / 900) });
+    const hoja = $('sheetPase').querySelector('.card-b').getBoundingClientRect();
+    for (const q of paseCvs) {
+      const r = q.cv.getBoundingClientRect();
+      if (r.bottom < hoja.top || r.top > hoja.bottom) continue;
+      pintarPremio(q.cv, q.x, now, q.w, q.h);
+    }
   }
 
   // logros
@@ -1305,6 +1402,7 @@ ol.pase .vacio { font-size: 13px; font-weight: 600; color: var(--muted); }
   function frame(now) {
     if (!document.hidden) {
       if (!reduceMotion) { if (!abierta) dibujar(actual, now); avatar(now); }
+      if (abierta && abierta.id === 'sheetPase' && !reduceMotion) animarPase(now);
       if (abierta && abierta.id === 'sheetPersonaje') {
         const c = $('big').getContext('2d'); c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, 112, 120);
         const risa = now - cosquilla < 300 ? Math.sin((now - cosquilla) / 300 * Math.PI) * 10 : 0;
