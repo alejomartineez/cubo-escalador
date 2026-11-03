@@ -846,7 +846,7 @@
 .card button.cc-casa svg{width:25px;height:25px;margin:0}
 .card button.cc-casa:hover{background:#fff4c7!important}
 .card button.cc-casa:active{transform:translateY(2px);box-shadow:0 1px 0 ${INK}!important}
-.card button.cc-casa:focus-visible{outline:3px solid #62c6ff;outline-offset:2px}
+.card button.cc-casa:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
 /* leyenda de teclas: información, no botones (sin sombra, más tenue) */
 .cc-teclas{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin:0;font:600 12px/1.2 "Rubik",system-ui,sans-serif;color:${INK};opacity:.8}
 .cc-teclas .g{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
@@ -857,7 +857,7 @@
 .cc-teclas .g.juego kbd.f{background:#ffe27a}
 @media (pointer:coarse){.cc-teclas{display:none}}
 #cc-avisos{zoom:var(--ui,1)}
-.cc-dif:focus-visible{outline:3px solid #5cb0ff;outline-offset:2px}
+.cc-dif:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
 .cc-difs-nota{grid-column:1/-1;margin:2px 0 0;font:600 12px/1.35 "Rubik",system-ui,sans-serif;color:inherit;opacity:.85;text-align:center;min-height:16px}
 #cc-avisos{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 76px);transform:translateX(-50%);z-index:9999;
   display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:max-content;max-width:calc(100vw - 32px)}
@@ -878,11 +878,15 @@
 #cc-rank header > div{flex:1;min-width:0}
 #cc-rank h2{margin:0;font:400 26px/1 "Lilita One","Trebuchet MS",sans-serif}
 #cc-rank header small{display:block;margin-top:3px;font-size:13px;font-weight:700;opacity:.6}
-#cc-rank .x{appearance:none;flex:none;width:42px;height:42px;border-radius:50%;border:0;background:transparent;font:700 20px/1 system-ui;color:${INK};cursor:pointer}
-#cc-rank .x:hover{background:rgba(29,35,64,.08)}
+#cc-rank .x{appearance:none;flex:none;width:44px;height:44px;border-radius:12px;border:2.5px solid ${INK};background:#fff;box-shadow:0 3px 0 ${INK};
+  font:700 20px/1 system-ui;color:${INK};cursor:pointer}
+#cc-rank .x:hover{background:#fff4c7}
+#cc-rank .x:active{transform:translateY(2px);box-shadow:0 1px 0 ${INK}}
 #cc-rank .seg{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:3px;margin:0 14px 8px;padding:3px;background:#ece8dc;border:2.5px solid ${INK};border-radius:14px}
 #cc-rank .seg button{appearance:none;display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:38px;padding:4px 2px;border:0;border-radius:10px;
   background:transparent;color:${INK};font:800 12.5px "Rubik",system-ui,sans-serif;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cc-rank .seg.modos{grid-template-columns:repeat(var(--n,4),auto)}
+#cc-rank .seg.modos button{padding-inline:6px}
 #cc-rank .seg.difs button{flex-direction:column;gap:2px;min-height:46px;font-size:11px}
 #cc-rank .seg button:hover{background:rgba(255,255,255,.65)}
 #cc-rank .seg button[aria-pressed="true"]{background:#ffcc29;box-shadow:inset 0 0 0 2px ${INK}}
@@ -904,9 +908,10 @@
 #cc-rank .pie{padding:10px 14px 14px;border-top:2px dashed rgba(29,35,64,.22)}
 #cc-rank .yo-txt{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;min-height:32px}
 #cc-rank .yo-txt b{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-#cc-rank .link{appearance:none;flex:none;margin-left:auto;border:0;background:none;padding:6px 8px;border-radius:8px;font:800 13px "Rubik",system-ui,sans-serif;
-  color:${INK};text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-#cc-rank .link:hover{background:rgba(29,35,64,.08)}
+#cc-rank .link{appearance:none;flex:none;margin-left:auto;min-height:40px;border:2px solid ${INK};background:transparent;padding:6px 14px;border-radius:999px;
+  box-shadow:0 2px 0 ${INK};font:800 13px "Rubik",system-ui,sans-serif;color:${INK};cursor:pointer}
+#cc-rank .link:hover{background:#fff}
+#cc-rank .link:active{transform:translateY(2px);box-shadow:none}
 #cc-rank form{display:flex;gap:8px}
 #cc-rank input{flex:1;min-width:0;height:44px;border-radius:12px;border:2.5px solid ${INK};padding:0 12px;font:600 16px "Rubik",system-ui,sans-serif;color:${INK};background:#fff}
 #cc-rank form button{appearance:none;height:44px;padding:0 16px;border-radius:12px;border:2.5px solid ${INK};background:#ffcc29;color:${INK};
@@ -916,7 +921,9 @@
 #cc-rank .ayuda .clave{font:800 15px ui-monospace,Consolas,monospace;letter-spacing:.08em;user-select:all;white-space:nowrap}
 #cc-rank .f-clave input[name="c"]{flex:0 0 8.6em;text-transform:uppercase;letter-spacing:.06em}
 #cc-rank form button:disabled,#cc-rank input:disabled{opacity:.6}
-#cc-rank .pie .otro{display:block;margin:4px 0 0 -6px;font-size:12px}
+#cc-rank form button:disabled{cursor:not-allowed;box-shadow:none;transform:none}
+#cc-rank .pie .otro{display:block;margin:10px 0 0;font-size:12px}
+#cc-rank button:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
 /* nombres de quien usa una legendaria: con el color de su personaje */
 .cc-leg{font-weight:800}
 .cc-leg-fantasma{color:#3f6fd1;text-shadow:0 0 8px rgba(120,170,255,.75)}
