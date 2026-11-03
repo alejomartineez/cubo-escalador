@@ -253,7 +253,7 @@ begin
 end $$;
 
 -- ---------- Amigos y títulos ----------
--- Cada jugador tiene un código de amigo de 6 letras (público: sirve para agregarte) y un título que gana en el pase.
+-- Cada jugador tiene un código de amigo de 6 letras (público: sirve para agregarte) y un título que gana subiendo de nivel.
 alter table public.jugadores add column if not exists codigo text;
 alter table public.jugadores add column if not exists titulo text not null default '';
 
