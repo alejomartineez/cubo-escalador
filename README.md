@@ -14,7 +14,7 @@ La pantalla principal muestra un juego por slide. Todos los juegos suman XP al m
 | Lluvia | Movete entre carriles y esquivá los bloques que caen. |
 | Clasificador | Mandá cada cubo a la caja de su color. |
 | Equilibrio | Corregí la tabla para que no te tire el viento. |
-| Ritmo | Tocá el lado de cada nota justo cuando llega a la línea. |
+| Ritmo | Tocá el lado de cada nota justo cuando llega a la línea. Modo Infinito (el BPM sube) y modo Canciones: 3 temas CC0 de Juhani Junkala con la partitura sacada del audio y estrellas por precisión. Tiene un calibrador (aparece la primera vez y queda en el menú) que mide cuánto te adelantás o atrasás y lo corrige. |
 | Vóley | Movete y devolvé la pelota a rivales cada vez mejores. |
 | Paseo | Alterná las flechas para caminar con tu mascota sin que se escape. |
 | Serpiente | Doblás a la izquierda o a la derecha según hacia dónde vas. |
@@ -27,10 +27,12 @@ Controles: `←` `→` o `A` `D` en la compu, `R` reinicia; botones grandes y �
 ## Progreso
 
 - **XP:** depende de qué tan bien jugaste (por ejemplo, en Sprint 100 un tiempo más bajo da más XP). Récord personal +25 %. Dificultad: Fácil ×1, Normal ×1,5, Difícil ×2, Extremo ×3, Maestro ×4.
-- **Personajes y efectos:** 34 personajes y 12 efectos; la mayoría se desbloquea por nivel y algunos solo con logros.
-- **Legendarias:** 6 personajes que brillan. Tres salen con secretos (logros ocultos) y tres con códigos que se canjean en Personaje. En `cubo-comun.js` solo se guarda el hash de cada código (`CODIGOS`); para agregar uno: `node -e "console.log(require('crypto').createHash('sha256').update('cubo:' + 'MICODIGO').digest('hex'))"` (en mayúsculas, sin espacios ni guiones).
+- **Personajes, efectos y títulos:** 39 personajes, 19 efectos y 22 títulos; la mayoría se desbloquea por nivel y algunos solo con logros.
+- **Pase de batalla:** del nivel 1 al 50, cada nivel da un premio (personaje, efecto o título). Los naranjas son exclusivos del pase: 5 personajes y 2 efectos que no salen de otra forma.
+- **Legendarias:** 6 personajes que brillan y 5 efectos. Salen con secretos (logros ocultos) o con códigos que se canjean en Personaje. Un código puede dar varias cosas: en `CODIGOS` va una lista con ids de skins o `fx:<id>` para efectos. En `cubo-comun.js` solo se guarda el hash de cada código (`CODIGOS`); para agregar uno: `node -e "console.log(require('crypto').createHash('sha256').update('cubo:' + 'MICODIGO').digest('hex'))"` (en mayúsculas, sin espacios ni guiones).
 - **Logros:** bronce, plata, oro y diamante, pensados para un jugador promedio (por ejemplo, Sprint 100 en menos de 20 s, 14 s, 12 s y 11 s).
 - **Ranking:** online por juego y dificultad. Cada apodo es de una sola persona y se muestra siempre con su skin actual. Para usar el mismo apodo en otro dispositivo, el ranking te da una clave. Guarda la mejor marca de cada jugador.
+- **Amigos y versus:** cada jugador con apodo tiene un código de amigo de 6 letras. Con él se agrega a alguien (en Ranking → Amigos), se ve el ranking solo con amigos y se juega un versus: tu mejor marca contra la suya en cada modo que jugaron los dos.
 
 ## Archivos
 
@@ -40,6 +42,7 @@ Controles: `←` `→` o `A` `D` en la compu, `R` reinicia; botones grandes y �
 - `supabase.sql`: tablas y función del ranking. Se corre una vez en el SQL Editor de Supabase.
 - `build.mjs`: arma `docs/` con las páginas, el manifest, los íconos y el service worker para jugar sin conexión.
 - `paginas.mjs`: la lista de páginas con su descripción (la que aparece al compartir el link).
+- `musica/`: las canciones de Ritmo (mp3) y `canciones.json` con BPM, desfase y la fuerza de cada semicorchea (de ahí sale la partitura de cada dificultad).
 - `og.mjs` y `og/`: las imágenes que se ven al compartir el link (una por juego), dibujadas con Chrome a partir de `og/plantilla.html`.
 
 ## Cómo actualizar el sitio

@@ -188,6 +188,31 @@ body {
   display: block; width: 100%; height: 112px; background: var(--sky);
   border: 3px solid var(--ink); border-radius: 14px;
 }
+/* modo: infinito o canciones */
+.seg-modo { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 4px; background: #ece8dc; border: 2.5px solid var(--ink); border-radius: 16px; }
+.seg-modo button { appearance: none; border: 0; border-radius: 11px; background: transparent; min-height: 42px; cursor: pointer;
+  font: 400 17px var(--display); color: var(--ink); }
+.seg-modo button[aria-checked="true"] { background: var(--cube); box-shadow: inset 0 0 0 2.5px var(--ink); }
+.canciones { display: grid; gap: 8px; }
+.cancion { appearance: none; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; padding: 9px 14px; cursor: pointer; text-align: left;
+  background: #fff; color: var(--ink); border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 0 3px 0 var(--ink); }
+.cancion b { font: 400 19px var(--display); }
+.cancion small { grid-column: 1; font: 700 12px var(--body); color: var(--muted); }
+.cancion .est { grid-row: 1 / 3; grid-column: 2; font-size: 20px; letter-spacing: 1px; color: #e0a400; -webkit-text-stroke: 1px var(--ink); }
+.cancion[aria-checked="true"] { background: var(--cube); box-shadow: inset 0 0 0 2px var(--ink), 0 3px 0 var(--ink); }
+.cancion[aria-checked="true"] small { color: var(--ink); }
+.credito { margin: -4px 0 0; text-align: center; font: 600 11px var(--body); color: var(--muted); }
+/* calibrador */
+.cal-vis { display: grid; justify-items: center; gap: 16px; padding: 6px 0; }
+#cPulse { width: 84px; height: 84px; border-radius: 50%; background: var(--paper); border: 4px solid var(--ink); box-shadow: 0 5px 0 var(--ink); transition: background .08s; }
+#cPulse.on { background: var(--cube); }
+.cal-bar { position: relative; width: 100%; height: 44px; border-radius: 12px; background: #ece8dc; border: 2.5px solid var(--ink); overflow: hidden; }
+.cal-bar .cero { position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; margin-left: -1.5px; background: var(--ink); }
+.cal-bar .lbl-a, .cal-bar .lbl-t { position: absolute; bottom: 6px; font: 800 11px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.cal-bar .lbl-a { left: 12px; } .cal-bar .lbl-t { right: 12px; }
+.cal-dot { position: absolute; top: 6px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--accent); border: 2px solid var(--ink); }
+.cal-dot.prueba { background: #c3c9da; }
+.cal-res { margin: 0; text-align: center; font: 600 15px/1.4 var(--body); min-height: 1.4em; }
 .recline { margin: 0; text-align: center; font-size: 14px; font-weight: 600; color: var(--muted); }
 .recline b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .go { display: flex; gap: 10px; }
@@ -291,7 +316,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   <div class="card menu">
     <div class="topbar">
       <button class="ter smallbtn" id="btnBack" type="button" hidden>← Juegos</button>
-      <button class="ter smallbtn" id="btnMute" type="button" style="margin-left:auto">Sonido: sí</button>
+      <button class="ter smallbtn" id="btnCalib" type="button" style="margin-left:auto">🎧 Calibrar</button>
+      <button class="ter smallbtn" id="btnMute" type="button">Sonido: sí</button>
     </div>
     <div class="col">
       <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Ritmo</h1></div>
@@ -299,6 +325,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <canvas class="demo" id="demo" aria-hidden="true"></canvas>
     </div>
     <div class="col">
+      <div class="seg-modo" id="segModo" role="radiogroup" aria-label="Modo">
+        <button type="button" role="radio" data-m="infinito" aria-checked="true">∞ Infinito</button>
+        <button type="button" role="radio" data-m="cancion" aria-checked="false">🎵 Canciones</button>
+      </div>
+      <div class="canciones" id="canciones" role="radiogroup" aria-label="Canción" hidden></div>
+      <p class="credito" id="credito" hidden>Música: Juhani Junkala (CC0)</p>
       <div id="diffs"></div>
       <p class="recline" id="recline"></p>
       <div class="go">
@@ -306,6 +338,22 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         <button class="btn primary big" id="btnPlay" type="button">Jugar</button>
       </div>
       <div class="foot kbhint" id="mKeys"><span><kbd>←</kbd> <kbd>→</kbd> tocan · <kbd>↑</kbd> <kbd>↓</kbd> dificultad · <kbd>Enter</kbd> juega</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="calib" hidden>
+  <div class="card">
+    <div class="result">
+      <h2>Calibrar</h2>
+      <span class="sub" id="cTxt">Tocá ◀ o ▶ cada vez que suene el clic y se prenda el círculo. Los primeros 4 son para agarrar el ritmo.</span>
+    </div>
+    <div class="cal-vis"><i id="cPulse"></i><div class="cal-bar"><span class="cero"></span><span class="lbl-a">Antes</span><span class="lbl-t">Tarde</span><div id="cDots"></div></div></div>
+    <p class="cal-res" id="cRes" aria-live="polite"></p>
+    <div class="row">
+      <button class="btn" id="cSkip" type="button">Saltear</button>
+      <button class="btn" id="cAgain" type="button" hidden>Repetir</button>
+      <button class="btn primary" id="cOk" type="button" hidden>Listo</button>
     </div>
   </div>
 </div>
@@ -423,6 +471,54 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   if (!rec.combos || typeof rec.combos !== 'object') rec.combos = rec.combo ? { normal: rec.combo } : {};
   delete rec.best; delete rec.combo;
   let diff = DIFFS[rec.diff] ? rec.diff : 'normal';
+  if (!rec.canciones || typeof rec.canciones !== 'object') rec.canciones = {};
+  let modo = rec.modo === 'cancion' ? 'cancion' : 'infinito', cancionId = rec.cancion || '';
+
+  // ---------- canciones ----------
+  // Canciones libres (CC0) con su BPM medido. canciones.json trae, por cada semicorchea, qué tan fuerte suena (0-9)
+  // y si el golpe es grave (l) o agudo (r): con eso se arma la partitura de cada dificultad.
+  let CANCIONES = [];
+  const bufs = {};
+  const VUELTAS = 2;   // cada canción es un loop: se toca dos veces
+  // segundos que tarda una nota en bajar hasta la línea
+  const VER_SEG = { facil: 1.6, normal: 1.3, dificil: 1.1, extremo: 0.95, maestro: 0.8 };
+  // [grilla en semicorcheas (4 = negras), separación mínima entre notas en s, fuerza mínima del golpe]
+  const DENS = { facil: [4, 0.5, 5], normal: [2, 0.32, 5], dificil: [2, 0.24, 4], extremo: [1, 0.17, 4], maestro: [1, 0.13, 3] };
+  function planCancion(c, d) {
+    const [grid, sep, umbral] = DENS[d], sd = 60 / c.bpm / 4, n = c.fuerza.length, total = n * VUELTAS;
+    const minPasos = Math.ceil(sep / sd - 1e-6), tomado = new Uint8Array(total), cand = [];
+    for (let k = 4; k < total; k++) { const f = +c.fuerza[k % n]; if (k % grid === 0 && f >= umbral) cand.push([f, k]); }
+    // primero los golpes más fuertes, y ninguna nota más cerca que la separación mínima
+    cand.sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+    const ok = [];
+    for (const [, k] of cand) {
+      let libre = true;
+      for (let m = Math.max(0, k - minPasos + 1); m < Math.min(total, k + minPasos); m++) if (tomado[m]) { libre = false; break; }
+      if (libre) { tomado[k] = 1; ok.push(k); }
+    }
+    ok.sort((a, b) => a - b);
+    // carril: grave ←, agudo →; las notas pegadas siempre alternan y nunca más de 3 seguidas del mismo lado
+    let last = 0, run = 0, lastK = -99;
+    return ok.map(k => {
+      let lane = c.lado[k % n] === 'l' ? -1 : 1;
+      if (last && k - lastK < 4) lane = -last;
+      else if (lane === last && run >= 3) lane = -last;
+      run = lane === last ? run + 1 : 1; last = lane; lastK = k;
+      return { k, lane };
+    });
+  }
+  const cancionSel = () => CANCIONES.find(c => c.id === cancionId) || CANCIONES[0];
+  const durTxt = c => { const s = Math.round(c.beats * 60 / c.bpm * VUELTAS); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  const estrellas = n => '★'.repeat(n) + '☆'.repeat(3 - n);
+  async function cargarCancion(c) {
+    if (bufs[c.id]) return bufs[c.id];
+    const r = await fetch('musica/' + c.id + '.mp3');
+    if (!r.ok) throw new Error('canción ' + r.status);
+    const ab = await r.arrayBuffer();
+    bufs[c.id] = await new Promise((ok, no) => actx.decodeAudioData(ab, ok, no));
+    return bufs[c.id];
+  }
+  fetch('musica/canciones.json').then(r => r.json()).then(x => { CANCIONES = x; renderModo(); }).catch(() => {});
   const fmt = n => n.toLocaleString('es-AR');
 
   // ---------- audio ----------
@@ -486,12 +582,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const sfxUp = () => [523, 659, 784].forEach((f, i) => { if (actx) voice(actx.currentTime + i * 0.07, f, 'square', 0.04, 0.14, 0, master); });
   function playLead(m, perfect) {
     const t = actx.currentTime;
+    if (G && G.cancion) { voice(t, perfect ? 1760 : 1320, 'triangle', 0.03, 0.06, 0, master); return; } // un clic suave, sin tapar la canción
     voice(t, mtof(m), 'square', 0.07, 0.3, 2400, master);
     voice(t, mtof(m + 12), 'triangle', perfect ? 0.05 : 0.025, 0.22, 0, master);
   }
 
   // un paso de semicorchea del loop: bombo en negras, palmas en 2 y 4, hi-hat, bajo y arpegio
   function playStep(bar, s, t) {
+    if (G.cancion && !bar.intro) return; // en modo canción suena la canción
     const ch = bar.chord;
     if (s % 4 === 0) kick(t);
     if (bar.intro) { // compases de entrada: solo el clic, más agudo en el último tiempo antes de arrancar
@@ -548,20 +646,39 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       face: 1, hitP: -1e9, missP: -1e9, ghostP: { [-1]: -1e9, [1]: -1e9 },
     };
     G.shownBpm = bpmAt(G.D, 0);
+    const c = modo === 'cancion' && cancionSel();
+    if (c && bufs[c.id]) {
+      // modo canción: BPM fijo, dos compases de cuenta y la partitura sale de la canción
+      G.cancion = c; G.intro = 2; G.shownBpm = c.bpm;
+      G.D = { ...DIFFS[diff], ver: VER_SEG[diff] * c.bpm / 60 };
+      G.plan = planCancion(c, diff); G.pk = 0;
+      G.totalBars = VUELTAS * c.beats / 4;
+      const sd = 60 / c.bpm / 4;
+      G.firstT = G.t0 + G.intro * 16 * sd;
+      G.finT = G.firstT + G.totalBars * 16 * sd;
+    }
     particles = []; rings = []; judgeTxt = null; banner = null;
     showTip(!rec.ayuda);
   }
 
   function genBar() {
     const i = G.bars.length, prev = G.bars[i - 1], intro = i < G.intro;
-    const level = intro ? 0 : Math.floor((i - G.intro) / BARS_PER_LEVEL);
-    const bpm = bpmAt(G.D, level);
-    const raf = !intro && (i - G.intro) % BARS_PER_LEVEL >= BARS_PER_LEVEL - RAFAGA;
+    const level = intro || G.cancion ? 0 : Math.floor((i - G.intro) / BARS_PER_LEVEL);
+    const bpm = G.cancion ? G.cancion.bpm : bpmAt(G.D, level);
+    const raf = !intro && !G.cancion && (i - G.intro) % BARS_PER_LEVEL >= BARS_PER_LEVEL - RAFAGA;
     const bar = { i, intro, level, bpm, raf, sd: 60 / bpm / 4, t0: prev ? prev.t0 + 16 * prev.sd : G.t0,
       b0: prev ? prev.b0 + 4 : 0, chord: CHORDS[(i - G.intro + 400) % 4] };
     G.bars.push(bar);
-    if (!intro) chart(bar);
+    if (!intro) (G.cancion ? chartCancion(bar) : chart(bar));
     return bar;
+  }
+  // notas de un compás en modo canción: las que tocan según la partitura
+  function chartCancion(bar) {
+    const j = bar.i - G.intro;
+    while (G.pk < G.plan.length && Math.floor(G.plan[G.pk].k / 16) === j) {
+      const { k, lane } = G.plan[G.pk++], s = k % 16;
+      G.notes.push({ t: bar.t0 + s * bar.sd, b: bar.b0 + s / 4, lane, m: 81, res: null, raf: false });
+    }
   }
 
   // notas de un compás: el ritmo sale de la dificultad y el carril define si la melodía sube (→) o baja (←)
@@ -633,7 +750,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     pb.classList.add('on'); setTimeout(() => pb.classList.remove('on'), 90);
     pressedAt[lane] = performance.now(); G.face = lane;
     hideTip();
-    const t = songAt(p);
+    const t = songAt(p) - desfase(); // lo que mide el calibrador
     let best = null, bd = WIN_MISS;
     for (const n of G.notes) {
       if (n.t > t + WIN_MISS) break;
@@ -689,6 +806,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
 
   function watchLevel(now) {
+    if (G.cancion) { // el cielo va cambiando a lo largo de la canción
+      G.shownLevel = Math.max(0, Math.min(5, Math.floor((now - G.firstT) / (G.finT - G.firstT) * 6)));
+      if (now > G.finT + 0.5 && !G.over) terminarCancion();
+      return;
+    }
     const b = barAt(now);
     // aviso de ráfaga un tiempo antes de que lleguen sus notas a la línea
     const nb = G.bars.find(x => x.raf && x.i > G.shownRaf && x.t0 - 60 / x.bpm * G.D.ver <= now);
@@ -715,6 +837,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
     sfx(440, 0.9, 'sawtooth', 0.06, 0.12);
     hideTip();
+    if (G.cancion) { finCancion(false); setTimeout(() => { if (state === 'over') showEnd(); }, 1100); return; }
+    $('eTitle').textContent = '¡Se cortó la música!';
     const { isRec, prev, r } = cerrarPartida();
     const hits = G.perfect + G.good, total = hits + G.miss;
     $('eNum').textContent = fmt(G.score);
@@ -733,6 +857,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // guarda récords y suma la XP de la partida (al perder, al cortarla con R o al salir)
   // CC.partida ya multiplica la XP por dificultad y suma el bonus por récord
   function cerrarPartida() {
+    if (G.cancion) return cerrarCancion(false);
     const d = G.diff, old = rec.bests[d] || 0;
     let isRec = G.score > old, prev = old ? fmt(old) + ' pts' : null;
     if (isRec) rec.bests[d] = G.score;
@@ -746,6 +871,48 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
     return { isRec, prev, r };
   }
+  // fin de una canción (completa o cortada): estrellas por precisión, récord por canción y dificultad, y XP
+  function cerrarCancion(completa) {
+    if (G.cerrada) return G.cerrada;
+    const c = G.cancion, total = G.perfect + G.good + G.miss;
+    const prec = total ? (G.perfect + G.good * 0.6) / total : 0;
+    const est = !completa ? 0 : prec >= 0.95 ? 3 : prec >= 0.85 ? 2 : prec >= 0.7 ? 1 : 0;
+    const clave = c.id + ':' + G.diff, viejo = rec.canciones[clave] || { score: 0, est: 0 };
+    const isRec = completa && G.score > viejo.score;
+    if (completa) rec.canciones[clave] = { score: Math.max(viejo.score, G.score), est: Math.max(viejo.est, est), fc: !!viejo.fc || G.miss === 0 };
+    saveRec();
+    let r = null;
+    if (CC && (completa || total >= 16)) {
+      r = CC.partida({ juego: 'ritmo', tabla: G.diff, valor: G.score, sinRecord: true, texto: `${c.nombre}: ${fmt(G.score)} pts`,
+        xp: Math.round(CC.xpEscala(prec * 100, 40, 97, 4, 60) * (completa ? 1 : 0.4)) });
+    }
+    G.cerrada = { isRec, prev: viejo.score ? fmt(viejo.score) + ' pts' : null, r, est, prec };
+    return G.cerrada;
+  }
+  function finCancion(completa) {
+    const c = G.cancion, { isRec, r, est, prec } = cerrarCancion(completa);
+    const viejo = rec.canciones[c.id + ':' + G.diff];
+    $('eTitle').textContent = completa ? (G.miss === 0 ? '¡Full combo!' : '¡Canción completa!') : '¡Se cortó la música!';
+    $('eNum').textContent = completa ? estrellas(est) : fmt(G.score);
+    const avance = Math.round(100 * Math.max(0, Math.min(1, (G.vis - G.firstT) / (G.finT - G.firstT))));
+    $('eSub').textContent = completa ? `${c.nombre} · ${G.D.name} · ${fmt(G.score)} pts · ${Math.round(prec * 100)}% de precisión · combo máx ${G.maxCombo}`
+      : `${c.nombre} · ${G.D.name} · llegaste al ${avance}% de la canción`;
+    $('eRec').textContent = isRec ? '¡Récord en esta canción!' : viejo ? `Mejor: ${estrellas(viejo.est)} · ${fmt(viejo.score)} pts` : '';
+    $('eBadge').hidden = !isRec;
+    $('eXP').hidden = !r;
+    if (r) $('eXP').textContent = `+${fmt(r.xp)} XP` + (r.subio ? ` · ¡nivel ${r.nivel}!` : '');
+    const logros = r ? r.logros : [];
+    $('eLogros').hidden = !logros.length;
+    $('eLogros').replaceChildren(...logros.map(n => Object.assign(document.createElement('li'), { textContent: 'Logro: ' + n })));
+  }
+  function terminarCancion() {
+    G.over = true; state = 'over';
+    if (bus) { const b = bus; bus = null; b.gain.setTargetAtTime(0, actx.currentTime, 0.3); setTimeout(() => { try { b.disconnect(); } catch (e) {} }, 2000); }
+    sfxUp();
+    finCancion(true);
+    setTimeout(() => { if (state === 'over') showEnd(); }, 700);
+  }
+
   // una partida cortada a mitad cuenta si se jugó un rato (si no, reiniciar al toque sumaría partidas gratis)
   const enCurso = () => G && !G.over && G.perfect + G.good + G.miss >= 16;
 
@@ -830,10 +997,41 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const on = b.dataset.d === diff;
       b.setAttribute('aria-checked', on); b.tabIndex = on ? 0 : -1;
     }
+    renderCanciones();
+    if (modo === 'cancion' && cancionSel()) {
+      const c = cancionSel(), x = rec.canciones[c.id + ':' + diff];
+      $('recline').innerHTML = `${c.nombre} en ${DIFFS[diff].name}: <b>${x ? estrellas(x.est) + ' · ' + fmt(x.score) + ' pts' + (x.fc ? ' · full combo' : '') : 'sin jugar'}</b>`;
+      return;
+    }
     let best = rec.bests[diff] || 0;
     if (CC) best = Math.max(best, CC.perfil().mejores['ritmo:' + diff] || 0);
     $('recline').innerHTML = `Récord en ${DIFFS[diff].name}: <b>${best ? fmt(best) + ' pts' : '—'}</b> · Mejor combo: <b>${rec.combos[diff] || '—'}</b>`;
   }
+
+  function renderModo() {
+    const hay = CANCIONES.length > 0;
+    $('segModo').hidden = !hay;
+    if (!hay) modo = 'infinito';
+    for (const b of $('segModo').children) b.setAttribute('aria-checked', String(b.dataset.m === modo));
+    $('canciones').hidden = $('credito').hidden = modo !== 'cancion';
+    $('btnRank').hidden = !CC || modo === 'cancion';
+    renderRecs();
+  }
+  function renderCanciones() {
+    const box = $('canciones');
+    if (modo !== 'cancion' || !CANCIONES.length) return;
+    if (!cancionSel() || !CANCIONES.some(c => c.id === cancionId)) cancionId = CANCIONES[0].id;
+    box.innerHTML = '';
+    for (const c of CANCIONES) {
+      const x = rec.canciones[c.id + ':' + diff], b = document.createElement('button');
+      b.type = 'button'; b.className = 'cancion'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(c.id === cancionId));
+      b.innerHTML = `<b></b><small>${Math.round(c.bpm)} BPM · ${durTxt(c)}</small><span class="est" aria-label="${x ? x.est : 0} de 3 estrellas">${estrellas(x ? x.est : 0)}</span>`;
+      b.querySelector('b').textContent = c.nombre;
+      b.addEventListener('click', () => { cancionId = c.id; rec.cancion = c.id; saveRec(); renderRecs(); });
+      box.appendChild(b);
+    }
+  }
+  for (const b of $('segModo').children) b.addEventListener('click', () => { modo = b.dataset.m; rec.modo = modo; saveRec(); renderModo(); });
 
   function showStart() {
     if (enCurso()) cerrarPartida();
@@ -847,8 +1045,19 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('start').hidden = false; $('pause').hidden = true; $('end').hidden = true; $('hud').hidden = true;
     layout();
   }
+  let cargando = false;
   function start() {
-    if (!ensureAudio()) return;
+    if (!ensureAudio() || cargando) return;
+    if (!rec.calibrado && !rec.calSalteado) { abrirCalib(true); return; } // la primera vez, antes de jugar
+    const c = modo === 'cancion' && cancionSel();
+    if (c && !bufs[c.id]) { // la canción se baja una vez y después queda guardada
+      cargando = true;
+      const btns = [$('btnPlay'), $('btnAgain')], antes = btns.map(b => b.innerHTML);
+      btns.forEach(b => { b.textContent = 'Cargando…'; b.disabled = true; });
+      cargarCancion(c).then(() => { cargando = false; btns.forEach((b, i) => { b.innerHTML = antes[i]; b.disabled = false; }); start(); },
+        () => { cargando = false; btns.forEach((b, i) => { b.innerHTML = antes[i]; b.disabled = false; }); alert('No se pudo cargar la canción. Revisá la conexión y probá de nuevo.'); });
+      return;
+    }
     $('start').hidden = true; $('pause').hidden = true; $('end').hidden = true; $('hud').hidden = false;
     layout();
     newRun();
@@ -856,6 +1065,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('hDiff').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + G.D.name;
     $('hDiff').classList.toggle('ext', G.diff === 'extremo');
     $('hDiff').classList.toggle('mae', G.diff === 'maestro');
+    if (G.cancion) { // la canción arranca para que su primer golpe caiga justo después de la cuenta
+      const c = G.cancion, src = actx.createBufferSource();
+      src.buffer = bufs[c.id]; src.loop = true; src.loopStart = 0; src.loopEnd = c.beats * 60 / c.bpm;
+      src.connect(bus);
+      const t = G.firstT - c.offset;
+      src.start(t); src.stop(t + VUELTAS * src.loopEnd + 0.1);
+      banner = { text: '🎵 ' + c.nombre, t: performance.now() };
+    }
     blur(); schedule();
   }
   const verRanking = () => CC.verRanking({ juego: 'ritmo', tabla: diff });
@@ -886,6 +1103,70 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
   }
 
+  // ---------- calibrador ----------
+  // Suena un metrónomo y tocás con él. Lo que te adelantás o atrasás (la mediana) se descuenta en cada toque.
+  const CAL_BPM = 100, CAL_N = 16, CAL_DESDE = 4;
+  let cal = null;
+  const desfase = () => Math.max(-0.25, Math.min(0.25, +rec.desfase || 0));
+  function abrirCalib(antesDeJugar) {
+    if (!ensureAudio()) return;
+    state = 'calib';
+    const per = 60 / CAL_BPM;
+    cal = { antes: antesDeJugar, t0: actx.currentTime + 1.2, toques: [], fin: false };
+    for (let k = 0; k < CAL_N; k++) voice(cal.t0 + k * per, k % 4 ? 1320 : 1760, 'square', 0.06, 0.06, 0, master);
+    $('start').hidden = true; $('end').hidden = true; $('calib').hidden = false;
+    $('cDots').innerHTML = ''; $('cRes').textContent = '';
+    $('cSkip').hidden = false; $('cSkip').textContent = antesDeJugar ? 'Saltear y jugar' : 'Cancelar';
+    $('cAgain').hidden = true; $('cOk').hidden = true;
+    requestAnimationFrame(pulsoCalib);
+  }
+  function pulsoCalib(p) {
+    if (state !== 'calib' || !cal) return;
+    const x = (songAt(p) - cal.t0) / (60 / CAL_BPM), fase = x < 0 ? 1 : x - Math.floor(x);
+    const on = x >= -0.02 && x < CAL_N && fase < 0.18;
+    $('cPulse').classList.toggle('on', on);
+    $('cPulse').style.transform = on && !reduceMotion ? `scale(${1.25 - fase})` : '';
+    if (!cal.fin && x > CAL_N + 0.4) terminarCalib();
+    requestAnimationFrame(pulsoCalib);
+  }
+  function tocarCalib(p) {
+    if (!cal || cal.fin) return;
+    const per = 60 / CAL_BPM, t = songAt(p), k = Math.round((t - cal.t0) / per);
+    if (k < 0 || k >= CAL_N) return;
+    const d = t - (cal.t0 + k * per);
+    if (Math.abs(d) > 0.3) return;
+    if (k >= CAL_DESDE) cal.toques.push(d);
+    const dot = document.createElement('span');
+    dot.className = 'cal-dot' + (k < CAL_DESDE ? ' prueba' : '');
+    dot.style.left = (50 + d / 0.3 * 50) + '%';
+    $('cDots').appendChild(dot);
+  }
+  function terminarCalib() {
+    cal.fin = true;
+    const v = cal.toques.slice().sort((a, b) => a - b);
+    if (v.length < 6) {
+      $('cRes').textContent = 'No llegué a medir bien. Probá de nuevo tocando con cada clic.';
+      $('cAgain').hidden = false; return;
+    }
+    const med = v[Math.floor(v.length / 2)], ms = Math.round(med * 1000);
+    rec.desfase = med; rec.calibrado = 1; saveRec();
+    $('cRes').textContent = Math.abs(ms) < 10 ? '¡Clavado! Tocás justo a tiempo.' : `Tocás ${Math.abs(ms)} ms ${ms > 0 ? 'tarde' : 'antes'}. Ya quedó corregido.`;
+    $('cSkip').hidden = true; $('cAgain').hidden = false; $('cOk').hidden = false;
+    $('cOk').textContent = cal.antes ? '¡A jugar!' : 'Listo';
+    setTimeout(() => $('cOk').focus({ preventScroll: true }), 50);
+  }
+  function cerrarCalib(saltear) {
+    if (saltear && !rec.calibrado) { rec.calSalteado = 1; saveRec(); }
+    const antes = cal && cal.antes;
+    cal = null; $('calib').hidden = true;
+    if (antes) start(); else showStart();
+  }
+  $('btnCalib').addEventListener('click', () => abrirCalib(false));
+  $('cSkip').addEventListener('click', () => cerrarCalib(true));
+  $('cOk').addEventListener('click', () => cerrarCalib(false));
+  $('cAgain').addEventListener('click', () => abrirCalib(cal ? cal.antes : false));
+  $('calib').addEventListener('pointerdown', e => { if (!e.target.closest('button')) { e.preventDefault(); tocarCalib(stamp(e)); } });
+
   // ---------- entrada ----------
   const stamp = e => (e.timeStamp && Math.abs(e.timeStamp - performance.now()) < 1000 ? e.timeStamp : performance.now());
   const isBtn = el => el && el.tagName === 'BUTTON';
@@ -896,6 +1177,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // Teclas: ← → (A/D) son solo del juego; en el menú y en la pantalla de fin ↑ ↓ eligen la dificultad,
     // Enter/Espacio juegan y Esc vuelve a Juegos. En el menú ← → también arrancan (el conteo da tiempo).
     if (document.getElementById('cc-rank')) return; // el ranking abierto maneja sus teclas
+    if (state === 'calib') {
+      if (L || R || k === ' ') { e.preventDefault(); if (!e.repeat) tocarCalib(stamp(e)); }
+      else if (k === 'Escape') cerrarCalib(true);
+      else if (k === 'Enter' && cal && cal.fin && rec.calibrado) { e.preventDefault(); cerrarCalib(false); }
+      return;
+    }
     if ((k === 'r' || k === 'R') && state !== 'start') { if (!e.repeat) restart(); return; }
     if (state === 'play') {
       if (L || R) { e.preventDefault(); if (!e.repeat) hit(L ? -1 : 1, stamp(e)); }
@@ -917,7 +1204,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let tocando = false;
   addEventListener('pointerdown', e => { tocando = e.pointerType === 'touch'; }, true);
   addEventListener('keydown', () => { tocando = false; }, true);
-  const bindPad = (el, d) => el.addEventListener('pointerdown', e => { e.preventDefault(); hit(d, stamp(e)); });
+  const bindPad = (el, d) => el.addEventListener('pointerdown', e => { e.preventDefault(); if (state === 'calib') tocarCalib(stamp(e)); else hit(d, stamp(e)); });
   bindPad($('bL'), -1); bindPad($('bR'), 1);
   cv.addEventListener('pointerdown', e => { if (state === 'play') { e.preventDefault(); hit(e.clientX < mid ? -1 : 1, stamp(e)); } });
   addEventListener('contextmenu', e => e.preventDefault());
@@ -928,6 +1215,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     for (const id of ['btnBack', 'btnHudBack', 'btnRank', 'btnRank2', 'btnGames2']) $(id).hidden = false;
     $('btnHome').hidden = true; // el menú no tiene nada más que elegir: la dificultad se cambia acá mismo
   }
+  renderModo();
   $('btnGames2').addEventListener('click', salir);
   $('btnBack').addEventListener('click', salir);
   $('btnHudBack').addEventListener('click', salir);

@@ -251,3 +251,61 @@ begin
     creado = case when (v_orden = 'menor' and excluded.valor < p.valor) or (v_orden = 'mayor' and excluded.valor > p.valor)
                   then now() else p.creado end;
 end $$;
+
+-- ---------- Amigos y títulos ----------
+-- Cada jugador tiene un código de amigo de 6 letras (público: sirve para agregarte) y un título que gana en el pase.
+alter table public.jugadores add column if not exists codigo text;
+alter table public.jugadores add column if not exists titulo text not null default '';
+
+create or replace function public.nuevo_codigo() returns text language sql volatile as $$
+  select string_agg(substr('ABCDEFGHJKMNPQRSTUVWXYZ23456789', 1 + floor(random() * 31)::int, 1), '') from generate_series(1, 6);
+$$;
+revoke all on function public.nuevo_codigo() from public, anon, authenticated;
+update public.jugadores set codigo = public.nuevo_codigo() where codigo is null;
+create unique index if not exists jugadores_codigo on public.jugadores (codigo);
+
+-- El ranking también muestra el título.
+create or replace view public.ranking as
+  select p.tabla, j.apodo, p.valor, j.skin, p.creado,
+         left(encode(sha256(convert_to(p.jugador::text, 'UTF8')), 'hex'), 12) as huella, j.titulo
+  from public.puntajes p join public.jugadores j on j.id = p.jugador;
+grant select on public.ranking to anon, authenticated;
+
+-- Ahora también guarda el título y devuelve tu código de amigo.
+drop function if exists public.registrar_jugador(uuid, text, text);
+create or replace function public.registrar_jugador(p_jugador uuid, p_apodo text, p_skin text, p_titulo text default null)
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  v_apodo text := btrim(p_apodo);
+  v_clave text;
+  v_codigo text;
+begin
+  if p_jugador is null or v_apodo is null or char_length(v_apodo) not between 3 and 14 then
+    return json_build_object('estado', 'invalido');
+  end if;
+  if exists (select 1 from public.jugadores where lower(apodo) = lower(v_apodo) and id <> p_jugador) then
+    return json_build_object('estado', 'ocupado');
+  end if;
+  insert into public.jugadores as j (id, apodo, skin, clave, codigo, titulo)
+    values (p_jugador, v_apodo, left(coalesce(p_skin, 'clasico'), 20), public.nueva_clave(), public.nuevo_codigo(), left(coalesce(p_titulo, ''), 24))
+  on conflict (id) do update set apodo = excluded.apodo, skin = excluded.skin,
+    titulo = case when p_titulo is null then j.titulo else excluded.titulo end,
+    codigo = coalesce(j.codigo, excluded.codigo)
+  returning j.clave, j.codigo into v_clave, v_codigo;
+  update public.puntajes set apodo = v_apodo where jugador = p_jugador and apodo <> v_apodo;
+  return json_build_object('estado', 'ok', 'clave', v_clave, 'codigo', v_codigo);
+exception when unique_violation then
+  return json_build_object('estado', 'ocupado');
+end $$;
+revoke all on function public.registrar_jugador(uuid, text, text, text) from public;
+grant execute on function public.registrar_jugador(uuid, text, text, text) to anon, authenticated;
+
+-- Buscar a alguien por su código de amigo: apodo, skin, título y la huella para encontrarlo en el ranking.
+create or replace function public.buscar_amigo(p_codigo text)
+returns json language sql stable security definer set search_path = public as $$
+  select json_build_object('apodo', apodo, 'skin', skin, 'titulo', titulo,
+           'huella', left(encode(sha256(convert_to(id::text, 'UTF8')), 'hex'), 12))
+  from public.jugadores where codigo = upper(regexp_replace(coalesce(p_codigo, ''), '[^A-Za-z0-9]', '', 'g'));
+$$;
+revoke all on function public.buscar_amigo(text) from public;
+grant execute on function public.buscar_amigo(text) to anon, authenticated;

@@ -2,7 +2,7 @@
 // Cada página está escrita como página de Artifact (sin <!doctype>, <html> ni <head>),
 // así que acá se envuelve en un documento completo. cubo-comun.js se copia tal cual.
 // También arma lo necesario para instalarlo como app y jugar sin conexión: manifest, íconos y service worker.
-import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, existsSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { deflateSync } from 'node:zlib';
 
@@ -94,6 +94,9 @@ ${CARGA_JS}
   console.log(`docs/${p.out}  <-  ${p.src}`);
 }
 for (const a of ASSETS) { copyFileSync(a, `docs/${a}`); salida.push(a); console.log(`docs/${a}`); }
+
+// canciones de Ritmo: no van a la caché del arranque; se bajan cuando las jugás y ahí quedan guardadas
+if (existsSync('musica')) { mkdirSync('docs/musica'); for (const f of readdirSync('musica')) copyFileSync(`musica/${f}`, `docs/musica/${f}`); }
 
 // imágenes para compartir el link (las dibuja og.mjs). No van a la caché del service worker: solo las piden las redes.
 mkdirSync('docs/og');
