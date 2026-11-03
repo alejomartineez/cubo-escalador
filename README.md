@@ -4,23 +4,40 @@ Juegos de navegador livianos que se juegan solo con dos flechas, izquierda y der
 
 **Jugar:** https://alejomartineez.github.io/cubo-escalador/
 
-La pantalla principal muestra un juego por slide. Todos los juegos suman XP al mismo perfil: subís de nivel y desbloqueás personajes, que se ven en todos los juegos.
+Se instala como app en el celu (botón **Instalar** arriba, o en iPhone: Compartir → Agregar a inicio) y funciona sin conexión.
+
+La pantalla principal muestra un juego por slide. Todos los juegos suman XP al mismo perfil: subís de nivel, desbloqueás personajes y efectos, conseguís logros y competís en el ranking online.
 
 | Juego | De qué se trata |
 |---|---|
-| Escalador | Subí escalones en zigzag. Si errás, el cubo queda mareado medio segundo. Modos Sprint 100, 30 segundos y Libre (hasta el espacio). |
+| Escalador | Subí escalones en zigzag. Si errás, el cubo queda mareado. Sprint 100, 30 segundos y Libre (hasta el espacio), con modo Extremo. |
 | Lluvia | Movete entre carriles y esquivá los bloques que caen. |
-| Clasificador | Mandá cada cubo a la caja de su forma. |
-| Equilibrio | Corregí la cuerda floja para que no te tire el viento. |
-| Ritmo | Tocá cada flecha justo cuando llega a la línea, al ritmo de la música. |
+| Clasificador | Mandá cada cubo a la caja de su color. |
+| Equilibrio | Corregí la tabla para que no te tire el viento. |
+| Ritmo | Tocá el lado de cada nota justo cuando llega a la línea. |
+| Vóley | Movete y devolvé la pelota a rivales cada vez mejores. |
+| Paseo | Alterná las flechas para caminar con tu mascota sin que se escape. |
+| Serpiente | Doblás a la izquierda o a la derecha según hacia dónde vas. |
+| Cohete | Cada flecha prende un propulsor. |
+| Esquí | Slalom entre banderas, cada vez más rápido. |
+| Pulseada | Alterná lo más rápido que puedas para ganarle al rival. |
 
-Controles: `←` `→` o `A` `D` en la compu, `R` reinicia la partida; botones grandes y ↻ en el celular. Lluvia, Clasificador, Equilibrio y Ritmo tienen Fácil, Normal y Difícil.
+Controles: `←` `→` o `A` `D` en la compu, `R` reinicia; botones grandes y ↻ en el celu. Todos los juegos tienen Fácil, Normal, Difícil y Extremo.
+
+## Progreso
+
+- **XP:** depende de qué tan bien jugaste (por ejemplo, en Sprint 100 un tiempo más bajo da más XP). Récord personal +25 %. Dificultad: Fácil ×1, Normal ×1,5, Difícil ×2, Extremo ×3.
+- **Personajes y efectos:** 27 personajes y 11 efectos; la mayoría se desbloquea por nivel y algunos solo con logros.
+- **Logros:** bronce, plata, oro y diamante, pensados para un jugador promedio (por ejemplo, Sprint 100 en menos de 20 s, 14 s, 12 s y 11 s).
+- **Ranking:** online por juego y dificultad, con apodo. Guarda la mejor marca de cada jugador.
 
 ## Archivos
 
 - `hub.html`: pantalla principal (sale como `index.html`).
 - `cubo-escalador.html`, `modo-*.html`: los juegos.
-- `cubo-comun.js`: perfil compartido (nivel, XP, personajes, récords) y el dibujo del cubo.
+- `cubo-comun.js`: perfil compartido (nivel, XP, personajes, efectos, logros, récords), ranking, selector de dificultad y el dibujo del cubo.
+- `supabase.sql`: tablas y función del ranking. Se corre una vez en el SQL Editor de Supabase.
+- `build.mjs`: arma `docs/` con las páginas, el manifest, los íconos y el service worker para jugar sin conexión.
 
 ## Cómo actualizar el sitio
 
@@ -33,4 +50,4 @@ git commit -m "Actualizar juegos"
 git push
 ```
 
-`build.mjs` arma la carpeta `docs/`, que es la que publica GitHub Pages. Para sumar un juego, agregalo a la lista `PAGES` de `build.mjs` y a `JUEGOS` en `hub.html`.
+`build.mjs` arma la carpeta `docs/`, que es la que publica GitHub Pages. Para sumar un juego, agregalo a `PAGES` en `build.mjs`, a `JUEGOS` en `cubo-comun.js` y su dibujo a `DIBUJOS` en `hub.html`.

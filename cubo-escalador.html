@@ -141,6 +141,33 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
   background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
 }
 .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.row .primary { grid-column: 1 / -1; font-size: 20px; padding: 16px 10px; }
+.row small { font-size: 12px; opacity: .6; margin-left: 4px; }
+.exp { font-size: 14px; font-weight: 600; text-align: center; }
+.exp b { font-family: var(--display); font-weight: 400; font-size: 20px; }
+.exp span { display: block; margin-top: 2px; }
+.xbtn {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer; font: inherit; color: var(--ink);
+  background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); padding: 10px 12px;
+}
+.xbtn > span:nth-child(2) { flex: 1; min-width: 0; }
+.xbtn b { display: block; font-family: var(--display); font-weight: 400; font-size: 19px; line-height: 1.1; }
+.xbtn small { display: block; font-size: 12px; font-weight: 600; color: var(--muted); line-height: 1.3; }
+.xbtn .sw { flex: none; width: 46px; height: 28px; border-radius: 99px; border: 3px solid var(--ink); background: #e6e2d6; position: relative; }
+.xbtn .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); transition: left .15s; }
+.xbtn[aria-pressed="true"] { background: #ffd6d6; }
+.xbtn[aria-pressed="true"] .sw { background: #ff3b3b; }
+.xbtn[aria-pressed="true"] .sw::after { left: 20px; background: var(--paper); }
+.xbtn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.xchip { display: inline-flex; align-items: center; gap: 4px; background: #ff3b3b; }
+.tuto {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 150px); transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 16px; pointer-events: none; text-align: center;
+  background: var(--ink); color: var(--paper); border-radius: 14px; width: max-content; max-width: calc(100vw - 32px);
+}
+.tuto b { font-family: var(--display); font-weight: 400; font-size: 20px; }
+.tuto span { font-size: 13px; font-weight: 600; }
+@media (hover: hover) { .tuto { bottom: auto; top: 22%; } }
 .btn {
   font: 800 16px var(--body); color: var(--ink); padding: 14px 10px; cursor: pointer;
   background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
@@ -181,10 +208,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <button class="smallbtn" id="btnQuit" type="button">Menú</button>
     </div>
     <span class="chip" id="hSpeed">0 esc/s</span>
+    <span class="chip xchip" id="hX" hidden></span>
   </div>
 </div>
 
 <div class="zone" id="zone" aria-live="polite"><span class="lbl" id="zoneAt"></span><strong id="zoneName"></strong></div>
+
+<div class="tuto" id="tuto" hidden><b>Tocá el lado del próximo escalón</b><span>◀ si sube a la izquierda · ▶ si sube a la derecha</span></div>
 
 <div class="pad" id="pad" hidden>
   <button id="bL" type="button" aria-label="Izquierda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 7 12l8 8"/></svg></button>
@@ -196,8 +226,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Escalador</h1></div>
     <p class="intro">Tocá la flecha del lado donde está el próximo escalón. Si le errás, el cubo queda mareado medio segundo.</p>
     <div class="modes" id="modes"></div>
+    <button class="xbtn" id="btnX" type="button" aria-pressed="false"><span id="xIco" aria-hidden="true"></span><span><b>Extremo</b><small id="xNota"></small></span><span class="sw" aria-hidden="true"></span></button>
     <div class="foot">
       <button class="smallbtn" id="btnHome" type="button">← Juegos</button>
+      <button class="smallbtn" id="btnRank" type="button">Ranking</button>
       <span class="keys">Teclado: <kbd>←</kbd> <kbd>→</kbd> o <kbd>A</kbd> <kbd>D</kbd> · <kbd>R</kbd> reinicia</span>
       <button class="smallbtn" id="btnMute" type="button">Sonido: sí</button>
     </div>
@@ -211,11 +243,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="num" id="eNum">0</span>
       <span class="sub" id="eSub"></span>
       <span class="badge" id="eBadge" hidden>Nuevo récord</span>
+      <span class="exp" id="eXp" hidden></span>
     </div>
     <div class="row">
-      <button class="btn" id="btnHome2" type="button">← Juegos</button>
+      <button class="btn primary" id="btnAgain" type="button">↻ Otra vez <small>R</small></button>
+      <button class="btn" id="btnRank2" type="button">Ranking</button>
       <button class="btn" id="btnModes" type="button">Modos</button>
-      <button class="btn primary" id="btnAgain" type="button">Otra vez</button>
+      <button class="btn" id="btnHome2" type="button">← Juegos</button>
     </div>
   </div>
 </div>
@@ -230,6 +264,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const STUN = 500;        // ms de mareo al errar
+  const STUN_X = 1000;     // en Extremo
+  const VISTA_X = 4;       // en Extremo solo se ven estos escalones por delante
   const TWEEN = 70;        // ms del saltito visual (la lógica avanza al instante)
   const RISE = 0.85;       // alto de cada escalón, en anchos de escalón
   const SPRINT_GOAL = 100;
@@ -308,7 +344,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let state = 'menu';       // menu | play | end
   let G = null;
   const cam = { x: 0, y: 0 };
-  let shake = 0, particles = [], floats = [], lastMode = rec.last || 'sprint';
+  let shake = 0, particles = [], floats = [], lastMode = rec.last || 'sprint', extremo = !!rec.extremo;
 
   function pickRun() {
     const r = Math.random();
@@ -316,7 +352,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function newRun(mode, demo) {
     G = {
-      mode, demo, steps: [{ x: 0, dir: 0 }], i: 0, genDir: Math.random() < 0.5 ? -1 : 1, runLeft: pickRun(),
+      mode, demo, x: !demo && extremo, steps: [{ x: 0, dir: 0 }], i: 0, genDir: Math.random() < 0.5 ? -1 : 1, runLeft: pickRun(),
       started: false, t0: 0, endT: 0, done: false, stunUntil: 0, bonkDir: 0, bonkT: -1e9,
       rx: 0, ry: 0, arc: 0, fromX: 0, fromY: 0, tw0: -1e9, face: 1, combo: 0, errors: 0, moves: [], botNext: 0,
       lastDir: 0, turnT: -1e9, landT: -1e9, landI: -1, rings: [], ghosts: [], zone: 0,
@@ -354,7 +390,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       gen();
       if (G.mode === 'sprint' && !G.demo && G.i >= SPRINT_GOAL) finish(now);
     } else {
-      G.stunUntil = now + STUN; G.bonkDir = d; G.bonkT = now;
+      G.stunUntil = now + (G.x ? STUN_X : STUN); G.bonkDir = d; G.bonkT = now;
       G.combo = 0; G.errors++;
       if (!G.demo) {
         shake = reduceMotion ? 0 : 7; sfxBonk();
@@ -363,35 +399,64 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
   }
 
+  // Clave del récord local y de la tabla del ranking: 'sprint', 'time', 'free' y en Extremo 'sprint-x', etc.
+  const tabla = (mode, x) => mode + (x ? '-x' : '');
+  const recDe = (mode, x) => rec[x ? mode + 'X' : mode];
+  // XP según qué tan bien fue: el Sprint 100 da más cuanto más rápido.
+  function xpDe(mode, valor) {
+    if (!CC) return 0;
+    if (mode === 'sprint') return CC.xpEscala(valor, 25000, 10500, 6, 70);
+    if (mode === 'time') return CC.xpEscala(valor, 60, 230, 6, 70);
+    return CC.xpEscala(valor, 20, 400, 4, 70);
+  }
+  // Cierra la partida en el perfil común: XP, récord, logros y ranking. Devuelve el resultado o null.
+  function cerrar(valor, marcas) {
+    if (!CC || G.demo || !(valor > 0)) return null;
+    try {
+      return CC.partida({ juego: 'escalador', tabla: tabla(G.mode, G.x), valor, xp: xpDe(G.mode, valor), marcas,
+        texto: G.mode === 'sprint' ? fmtS(valor) + ' s (Sprint 100)' : G.mode === 'time' ? valor + ' esc. en 30 s' : valor + ' esc. en Libre' });
+    } catch (e) { return null; }
+  }
+  function guardarLocal(mode, x, valor) {
+    const k = x ? mode + 'X' : mode, viejo = rec[k];
+    const mejora = mode === 'sprint' ? !viejo || valor < viejo : !viejo || valor > viejo;
+    if (mejora) { rec[k] = valor; saveRec(); }
+    return mejora;
+  }
+
   function finish(now) {
     G.done = true; G.endT = now;
-    let title, num, sub, isRec = false;
+    let title, num, sub, valor;
     if (G.mode === 'sprint') {
-      const ms = now - G.t0;
-      title = '¡Llegaste arriba!'; num = fmtS(ms) + ' s';
-      if (!rec.sprint || ms < rec.sprint) { rec.sprint = ms; isRec = true; }
-      sub = `${G.errors} ${G.errors === 1 ? 'error' : 'errores'} · récord ${fmtS(rec.sprint)} s`;
-      sfxWin();
-    } else if (G.mode === 'time') {
+      valor = Math.round(now - G.t0);
+      title = '¡Llegaste arriba!'; num = fmtS(valor) + ' s';
+      sub = `${G.errors} ${G.errors === 1 ? 'error' : 'errores'} · ${(SPRINT_GOAL / (valor / 1000)).toFixed(1)} esc/s`;
+    } else {
+      valor = G.i;
       title = '¡Tiempo!'; num = G.i;
-      if (!rec.time || G.i > rec.time) { rec.time = G.i; isRec = true; }
-      sub = `escalones · ${(G.i / (TIME_LIMIT / 1000)).toFixed(1)} por segundo · récord ${rec.time}`;
-      sfxWin();
+      sub = `escalones · ${(G.i / (TIME_LIMIT / 1000)).toFixed(1)} por segundo`;
     }
-    saveRec(); syncRecord();
-    const xp = giveXP(G.i);
-    if (xp) sub += ` · +${xp} XP`;
+    sfxWin();
+    const anterior = recDe(G.mode, G.x);
+    const isRec = guardarLocal(G.mode, G.x, valor);
+    const r = cerrar(valor, G.mode === 'sprint' && G.errors === 0 ? ['escalador-limpio'] : []);
+    if (!isRec && anterior) sub += ` · récord ${G.mode === 'sprint' ? fmtS(anterior) + ' s' : anterior}`;
+    pintarFin(title, num, sub, isRec, r);
+    setTimeout(() => { if (G && G.done && state === 'play') showEnd(); }, 450);
+  }
+  function pintarFin(title, num, sub, isRec, r) {
     $('eTitle').textContent = title; $('eNum').textContent = num; $('eSub').textContent = sub;
     $('eBadge').hidden = !isRec;
-    setTimeout(() => { if (G && G.done && state === 'play') showEnd(); }, 450);
+    $('eXp').hidden = !r;
+    if (r) $('eXp').innerHTML = `<b>+${r.xp} XP</b>` + (G.x ? ' · Extremo ×3' : '') + (r.logros.length ? `<span>Logros: ${r.logros.join(', ')}</span>` : '');
   }
 
   // ---------- pantallas ----------
   function renderModes() {
     const box = $('modes'); box.innerHTML = '';
     for (const [id, m] of Object.entries(MODES)) {
-      const r = id === 'sprint' ? (rec.sprint ? fmtS(rec.sprint) + ' s' : '—')
-              : (rec[id] ? rec[id] + ' esc.' : '—');
+      const v = recDe(id, extremo);
+      const r = !v ? '—' : id === 'sprint' ? fmtS(v) + ' s' : v + ' esc.';
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'mode'; b.id = 'mode-' + id;
       b.innerHTML = `<span class="key">${m.key}</span><span><span class="mname">${m.name}</span><span class="mdesc">${m.desc}</span></span><span class="mrec">Récord<b>${r}</b></span>`;
@@ -399,20 +464,19 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       box.appendChild(b);
     }
     $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+    $('btnX').setAttribute('aria-pressed', String(extremo));
+    $('xNota').textContent = extremo ? 'Activado: el mareo dura 1 segundo y solo ves 4 escalones adelante. XP ×3.' : 'Mareo de 1 segundo y solo ves 4 escalones adelante. XP ×3.';
   }
-  // texto del récord que muestra la pantalla de juegos
-  function syncRecord() {
-    const t = rec.sprint ? fmtS(rec.sprint) + ' s' : rec.time ? rec.time + ' esc. en 30 s' : rec.free ? rec.free + ' esc.' : '';
-    if (CC && t) CC.anotarRecord('escalador', t);
+  // Partida cortada a la mitad (R, Menú): Libre cuenta como terminada; Sprint y 30 s suman un poco de XP.
+  function cortar() {
+    if (!G || G.demo || G.done || !G.started) return;
+    if (G.mode === 'free') { guardarLocal('free', G.x, G.i); cerrar(G.i); }
+    else if (CC && G.i > 0) CC.sumarXP(G.i / 6);
   }
-  const giveXP = steps => (CC && steps > 0 ? CC.sumarXP(steps / 2).ganada : 0);
   const goHome = () => { if (CC) CC.volver(); else location.href = 'index.html'; };
   // R / ↻: partida nueva al instante en el mismo modo; lo que llevabas suma XP igual
   function restart() {
-    if (G && !G.demo && !G.done) {
-      if (G.mode === 'free' && G.i > (rec.free || 0)) { rec.free = G.i; saveRec(); syncRecord(); }
-      giveXP(G.i);
-    }
+    cortar();
     start(lastMode);
   }
   function start(mode) {
@@ -422,12 +486,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').hidden = false;
     $('hTimeLbl').textContent = mode === 'time' ? 'quedan' : mode === 'sprint' ? 'segundos' : 'mejor';
     $('hStepsLbl').textContent = mode === 'sprint' ? `de ${SPRINT_GOAL}` : 'escalones';
+    $('hX').hidden = !extremo;
+    $('tuto').hidden = !!rec.tuto;
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   }
   function showMenu() {
-    if (G && !G.demo && G.mode === 'free' && G.i > (rec.free || 0)) { rec.free = G.i; saveRec(); }
-    if (G && !G.demo && !G.done) giveXP(G.i); // partida cortada desde el botón Menú
-    syncRecord();
+    cortar();
     state = 'menu';
     newRun('free', true);
     renderModes();
@@ -444,6 +508,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function input(d) {
     if (state !== 'play') return;
     flash(d); press(d, performance.now());
+    if (!$('tuto').hidden) { $('tuto').hidden = true; rec.tuto = 1; saveRec(); }
   }
   addEventListener('keydown', e => {
     const k = e.key;
@@ -455,6 +520,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     } else if (state === 'menu') {
       const m = Object.keys(MODES).find(id => MODES[id].key === k);
       if (m) start(m);
+      else if (k === 'x' || k === 'X') alternarX();
       else if (k === 'Escape') goHome();
       else if (k === 'Enter' && document.activeElement === document.body) start(lastMode);
     } else if (state === 'end') {
@@ -472,6 +538,20 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   $('btnRestart').addEventListener('pointerdown', e => { e.preventDefault(); restart(); });
   $('btnRestart').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); restart(); } });
   $('btnHome2').addEventListener('click', goHome);
+  function alternarX() { extremo = !extremo; rec.extremo = extremo; saveRec(); renderModes(); if (CC) CC.vibrar(10); }
+  $('btnX').addEventListener('click', alternarX);
+  const verRanking = () => { if (CC) CC.verRanking({ juego: 'escalador', tabla: tabla(lastMode, extremo) }); };
+  $('btnRank').addEventListener('click', verRanking);
+  $('btnRank2').addEventListener('click', verRanking);
+  if (CC) {
+    $('xIco').innerHTML = CC.iconoDif('extremo', 30);
+    $('hX').innerHTML = CC.iconoDif('extremo', 16) + 'Extremo';
+    // récords de antes de que existiera el perfil común: pasan al perfil y al ranking, y destraban logros
+    for (const [k, t] of [['sprint', 'sprint'], ['time', 'time'], ['free', 'free'], ['sprintX', 'sprint-x'], ['timeX', 'time-x'], ['freeX', 'free-x']]) {
+      if (rec[k]) CC.importarRecord('escalador', t, rec[k]);
+    }
+    setTimeout(() => CC.revisarLogros(), 600);
+  } else { $('btnX').hidden = true; $('btnRank').hidden = true; $('btnRank2').hidden = true; }
   $('btnAgain').addEventListener('click', () => start(lastMode));
   $('btnMute').addEventListener('click', () => {
     muted = !muted; rec.muted = muted; saveRec(); renderModes();
@@ -711,7 +791,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const el = G.done ? G.endT - G.t0 : G.started ? now - G.t0 : 0;
       if (G.mode === 'sprint') time = fmtS(el);
       else if (G.mode === 'time') time = (Math.max(0, TIME_LIMIT - el) / 1000).toFixed(1);
-      else time = String(Math.max(rec.free || 0, G.i));
+      else time = String(Math.max(recDe("free", G.x) || 0, G.i));
       const sig = steps + '|' + time + '|' + speed;
       if (sig !== hudCache) {
         hudCache = sig;
@@ -757,6 +837,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const iLo = Math.max(0, G.i - 14), iHi = Math.min(G.steps.length - 1, G.i + 30);
     const sw = U * 0.94, sh = U * 0.34, srad = U * 0.08;
     for (let i = iHi; i >= iLo; i--) {
+      ctx.globalAlpha = 1;
+      if (G.x) { const lejos = i - G.i - VISTA_X; if (lejos >= 2) continue; if (lejos > 0) ctx.globalAlpha = 0.3; }
       const st = G.steps[i], x = st.x * U - sw / 2;
       const lt = i === G.landI ? (now - G.landT) / 180 : -1;
       const y = -i * RISE * U + (lt >= 0 && lt < 1 ? Math.sin(Math.PI * lt) * U * 0.08 : 0);
@@ -789,6 +871,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         ctx.fillText(String(i), st.x * U, y + sh * 0.78);
       }
     }
+
+    ctx.globalAlpha = 1;
 
     // pista de flecha para los primeros pasos
     if (!G.demo && state === 'play' && G.i < 3 && G.steps[G.i + 1]) {
