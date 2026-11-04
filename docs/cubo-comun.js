@@ -147,6 +147,25 @@
       pista: 'Hecha a pedido para un solo jugador.' },
     { id: 'fabri', nombre: 'Piloto', legendaria: true, exclusiva: true, codigo: true, cuerpo: '#e8202a', ojo: '#ffffff', extra: 'piloto', glow: '#ff3b3b',
       sinBoca: true, sinCachetes: true, pista: 'Hecha a pedido para un solo jugador.' },
+    // Temporadas (ver temporada()): se ganan llegando al nivel `tier` de esa temporada mientras está en curso.
+    { id: 'neonrosa', nombre: 'Neón rosa', temporada: 1, tier: 5, cuerpo: '#2a1f4a', ojo: '#ff7ce0', extra: 'neon', color2: '#ff3bd4', sinCachetes: true },
+    { id: 'visorcian', nombre: 'Visor cian', temporada: 1, tier: 12, cuerpo: '#3b3f63', extra: 'visor', color2: '#5ff5ff', sinCachetes: true },
+    { id: 'neonlima', nombre: 'Neón lima', temporada: 1, tier: 20, cuerpo: '#1b2a1f', ojo: '#c6ff3b', extra: 'neon', color2: '#c6ff3b', sinCachetes: true },
+    { id: 'neonrey', nombre: 'Rey Neón', legendaria: true, temporada: 1, tier: 30, cuerpo: '#1a1033', ojo: '#5ff5ff', extra: 'leyendaT',
+      color2: '#ff3bd4', color3: '#5ff5ff', glow: '#ff3bd4', sinCachetes: true, pista: 'Nivel 30 de la temporada Neón.' },
+    { id: 'gorritoazul', nombre: 'Gorrito', temporada: 2, tier: 5, cuerpo: '#ffd9b3', extra: 'gorrito', color2: '#3f8cff', color3: CREMA },
+    { id: 'visorhielo', nombre: 'Visor polar', temporada: 2, tier: 12, cuerpo: '#e8f7ff', extra: 'visor', color2: '#5cb8ff' },
+    { id: 'glaciar', nombre: 'Glaciar', temporada: 2, tier: 20, cuerpo: '#bfe6ff', ojo: '#123a66', extra: 'neon', color2: '#ffffff' },
+    { id: 'reyhielo', nombre: 'Rey del Hielo', legendaria: true, temporada: 2, tier: 30, cuerpo: '#dff4ff', ojo: '#1d4f7a', extra: 'leyendaT',
+      color2: '#7fd8ff', color3: '#ffffff', glow: '#9fe8ff', pista: 'Nivel 30 de la temporada Hielo.' },
+    { id: 'aventurero', nombre: 'Aventurero', temporada: 3, tier: 5, cuerpo: '#f6cfa4', extra: 'capa', color2: '#2f9e57' },
+    { id: 'safari', nombre: 'Safari', temporada: 3, tier: 12, cuerpo: '#ffad4d', extra: 'gorrito', color2: '#c9a46a', color3: '#7a5a2e' },
+    { id: 'heroeselva', nombre: 'Héroe de la selva', temporada: 3, tier: 20, cuerpo: '#7bd36a', extra: 'capa', color2: '#e0203a' },
+    { id: 'reyselva', nombre: 'Rey de la Selva', legendaria: true, temporada: 3, tier: 30, cuerpo: '#ffb52e', extra: 'leyendaT',
+      color2: '#1fbf6a', color3: '#ffe14d', glow: '#ffcc29', pista: 'Nivel 30 de la temporada Selva.' },
+    // la racha del desafío del día
+    { id: 'eterno', nombre: 'Llama eterna', legendaria: true, logro: 'racha30', cuerpo: '#ff5d2d', ojo: '#fff3c4', extra: 'leyendaT',
+      color2: '#ffad4d', color3: '#ffe14d', glow: '#ff7a3d', pista: 'Jugá el desafío del día 30 días seguidos.' },
     // muerte: al perder se parte en pedazos con una onda expansiva (ver morir). radio: esquinas casi rectas.
     { id: 'geo', nombre: 'Geo', legendaria: true, codigo: true, cuerpo: '#ffb52e', extra: 'geo', glow: '#5ff5ff', radio: 0.07, muerte: 'pedazos',
       sinOjos: true, sinBoca: true, sinCachetes: true, pista: 'Se consigue con un código.' },
@@ -207,7 +226,19 @@
       pista: 'Al cubo le dan cosquillas. Hacele muchas seguidas y vas a ver cómo se pone.' },
     { id: 'codigo', nombre: 'Lluvia de código', legendaria: true, exclusiva: true, codigo: 'fx:codigo',
       pista: 'Solo la tiene quien hizo el juego.' },
+    // Temporadas y racha: se dibujan con fxTemp a partir de `fx`
+    { id: 'neonorbes', nombre: 'Orbes de neón', temporada: 1, tier: 3, fx: { tipo: 'orbes', colores: ['#ff3bd4', '#5ff5ff', '#c6ff3b'] } },
+    { id: 'neonpulso', nombre: 'Pulso de neón', temporada: 1, tier: 15, fx: { tipo: 'anillos', colores: ['#5ff5ff', '#ff3bd4'] } },
+    { id: 'neonlluvia', nombre: 'Lluvia de neón', temporada: 1, tier: 25, fx: { tipo: 'copos', colores: ['#ff3bd4', '#5ff5ff', '#c6ff3b', '#ffcc29'] } },
+    { id: 'copos', nombre: 'Copos', temporada: 2, tier: 3, fx: { tipo: 'copos', colores: ['#ffffff', '#bfe6ff', '#8fd0ff'] } },
+    { id: 'escarcha', nombre: 'Escarcha', temporada: 2, tier: 15, fx: { tipo: 'anillos', colores: ['#bfe6ff', '#ffffff'] } },
+    { id: 'cristales', nombre: 'Cristales', temporada: 2, tier: 25, fx: { tipo: 'orbes', colores: ['#bfe6ff', '#ffffff', '#7fd8ff'] } },
+    { id: 'hojitas', nombre: 'Hojitas', temporada: 3, tier: 3, fx: { tipo: 'copos', colores: ['#2fbf5a', '#7bd36a', '#ffcc29'] } },
+    { id: 'luciernagas', nombre: 'Luciérnagas', temporada: 3, tier: 15, fx: { tipo: 'orbes', colores: ['#ffe14d', '#c6ff3b'] } },
+    { id: 'flores', nombre: 'Flores', temporada: 3, tier: 25, fx: { tipo: 'anillos', colores: ['#ff6fae', '#ffcc29'] } },
+    { id: 'llamitas', nombre: 'Llama de la racha', logro: 'racha7', fx: { tipo: 'llamitas', colores: ['#ff5d2d', '#ffad4d', '#ffe14d'] } },
   ];
+  const FX_TEMP = Object.fromEntries(EFECTOS.filter(e => e.fx).map(e => [e.id, e.fx]));
 
   // Títulos: se ganan subiendo de nivel y se ven debajo de tu apodo (en el ranking también).
   const TITULOS = [
@@ -228,6 +259,11 @@
       [82, 'Titánico'], [84, 'Elegido'], [87, 'Majestad'], [88, 'Ocho infinito'], [90, 'Noventa y pico'], [91, 'Semidiós'], [93, 'Deidad'],
       [94, 'Eterno'], [97, 'Casi leyenda'], [98, 'Al borde'], [99, 'Uno más'], [100, 'Centenario']]
       .map(([nivel, nombre]) => ({ id: 't' + nivel, nombre, nivel, pase: nivel === 100 })),
+    // títulos de temporada
+    ...[[1, 1, 'Luz de neón'], [1, 8, 'Rey de la noche'], [1, 18, 'Ciudad de luces'], [1, 30, 'Leyenda de Neón'],
+      [2, 1, 'Primera nevada'], [2, 8, 'Corazón de hielo'], [2, 18, 'Sin frío'], [2, 30, 'Leyenda del Hielo'],
+      [3, 1, 'Explorador'], [3, 8, 'Instinto salvaje'], [3, 18, 'Pura liana'], [3, 30, 'Leyenda de la Selva']]
+      .map(([temporada, tier, nombre]) => ({ id: `s${temporada}-${tier}`, nombre, temporada, tier })),
   ];
   const PASE_MAX = 100;
   // Brillos de nivel: un marco que se suma a cualquier personaje y sube de rango con el nivel.
@@ -359,6 +395,13 @@
       prueba: p => lavaMax(p) >= 150 },
     { id: 'escalador-lava2', juego: 'escalador', nombre: 'Volcanólogo', desc: 'Escapá de la lava por 300 escalones.', medalla: 'oro',
       prueba: p => lavaMax(p) >= 300 },
+    // Desafío del día: días seguidos jugándolo
+    { id: 'racha3', nombre: 'Tres al hilo', desc: 'Jugá el desafío del día 3 días seguidos.', medalla: 'bronce',
+      progreso: p => [Math.min(3, +p.diario.mejorRacha || 0), 3] },
+    { id: 'racha7', nombre: 'Siete de siete', desc: 'Jugá el desafío del día 7 días seguidos.', medalla: 'oro',
+      progreso: p => [Math.min(7, +p.diario.mejorRacha || 0), 7] },
+    { id: 'racha30', nombre: 'Llama eterna', desc: 'Jugá el desafío del día 30 días seguidos.', medalla: 'diamante',
+      progreso: p => [Math.min(30, +p.diario.mejorRacha || 0), 30] },
     // Ocultos: no se ven en la lista hasta que salen.
     { id: 'secreto-fantasma', oculto: true, nombre: 'Combinación secreta', desc: 'Encontraste la combinación de los botones.', medalla: 'oro',
       prueba: p => !!p.marcas['fantasma'] },
@@ -423,6 +466,10 @@
       pendientes: Array.isArray(p.pendientes) ? p.pendientes.slice(-40) : [],
       // desafío del día: { fecha, intentos, mejor, racha, ultimo (último día jugado), mejorRacha, premio (día del premio de XP) }
       diario: obj(p.diario),
+      // temporadas: { [n]: { xp, cobrado } } · boost: partidas que quedan con doble XP · misiones: progreso del día y la semana
+      temporadas: obj(p.temporadas),
+      boost: Math.max(0, Math.floor(+p.boost || 0)),
+      misiones: obj(p.misiones),
     };
   }
   let datos = leer();
@@ -440,7 +487,8 @@
   }
   // Un código guarda el id de la skin, o 'fx:<id>' si es un efecto (algunos ids se repiten entre skins y efectos).
   const claveCodigo = item => (item.codigo === true ? item.id : item.codigo);
-  const libre = (item, p = datos) => (item.codigo ? p.codigos.includes(claveCodigo(item))
+  const libre = (item, p = datos) => (item.temporada ? ((p.temporadas[item.temporada] || {}).xp || 0) >= item.tier * TEMP_XP
+    : item.codigo ? p.codigos.includes(claveCodigo(item))
     : item.logro ? !!(p.logros[item.logro] || [].concat(item.antes || []).some(a => p.logros[a])) : nivelDe(p.xp).nivel >= (item.nivel || 1));
   // Lo desbloqueado que todavía no se vio en la pantalla de personajes, para marcarlo como nuevo.
   function nuevos() {
@@ -560,14 +608,19 @@
     if (r.subio) revisarLogros();
     return r;
   }
-  function sumarSolo(n, silencioso) {
+  // sinMisiones: la XP que dan las misiones no cuenta para la misión de "Ganá X XP"
+  function sumarSolo(n, silencioso, sinMisiones) {
     datos = leer();
     n = Math.max(0, Math.round(+n || 0));
     const antes = nivelDe(datos.xp).nivel;
-    datos.xp += n; guardar();
+    datos.xp += n;
+    const nivT = sumarTemporada(n), cumplidas = sinMisiones || !n ? [] : avanzarMisiones({ xp: n });
+    guardar();
     const ahora = nivelDe(datos.xp).nivel;
     const nuevas = porNivel(antes, ahora);
     if (ahora > antes && !silencioso) avisoNivel(ahora, nuevas);
+    if (!silencioso) avisoTemporada(nivT);
+    premiarMisiones(cumplidas);
     return { ganada: n, nivel: ahora, subio: ahora > antes, desbloqueadas: nuevas.map(s => s.nombre) };
   }
   function anotarRecord(jid, texto) {
@@ -588,10 +641,12 @@
       if (!hubo) break;
     }
     if (!ganados.length) return [];
-    const antes = nivelDe(datos.xp).nivel;
-    datos.xp += ganados.reduce((a, l) => a + MEDALLAS[l.medalla].xp, 0);
+    const antes = nivelDe(datos.xp).nivel, xpLogros = ganados.reduce((a, l) => a + MEDALLAS[l.medalla].xp, 0);
+    datos.xp += xpLogros;
+    const nivT = sumarTemporada(xpLogros);
     guardar();
     for (const l of ganados) avisoLogro(l);
+    avisoTemporada(nivT);
     const ahora = nivelDe(datos.xp).nivel;
     if (ahora > antes) avisoNivel(ahora, porNivel(antes, ahora));
     return ganados;
@@ -633,15 +688,24 @@
     if (record && anterior != null) xp = Math.round(xp * 1.25);
     const dia = o.diario ? anotarDiario(o, valor) : null;
     if (dia) xp += dia.premio;
+    // eventos de XP (hora feliz, finde, arranque de temporada) y las partidas con doble XP que da la temporada
+    const ev = eventoXP();
+    if (ev && xp > 0) xp = Math.round(xp * ev.mult);
+    const boost = datos.boost > 0 && xp > 0;
+    if (boost) { xp *= 2; datos.boost--; }
+    if (ev || boost) avisar(`<b>⚡ ${[ev && `${ev.nombre}: ${ev.texto}`, boost && `Doble XP (te quedan ${datos.boost})`].filter(Boolean).join(' · ')}</b>`, 2600);
+    const cumplidas = avanzarMisiones({ partida: { juego: o.juego, dif: dif ? dif.id : null, record, valor, diario: !!dia } });
     guardar();
     const r = sumarSolo(xp);
     const logros = revisarLogros();
+    premiarMisiones(cumplidas);
     if (record || (dia && dia.nueva)) subirPendientes();
     return {
       xp: r.ganada + logros.reduce((a, l) => a + MEDALLAS[l.medalla].xp, 0), base, nivel: perfil().nivel, subio: perfil().nivel > nivelAntes,
       record, primera: record && anterior == null, anterior: anterior ?? null,
       logros: logros.map(l => l.nombre), dif: dif ? dif.id : null,
       texto: formato(valor, tb), textoAnterior: anterior != null ? formato(anterior, tb) : null, diario: dia,
+      evento: ev ? ev.nombre : null, boost,
     };
   }
 
@@ -807,6 +871,172 @@
         textoBoton(btn, q ? `↻ Intento ${DIARIO_INTENTOS - q + 1} de ${DIARIO_INTENTOS} ` : '▸ Seguir en modo normal ');
       },
     };
+  }
+
+  // ---------- temporadas, misiones y eventos de XP ----------
+  // Una temporada dura 6 semanas y tiene su propio camino de 30 niveles (TEMP_XP de XP cada uno). Toda la XP que ganás
+  // mientras dura cuenta para la temporada. Sus premios (los items con `temporada` y `tier` en SKINS, EFECTOS y TITULOS)
+  // se ganan solo mientras está en curso: después quedan para quien los tiene. El nivel 30 es una legendaria exclusiva.
+  // Los niveles sin item dan doble XP en las próximas partidas. Para sumar una temporada: agregala a TEMPORADAS y poné
+  // sus premios con `temporada: n` (si no hay, la temporada igual corre, con doble XP en cada nivel).
+  const TEMP_INICIO = Date.UTC(2026, 10, 2);   // lunes 2 de noviembre de 2026, 00:00 UTC: arranca la temporada 1
+  const TEMP_DIAS = 42, TEMP_NIVELES = 30, TEMP_XP = 250, BOOST_PARTIDAS = 3;
+  const TEMPORADAS = [
+    { n: 1, nombre: 'Neón', color: '#ff3bd4', color2: '#5ff5ff', desc: 'Luces, visores y brillo de ciudad de noche.' },
+    { n: 2, nombre: 'Hielo', color: '#5cb8ff', color2: '#e8f7ff', desc: 'Copos, gorritos y un frío que quema.' },
+    { n: 3, nombre: 'Selva', color: '#1fbf6a', color2: '#ffcc29', desc: 'Hojas, capas de aventurero y un rey de la selva.' },
+  ];
+  function temporadaDe(ahora = Date.now()) {
+    const n = Math.max(1, Math.floor((ahora - TEMP_INICIO) / (TEMP_DIAS * DIA_MS)) + 1);
+    const def = TEMPORADAS.find(x => x.n === n) || { n, nombre: `Temporada ${n}`, color: '#ffcc29', color2: '#fffaf0', desc: '' };
+    const inicio = TEMP_INICIO + (n - 1) * TEMP_DIAS * DIA_MS;
+    return { ...def, inicio, fin: inicio + TEMP_DIAS * DIA_MS };
+  }
+  // Los premios de una temporada, nivel por nivel: items de las listas o, si no hay, doble XP.
+  function premiosTemporada(n) {
+    const de = (lista, tipo) => lista.filter(i => i.temporada === n).map(it => ({ tipo, it }));
+    const todos = [...de(SKINS, 'skin'), ...de(EFECTOS, 'efecto'), ...de(TITULOS, 'titulo')];
+    return Array.from({ length: TEMP_NIVELES }, (_, k) => {
+      const items = todos.filter(x => x.it.tier === k + 1);
+      return { nivel: k + 1, items, boost: !items.length };
+    });
+  }
+  function temporada() {
+    const T = temporadaDe(), st = leer().temporadas[T.n] || {};
+    const xp = Math.max(0, +st.xp || 0), nivel = Math.min(TEMP_NIVELES, Math.floor(xp / TEMP_XP));
+    return { ...T, xp, nivel, max: TEMP_NIVELES, enNivel: nivel >= TEMP_NIVELES ? TEMP_XP : xp - nivel * TEMP_XP, porNivel: TEMP_XP,
+      quedanMs: T.fin - Date.now(), premios: premiosTemporada(T.n).map(p => ({ ...p, listo: nivel >= p.nivel })), boost: leer().boost };
+  }
+  // XP que entra a la temporada (va adentro de sumarSolo y revisarLogros, con `datos` ya cargado). Devuelve los niveles nuevos.
+  function sumarTemporada(n) {
+    if (!(n > 0)) return [];
+    const T = temporadaDe();
+    const st = datos.temporadas[T.n] = { xp: 0, cobrado: 0, ...datos.temporadas[T.n] };
+    st.xp = (+st.xp || 0) + n;
+    const nivel = Math.min(TEMP_NIVELES, Math.floor(st.xp / TEMP_XP)), nuevos = [];
+    const premios = premiosTemporada(T.n);
+    for (let k = (+st.cobrado || 0) + 1; k <= nivel; k++) {
+      const p = premios[k - 1];
+      if (p.boost) datos.boost = (+datos.boost || 0) + BOOST_PARTIDAS;
+      nuevos.push(p);
+    }
+    st.cobrado = Math.max(+st.cobrado || 0, nivel);
+    return nuevos;
+  }
+  function avisoTemporada(niveles) {
+    if (!niveles.length) return;
+    const p = niveles[niveles.length - 1], T = temporadaDe();
+    const premio = p.items.length ? p.items.map(x => x.it.nombre).join(' + ') : `⚡ Doble XP en tus próximas ${BOOST_PARTIDAS} partidas`;
+    avisar(`<b>🏆 Temporada ${T.nombre}: nivel ${p.nivel}</b><br>${premio}`, 3600);
+  }
+
+  // Eventos de XP: el arranque de cada temporada (3 días), la hora feliz (de 20 a 21, hora tuya) y los fines de semana.
+  function eventoXP(ahora = Date.now()) {
+    const T = temporadaDe(ahora), d = new Date(ahora), evs = [];
+    if (ahora - T.inicio < 3 * DIA_MS) evs.push({ mult: 2, nombre: 'Arranque de temporada', hasta: T.inicio + 3 * DIA_MS });
+    if (d.getHours() === 20) { const h = new Date(d); h.setHours(21, 0, 0, 0); evs.push({ mult: 2, nombre: 'Hora feliz', hasta: +h }); }
+    if (d.getDay() === 0 || d.getDay() === 6) {
+      const h = new Date(d); h.setHours(24, 0, 0, 0); if (d.getDay() === 6) h.setDate(h.getDate() + 1);
+      evs.push({ mult: 1.5, nombre: 'Finde de XP', hasta: +h });
+    }
+    if (!evs.length) return null;
+    const e = evs.sort((a, b) => b.mult - a.mult)[0];
+    return { ...e, quedanMs: e.hasta - ahora, texto: `×${String(e.mult).replace('.', ',')} XP` };
+  }
+
+  // Misiones: 3 del día y 3 de la semana, iguales para todos (salen de la fecha). Se cumplen solas jugando y dan XP.
+  const MIS_DIA = [
+    { id: 'partidas', txt: 'Jugá 5 partidas', meta: 5, xp: 100 },
+    { id: 'juego', txt: 'Jugá 3 partidas de {j}', meta: 3, xp: 100 },
+    { id: 'xp', txt: 'Ganá 300 XP', meta: 300, xp: 120 },
+    { id: 'diario', txt: 'Jugá el desafío del día', meta: 1, xp: 120 },
+    { id: 'dificil', txt: 'Jugá 2 partidas en Difícil o más', meta: 2, xp: 150 },
+    { id: 'distintos', txt: 'Jugá 3 juegos distintos', meta: 3, xp: 120 },
+    { id: 'record', txt: 'Superá un récord tuyo', meta: 1, xp: 150 },
+    { id: 'marca', txt: 'Hacé {v} en {j} (Normal o más)', meta: 1, xp: 150 },
+  ];
+  const MIS_SEMANA = [
+    { id: 'partidas', txt: 'Jugá 30 partidas', meta: 30, xp: 400 },
+    { id: 'xp', txt: 'Ganá 2.500 XP', meta: 2500, xp: 500 },
+    { id: 'diario', txt: 'Jugá el desafío 5 días', meta: 5, xp: 600 },
+    { id: 'distintos', txt: 'Jugá a todos los juegos', meta: 0, xp: 500 },
+    { id: 'record', txt: 'Superá 3 récords tuyos', meta: 3, xp: 500 },
+    { id: 'dificil', txt: 'Jugá 10 partidas en Difícil o más', meta: 10, xp: 500 },
+  ];
+  const DIFICILES = ['dificil', 'extremo', 'maestro'];
+  function armarMisiones(pool, clave, cuantas) {
+    const r = azar(semillaDe('misiones:' + clave)), lista = pool.slice(), out = [];
+    while (out.length < cuantas && lista.length) out.push(lista.splice(Math.floor(r() * lista.length), 1)[0]);
+    return out.map((m, k) => {
+      const x = { ...m, clave: clave + ':' + k + ':' + m.id };
+      if (m.id === 'juego' || m.id === 'marca') {
+        const opciones = m.id === 'marca' ? JUEGOS.filter(j => UMBRALES[j.id]) : JUEGOS;
+        const j = opciones[Math.floor(r() * opciones.length)];
+        x.juego = j.id;
+        if (m.id === 'marca') x.valor = UMBRALES[j.id][0];
+        x.txt = m.txt.replace('{j}', j.nombre).replace('{v}', m.id === 'marca' ? formato(x.valor, j.tablas[1]) : '');
+      }
+      if (m.id === 'distintos' && !m.meta) x.meta = JUEGOS.length;
+      return x;
+    });
+  }
+  function claves(ahora = Date.now()) {
+    const n = Math.floor(ahora / DIA_MS), semana = Math.floor((n + 3) / 7);   // las semanas empiezan el lunes
+    return { dia: fechaDia(n), semana: 's' + semana, finDia: (n + 1) * DIA_MS, finSemana: ((semana + 1) * 7 - 3) * DIA_MS };
+  }
+  function misiones() {
+    const c = claves(), m = leer().misiones;
+    const prog = (x, guardado) => { const v = guardado && guardado[x.clave]; return Array.isArray(v) ? v.length : +v || 0; };
+    const ver = (lista, g) => lista.map(x => ({ ...x, prog: Math.min(x.meta, prog(x, g)), hecha: !!(g && g['ok:' + x.clave]) }));
+    return {
+      diarias: ver(armarMisiones(MIS_DIA, c.dia, 3), m.dia === c.dia ? m.d : null),
+      semanales: ver(armarMisiones(MIS_SEMANA, c.semana, 3), m.semana === c.semana ? m.s : null),
+      quedanDia: c.finDia - Date.now(), quedanSemana: c.finSemana - Date.now(),
+    };
+  }
+  // Suma a las misiones lo que pasó (con `datos` ya cargado). ev: { partida: {juego, dif, record, valor, diario} } o { xp }.
+  // Devuelve las que se cumplieron recién (la XP la da quien llama, después de guardar).
+  function avanzarMisiones(ev) {
+    const c = claves(), m = datos.misiones = { ...datos.misiones };
+    if (m.dia !== c.dia) { m.dia = c.dia; m.d = {}; }
+    if (m.semana !== c.semana) { m.semana = c.semana; m.s = {}; }
+    const cumplidas = [];
+    const mover = (lista, g) => {
+      for (const x of lista) {
+        if (g['ok:' + x.clave]) continue;
+        const p = ev.partida;
+        let suma = 0;
+        if (ev.xp) { if (x.id === 'xp') suma = ev.xp; }
+        else if (p) {
+          if (x.id === 'partidas') suma = 1;
+          else if (x.id === 'juego' && p.juego === x.juego) suma = 1;
+          else if (x.id === 'dificil' && DIFICILES.includes(p.dif)) suma = 1;
+          else if (x.id === 'record' && p.record) suma = 1;
+          else if (x.id === 'marca' && p.juego === x.juego && p.dif && p.dif !== 'facil' && p.valor >= x.valor) suma = 1;
+          else if (x.id === 'diario' && p.diario) {
+            // la del día: con una partida alcanza; la de la semana cuenta días distintos
+            if (x.meta === 1) suma = 1;
+            else { const dias = Array.isArray(g[x.clave]) ? g[x.clave] : []; if (!dias.includes(c.dia)) g[x.clave] = [...dias, c.dia]; }
+          } else if (x.id === 'distintos') {
+            const js = Array.isArray(g[x.clave]) ? g[x.clave] : [];
+            if (!js.includes(p.juego)) g[x.clave] = [...js, p.juego];
+          }
+        }
+        if (suma) g[x.clave] = (+g[x.clave] || 0) + suma;
+        const v = g[x.clave], hecho = Array.isArray(v) ? v.length : +v || 0;
+        if (hecho >= x.meta) { g['ok:' + x.clave] = 1; cumplidas.push(x); }
+      }
+    };
+    mover(armarMisiones(MIS_DIA, c.dia, 3), m.d = { ...m.d });
+    mover(armarMisiones(MIS_SEMANA, c.semana, 3), m.s = { ...m.s });
+    return cumplidas;
+  }
+  function premiarMisiones(cumplidas) {
+    if (!cumplidas.length) return 0;
+    const xp = cumplidas.reduce((a, x) => a + x.xp, 0);
+    for (const x of cumplidas) avisar(`<b>🎯 Misión cumplida</b><br>${x.txt} · +${x.xp} XP`, 3200);
+    sumarSolo(xp, false, true);
+    return xp;
   }
 
   // ---------- ranking online ----------
@@ -2233,7 +2463,44 @@
   }
 
   // Efectos que van detrás del cubo
+  // Efectos de temporada (y de la racha): se arman con `fx: { tipo, colores }` en EFECTOS, sin código nuevo por efecto.
+  function fxTemp(ctx, fx, s, t) {
+    const cs = fx.colores, n = cs.length;
+    if (fx.tipo === 'orbes') {
+      for (let k = 0; k < 5; k++) {
+        const a = t / 700 + k * Math.PI * 2 / 5, x = Math.cos(a) * s * 0.86, y = -s * 0.5 + Math.sin(a) * s * 0.32;
+        ctx.save(); ctx.shadowColor = cs[k % n]; ctx.shadowBlur = s * 0.25; ctx.fillStyle = cs[k % n];
+        ctx.globalAlpha = Math.sin(a) > 0 ? 1 : 0.55;
+        ctx.beginPath(); ctx.arc(x, y, s * (0.1 + 0.025 * Math.sin(t / 200 + k)), 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      }
+    } else if (fx.tipo === 'anillos') {
+      ctx.lineWidth = Math.max(2, s * 0.06);
+      for (let k = 0; k < 3; k++) {
+        const f = fase(t, 1500, k / 3);
+        ctx.globalAlpha = (1 - f) * 0.9; ctx.strokeStyle = cs[k % n];
+        ctx.beginPath(); ctx.ellipse(0, -s * 0.04, s * (0.45 + f * 0.75), s * (0.12 + f * 0.2), 0, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    } else if (fx.tipo === 'copos') {
+      for (let k = 0; k < 8; k++) {
+        const f = fase(t, 2400, k / 8), x = Math.sin(k * 2.7 + t / 900) * s * 0.78, y = -s * 1.55 + f * s * 1.6, r = s * 0.07;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(t / 500 + k);
+        ctx.globalAlpha = f < 0.85 ? 1 : (1 - f) / 0.15; ctx.fillStyle = cs[k % n];
+        ctx.beginPath(); ctx.moveTo(0, -r); ctx.lineTo(r * 0.7, 0); ctx.lineTo(0, r); ctx.lineTo(-r * 0.7, 0); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+    } else if (fx.tipo === 'llamitas') {
+      for (let k = 0; k < 7; k++) {
+        const f = fase(t, 1100, k / 7), x = Math.sin(k * 1.9 + t / 600) * s * 0.62, y = -s * (0.05 + f * 1.4), w = s * 0.12 * (1 - f * 0.6);
+        ctx.globalAlpha = 1 - f; ctx.fillStyle = cs[k % n];
+        ctx.beginPath(); ctx.moveTo(x - w, y); ctx.quadraticCurveTo(x - w, y - w * 1.4, x, y - w * 2.4);
+        ctx.quadraticCurveTo(x + w, y - w * 1.4, x + w, y); ctx.closePath(); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
   function efectoDetras(ctx, id, s, t) {
+    if (FX_TEMP[id]) { fxTemp(ctx, FX_TEMP[id], s, t); return; }
     if (id === 'arcoiris') {
       ctx.lineWidth = s * 0.09;
       ARCO.forEach((c, k) => {
@@ -2569,6 +2836,68 @@
 
   // Partes de cada personaje. detras: antes del cuerpo · piel: dentro del cuerpo · encima: después de la cara.
   const PARTES = {
+    // ----- partes de las temporadas: se arman con color2 (y color3), así cada temporada las usa con sus colores -----
+    neon: { encima(ctx, s, sk, t) {
+      ctx.save();
+      ctx.shadowColor = sk.color2; ctx.shadowBlur = s * (0.3 + 0.12 * Math.sin(t / 300));
+      ctx.strokeStyle = sk.color2; ctx.lineWidth = Math.max(2, s * 0.06);
+      rr(ctx, -s / 2 + s * 0.08, -s + s * 0.08, s - s * 0.16, s - s * 0.16, s * 0.14); ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = sk.color2; ctx.globalAlpha = 0.9;
+      rr(ctx, -s * 0.3, -s * 0.2, s * 0.6, s * 0.05, s * 0.025); ctx.fill(); ctx.globalAlpha = 1;
+    } },
+    visor: { encima(ctx, s, sk, t) {
+      ctx.save();
+      ctx.fillStyle = sk.color2; ctx.strokeStyle = INK; ctx.globalAlpha = 0.93;
+      rr(ctx, -s * 0.47, -s * 0.74, s * 0.94, s * 0.26, s * 0.11); ctx.fill(); ctx.globalAlpha = 1; ctx.stroke();
+      ctx.clip();
+      const f = (t / 1500) % 1;
+      ctx.fillStyle = 'rgba(255,255,255,.6)';
+      ctx.beginPath(); ctx.moveTo(-s * 0.7 + f * s * 1.6, -s * 0.74); ctx.lineTo(-s * 0.6 + f * s * 1.6, -s * 0.74);
+      ctx.lineTo(-s * 0.72 + f * s * 1.6, -s * 0.48); ctx.lineTo(-s * 0.82 + f * s * 1.6, -s * 0.48); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    } },
+    gorrito: { encima(ctx, s, sk) {
+      ctx.fillStyle = sk.color2; ctx.strokeStyle = INK;
+      ctx.beginPath(); ctx.moveTo(-s * 0.5, -s * 0.84); ctx.quadraticCurveTo(-s * 0.5, -s * 1.34, 0, -s * 1.34);
+      ctx.quadraticCurveTo(s * 0.5, -s * 1.34, s * 0.5, -s * 0.84); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = sk.color3 || CREMA;
+      rr(ctx, -s * 0.55, -s * 0.94, s * 1.1, s * 0.17, s * 0.07); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, -s * 1.38, s * 0.11, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    } },
+    capa: { detras(ctx, s, sk, t) {
+      const o = Math.sin(t / 260) * s * 0.08;
+      ctx.fillStyle = sk.color2; ctx.strokeStyle = INK;
+      ctx.beginPath(); ctx.moveTo(-s * 0.4, -s * 0.82);
+      ctx.quadraticCurveTo(-s * 0.78 + o, -s * 0.34, -s * 0.7 + o, s * 0.02); ctx.lineTo(s * 0.7 + o, s * 0.02);
+      ctx.quadraticCurveTo(s * 0.78 + o, -s * 0.34, s * 0.4, -s * 0.82); ctx.closePath(); ctx.fill(); ctx.stroke();
+    }, encima(ctx, s, sk) {
+      ctx.fillStyle = sk.color2; ctx.strokeStyle = INK;
+      for (const side of [-1, 1]) { ctx.beginPath(); ctx.arc(side * s * 0.36, -s * 0.8, s * 0.07, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+    } },
+    // la legendaria de cada temporada: corona de luz con joyas y chispas que la orbitan
+    leyendaT: { encima(ctx, s, sk, t) {
+      const base = -s * 0.98;
+      ctx.save();
+      ctx.shadowColor = sk.glow || sk.color2; ctx.shadowBlur = s * 0.4;
+      ctx.fillStyle = sk.color2; ctx.strokeStyle = INK;
+      ctx.beginPath(); ctx.moveTo(-s * 0.42, base);
+      for (let k = 0; k < 5; k++) {
+        const x = -s * 0.42 + k * s * 0.168;
+        ctx.lineTo(x + s * 0.084, base - s * (k % 2 ? 0.2 : 0.32) - Math.sin(t / 300 + k) * s * 0.03);
+        ctx.lineTo(x + s * 0.168, base);
+      }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = sk.color3 || CREMA; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.2, s * 0.03);
+      for (const k of [-1, 0, 1]) { ctx.beginPath(); ctx.arc(k * s * 0.2, base - s * 0.07, s * 0.045, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      for (let k = 0; k < 3; k++) {
+        const a = t / 650 + k * 2.1, x = Math.cos(a) * s * 0.72, y = -s * 0.55 + Math.sin(a) * s * 0.26, r = s * 0.07;
+        ctx.globalAlpha = Math.sin(a) > 0 ? 1 : 0.45; ctx.fillStyle = k % 2 ? sk.color2 : (sk.color3 || CREMA);
+        ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.6, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.6, y); ctx.closePath(); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    } },
     orejas: { detras(ctx, s, sk) {
       for (const side of [-1, 1]) {
         ctx.fillStyle = sk.cuerpo; ctx.strokeStyle = INK;
@@ -4540,6 +4869,7 @@
     sumarXP, xpEscala, partida, importarRecord, anotarRecord, revisarLogros, tieneLogro,
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
     avisar, vibrar, volver, dibujarCubo, morir, sombra, pedirApodo, diario, diarioDe, azar, faltaTexto,
+    temporada, misiones, eventoXP, TEMP_XP,
   };
   // Duelos 1v1 (cubo-duelo.js): usa la misma conexión a Supabase y escucha las invitaciones en todas las páginas.
   window.CuboComun.RANKING = RANKING;

@@ -393,6 +393,33 @@ ol.pase .pr .usando { position: absolute; top: 4px; right: 6px; font-size: 9.5px
 ol.pase li.lock .pr { box-shadow: none; border-style: dashed; cursor: default; }
 ol.pase li.lock .pr canvas { opacity: .5; filter: grayscale(.7); }
 ol.pase li.lock .pr.pase canvas { filter: none; opacity: .8; }
+/* ---------- temporada: arriba de la hoja del pase ---------- */
+.pase-seg { flex: none; }
+.temp-hero { position: relative; display: grid; gap: 6px; padding: 14px; border-radius: 20px; border: 3px solid var(--ink); box-shadow: 0 4px 0 var(--ink);
+  background: linear-gradient(135deg, var(--tc), var(--tc2)); overflow: hidden; }
+.temp-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.4) 50%, transparent 65%);
+  transform: translateX(-100%); animation: brillo-pase 3.2s ease-in-out infinite; pointer-events: none; }
+.temp-hero small { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.temp-hero b { font: 400 34px/1 var(--display); color: var(--paper); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+.temp-hero > span { font-size: 13px; font-weight: 700; }
+.temp-hero em { justify-self: start; font-style: normal; font-size: 12.5px; font-weight: 800; padding: 3px 10px; border-radius: 99px; background: var(--paper); border: 2px solid var(--ink); }
+.mis { display: grid; gap: 8px; }
+.mis h4 { margin: 4px 0 0; display: flex; align-items: baseline; gap: 8px; font: 400 19px var(--display); }
+.mis h4 small { margin-left: auto; font: 800 12px var(--body); color: var(--muted); }
+.mi { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center; padding: 10px 12px; background: #fff; border: 2.5px solid var(--ink); border-radius: 14px; }
+.mi .mi-t { font-size: 13.5px; font-weight: 800; }
+.mi .mi-xp { font: 400 15px var(--display); padding: 2px 8px; border-radius: 99px; background: var(--cube); border: 2px solid var(--ink); white-space: nowrap; }
+.mi .mi-b { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 800; color: var(--muted); }
+.mi .mi-b span { flex: 1; height: 8px; border-radius: 99px; background: #e5dfcf; overflow: hidden; }
+.mi .mi-b i { display: block; height: 100%; background: #3fc1c9; }
+.mi.ok { background: #e6f9ef; border-color: #1f9e6a; }
+.mi.ok .mi-t::before { content: "✓ "; color: #1f9e6a; }
+.mi.ok .mi-xp { background: #bdf0d6; }
+ol.pase .pr.boostpr { cursor: default; background: linear-gradient(160deg, #eef5ff, #cfe2ff); }
+ol.pase .pr.boostpr .tt-ico { background: #fff; }
+ol.pase .pr.leg { background: linear-gradient(160deg, #fbe8ff, #d9c4ff); }
+.diario .d-ev { color: #b35000; }
+.diario .d-ev[hidden] { display: none; }
 ol.pase li.lock .pr.pase::after { animation: none; }
 @media (prefers-reduced-motion: reduce) { .pase-hero::after, ol.pase .pr.pase::after, ol.pase li.actual .num { animation: none; } }
 
@@ -586,7 +613,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   </header>
 
   <section class="diario" id="diario" aria-label="Desafío del día">
-    <span class="d-txt"><b id="dTit">📅 Desafío del día</b><small id="dSub"></small></span>
+    <span class="d-txt"><b id="dTit">📅 Desafío del día</b><small id="dSub"></small><small class="d-ev" id="dEv" hidden></small></span>
     <span class="d-racha" id="dRacha" hidden></span>
     <button class="icon-btn" type="button" id="dRank" aria-label="Ranking del desafío de hoy"></button>
     <button class="play" type="button" id="dJugar">Jugar</button>
@@ -603,7 +630,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       <span>Personaje</span><span class="badge" id="tabBadge" hidden>!</span></button>
     <button class="tab" type="button" data-tab="pase">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2.8 20 7.4v9.2l-8 4.6-8-4.6V7.4z"/><path d="m8.5 13.5 3.5-3.5 3.5 3.5" stroke-width="2.6"/></svg>
-      <span>Nivel</span></button>
+      <span>Pase</span></button>
     <button class="tab" type="button" data-tab="logros">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11M17 6h3v1.5A3.5 3.5 0 0 1 16.5 11M12 14v3M8 20h8M9.5 17h5v3h-5z"/></svg>
       <span>Logros</span></button>
@@ -649,8 +676,11 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
 <!-- camino de nivel -->
 <div class="sheet" id="sheetPase" hidden>
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="tPase">
-    <div class="card-h"><h3 id="tPase">Tu nivel</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
+    <div class="card-h"><h3 id="tPase">Pase</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
     <div class="card-b pase-b">
+      <div class="seg pase-seg" role="group" aria-label="Camino"><button type="button" data-ps="temporada">🏆 Temporada</button><button type="button" data-ps="nivel">⭐ Nivel 1–100</button></div>
+      <div id="tempBox"></div>
+      <div id="nivelBox">
       <div class="pase-hero">
         <div class="ph-av"><canvas id="paseAv" width="160" height="176"></canvas></div>
         <div class="ph-info"><small>Camino de premios</small><b id="paseNivel">Nivel 1</b><div class="ph-bar"><i id="paseBar" style="width:0%"></i><span id="paseXP"></span></div></div>
@@ -659,6 +689,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       <div class="pase-sig" id="paseSig"></div>
       <p class="tip">Subís de nivel jugando cualquier juego y cada nivel te da algo nuevo. Tocá un premio que ya tengas para usarlo. Lo que sale con logros o códigos lo ves en Personaje.</p>
       <div id="pase"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1006,6 +1037,9 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     $('dJugar').innerHTML = d.quedan ? `${ICO_PLAY}Jugar` : '✓ Listo';
     $('dJugar').disabled = !d.quedan;
     $('diario').style.background = d.quedan ? '' : '#eef7e8';
+    const ev = CC.eventoXP && CC.eventoXP();
+    $('dEv').hidden = !ev;
+    if (ev) $('dEv').textContent = `⚡ ${ev.nombre}: ${ev.texto} · quedan ${CC.faltaTexto(ev.quedanMs)}`;
   }
   $('dJugar').addEventListener('click', () => { const d = CC.diario(); if (d.quedan) location.href = d.archivo; });
   $('dRank').addEventListener('click', () => CC.verRanking({ juego: CC.diario().juego, diario: true }));
@@ -1108,7 +1142,9 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   // personaje
   let seg = 'skins', formaAbierta = null;
   function requisito(it) {
-    if (it.legendaria) return it.codigo ? 'Código' : 'Secreto';
+    if (it.temporada) return `Temporada ${it.temporada} · nivel ${it.tier}`;
+    const lg = it.logro && CC.LOGROS.find(x => x.id === it.logro);
+    if (it.legendaria && (it.codigo || !lg || lg.oculto)) return it.codigo ? 'Código' : 'Secreto';
     if (it.logro) { const l = CC.LOGROS.find(x => x.id === it.logro); return 'Logro: ' + (l ? l.nombre : it.logro); }
     return 'Nivel ' + it.nivel;
   }
@@ -1128,8 +1164,10 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     // primero lo que sale por nivel (de menor a mayor), después lo de logros y al final las legendarias
     const porNivel = i => i.nivel && !i.logro && !i.codigo && !i.legendaria;
     const orden = [...lista.filter(porNivel).sort((a, b) => a.nivel - b.nivel), ...lista.filter(i => !porNivel(i) && !i.legendaria), ...lista.filter(i => i.legendaria)];
+    const tempActual = CC.temporada ? CC.temporada().n : 0;
     for (const it of orden) {
       if (it.de) continue; // las formas se ven al tocar su personaje
+      if (it.temporada && it.temporada > tempActual && !CC.libre(it)) continue;   // las de temporadas que todavía no llegaron
       const libre = CC.libre(it), elegido = seg === 'skins' ? p.skin.id === it.id || (it.formas || []).includes(p.skin.id) : p.efecto.id === it.id;
       const nuevo = nuevos.includes(seg === 'skins' ? it.id : 'fx:' + it.id);
       if (it.legendaria && !conTitulo) {
@@ -1196,14 +1234,16 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     }
   }
   function pintarTitulos(p, box) {
+    const tempActual = CC.temporada ? CC.temporada().n : 0;
     for (const it of CC.TITULOS) {
-      const libre = CC.libre(it), b = document.createElement('button');
+      if (it.temporada && it.temporada > tempActual && !CC.libre(it)) continue;
+      const libre = CC.libre(it), b = document.createElement('button'), req = it.temporada ? `Temporada ${it.temporada} · nivel ${it.tier}` : `Nivel ${it.nivel}`;
       b.type = 'button'; b.className = 'item titulo' + (libre ? '' : ' lock');
       b.setAttribute('aria-pressed', String(p.titulo.id === it.id));
-      b.innerHTML = `<span></span>${libre ? '' : `<small>Nivel ${it.nivel}</small>`}`;
+      b.innerHTML = `<span></span>${libre ? '' : `<small>${req}</small>`}`;
       b.querySelector('span').textContent = it.nombre;
       b.addEventListener('click', () => {
-        if (!libre) { CC.avisar(`<div><b>${it.nombre}</b><span>Se gana en el nivel ${it.nivel}.</span></div>`, 2600); return; }
+        if (!libre) { CC.avisar(`<div><b>${it.nombre}</b><span>Se gana en: ${req}.</span></div>`, 2600); return; }
         if (CC.elegirTitulo(it.id)) { CC.vibrar(10); pintarPersonaje(); }
       });
       box.appendChild(b);
@@ -1267,7 +1307,77 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     return x.tipo === 'skin' ? CC.elegirSkin(x.it.id) : x.tipo === 'efecto' ? CC.elegirEfecto(x.it.id)
       : x.tipo === 'marco' ? CC.elegirMarco(x.it.id) : CC.elegirTitulo(x.it.id);
   }
+  // la hoja del pase tiene dos caminos: la temporada (6 semanas, con misiones) y el de nivel 1 a 100
+  let caminoPase = CC.temporada ? 'temporada' : 'nivel';
+  for (const b of document.querySelectorAll('[data-ps]')) b.addEventListener('click', () => { caminoPase = b.dataset.ps; abrirPase(); });
+  const diasTexto = ms => (ms >= 2 * 864e5 ? `${Math.ceil(ms / 864e5)} días` : CC.faltaTexto(ms));
+  function filaMision(x) {
+    const el = document.createElement('div');
+    el.className = 'mi' + (x.hecha ? ' ok' : '');
+    el.innerHTML = `<span class="mi-t"></span><span class="mi-xp">+${x.xp} XP</span><span class="mi-b"><span><i style="width:${Math.round(100 * x.prog / x.meta)}%"></i></span>${x.hecha ? '¡Cumplida!' : `${x.prog.toLocaleString('es-AR')} / ${x.meta.toLocaleString('es-AR')}`}</span>`;
+    el.querySelector('.mi-t').textContent = x.txt;
+    return el;
+  }
+  function pintarTemporada() {
+    const T = CC.temporada(), M = CC.misiones(), p = CC.perfil(), box = $('tempBox');
+    box.innerHTML = `<div class="temp-hero" style="--tc:${T.color};--tc2:${T.color2}">
+        <small>Temporada ${T.n} · termina en ${diasTexto(T.quedanMs)}</small><b></b><span></span>
+        <div class="ph-bar"><i style="width:${Math.round(100 * T.enNivel / T.porNivel)}%"></i><span>Nivel ${T.nivel} de ${T.max} · ${T.nivel >= T.max ? '¡completa!' : `${T.enNivel} / ${T.porNivel} XP`}</span></div>
+        ${T.boost ? `<em>⚡ Doble XP en tus próximas ${T.boost} partidas</em>` : ''}</div>
+      <section class="mis"><h4>Misiones del día<small>nuevas en ${CC.faltaTexto(M.quedanDia)}</small></h4></section>
+      <section class="mis"><h4>De la semana<small>nuevas en ${diasTexto(M.quedanSemana)}</small></h4></section>
+      <p class="tip">Toda la XP que ganás suma a la temporada. Los premios de la temporada se ganan <b>solo mientras dura</b>: después quedan para quien los tiene. El nivel 30 es una legendaria exclusiva.</p>
+      <div id="tempCamino"></div>`;
+    box.querySelector('.temp-hero b').textContent = T.nombre;
+    box.querySelector('.temp-hero > span').textContent = T.desc;
+    const [secD, secS] = box.querySelectorAll('.mis');
+    M.diarias.forEach(x => secD.appendChild(filaMision(x)));
+    M.semanales.forEach(x => secS.appendChild(filaMision(x)));
+    const camino = box.querySelector('#tempCamino');
+    for (let d = 0; d < T.premios.length; d += 10) {
+      const tramo = T.premios.slice(d, d + 10), hechos = tramo.filter(n => n.listo).length;
+      const sec = document.createElement('section'); sec.className = 'tramo' + (hechos === tramo.length ? ' hecho' : '');
+      sec.innerHTML = `<h4>Niveles ${d + 1}–${d + tramo.length}<span class="mini"><i style="width:${hechos * 10}%"></i></span><small>${hechos === tramo.length ? '✓ Completo' : hechos + '/' + tramo.length}</small></h4><ol class="pase"></ol>`;
+      const ol = sec.querySelector('ol');
+      for (const n of tramo) {
+        const li = document.createElement('li');
+        li.className = (n.listo ? 'listo' : 'lock') + (n.items.length ? ' hito' : '') + (n.nivel === Math.min(T.max, T.nivel + 1) && !n.listo ? ' actual' : '');
+        li.innerHTML = `<span class="num">${n.nivel}${n.listo ? ICO_LISTO : ICO_LOCK}</span><div class="premios"></div>`;
+        const pr = li.querySelector('.premios');
+        if (n.boost) pr.innerHTML = '<span class="pr boostpr"><span class="tt-ico">⚡</span><span><small>Bonus</small><span class="nm">Doble XP · 3 partidas</span></span></span>';
+        for (const x of n.items) {
+          const b = document.createElement('button'), usa = n.listo && elegido(p, x);
+          b.type = 'button'; b.className = 'pr' + (x.it.legendaria ? ' leg' : ' pase');
+          b.setAttribute('aria-pressed', String(usa));
+          b.innerHTML = (x.tipo === 'titulo' ? '<span class="tt-ico" aria-hidden="true">🏷️</span>' : '<canvas width="96" height="104"></canvas>') +
+            `<span><small></small><span class="nm"></span></span>${usa ? '<span class="usando">Usando</span>' : ''}`;
+          b.querySelector('small').textContent = (x.it.legendaria ? 'Legendaria · ' : '') + TIPO[x.tipo];
+          b.querySelector('.nm').textContent = x.it.nombre;
+          const cv = b.querySelector('canvas');
+          if (cv) { paseCvs.push({ cv, x }); pintarPremio(cv, x, 900); }
+          b.addEventListener('click', () => {
+            if (!n.listo) { CC.avisar(`<div><b>${x.it.nombre}</b><span>Se gana en el nivel ${n.nivel} de la temporada.</span></div>`, 2600); return; }
+            if (usar(x)) { CC.vibrar(10); CC.avisar(`<div><b>${x.it.nombre}</b><span>¡Puesto!</span></div>`, 1600); abrirPase(); pintarPerfil(); }
+          });
+          pr.appendChild(b);
+        }
+        ol.appendChild(li);
+      }
+      camino.appendChild(sec);
+    }
+  }
   function abrirPase() {
+    for (const b of document.querySelectorAll('[data-ps]')) b.setAttribute('aria-pressed', String(b.dataset.ps === caminoPase));
+    $('tempBox').hidden = caminoPase !== 'temporada'; $('nivelBox').hidden = caminoPase === 'temporada';
+    $('tPase').textContent = caminoPase === 'temporada' ? 'Temporada' : 'Tu nivel';
+    if (caminoPase === 'temporada' && CC.temporada) {
+      paseCvs = [];
+      pintarTemporada();
+      if (abierta && abierta.id === 'sheetPase') return;
+      abrir('sheetPase');
+      $('sheetPase').querySelector('.card-b').scrollTop = 0;
+      return;
+    }
     const p = CC.perfil(), lista = CC.pase(), box = $('pase');
     const todos = lista.flatMap(n => n.premios.map(x => ({ ...x, listo: n.listo })));
     $('paseNivel').textContent = p.nivel >= CC.PASE_MAX ? `Nivel ${p.nivel} · ¡completo!` : `Nivel ${p.nivel}`;
