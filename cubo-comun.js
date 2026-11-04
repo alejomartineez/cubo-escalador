@@ -670,6 +670,7 @@
     pulseada: [2, 5, 9, 14],
     guardia: [500, 2000, 5000, 10000],
     esgrima: [1, 3, 6, 10],
+    pasadizo: [25, 80, 200, 400],
   };
   const NOMBRES_TIER = ['Primeros pasos', 'Le agarraste la mano', 'Crack', 'Leyenda'];
   const TIERS = ['bronce', 'plata', 'oro', 'diamante'];
