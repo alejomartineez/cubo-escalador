@@ -500,6 +500,8 @@
       pista: 'Hecha a pedido para un solo jugador.' },
     { id: 'fabri', nombre: 'Piloto', legendaria: true, exclusiva: true, codigo: true, cuerpo: '#e8202a', ojo: '#ffffff', extra: 'piloto', glow: '#ff3b3b',
       sinBoca: true, sinCachetes: true, pista: 'Hecha a pedido para un solo jugador.' },
+    { id: 'noctambulo', nombre: 'Noctámbulo', nombreEn: 'Nightwalker', legendaria: true, exclusiva: true, codigo: true, cuerpo: '#0b0e1c',
+      extra: 'noctambulo', glow: '#4fd8ff', sinOjos: true, sinBoca: true, sinCachetes: true, pista: 'Hecha a pedido para un solo jugador.' },
     // Temporadas (ver temporada()): se ganan llegando al nivel `tier` de esa temporada mientras está en curso.
     { id: 'neonrosa', nombre: 'Neón rosa', temporada: 1, tier: 5, cuerpo: '#2a1f4a', ojo: '#ff7ce0', extra: 'neon', color2: '#ff3bd4', sinCachetes: true },
     { id: 'visorcian', nombre: 'Visor cian', temporada: 1, tier: 12, cuerpo: '#3b3f63', extra: 'visor', color2: '#5ff5ff', sinCachetes: true },
@@ -534,6 +536,7 @@
     'b1f396b676c2285c8ceb19b6406265dd4afae29521f9253a86de66a025bfca04': ['sonrisa'],   // exclusiva de nacho
     '7f0da2349fd57b88ad0f54b7fc15ea2d9b11aa216e5e5d0fb23bd47bc7963cbb': ['benja'],     // exclusiva de benja
     'c7172f65f15346f70813f760fa9e60ed081e629e30727a8dc10cbe1c8108c5ce': ['fabri'],     // exclusiva de fabri
+    '948b088d395ec96f49848737613472f258a3a3931d22e98cd01bae773d118ee4': ['noctambulo'], // exclusiva del creador
     'b96e9678392994a52ed4be7e7282ee2f6cbc80679de2c7410b85c9526afe9e23': ['geo'],
   };
 
@@ -2170,8 +2173,15 @@
 @keyframes cc-holo{to{background-position:200% 0}}
 .cc-leg-sombra{color:#5a2fc8;text-shadow:0 0 8px rgba(143,107,255,.85)}
 .cc-leg-geo{background:linear-gradient(180deg,#ffd21f,#ff8a1c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 3px rgba(95,245,255,.95))}
+/* Noctámbulo: una arañita le camina por arriba del nombre, de punta a punta, y se da vuelta en cada punta */
+.cc-leg-noctambulo{position:relative;color:#0b0e1c;text-shadow:0 0 6px rgba(79,216,255,.95),0 0 12px rgba(79,216,255,.55)}
+.cc-leg-noctambulo::after{content:"";position:absolute;top:-.3em;left:0;width:.72em;height:.56em;pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 14'%3E%3Cpath d='M6 6 4 2.5 1.5 2M8 5.5 7.5 1.5 5.5.5M10 5.5 11 1.5 13 .5M11 6 14 3 16.5 2.5M6 8 4 11.5 1.5 12M8 8.5 7.5 12.5 5.5 13.5M10 8.5 11 12.5 13 13.5M11 8 14 11 16.5 11.5' stroke='%2305070f' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Cellipse cx='7.5' cy='7' rx='3.6' ry='3' fill='%2305070f'/%3E%3Ccircle cx='12' cy='7' r='2' fill='%2305070f'/%3E%3Ccircle cx='13.2' cy='6.2' r='.6' fill='%234fd8ff'/%3E%3Ccircle cx='13.2' cy='7.8' r='.6' fill='%234fd8ff'/%3E%3C/svg%3E") center/contain no-repeat;
+  filter:drop-shadow(0 0 2px rgba(79,216,255,.9));animation:cc-arana 7s linear infinite,cc-patitas .16s steps(2) infinite}
+@keyframes cc-arana{0%{left:0;transform:scaleX(1)}46%{left:calc(100% - .72em);transform:scaleX(1)}50%{left:calc(100% - .72em);transform:scaleX(-1)}96%{left:0;transform:scaleX(-1)}100%{left:0;transform:scaleX(1)}}
+@keyframes cc-patitas{to{translate:0 -1px}}
 .cc-leg-dev{background:linear-gradient(90deg,#00b4c8,#ff3bd4);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 5px rgba(95,245,255,.9))}
-@media (prefers-reduced-motion:reduce){.cc-leg-glitch,.cc-leg-holograma{animation:none}}
+@media (prefers-reduced-motion:reduce){.cc-leg-glitch,.cc-leg-holograma,.cc-leg-noctambulo::after{animation:none}}
 /* rareza de los títulos (pintarTitulo): común gris, raro azul, épico violeta, legendario dorado con brillo, mítico arcoíris.
    Con «Reducir movimiento» (clase cc-quieto) las animaciones se apagan solas y queda el color. */
 .cc-r{white-space:nowrap;opacity:1}
@@ -5045,6 +5055,80 @@
         for (const k of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x + k * s * 0.09, -s * 1.03); ctx.lineTo(x + k * s * 0.09, -s * 0.98); ctx.stroke(); }
         rr(ctx, x - s * 0.18, -s * 1.1, s * 0.36, s * 0.07, s * 0.03); ctx.fill(); ctx.stroke();
         ctx.fillStyle = '#ffd23f'; rr(ctx, x - s * 0.14, -s * 1.085, s * 0.28, s * 0.02, s * 0.01); ctx.fill();
+      },
+    },
+    // ---- Noctámbulo (exclusiva del creador): traje negro de cómic con contraluz celeste y lentes grandes que brillan ----
+    noctambulo: {
+      detras(ctx, s, sk, t, look, mirar) {
+        // arañita que sube y baja colgada de su hilo, del lado de atrás
+        const lado = mirar > 0 ? -1 : 1, x = lado * s * 0.7, y = -s * (0.95 + 0.22 * (0.5 + 0.5 * Math.sin(t / 900))), r = s * 0.075;
+        ctx.strokeStyle = 'rgba(210,245,255,.9)'; ctx.lineWidth = Math.max(1, s * 0.012);
+        ctx.beginPath(); ctx.moveTo(x, -s * 1.7); ctx.lineTo(x, y - r); ctx.stroke();
+        ctx.strokeStyle = '#05070f'; ctx.lineWidth = Math.max(1, s * 0.022); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        const mueve = Math.sin(t / 110) * 0.18;
+        for (const side of [-1, 1]) for (let k = 0; k < 4; k++) {
+          const a = (-0.75 + k * 0.5) + (k % 2 ? mueve : -mueve);   // de arriba hacia abajo
+          ctx.beginPath(); ctx.moveTo(x, y);
+          ctx.lineTo(x + side * Math.cos(a) * r * 1.6, y + Math.sin(a) * r * 1.6 - r * 0.6);
+          ctx.lineTo(x + side * Math.cos(a) * r * 2.4, y + Math.sin(a) * r * 2.4 + r * 0.3); ctx.stroke();
+        }
+        ctx.fillStyle = '#05070f';
+        ctx.beginPath(); ctx.ellipse(x, y + r * 0.3, r * 0.85, r, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y - r * 0.85, r * 0.55, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#4fd8ff';
+        for (const side of [-1, 1]) { ctx.beginPath(); ctx.arc(x + side * r * 0.22, y - r * 0.95, Math.max(0.6, r * 0.16), 0, Math.PI * 2); ctx.fill(); }
+        // chispitas celestes que suben
+        ctx.fillStyle = '#bff4ff';
+        for (let k = 0; k < 3; k++) {
+          const f = fase(t, 1700, k / 3);
+          ctx.globalAlpha = 0.9 * (1 - f);
+          ctx.beginPath(); ctx.arc((k - 1) * s * 0.42 + Math.sin(t / 350 + k) * s * 0.05, -s * (0.9 + f * 0.55), s * 0.03, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      },
+      piel(ctx, s, sk, t, look, mirar) {
+        // traje negro azulado, más claro arriba
+        const g = ctx.createLinearGradient(-s / 2, -s, s / 2, 0);
+        g.addColorStop(0, '#1f2a44'); g.addColorStop(0.45, '#0d1122'); g.addColorStop(1, '#04050b');
+        ctx.fillStyle = g; ctx.fillRect(-s / 2, -s, s, s);
+        // contraluz celeste del lado contrario a donde mira (como la luz de la ventana de atrás)
+        const lado = mirar < 0 ? 1 : -1, xb = lado * s / 2;
+        const luz = ctx.createLinearGradient(xb, 0, xb - lado * s * 0.24, 0);
+        luz.addColorStop(0, 'rgba(110,225,255,.85)'); luz.addColorStop(1, 'rgba(110,225,255,0)');
+        ctx.fillStyle = luz; ctx.fillRect(lado > 0 ? s * 0.26 : -s / 2, -s, s * 0.24, s);
+        // rayado de cómic en la sombra de abajo
+        ctx.save();
+        ctx.beginPath(); ctx.moveTo(-s / 2, -s * 0.36); ctx.quadraticCurveTo(0, -s * 0.12, s / 2, -s * 0.3); ctx.lineTo(s / 2, 0); ctx.lineTo(-s / 2, 0); ctx.closePath(); ctx.clip();
+        ctx.strokeStyle = 'rgba(79,216,255,.28)'; ctx.lineWidth = Math.max(1, s * 0.018);
+        ctx.beginPath();
+        for (let x = -s * 0.9; x < s * 0.6; x += s * 0.07) { ctx.moveTo(x, 0); ctx.lineTo(x + s * 0.4, -s * 0.4); }
+        ctx.stroke();
+        ctx.restore();
+        // reflejo de la tela en la frente
+        ctx.strokeStyle = 'rgba(160,235,255,.35)'; ctx.lineWidth = Math.max(1.5, s * 0.04);
+        ctx.beginPath(); ctx.arc(look * 0.5, -s * 0.5, s * 0.36, Math.PI * 1.25, Math.PI * 1.6); ctx.stroke();
+      },
+      encima(ctx, s, sk, t, look) {
+        // lentes grandes, inclinados hacia afuera, con borde negro grueso y luz celeste que late (y parpadean de vez en cuando)
+        const parpadeo = (t % 4200) < 140 ? 0.15 : 1, pulso = 0.5 + 0.5 * Math.sin(t / 380);
+        for (const side of [-1, 1]) {
+          const cx = side * s * 0.21 + look, cy = -s * 0.56;
+          ctx.save(); ctx.translate(cx, cy); ctx.scale(side, parpadeo);
+          const lente = () => {
+            // punta filosa hacia la nariz, borde de arriba que sube hacia afuera y la parte de afuera redonda
+            ctx.beginPath(); ctx.moveTo(-s * 0.13, s * 0.05);
+            ctx.quadraticCurveTo(-s * 0.04, -s * 0.11, s * 0.11, -s * 0.15);
+            ctx.quadraticCurveTo(s * 0.21, -s * 0.16, s * 0.18, s * 0.01);
+            ctx.quadraticCurveTo(s * 0.13, s * 0.14, -s * 0.13, s * 0.05); ctx.closePath();
+          };
+          ctx.strokeStyle = '#000'; ctx.lineWidth = Math.max(3, s * 0.1); ctx.lineJoin = 'miter';
+          lente(); ctx.stroke();
+          const lg = ctx.createRadialGradient(s * 0.02, -s * 0.02, 0, s * 0.02, -s * 0.02, s * 0.18);
+          lg.addColorStop(0, '#ffffff'); lg.addColorStop(0.35, '#c9f6ff'); lg.addColorStop(1, '#2fb4ff');
+          ctx.shadowColor = '#4fd8ff'; ctx.shadowBlur = s * (0.25 + 0.2 * pulso);
+          ctx.fillStyle = lg; lente(); ctx.fill();
+          ctx.restore();
+        }
       },
     },
     // ---- Geo: cubo naranja de esquinas rectas, borde celeste y cara de cuadrados ----
