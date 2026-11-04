@@ -841,6 +841,11 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
         <span>En el celu, cuando tocás, chocás o ganás algo.</span>
       </div>
       <div class="opcion">
+        <b>Reducir movimiento</b>
+        <div class="seg" role="group" aria-label="Reducir movimiento" data-opcion="movimiento"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div>
+        <span>Saca el temblor de pantalla, los sacudones y las animaciones. Se aplica al volver a abrir cada juego.</span>
+      </div>
+      <div class="opcion">
         <b>Esta pantalla al entrar</b>
         <div class="seg" role="group" aria-label="Pantalla de inicio al entrar" data-opcion="portada"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div>
         <span>Si la sacás, entrás directo a los juegos. Para volver a verla tocá "TwoFingers" arriba.</span>
@@ -1082,6 +1087,8 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     'Vale para todos los juegos. Adentro de cada uno lo podés cambiar igual.': 'Applies to every game. You can still change it inside each one.',
     'Vibración': 'Vibration',
     'En el celu, cuando tocás, chocás o ganás algo.': 'On your phone, when you tap, crash or win something.',
+    'Reducir movimiento': 'Reduce motion',
+    'Saca el temblor de pantalla, los sacudones y las animaciones. Se aplica al volver a abrir cada juego.': 'Removes screen shake, jolts and animations. Applies the next time you open each game.',
     'Esta pantalla al entrar': 'This screen on start',
     'Pantalla de inicio al entrar': 'Start screen on launch',
     'Si la sacás, entrás directo a los juegos. Para volver a verla tocá "TwoFingers" arriba.': 'If you turn it off, you go straight to the games. To see it again, tap "TwoFingers" at the top.',
@@ -1096,7 +1103,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   for (const [v, s] of [['--t-legendaria', 'Legendaria'], ['--t-exclusiva', 'Exclusiva'], ['--t-formas', 'Formas'], ['--t-estas-aca', 'Estás acá'], ['--t-hito', 'Hito']])
     document.documentElement.style.setProperty(v, JSON.stringify(T(s)));
   const $ = id => document.getElementById(id);
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduceMotion = CC.menosMovimiento ?? matchMedia('(prefers-reduced-motion: reduce)').matches;
   const tactil = matchMedia('(hover: none)').matches;
   const INK = '#1d2340', PAPER = '#fffaf0';
   const guardado = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; };
@@ -2179,6 +2186,11 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       poner: si => SONIDO_KEYS.forEach(k => { const o = leerJSON(k); if (o || !si) guardado(k, JSON.stringify({ ...(o || {}), muted: !si })); }),
     },
     vibrar: { ver: () => guardado('cubo-vibrar') !== '0', poner: si => guardado('cubo-vibrar', si ? '1' : '0') },
+    // sin elegir, sigue al sistema (prefers-reduced-motion); el hub lo aplica al toque, los juegos al abrirlos
+    movimiento: {
+      ver: () => { const g = guardado('cubo-movimiento'); return g ? g === '0' : matchMedia('(prefers-reduced-motion: reduce)').matches; },
+      poner: si => { guardado('cubo-movimiento', si ? '0' : '1'); location.reload(); },
+    },
     portada: { ver: () => guardado('cubo-portada') !== '0', poner: si => guardado('cubo-portada', si ? '1' : '0') },
   };
   function pintarOpciones() {

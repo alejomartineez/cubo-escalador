@@ -341,8 +341,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const mini = document.getElementById('mini');
   const mctx = mini.getContext('2d');
   const $ = id => document.getElementById(id);
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  // «Reducir movimiento» de la portada (si nunca se tocó, lo que pide el sistema)
+  const reduceMotion = (CC && CC.menosMovimiento) ?? matchMedia('(prefers-reduced-motion: reduce)').matches;
   // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js)
   if (CC && CC.textos) CC.textos({
     // título, HUD y botones de juego
@@ -385,6 +386,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     '¡Ya!': 'Go!',
     '¡Remate!': 'Spike!',
     '¡Cruzada!': 'Cross shot!',
+    '¡Salvada!': 'Saved!',
     '¡Oro! +2': 'Gold! +2',
     '¡{n} puntos!': '{n} points!',
     '¡Punto!': 'Point!',
@@ -506,6 +508,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const sfxLose = () => { beep(220, 0.28, 'sawtooth', 0.05, 0.5); beep(110, 0.2, 'square', 0.03); };
   const sfxTick = () => beep(660, 0.07, 'square', 0.035);
   const sfxGo = () => beep(988, 0.16, 'square', 0.04);
+  const sfxSalvada = () => { beep(1175, 0.07, 'triangle', 0.05, 1.2); setTimeout(() => beep(1568, 0.1, 'triangle', 0.045), 60); };
   // el navegador se queja si vibra antes de que el usuario toque algo
   const vibrate = ms => { if (CC && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) CC.vibrar(ms); };
 
@@ -551,6 +554,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       score: 0, lives: DIFFS[d].vidas, skill: 0, winner: null, server: 'p',
       rally: 0, maxRally: 0, smashes: 0, done: false,
       oro: false, sinOro: 0, oros: 0, saques: 0,
+      salvT: -1e9, toques: 0, pista: false, // «¡Salvada!» (cuándo salió la última), tus toques y la flechita de las primeras partidas
     };
     if (demo) { G.phase = 'rally'; G.ball.heldT = 0.5; }
     setSkill();
@@ -642,9 +646,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       launch(b, NET + 0.55 + depth * (CW / 2 - 1), apex);
       b.fast = smash;
       if (!G.demo) {
-        if (smash) { G.smashes++; sfxSmash(); floats.push({ text: T('¡Remate!'), x: b.x, y: b.y + 0.6, t: now }); }
-        else { sfxHit(); if (au > 0.7) floats.push({ text: T('¡Cruzada!'), x: b.x, y: b.y + 0.6, t: now }); }
-        if (smash) vibrate(8);
+        G.toques++;
+        // salvada: la agarraste muy abajo (llegaste a último momento, casi rebota de costado) o pegada a la línea de fondo
+        const salvada = (b.y < SIDE * 0.85 || b.x < P_MIN) && now - G.salvT > 1200;
+        if (salvada) { G.salvT = now; floats.push({ text: T('¡Salvada!'), x: b.x, y: b.y + 0.6, t: now, gold: true }); chispas(b.x, b.y, 14); sfxSalvada(); vibrate(8); }
+        if (smash) { G.smashes++; sfxSmash(); if (!salvada) floats.push({ text: T('¡Remate!'), x: b.x, y: b.y + 0.6, t: now }); }
+        else { sfxHit(); if (au > 0.7 && !salvada) floats.push({ text: T('¡Cruzada!'), x: b.x, y: b.y + 0.6, t: now }); }
+        if (smash && !salvada) vibrate(8);
       }
       burst(b.x, b.y, smash ? '#ffcc29' : '#fffaf0', smash ? 12 : 6, smash ? 1.1 : 0.6);
       recalc();
@@ -701,6 +709,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (G.lives <= 0) { G.done = true; if (CC && !G.demo) CC.morir(); }   // Geo se parte en pedazos
       if (G.duelo) barraDuelo();
     }
+    // hitstop: la pelota pica y todo se queda quieto un instante (más largo si perdiste el punto o la partida).
+    // En el duelo también: el punto ya está decidido y en el frenado no se sortea nada, así que la semilla sigue igual.
+    if (CC && CC.frenar) CC.frenar(winner === 'p' ? 70 : G.lives <= 0 ? 140 : 110);
   }
 
   function serve(server) {
@@ -780,7 +791,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (state === 'play' && G && !G.demo && !G.done && G.score > 0) settle();
     if (toGames && CC) CC.volver(); else showMenu();
   }
-  let tipOn = false, tipT = 0;
+  let tipOn = false, tipT = 0, guia = null;
+  function soltarGuia() { if (guia) { guia.listo(); guia = null; } }
   function start() {
     if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); }
     newRun(false, dif());
@@ -789,6 +801,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     renderLives(); hudCache = '';
     G.phaseT = 0; G.count = 3; sfxTick();
     if (!rec.ayuda) { tipOn = true; tipT = performance.now(); $('tip').hidden = false; }
+    // primeras partidas: los botones laten con la manito y una flechita te dice para dónde ir a buscarla
+    soltarGuia();
+    if (CC && CC.guia) guia = CC.guia('voley', [$('bL'), $('bR')]);
+    G.pista = CC && CC.perfil ? (CC.perfil().partidas.voley || 0) < 3 : !rec.ayuda;
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   }
   function hideTip() {
@@ -803,7 +819,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('menu').hidden = false; $('end').hidden = true; $('hud').hidden = true; $('pad').classList.add('off');
     sizeMini();
   }
-  function hideTipQuiet() { tipOn = false; $('tip').hidden = true; }
+  function hideTipQuiet() { tipOn = false; $('tip').hidden = true; soltarGuia(); }
   function showEnd() {
     state = 'end';
     hideTipQuiet();
@@ -832,6 +848,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function pressed(d) {
     lastDir = d;
+    soltarGuia();
     if (tipOn && G && G.phase !== 'count') hideTip();
     else if (tipOn && performance.now() - tipT > 900) hideTip();
   }
@@ -919,6 +936,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         life: 0.35 + Math.random() * 0.25, age: 0, s: 0.08 + Math.random() * 0.08, c: color });
     }
   }
+  // chispas doradas de «¡Salvada!»: con menos movimiento quedan pocas y casi quietas
+  function chispas(x, y, n) {
+    const k = reduceMotion ? Math.ceil(n / 3) : n, pw = reduceMotion ? 0.2 : 1;
+    for (let i = 0; i < k; i++) {
+      const a = -Math.PI * Math.random(), sp = (2.5 + Math.random() * 4.5) * pw;
+      particles.push({ x, y, vx: Math.cos(a) * sp, vy: -Math.sin(a) * sp + 2 * pw,
+        life: 0.45 + Math.random() * 0.3, age: 0, s: 0.07 + Math.random() * 0.07, c: Math.random() < 0.35 ? '#fffaf0' : '#ffcc29' });
+    }
+  }
   function rr(c, x, y, w, h, r) {
     c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r);
     c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
@@ -928,7 +954,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let last = performance.now(), hudCache = '';
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    update(now, dt); draw(now);
+    // hitstop (CC.frenar al picar la pelota): se dibuja sin avanzar; `last` corre igual, así el frenado no se acumula en dt
+    if (!(CC && CC.frenado && CC.frenado(now))) update(now, dt);
+    draw(now);
     if (state === 'menu') drawMini(now);
     requestAnimationFrame(frame);
   }
@@ -1146,6 +1174,22 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // cubos
     drawRival(now);
     drawPlayer(now);
+    // primeras partidas: si la pelota viene a tu lado y no estás abajo, una flecha que late te dice para dónde ir
+    if (G.pista && state === 'play' && inFlight && b.last !== 'p' && G.contact && G.contact.x < NET && G.toques < 4) { // (tu saque cuenta como toque)
+      const dx = G.contact.x - G.px;
+      if (Math.abs(dx) > REACH * 0.5) {
+        const s = SIDE * S, dir = Math.sign(dx), bob = reduceMotion ? 0 : (0.5 + 0.5 * Math.sin(now / 110)) * s * 0.14;
+        const ax = X(G.px) + dir * (s * 0.85 + bob), ay = FLOOR - s * 0.5, a = s * 0.3;
+        ctx.globalAlpha = reduceMotion ? 1 : 0.8 + 0.2 * Math.sin(now / 110);
+        ctx.fillStyle = '#ffcc29'; ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(ax + dir * a * 1.3, ay); ctx.lineTo(ax + dir * a * 0.3, ay - a); ctx.lineTo(ax + dir * a * 0.3, ay - a * 0.42);
+        ctx.lineTo(ax - dir * a * 0.6, ay - a * 0.42); ctx.lineTo(ax - dir * a * 0.6, ay + a * 0.42);
+        ctx.lineTo(ax + dir * a * 0.3, ay + a * 0.42); ctx.lineTo(ax + dir * a * 0.3, ay + a); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    }
 
     // pelota
     const br = BR * S * 1.08; // un pelín más grande que la física, para que se lea bien
@@ -1170,10 +1214,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     for (const f of floats) {
       const life = f.big ? 1200 : 750, a = (now - f.t) / life;
       ctx.globalAlpha = 1 - a * a;
-      ctx.font = `${Math.round(S * (f.big ? 0.75 : 0.55))}px "Lilita One", "Trebuchet MS", sans-serif`;
+      // los dorados («¡Salvada!») entran con un saltito, salvo con menos movimiento (ahí ni suben)
+      const pop = f.gold && !reduceMotion ? 1 + 0.35 * clamp01(1 - (now - f.t) / 110) : 1;
+      ctx.font = `${Math.round(S * (f.big ? 0.75 : f.gold ? 0.62 : 0.55) * pop)}px "Lilita One", "Trebuchet MS", sans-serif`;
       ctx.lineWidth = 5;
-      const fx = clamp(X(f.x), 60, W - 60), fy = Y(f.y) - a * S * 0.8;
+      const fx = clamp(X(f.x), 60, W - 60), fy = Y(f.y) - (f.gold && reduceMotion ? 0 : a * S * 0.8);
+      if (f.gold) ctx.fillStyle = '#ffcc29';
       ctx.strokeText(f.text, fx, fy); ctx.fillText(f.text, fx, fy);
+      ctx.fillStyle = '#fffaf0';
     }
     ctx.globalAlpha = 1;
     const midY = Math.max(TOPY + 50, (TOPY + Y(NET_H)) / 2);

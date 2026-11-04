@@ -4900,7 +4900,7 @@
   // Pedazos: una foto del cubo cortada en triángulos que salen volando, una onda expansiva chica,
   // un flash y cuadraditos sueltos. Se dibuja en un canvas fijo encima de todo que se borra solo.
   function estallar(cx, cy, S, sk) {
-    const dpr = Math.min(2, window.devicePixelRatio || 1), quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const dpr = Math.min(2, window.devicePixelRatio || 1), quieto = menosMovimiento;
     const F = S * 1.3, P = Math.ceil(F * dpr), foto = document.createElement('canvas');
     foto.width = foto.height = P;
     const fc = foto.getContext('2d');
@@ -5342,6 +5342,68 @@
     textoDif(ms) { const s = Math.abs(ms) / 1000; return (ms < 0 ? '−' : '+') + coma(s.toFixed(1)) + ' s'; },
   };
 
+  // ---------- sensación de juego ----------
+  // Reducir movimiento: se elige en Opciones de la portada (`cubo-movimiento`: '0' = menos movimiento, '1' = todo).
+  // Si nunca se tocó, sigue lo que pide el sistema (prefers-reduced-motion). Los juegos lo leen en CC.menosMovimiento
+  // (sin temblor de pantalla ni sacudones); las animaciones CSS de la página se apagan solas con la clase cc-quieto.
+  const menosMovimiento = (() => {
+    let g = null;
+    try { g = localStorage.getItem('cubo-movimiento'); } catch (e) {}
+    if (g === '0') return true;
+    if (g === '1') return false;
+    return matchMedia('(prefers-reduced-motion: reduce)').matches;
+  })();
+  if (menosMovimiento) {
+    document.documentElement.classList.add('cc-quieto');
+    const st = document.createElement('style');
+    st.textContent = 'html.cc-quieto *,html.cc-quieto *::before,html.cc-quieto *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}';
+    (document.head || document.documentElement).appendChild(st);
+  }
+  // Frenar el juego un instante (hitstop): al chocar o perder, la imagen se queda quieta unos ms y el golpe se siente.
+  // El juego llama CC.frenar(ms) y en su frame, si CC.frenado(now), dibuja sin avanzar la física.
+  let frenadoHasta = 0;
+  function frenar(ms = 90) { frenadoHasta = Math.max(frenadoHasta, performance.now() + ms); }
+  const frenado = (now = performance.now()) => now < frenadoHasta;
+  // Guía de los primeros segundos, sin leer: los botones ← → laten uno y otro con una manito, en las primeras
+  // partidas de cada juego (o siempre, con o.siempre). Se va sola al primer toque (guia.listo()) o a los o.ms.
+  //   const guia = CC.guia('lluvia', [btnIzq, btnDer]);  …  al primer toque: guia.listo();
+  function guia(jid, botones, o = {}) {
+    const nada = { listo() {} };
+    const els = (botones || []).filter(Boolean);
+    if (!els.length || (!o.siempre && (leer().partidas[jid] || 0) >= (o.partidas ?? 3))) return nada;
+    if (!document.getElementById('cc-guia-css')) {
+      const st = document.createElement('style');
+      st.id = 'cc-guia-css';
+      st.textContent = `
+.cc-guia{animation:cc-guia-late 1.1s ease-in-out infinite;outline:0 solid rgba(255,204,41,.9);outline-offset:2px}
+.cc-guia-2,.cc-guia-2 .cc-guia-dedo{animation-delay:.55s}
+.cc-guia-dedo{position:absolute;left:50%;top:58%;font-size:34px;line-height:1;pointer-events:none;z-index:2;opacity:0;
+  filter:drop-shadow(0 2px 0 rgba(29,35,64,.35));animation:cc-guia-dedo 1.1s ease-in-out infinite}
+@keyframes cc-guia-late{0%,45%,100%{outline-width:0}20%{outline-width:6px}}
+@keyframes cc-guia-dedo{0%,100%{opacity:0;transform:translate(-50%,14px)}15%{opacity:1;transform:translate(-50%,0)}40%{opacity:0;transform:translate(-50%,-4px)}}
+html.cc-quieto .cc-guia{animation:none;outline-width:5px}
+html.cc-quieto .cc-guia-dedo{animation:none;opacity:1;transform:translate(-50%,0)}`;
+      document.head.appendChild(st);
+    }
+    const dedos = els.map((el, k) => {
+      el.classList.add('cc-guia', k % 2 ? 'cc-guia-2' : 'cc-guia-1');
+      if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+      const d = document.createElement('span');
+      d.className = 'cc-guia-dedo'; d.textContent = '👆'; d.setAttribute('aria-hidden', 'true');
+      el.appendChild(d);
+      return d;
+    });
+    let fuera = false;
+    const listo = () => {
+      if (fuera) return;
+      fuera = true; clearTimeout(timer);
+      for (const el of els) el.classList.remove('cc-guia', 'cc-guia-1', 'cc-guia-2');
+      for (const d of dedos) d.remove();
+    };
+    const timer = setTimeout(listo, o.ms || 6000);
+    return { listo };
+  }
+
   // Chrome bloquea (y avisa en consola) la vibración antes del primer toque del usuario.
   // Se apaga desde Opciones en la portada (cubo-vibrar = '0').
   function vibrar(ms = 12) {
@@ -5358,7 +5420,7 @@
     sumarXP, xpEscala, partida, importarRecord, anotarRecord, revisarLogros, tieneLogro,
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
     avisar, vibrar, volver, dibujarCubo, morir, sombra, pedirApodo, diario, diarioDe, azar, faltaTexto,
-    temporada, misiones, eventoXP, TEMP_XP, sincronizarNube, T, Tsin: Tlit, textos, idioma, IDIOMAS, ponerIdioma, LOCALE, traducirNodo,
+    temporada, misiones, eventoXP, TEMP_XP, sincronizarNube, menosMovimiento, frenar, frenado, guia, T, Tsin: Tlit, textos, idioma, IDIOMAS, ponerIdioma, LOCALE, traducirNodo,
   };
   // Duelos 1v1 (cubo-duelo.js): usa la misma conexión a Supabase y escucha las invitaciones en todas las páginas.
   window.CuboComun.RANKING = RANKING;

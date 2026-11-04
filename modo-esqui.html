@@ -275,8 +275,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const dcv = document.getElementById('demo');
   const dctx = dcv.getContext('2d');
   const $ = id => document.getElementById(id);
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido; si no está, el juego anda solo
+  // «Reducir movimiento» de la portada (si nunca se tocó, lo que pide el sistema)
+  const reduceMotion = (CC && CC.menosMovimiento) ?? matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // hitstop: al chocar o saltearte una puerta, la imagen se queda quieta un instante (sin la librería no frena)
+  const frenar = ms => { if (CC && CC.frenar) CC.frenar(ms); };
+  const frenado = now => !!(CC && CC.frenado && CC.frenado(now));
   // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js).
   // El traductor se llama tr porque T ya se usa para los tramos.
   if (CC && CC.textos) CC.textos({
@@ -328,6 +332,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     '¡+1 vida!': '+1 life!',
     '¡Te la salteaste!': 'Missed it!',
     '¡Ya!': 'Go!',
+    '¡Justo!': 'Just made it!',
+    '¡Casi!': 'Close one!',
     'SALIDA': 'START',
     // fin de partida
     '¡Qué bajada!': 'What a run!', '¡Fin de la pista!': 'End of the run!', '¡Uy, la nieve!': 'Whoops, snow!', '¡Zas!': 'Wham!',
@@ -446,6 +452,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const sfxCount = go => beep(go ? 880 : 520, go ? 0.25 : 0.1, 'triangle', 0.07);
   const sfxCrash = () => { beep(180, 0.45, 'sawtooth', 0.06, 0.35); swish(0.1, 0.45, 700); };
   const sfxEvento = () => [523, 659, 784].forEach((f, i) => setTimeout(() => beep(f, 0.1, 'triangle', 0.05), i * 60));
+  const sfxCasi = () => { beep(1175, 0.06, 'triangle', 0.055, 1.5); setTimeout(() => beep(1760, 0.09, 'triangle', 0.045), 55); };
 
   // ---------- canvas y cámara ----------
   // Perspectiva leve: lo que está más adelante (más abajo en la pantalla) se ve más chico.
@@ -493,6 +500,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       genY: 0, decoY: -40, done: false, deadT: 0, settled: false, r: null, lastDir: 0, sprayT: 0,
       tipo: 'comun', trLeft: PRIMER_TRAMO, ultimoEv: null, eventos: 0,
       graba: null, sombra: null,   // la curva de esta partida (segundos → metros) y la sombra contra la que bajás
+      casiT: -1e9, pista: false,   // último «¡Justo!»/«¡Casi!» y si se marca el camino a la puerta (primeras partidas)
     };
     camX = 0; camY = 0;
     particles = []; floats = []; banner = null;
@@ -619,7 +627,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     burst(G.x, G.y, '#cfe0fa', 22, 1.3);
     if (G.demo) return;
     CC?.morir();   // personajes con muerte propia (Geo se parte en pedazos)
-    shake = reduceMotion ? 0 : 12; sfxCrash(); CC?.vibrar(60);
+    shake = reduceMotion ? 0 : 12; sfxCrash(); CC?.vibrar(60); frenar(140);
     const r = settle();
     let linea = '';
     if (G.graba && G.final > 0) {
@@ -664,10 +672,22 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
     start();
   }
+  // primeras partidas (3, como la guía de los botones): una línea marca el camino hasta la próxima puerta
+  let guia = null;
+  function primeras() {
+    if (!CC) return (pref.jugadas || 0) < 3;
+    try { return (CC.perfil().partidas.esqui || 0) < 3; } catch (e) { return false; }
+  }
+  const sinGuia = () => { if (guia) { guia.listo(); guia = null; } };
   function start() {
     if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); }
     resize();
     newRun(false, difId());
+    G.pista = primeras() && !G.D.sinFlecha;
+    if (!CC) { pref.jugadas = (pref.jugadas || 0) + 1; savePref(); }
+    // los botones laten uno y otro con una manito hasta que doblás por primera vez (primeras partidas)
+    sinGuia();
+    guia = CC && CC.guia ? CC.guia('esqui', [$('bL'), $('bR')], { ms: 8000 }) : null;
     prepararSombra();
     $('hSombra').hidden = !G.sombra; $('hSombra').textContent = tr('Sombra {d} m', { d: '±0' }); $('hSombra').className = 'chip sombrachip';
     state = 'play';
@@ -678,6 +698,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showMenu() {
     if (state === 'play' && G && !G.demo && !G.done && G.y > 30) settle();
+    sinGuia();
     state = 'menu';
     newRun(true);
     renderMenu();
@@ -686,6 +707,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showEnd() {
     state = 'end';
+    sinGuia();
     keyL = keyR = false; pointers.clear();
     $('end').hidden = false; $('pad').classList.add('off'); $('tip').hidden = true;
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
@@ -707,6 +729,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function pressed(d) {
     if (G && !G.demo) G.lastDir = d;
+    if (state === 'play') sinGuia();
     if (!$('tip').hidden && performance.now() - tipT > 250) hideTip();
     if (state === 'play' && G && !G.done && G.count <= 0 && !G.demo) swish(0.035, 0.12, 2600);
   }
@@ -779,6 +802,25 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: rnd(0.35, 0.6), age: 0, s: rnd(0.2, 0.4), c: color });
     }
   }
+  // chispas doradas (en metros del mundo); con menos movimiento quedan pocas, chicas y casi quietas
+  function chispas(x, y) {
+    const n = reduceMotion ? 5 : 14;
+    for (let k = 0; k < n; k++) {
+      const a = Math.random() * Math.PI * 2, sp = reduceMotion ? rnd(0.2, 0.6) : rnd(3, 8);
+      particles.push({ x: x + (reduceMotion ? rnd(-0.6, 0.6) : 0), y: y + (reduceMotion ? rnd(-0.4, 0.4) : 0),
+        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: reduceMotion ? 0.45 : rnd(0.35, 0.6), age: 0,
+        s: reduceMotion ? 0.18 : rnd(0.18, 0.34), c: k % 3 ? '#ffd84d' : '#fff1b8' });
+    }
+  }
+  // pasaste por poco (bandera o árbol): texto dorado, chispas, sonidito y vibración corta. Sin XP: es solo sensación.
+  // Uno cada 1,2 s como mucho. arriba: el texto va un renglón más arriba (para no taparse con el «¡Bien!» de la puerta)
+  function casi(now, text, x, y, arriba) {
+    if (now - G.casiT < 1200) return;
+    G.casiT = now;
+    chispas(x, y);
+    floats.push({ text, x, y, t: now, c: '#ffd84d', oro: true, arriba });
+    sfxCasi(); CC?.vibrar(8);
+  }
   // robot del menú (y de la demo): apunta al centro de la próxima puerta y esquiva lo que tenga adelante
   function botDir() {
     const g = nextGate();
@@ -828,14 +870,23 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // árboles y piedras: te frenan y te marean
     for (const o of G.obst) {
       if (o.hit) continue;
-      if (Math.hypot(o.x - G.x, (o.y - G.y) * 1.2) < o.r * o.s + PR) {
+      const dist = Math.hypot(o.x - G.x, (o.y - G.y) * 1.2);
+      if (dist < o.r * o.s + PR) {
         o.hit = true; G.hits++;
         G.v *= 0.45; G.w = 0; G.a *= 0.5; G.dizzy = 0.65;
         G.x += Math.sign(G.x - o.x || 1) * 0.35;
         burst(o.x, o.y, o.tree ? '#34b37a' : '#9aa6bf', 10, 0.8);
         if (!G.demo) {
-          sfxHit(); CC?.vibrar(40); shake = reduceMotion ? 0 : 8;
+          sfxHit(); CC?.vibrar(40); shake = reduceMotion ? 0 : 8; frenar(90);
           floats.push({ text: o.tree ? tr('¡Árbol!') : tr('¡Piedra!'), x: G.x, y: G.y, t: now, c: CREMA });
+        }
+      } else if (!o.paso) {
+        // lo pasaste sin tocarlo: si en algún momento estuviste a menos de medio metro, «¡Casi!» (ya lejos, para no
+        // festejar uno que igual te llevás puesto)
+        o.minD = Math.min(o.minD ?? Infinity, dist);
+        if (G.y - o.y > 1.6) {
+          o.paso = true;
+          if (!G.demo && o.minD < o.r * o.s + PR + 0.5) casi(now, tr('¡Casi!'), o.x + Math.sign(G.x - o.x || 1) * (o.r * o.s + 0.3), o.y);
         }
       }
     }
@@ -855,11 +906,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
           const extra = D.racha > 0 && G.streak % D.racha === 0 && G.lives < D.vidas;
           floats.push({ text: G.streak >= 3 ? tr('¡Racha {n}!', { n: G.streak }) : tr('¡Bien!'), x: g.cx, y: g.y, t: now, c: CREMA });
           if (extra) { G.lives++; sfxLife(); banner = { text: tr('¡+1 vida!'), t: now }; }
+          // pasaste rozando la bandera (a menos de medio metro del palo): «¡Justo!» al lado de esa bandera
+          const lado = Math.sign(cx - g.cx) || 1;
+          if (g.gw / 2 + 0.2 - Math.abs(cx - g.cx) < 0.5) casi(now, tr('¡Justo!'), g.cx + lado * g.gw / 2, g.y, true);
         }
       } else {
         g.state = 2; G.missed++; G.streak = 0; G.lives--;
         if (!G.demo) {
-          sfxMiss(); CC?.vibrar(70); flashT = now; shake = reduceMotion ? 0 : 6;
+          sfxMiss(); CC?.vibrar(70); flashT = now; shake = reduceMotion ? 0 : 6; frenar(110);
           floats.push({ text: tr('¡Te la salteaste!'), x: g.cx, y: g.y, t: now, c: '#ffd0da' });
         }
         if (G.lives <= 0) { die(now); return; }
@@ -1075,6 +1129,22 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       }
     }
 
+    // primeras partidas, primeros segundos: una línea de puntos dorada del esquiador al medio de la próxima puerta
+    if (state === 'play' && G.pista && !G.done && ng && G.t < 9) {
+      const fade = Math.min(1, 9 - G.t), late = reduceMotion ? 1 : 0.65 + 0.35 * Math.sin(now / 160);
+      ctx.save();
+      ctx.globalAlpha = fade * late;
+      ctx.strokeStyle = '#ffcc29'; ctx.lineWidth = Math.max(3, PPM * 0.28); ctx.lineCap = 'round';
+      ctx.setLineDash([PPM * 0.05, PPM * 0.9]); ctx.lineDashOffset = reduceMotion ? 0 : -(now / 25) % (PPM * 0.95);
+      ctx.beginPath();
+      for (let k = 0; k <= 16; k++) {
+        const f = k / 16, [sx, sy] = P(G.x + (ng.cx - G.x) * f, G.y + 1.2 + (ng.y - G.y - 1.2) * f);
+        k ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
     // línea de salida
     {
       const [lx, ly, k] = P(-5, 0), [rx] = P(5, 0), m = PPM * k;
@@ -1155,9 +1225,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     for (const f of floats) {
       const a = (now - f.t) / 900, [sx, sy] = P(f.x, f.y);
       ctx.globalAlpha = a > 0.6 ? (1 - a) / 0.4 : 1;
-      ctx.font = `${Math.round(fs)}px "Lilita One", "Trebuchet MS", sans-serif`;
+      // «¡Justo!»/«¡Casi!»: un saltito al aparecer (con menos movimiento, quieto y sin subir)
+      const pop = f.oro && !reduceMotion ? 1 + 0.35 * Math.max(0, 1 - a / 0.15) : 1;
+      ctx.font = `${Math.round(fs * pop)}px "Lilita One", "Trebuchet MS", sans-serif`;
       ctx.lineWidth = 5; ctx.fillStyle = f.c;
-      const fy = sy - PPM * 2.6 - a * PPM * 1.5;
+      const fy = sy - PPM * 2.6 - (f.arriba ? fs * 1.15 : 0) - (f.oro && reduceMotion ? 0 : a * PPM * 1.5);
       ctx.strokeText(f.text, sx, fy); ctx.fillText(f.text, sx, fy);
     }
     ctx.globalAlpha = 1;
@@ -1301,7 +1373,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    update(now, dt); draw(now);
+    // hitstop: mientras está frenado se dibuja lo mismo sin avanzar nada (el dt no se acumula: last sigue corriendo)
+    if (!frenado(now)) update(now, dt);
+    draw(now);
     if (state === 'menu') drawDemo(now);
     requestAnimationFrame(frame);
   }

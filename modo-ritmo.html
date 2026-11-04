@@ -484,6 +484,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // lo que se dibuja en el canvas
     'Fallaste': 'Miss',
     '¡Perfecto!': 'Perfect!',
+    '¡Justo!': 'Spot on!',
     'Bien': 'Good',
     '¡Combo {n}!': 'Combo {n}!',
     '¡Multiplicador x{n}!': 'Multiplier x{n}!',
@@ -499,7 +500,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const cv = document.getElementById('cv');
   let ctx = cv.getContext('2d'); // drawDemo lo cambia un momento para dibujar en el canvas del menú
   const $ = id => document.getElementById(id);
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // «Reducir movimiento» de la portada (si nunca se tocó, lo que pide el sistema)
+  const reduceMotion = (CC && CC.menosMovimiento) ?? matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // Las notas se ubican por tiempo musical (beats), no por segundos: cuando sube el BPM la pista entera baja más
   // rápido y la distancia entre notas queda igual, como un piano tiles. Siempre se ven D.ver tiempos.
@@ -673,6 +675,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     s.connect(f); f.connect(g); g.connect(bus); s.start(t, Math.random() * 0.8, dur + 0.05);
   }
   const sfx = (freq, dur, type, vol, slide) => { if (actx) voice(actx.currentTime, freq, type, vol, dur, 0, master, slide); };
+  // «¡Justo!»: dos campanitas agudas y suaves (van por el master, no tocan el reloj de las notas)
+  const sfxJusto = () => [1568, 2093].forEach((f, i) => { if (actx) voice(actx.currentTime + i * 0.05, f, 'triangle', 0.03, 0.12, 0, master); });
   const sfxUp = () => [523, 659, 784].forEach((f, i) => { if (actx) voice(actx.currentTime + i * 0.07, f, 'square', 0.04, 0.14, 0, master); });
   function playLead(m, perfect) {
     const t = actx.currentTime;
@@ -739,6 +743,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       lastLane: azar() < 0.5 ? -1 : 1, lastT: -9, run: 1, pi: 4, rhythm: null, lastDbl: -9,
       face: 1, hitP: -1e9, missP: -1e9, ghostP: { [-1]: -1e9, [1]: -1e9 },
       errs: [], // cuánto antes (-) o después (+) de cada nota tocaste, para el ajuste fino del final
+      racha: 0, justoT: -1e9, // perfectos seguidos y cuándo salió el último «¡Justo!»
+      pista: false,           // primeras partidas: el receptor de la próxima nota se ilumina mientras llega
     };
     G.shownBpm = bpmAt(G.D, 0);
     const c = modo === 'cancion' && cancionSel();
@@ -855,7 +861,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
     if (best) {
       if (bd <= WIN_GOOD) G.errs.push(t - best.t);
-      judge(best, bd <= WIN_PERFECT ? 'perfect' : bd <= WIN_GOOD ? 'good' : 'miss'); return;
+      judge(best, bd <= WIN_PERFECT ? 'perfect' : bd <= WIN_GOOD ? 'good' : 'miss', bd); return;
     }
     // toque al aire: durante el conteo es gratis, después cuesta un poquito de vida
     const first = G.bars[G.intro];
@@ -866,11 +872,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (G.life <= 0) gameOver();
   }
 
-  function judge(n, res) {
+  function judge(n, res, d = 0) {
     const p = performance.now();
     if (res === 'miss') {
       n.res = 'miss';
-      G.combo = 0; G.miss++; G.missP = p;
+      // hitstop solo visual (chispas y sacudón quietos un instante): las notas siguen el reloj del audio y no se frenan
+      if (CC && CC.frenar) CC.frenar(G.combo >= 10 ? 70 : 50);
+      G.combo = 0; G.miss++; G.missP = p; G.racha = 0;
       G.life = Math.max(0, G.life - G.D.dmg[0]);
       sfx(150, 0.25, 'sawtooth', 0.06, 0.5);
       if (CC && tocando) CC.vibrar(20);
@@ -881,6 +889,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const perfect = res === 'perfect';
       G.combo++; G.maxCombo = Math.max(G.maxCombo, G.combo);
       if (perfect) G.perfect++; else G.good++;
+      if (guia) { guia.listo(); guia = null; }
+      G.racha = perfect ? G.racha + 1 : 0;
+      // «¡Justo!»: cada 8 perfectos seguidos (con al menos 1,2 s entre uno y otro); solo sensación, no suma nada
+      const justo = perfect && G.racha % 8 === 0 && p - G.justoT > 1200;
       G.score += (perfect ? 100 : 50) * mult() * (n.raf ? 2 : 1);
       G.life = Math.min(100, G.life + G.D.heal[perfect ? 0 : 1]);
       G.hitP = p;
@@ -888,6 +900,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       burst(laneX[n.lane], hitY, LANE_COL[n.lane][0], perfect ? 14 : 7);
       rings.push({ x: laneX[n.lane], t: p, c: perfect ? '#ffcc29' : '#fffaf0' });
       judgeTxt = { text: T(perfect ? '¡Perfecto!' : 'Bien'), c: perfect ? '#ffcc29' : '#fffaf0', t: p };
+      if (perfect && d <= WIN_PERFECT / 2) chispas(laneX[n.lane], hitY, 5); // clavado al centro de la ventana: chispas doradas de más
+      if (justo) {
+        G.justoT = p;
+        judgeTxt = { text: T('¡Justo!'), c: '#ffcc29', t: p, big: true };
+        chispas(laneX[n.lane], hitY, 16); sfxJusto();
+        if (CC && tocando) CC.vibrar(8);
+      }
       if (G.combo % 25 === 0) { banner = { text: T('¡Combo {n}!', { n: G.combo }), t: p }; sfxUp(); }
       else if (G.combo % 10 === 0 && G.combo <= 30) { banner = { text: T('¡Multiplicador x{n}!', { n: mult() }), t: p }; sfxUp(); }
     }
@@ -928,6 +947,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   function gameOver() {
     G.over = true; state = 'over';
+    if (CC && CC.frenar) CC.frenar(120); // solo visual: la pantalla de fin igual tarda 1,1 s
+    if (guia) { guia.listo(); guia = null; }
     if (CC) CC.morir();   // personajes con muerte propia (Geo se parte en pedazos)
     if (bus) {
       const b = bus; bus = null;
@@ -1164,12 +1185,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (actx && actx.state === 'suspended') actx.resume();
     G = null;
     hideTip();
+    if (guia) { guia.listo(); guia = null; }
     renderRecs();
     renderMute();
     $('start').hidden = false; $('pause').hidden = true; $('end').hidden = true; $('hud').hidden = true;
     layout();
   }
-  let cargando = false;
+  let cargando = false, guia = null;
   function start() {
     if (!ensureAudio() || cargando) return;
     if (rec.calibrado !== 2 && rec.calSalteado !== 2) { abrirCalib(true); return; } // la primera vez, antes de jugar
@@ -1187,6 +1209,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     layout();
     newRun();
     state = 'play'; hudCache = '';
+    // primeras partidas: los botones laten con la manito (hasta el primer acierto) y se ilumina el receptor de cada nota
+    if (guia) guia.listo();
+    guia = CC && CC.guia ? CC.guia('ritmo', [$('bL'), $('bR')], { ms: 12000 }) : null;
+    G.pista = CC && CC.perfil ? (CC.perfil().partidas.ritmo || 0) < 3 : !rec.ayuda;
     $('hDiff').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + T(G.D.name);
     $('hDiff').classList.toggle('ext', G.diff === 'extremo');
     $('hDiff').classList.toggle('mae', G.diff === 'maestro');
@@ -1437,6 +1463,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         s: NS * (0.07 + Math.random() * 0.06), c: Math.random() < 0.3 ? '#fffaf0' : color });
     }
   }
+  // chispas doradas (perfecto clavado y «¡Justo!»): con menos movimiento quedan pocas y casi quietas
+  function chispas(x, y, n) {
+    const k = reduceMotion ? Math.ceil(n / 3) : n;
+    for (let i = 0; i < k; i++) {
+      const a = Math.random() * Math.PI * 2, v = reduceMotion ? 20 + Math.random() * 30 : 160 + Math.random() * 260;
+      particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - (reduceMotion ? 40 : 220), life: 0.45 + Math.random() * 0.3, age: 0,
+        s: NS * (0.06 + Math.random() * 0.06), c: Math.random() < 0.3 ? '#fffaf0' : '#ffcc29' });
+    }
+  }
   function rb(x, y, w, h, r) {
     ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r);
     ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
@@ -1558,9 +1593,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
 
   function update(dt) {
-    for (const q of particles) { q.age += dt; q.vy += 700 * dt; q.x += q.vx * dt; q.y += q.vy * dt; }
+    // hitstop de Ritmo: solo lo visual (chispas y sacudón) se queda quieto; las notas y la música siguen su reloj
+    const fx = CC && CC.frenado && CC.frenado() ? 0 : dt;
+    for (const q of particles) { q.age += fx; q.vy += 700 * fx; q.x += q.vx * fx; q.y += q.vy * fx; }
     particles = particles.filter(q => q.age < q.life);
-    shake *= Math.exp(-dt * 18);
+    shake *= Math.exp(-fx * 18);
     skyLv += ((G ? G.shownLevel : 0) - skyLv) * (1 - Math.exp(-dt * 1.2));
     if (G && state !== 'start') {
       const m = mult(), life = Math.round(G.life);
@@ -1665,6 +1702,21 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // línea de golpe y receptores
     ctx.fillStyle = 'rgba(255,250,240,.6)';
     rb(laneX[-1] - LW / 2, hitY - 3, laneX[1] - laneX[-1] + LW, 6, 3); ctx.fill();
+    // primeras partidas, hasta los primeros aciertos: el receptor de la próxima nota se prende a medida que llega
+    if (G && G.pista && state === 'play' && G.perfect + G.good < 5) {
+      const sig = G.notes.find(n => !n.res);
+      const falta = sig ? sig.b - nowB : 9;
+      if (falta < 1.2 && falta > -0.3) {
+        const k = clamp01(1 - Math.abs(falta) / 1.2), late = reduceMotion ? 0 : Math.sin(p / 70) * 0.04;
+        for (const n of G.notes) {
+          if (n.res || Math.abs(n.b - sig.b) > 0.01) continue;
+          const w = NS * (1.18 + late), h = NH * (1.3 + late);
+          ctx.globalAlpha = 0.35 + 0.65 * k; ctx.strokeStyle = '#ffcc29'; ctx.lineWidth = 3 + 4 * k;
+          rb(laneX[n.lane] - w / 2, hitY - h / 2, w, h, h * 0.3); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
     for (const lane of [-1, 1]) {
       const x = laneX[lane], dn = p - pressedAt[lane] < 110, gh = G && p - G.ghostP[lane] < 160;
       const k = dn ? 0.9 : 1, w = NS * k, h = NH * k;
@@ -1710,9 +1762,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
     // textos
     const midY = topY + (hitY - topY) * 0.42;
-    if (judgeTxt && p - judgeTxt.t < 520) {
-      const a = (p - judgeTxt.t) / 520, pop = 1 + 0.3 * clamp01(1 - (p - judgeTxt.t) / 90);
-      textPop(judgeTxt.text, mid, hitY + NH / 2 - cubeS * 2.25 - a * 16, U * 0.42 * pop, judgeTxt.c, 1 - a * a);
+    if (judgeTxt && p - judgeTxt.t < (judgeTxt.big ? 700 : 520)) {
+      // «¡Justo!» (big) es más grande y dura un poco más; con menos movimiento, sin rebote ni subida
+      const big = judgeTxt.big, quieto = big && reduceMotion, a = (p - judgeTxt.t) / (big ? 700 : 520);
+      const pop = quieto ? 1 : 1 + (big ? 0.45 : 0.3) * clamp01(1 - (p - judgeTxt.t) / (big ? 120 : 90));
+      textPop(judgeTxt.text, mid, hitY + NH / 2 - cubeS * 2.25 - (quieto ? 0 : a * 16), U * (big ? 0.55 : 0.42) * pop, judgeTxt.c, 1 - a * a);
     }
     if (banner && p - banner.t < 1400) {
       const a = (p - banner.t) / 1400, pop = 1 + 0.25 * clamp01(1 - (p - banner.t) / 120);

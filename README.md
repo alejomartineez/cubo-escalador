@@ -26,6 +26,12 @@ La pantalla principal muestra un juego por slide. Todos los juegos suman XP al m
 
 Controles: `←` `→` o `A` `D` en la compu, `R` reinicia; botones grandes y ↻ en el celu. Todos los juegos tienen Fácil, Normal, Difícil, Extremo y Maestro.
 
+**Sensación de juego** (helpers en la sección «sensación de juego» de `cubo-comun.js`):
+- **Frenar al chocar (hitstop):** `CC.frenar(ms)` y, en el frame de cada juego, si `CC.frenado(now)` se dibuja sin avanzar. Entre 50 y 140 ms al chocar, perder una vida, un punto o la partida. En Ritmo es solo visual (las notas siguen el audio) y en el duelo de Pulseada no frena (lo decide el host).
+- **«¡Casi!» / «¡Justo!» con chispas doradas:** Lluvia (te corriste con el bloque encima), Esquí (puerta pegada al palo, árbol o piedra por poco), Escalador (escalón a punto de romperse en Extremo/Maestro, lava pegada), Ritmo (cada 8 perfectos seguidos), Vóley («¡Salvada!»: pelota muy baja o en el fondo), Paleta (con la puntita de la paleta) y Pulseada (barra casi perdida que recuperás, y «¡Remontada!» si ganás la ronda así). Son solo sensación: no suman puntos ni XP.
+- **Los primeros segundos sin leer:** en las primeras 3 partidas de cada juego, los botones ← → laten uno y otro con una manito (`CC.guia`), y cada juego marca en pantalla qué hacer: dónde va a caer cada bloque, la línea hasta la próxima puerta, el próximo escalón, el receptor de la próxima nota, hacia dónde ir a buscar la pelota, por dónde va a cruzar la pelota.
+- **Reducir movimiento:** opción en Opciones de la portada (`cubo-movimiento`; si nunca se tocó, sigue a `prefers-reduced-motion`). Los juegos la leen en `CC.menosMovimiento`: sin temblor de pantalla ni sacudones, chispas chicas y quietas, y las animaciones CSS apagadas (clase `cc-quieto`).
+
 ## Progreso
 
 - **XP:** depende de qué tan bien jugaste (por ejemplo, en Sprint 100 un tiempo más bajo da más XP). Récord personal +25 %. Dificultad: Fácil ×1, Normal ×1,5, Difícil ×2, Extremo ×3, Maestro ×4.

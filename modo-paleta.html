@@ -255,8 +255,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const cv = document.getElementById('cv');
   const ctx = cv.getContext('2d');
   const $ = id => document.getElementById(id);
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  // «Reducir movimiento» de la portada (si nunca se tocó, lo que pide el sistema)
+  const reduceMotion = (CC && CC.menosMovimiento) ?? matchMedia('(prefers-reduced-motion: reduce)').matches;
   // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js)
   if (CC && CC.textos) CC.textos({
     'Paleta': 'Paddle',
@@ -299,6 +300,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     '¡Rival nuevo: {n}!': 'New rival: {n}!',
     '¡Última vida!': 'Last life!',
     '¡Te quedan {n}!': '{n} left!',
+    '¡Justo!': 'Just in time!',
     // fin de partida
     '¡Partido!': 'Match!',
     '¡Ganó el de abajo!': 'Bottom player wins!',
@@ -370,6 +372,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const sfxPunto = () => [659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'square', 0.045), i * 70));
   const sfxPierdo = () => { beep(160, 0.3, 'sawtooth', 0.06, 0.45); beep(95, 0.22, 'square', 0.04); };
   const sfxTic = () => beep(880, 0.05, 'triangle', 0.05);
+  const sfxJusto = () => { beep(1175, 0.06, 'triangle', 0.045); setTimeout(() => beep(1568, 0.1, 'triangle', 0.045), 60); };
 
   // ---------- canvas y mesa ----------
   let W = 0, H = 0, S = 30, OX = 0, OY = 0;
@@ -412,7 +415,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       fase: 'cuenta', faseT: demo ? 0.5 : 1.6, saca: 'abajo',
       score: 0, contra: 0, vidas: D.vidas, nivel: 0, rival: rivalDe(0), rally: 0, mejorRally: 0, golpes: 0,
       done: false, settled: false, r: null,
+      justoT: { abajo: -9, arriba: -9 },
+      // pista de las primeras partidas: dónde va a cruzar la pelota tu línea, hasta que le pegás por primera vez
+      pista: { abajo: false, arriba: false },
     };
+    if (!demo && CC && (CC.perfil().partidas.paleta || 0) < 3) G.pista = { abajo: true, arriba: G.modo === 'dos' };
     particles = []; floats = []; banner = null;
   }
   // nivel del rival: cada PUNTOS_RIVAL puntos tuyos llega uno mejor (más rápido y erra menos)
@@ -465,8 +472,24 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     G.mejorRally = Math.max(G.mejorRally, G.rally);
     const punta = Math.abs(off) > 0.7;
     chispas(b.x, p.y, punta ? '#ffcc29' : '#ffffff', punta ? 12 : 7, punta ? 1.3 : 0.9);
-    if (!G.demo) { sfxPaleta(G.rally); if (lado === 'abajo' || G.modo === 'dos') CC?.vibrar(8); }
+    const humano = !G.demo && (lado === 'abajo' || G.modo === 'dos');
+    if (humano) G.pista[lado] = false;
+    if (!G.demo) sfxPaleta(G.rally);
+    if (humano && !justo(lado, p, off)) CC?.vibrar(8);
     pensarIA();
+  }
+  // «¡Justo!»: la agarraste con la puntita (la pelota casi pasa de largo). Solo sensación: no cambia el tiro ni los puntos.
+  const JUSTO_OFF = 0.86, JUSTO_CADA = 1.5;   // qué tan en la punta (1 = el borde) · mínimo de segundos entre uno y otro
+  function justo(lado, p, off) {
+    if (Math.abs(off) < JUSTO_OFF || G.t - G.justoT[lado] < JUSTO_CADA) return false;
+    G.justoT[lado] = G.t;
+    const arriba = lado === 'arriba', x = p.x + Math.sign(off) * p.hw;
+    chispas(x, p.y, '#ffd84d', reduceMotion ? 6 : 14, reduceMotion ? 0.35 : 1.6);
+    if (!reduceMotion) chispas(x, p.y, '#fffaf0', 6, 1.1);
+    floats.push({ text: T('¡Justo!'), px: Math.max(1.6, Math.min(FW - 1.6, x)), y: p.y + (arriba ? 1.5 : -1.5), girar: arriba && G.modo === 'dos',
+      c: '#ffd84d', t: performance.now(), pop: true });
+    sfxJusto(); CC?.vibrar([8, 40, 8]);
+    return true;
   }
 
   function punto(ganoAbajo) {
@@ -474,6 +497,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const b = G.bola;
     chispas(b.x, ganoAbajo ? 0 : FH, ganoAbajo ? '#ffcc29' : '#ff5d7d', 16, 1.4);
     if (G.demo) { G.saca = ganoAbajo ? 'arriba' : 'abajo'; return; }
+    // hitstop: la imagen se queda quieta un instante cuando alguien pierde el punto (vos contra la máquina, cualquiera de a dos)
+    if (!ganoAbajo || G.modo === 'dos') CC?.frenar(120);
     if (ganoAbajo) {
       G.score++; sfxPunto();
       if (G.modo === 'cpu') {
@@ -652,6 +677,20 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       ctx.fillText(String(G.contra), mx + mw / 2, my + mh * 0.25);
       ctx.fillText(String(G.score), mx + mw / 2, my + mh * 0.75);
     } else if (!G.demo) ctx.fillText(String(G.score), mx + mw / 2, my + mh * 0.75);
+    // pista de las primeras partidas: un aro que late donde la pelota va a cruzar tu línea
+    if (!G.demo && state === 'play' && G.fase === 'juego') {
+      for (const lado of ['abajo', 'arriba']) {
+        const p = G[lado];
+        if (!G.pista[lado] || (lado === 'abajo' ? G.bola.vy <= 0 : G.bola.vy >= 0)) continue;
+        const late = reduceMotion ? 0.5 : 0.5 + 0.5 * Math.sin(now / 130);
+        const cx = sx(cruce(G.bola, p.y)), cy = sy(p.y), r = R_BOLA * S * (1.5 + 0.35 * late);
+        ctx.save();
+        ctx.globalAlpha = 0.55 + 0.35 * late;
+        ctx.lineWidth = Math.max(2.5, S * 0.09); ctx.strokeStyle = '#ffd84d'; ctx.setLineDash([S * 0.22, S * 0.16]);
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      }
+    }
     // paletas y cubos
     const yo = CC ? CC.skin() : null;
     const otro = G.modo === 'dos' && !G.demo ? (CC ? { ...CC.SKINS[0], cuerpo: '#62c6ff' } : null) : (CC ? { ...CC.SKINS[0], cuerpo: G.rival.c } : null);
@@ -680,11 +719,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     ctx.globalAlpha = 1;
     ctx.restore();
     // cuenta regresiva y carteles
-    const texto = (t, y, tam, girar) => {
-      ctx.save(); ctx.translate(W / 2, y); if (girar) ctx.rotate(Math.PI);
+    const texto = (t, y, tam, girar, x = W / 2, color = '#fffaf0') => {
+      ctx.save(); ctx.translate(x, y); if (girar) ctx.rotate(Math.PI);
       ctx.font = `400 ${tam}px "Lilita One", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.lineWidth = Math.max(4, tam * 0.12); ctx.strokeStyle = '#1d2340'; ctx.strokeText(t, 0, 0);
-      ctx.fillStyle = '#fffaf0'; ctx.fillText(t, 0, 0); ctx.restore();
+      ctx.fillStyle = color; ctx.fillText(t, 0, 0); ctx.restore();
     };
     if (!G.demo && state === 'play') {
       if (G.fase === 'cuenta' && G.faseT > 0) {
@@ -695,7 +734,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (banner && now - banner.t < 1500) texto(banner.text, sy(FH * 0.38), Math.round(Math.min(34, S * 1.3)));
       for (const f of floats) {
         const k = (now - f.t) / 900;
-        ctx.globalAlpha = 1 - k; texto(f.text, sy(f.y) - k * 30, Math.round(S * 0.9)); ctx.globalAlpha = 1;
+        // sube (para el de arriba, «sube» es hacia abajo de la pantalla); con menos movimiento, quieto y sin rebote
+        const sube = reduceMotion ? 0 : k * 30 * (f.girar ? -1 : 1);
+        const pop = f.pop && !reduceMotion && k < 0.12 ? 0.6 + k / 0.12 * 0.4 : 1;
+        ctx.globalAlpha = 1 - k;
+        texto(f.text, sy(f.y) - sube, Math.round(S * 0.9 * pop), f.girar, f.px != null ? sx(f.px) : W / 2, f.c);
+        ctx.globalAlpha = 1;
       }
     }
     pintarHud();
@@ -737,6 +781,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (marca) { marca.quitar(); marca = null; }
     if (on && CC && CC.sombra && G && !G.demo && G.modo === 'cpu') marca = CC.sombra.marca('paleta', G.diff);
   }
+  // guía de los primeros segundos (CC.guia): los botones ← → laten uno y otro; de a dos, cada par por su lado
+  // y cada uno se apaga cuando su jugador toca
+  let guias = { abajo: null, arriba: null };
+  function quitarGuias() { for (const k in guias) { if (guias[k]) guias[k].listo(); guias[k] = null; } }
+  function ponerGuias() {
+    quitarGuias();
+    if (!CC || !CC.guia) return;
+    guias.abajo = CC.guia('paleta', [$('bL'), $('bR')]);
+    if (G.modo === 'dos') guias.arriba = CC.guia('paleta', [$('bL2'), $('bR2')]);
+  }
+  const guiaListo = k => { const g = guias[k[1] === '1' ? 'abajo' : 'arriba']; if (g) g.listo(); };
   function soltarTeclas() { teclas.l1 = teclas.r1 = teclas.l2 = teclas.r2 = false; for (const b of document.querySelectorAll('.pad button')) b.classList.remove('on'); }
   function start() {
     if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); modo = 'cpu'; }
@@ -750,6 +805,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     soltarTeclas(); hudCache = '';
     ponerMarca(true);
     resize();
+    ponerGuias();
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   }
   function cortar() { if (state === 'play' && G && !G.demo && !G.done && G.modo === 'cpu' && G.score > 0) return settle(); return null; }
@@ -765,13 +821,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     renderMenu();
     $('menu').hidden = false; $('end').hidden = true; $('hud').hidden = true; $('lado').hidden = true;
     $('pad').classList.add('off'); $('pad2').hidden = true;
-    soltarTeclas(); resize();
+    soltarTeclas(); quitarGuias(); resize();
   }
   function showEnd() {
     state = 'end';
     $('end').hidden = false; $('hud').hidden = true; $('lado').hidden = true;
     $('pad').classList.add('off'); $('pad2').hidden = true;
-    soltarTeclas();
+    soltarTeclas(); quitarGuias();
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
   }
   const volver = () => { cortar(); if (CC) CC.volver(); else location.href = 'index.html'; };
@@ -791,6 +847,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function apretar(btn, k, on) {
     teclas[k] = on;
     btn.classList.toggle('on', on);
+    if (on && state === 'play') guiaListo(k);
   }
   // el de arriba ve la mesa dada vuelta: su "izquierda" es la derecha de la pantalla
   const BOTONES = [['bL', 'l1'], ['bR', 'r1'], ['bL2', 'r2'], ['bR2', 'l2']];
@@ -814,7 +871,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const k = e.key;
     if (state === 'play') {
       const t = teclaDe(e);
-      if (t) { e.preventDefault(); teclas[t] = true; return; }
+      if (t) { e.preventDefault(); teclas[t] = true; guiaListo(t); return; }
       if (k === 'Escape') showMenu();
       else if ((k === 'r' || k === 'R') && !e.repeat) restart();
     } else if (state === 'menu') {
@@ -835,7 +892,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    update(now, dt); draw(now);
+    // frenado (hitstop): se dibuja sin avanzar nada; `last` ya quedó al día, así que el tiempo frenado no se acumula
+    if (!(CC && CC.frenado(now))) update(now, dt);
+    draw(now);
     requestAnimationFrame(frame);
   }
   showMenu();

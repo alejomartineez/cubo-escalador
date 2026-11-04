@@ -361,6 +361,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // en el juego (canvas y carteles de altura)
     '¡Afuera!': "You're out!",
     '¡Ups!': 'Oops!',
+    '¡Justo!': 'Just in time!',
+    '¡Casi!': 'Close one!',
     'Escalón {n}': 'Step {n}',
     'Atardecer': 'Sunset',
     'Anochecer': 'Nightfall',
@@ -422,7 +424,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const cv = document.getElementById('cv');
   const ctx = cv.getContext('2d');
   const $ = id => document.getElementById(id);
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // «Reducir movimiento» de la portada (si nunca se tocó, lo que pide el sistema)
+  const reduceMotion = (CC && CC.menosMovimiento) ?? matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // hitstop: al errar o perder, la imagen se queda quieta un instante (sin la librería no frena)
+  const frenar = ms => { if (CC && CC.frenar) CC.frenar(ms); };
+  const frenado = now => !!(CC && CC.frenado && CC.frenado(now));
 
   const STUN = 500;        // ms de mareo al errar
   const STUN_X = 1000;     // en Extremo
@@ -504,6 +510,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const sfxTurn = c => beep(784 * Math.pow(2, (c % 12) / 12), 0.07, 'square', 0.035, 1.3);
   const sfxBonk =() => { beep(150, 0.28, 'sawtooth', 0.06, 0.45); beep(95, 0.2, 'square', 0.04); };
   const sfxWin = () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, 0.16, 'square', 0.05), i * 90));
+  const sfxCasi = () => { beep(1175, 0.06, 'triangle', 0.06, 1.5); setTimeout(() => beep(1760, 0.09, 'triangle', 0.05), 55); };
 
   // ---------- canvas ----------
   let W = 0, H = 0, U = 60, baseY = 0;
@@ -539,6 +546,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       lastDir: 0, turnT: -1e9, landT: -1e9, landI: -1, rings: [], ghosts: [], zone: 0,
       pisado: 0, crujido: 0, cae: null,   // cuándo llegaste al escalón actual, último crujido y el escalón que se cayó
       graba: null, sombra: null, sombraDe: null, tLlegue: 0,   // la curva de esta partida, la sombra contra la que corrés (y de qué amigo) y en qué ms llegaste al escalón actual
+      casiT: -1e9, pista: false,   // último «¡Justo!»/«¡Casi!» y si se marca el próximo escalón más tiempo (primeras partidas)
     };
     shooting = [];
     $('zone').classList.remove('show');
@@ -563,6 +571,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     G.face = d;
     if (next.dir === d) {
       const turn = G.lastDir !== 0 && d !== G.lastDir;
+      // por poco: el escalón ya crujía fuerte y saltaste justo antes de que se rompa (Extremo/Maestro),
+      // o la lava estaba a menos de un escalón y medio
+      if (!G.demo && G.x && now - G.pisado > ROMPE[G.dif] * 0.78) casi(now, T('¡Justo!'), G.i, 1200);
+      // (con la lava pegada se puede subir así un buen rato: uno cada 2,5 s para que no canse)
+      else if (!G.demo && G.mode === 'lava' && G.i - G.lava < 1.6) casi(now, T('¡Casi!'), G.i, 2500);
       G.ghosts.push({ x: G.rx, y: G.ry, t: now });
       G.fromX = G.rx; G.fromY = G.ry; G.tw0 = now;
       G.i++; G.combo++; G.moves.push(now); G.pisado = now;
@@ -578,7 +591,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       G.stunUntil = now + (G.x ? STUN_X : STUN); G.bonkDir = d; G.bonkT = now;
       G.combo = 0; G.errors++;
       if (!G.demo) {
-        shake = reduceMotion ? 0 : 7; sfxBonk();
+        shake = reduceMotion ? 0 : 7; sfxBonk(); frenar(100);
         floats.push({ text: G.dif === 'maestro' ? T('¡Afuera!') : T('¡Ups!'), x: G.rx, y: G.ry, t: now });
         if (G.dif === 'maestro') { G.stunUntil = Infinity; perder(now, 'error'); }
       }
@@ -774,6 +787,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function perder(now, por) {
     if (G.done) return;
     G.done = true; G.endT = now;
+    frenar(140);   // el golpe se siente antes de la pantalla de fin (que sale a los 900 ms)
     if (CC) CC.morir();   // personajes con muerte propia (Geo se parte en pedazos)
     const valor = G.i;
     let title = T(por === 'lava' ? '¡Te alcanzó la lava!' : por === 'derrumbe' ? '¡Se rompió el escalón!' : '¡Un error y afuera!'), num, sub, isRec = false, r = null;
@@ -831,10 +845,22 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     cortar();
     start(lastMode);
   }
+  // primeras partidas (3, como la guía de los botones): la flecha y el brillo del próximo escalón duran más
+  let guia = null;
+  function primeras() {
+    if (!CC) return (rec.jugadas || 0) < 3;
+    try { return (CC.perfil().partidas.escalador || 0) < 3; } catch (e) { return false; }
+  }
+  const sinGuia = () => { if (guia) { guia.listo(); guia = null; } };
   function start(mode) {
     if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); mode = 'time'; dif = 'normal'; }
     lastMode = mode; if (!DIA) { rec.last = mode; saveRec(); }
     newRun(mode, false);
+    G.pista = primeras();
+    if (!CC) { rec.jugadas = (rec.jugadas || 0) + 1; saveRec(); }
+    // los botones ← → laten uno y otro con una manito hasta el primer toque (primeras partidas)
+    sinGuia();
+    guia = CC && CC.guia ? CC.guia('escalador', [$('bL'), $('bR')]) : null;
     prepararSombra();
     state = 'play';
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').hidden = false;
@@ -849,6 +875,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showMenu() {
     cortar();
+    sinGuia();
     contraAmigo = null;
     state = 'menu';
     newRun('free', true);
@@ -857,6 +884,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showEnd() {
     state = 'end';
+    sinGuia();
     $('end').hidden = false; $('pad').hidden = true;
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
   }
@@ -866,6 +894,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function input(d) {
     if (state !== 'play') return;
     flash(d); press(d, performance.now());
+    sinGuia();
     if (!$('tuto').hidden) { $('tuto').hidden = true; rec.tuto = 1; saveRec(); }
   }
   addEventListener('keydown', e => {
@@ -939,6 +968,27 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         vx: (Math.random() - 0.5) * 140 + push * (120 + Math.random() * 160), vy: -60 - Math.random() * (push ? 220 : 120), life: 0.35 + Math.random() * 0.2, age: 0,
         s: U * (0.06 + Math.random() * 0.05), c: color });
     }
+  }
+  // chispas doradas en el escalón i; con menos movimiento quedan pocas, chicas y casi quietas
+  function chispas(x, i) {
+    const n = reduceMotion ? 5 : 14, y = -i * RISE * U - U * 0.3;
+    for (let k = 0; k < n; k++) {
+      const a = Math.random() * Math.PI * 2, sp = reduceMotion ? 8 + Math.random() * 14 : 110 + Math.random() * 190;
+      particles.push({ x: x * U + (reduceMotion ? (Math.random() - 0.5) * U * 0.6 : 0), y: y + (reduceMotion ? (Math.random() - 0.5) * U * 0.4 : 0),
+        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (reduceMotion ? 0 : 90), g: reduceMotion ? 0 : 0.6,
+        life: reduceMotion ? 0.45 : 0.35 + Math.random() * 0.25, age: 0,
+        s: U * (reduceMotion ? 0.05 : 0.05 + Math.random() * 0.05), c: k % 3 ? '#ffd84d' : '#fff1b8' });
+    }
+  }
+  // zafaste por poco: chispas en el escalón que dejás, texto dorado arriba del cubo, sonidito y vibración corta.
+  // Sin XP: es solo sensación. Uno cada `cada` ms como mucho.
+  function casi(now, text, i, cada) {
+    if (now - G.casiT < cada) return;
+    G.casiT = now;
+    const st = G.steps[i];
+    chispas(st.x, i);
+    floats.push({ text, x: G.steps[i + 1].x, y: i + 1, t: now, oro: true });
+    sfxCasi(); CC?.vibrar(8);
   }
   const lerp = (a, b, t) => a + (b - a) * t;
   const clamp01 = t => Math.max(0, Math.min(1, t));
@@ -1112,7 +1162,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    update(now, dt); draw(now);
+    // hitstop: mientras está frenado se dibuja lo mismo sin avanzar nada (el dt no se acumula: last sigue corriendo).
+    // La lava y el escalón que se rompe van con el reloj real, así que frenar no cambia la dificultad.
+    if (!frenado(now)) update(now, dt);
+    draw(now);
     requestAnimationFrame(frame);
   }
 
@@ -1139,7 +1192,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     cam.y += (-G.ry * RISE * U - cam.y) * k;
     shake *= Math.exp(-dt * 18);
     // partículas
-    for (const p of particles) { p.age += dt; p.vy += 600 * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
+    for (const p of particles) { p.age += dt; p.vy += 600 * (p.g ?? 1) * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
     particles = particles.filter(p => p.age < p.life);
     floats = floats.filter(f => now - f.t < 700);
     G.rings = G.rings.filter(r => now - r.t < 320);
@@ -1287,10 +1340,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
     if (G.mode === 'lava' && !G.demo) drawLava(now);
 
-    // pista de flecha para los primeros pasos
-    if (!G.demo && state === 'play' && G.i < 3 && G.steps[G.i + 1]) {
+    // pista de flecha para los primeros pasos; en las primeras partidas dura más (hasta el escalón 12 o los 8 s)
+    // y además el próximo escalón brilla, así se entiende sin leer a qué lado hay que tocar
+    const novato = G.pista && !G.done && G.i < 12 && (!G.started || now - G.t0 < 8000);
+    if (!G.demo && state === 'play' && (G.i < 3 || novato) && G.steps[G.i + 1]) {
       const n = G.steps[G.i + 1], ax = n.x * U, ay = -(G.i + 1) * RISE * U - U * 0.55;
-      ctx.globalAlpha = 0.55 + 0.35 * Math.sin(now / 150);
+      const late = reduceMotion ? 0.8 : 0.55 + 0.35 * Math.sin(now / 150);
+      if (novato) {
+        ctx.globalAlpha = late; ctx.strokeStyle = '#ffcc29'; ctx.lineWidth = Math.max(3, U * 0.07);
+        rr(n.x * U - U * 0.47 - U * 0.06, -(G.i + 1) * RISE * U - U * 0.06, U * 0.94 + U * 0.12, U * 0.34 + U * 0.12, U * 0.12); ctx.stroke();
+      }
+      ctx.globalAlpha = late;
       ctx.fillStyle = '#fffaf0'; ctx.strokeStyle = '#1d2340'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.moveTo(ax + n.dir * U * 0.2, ay); ctx.lineTo(ax - n.dir * U * 0.12, ay - U * 0.18);
       ctx.lineTo(ax - n.dir * U * 0.12, ay + U * 0.18); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -1331,10 +1391,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     for (const f of floats) {
       const a = (now - f.t) / 700;
       ctx.globalAlpha = 1 - a;
-      ctx.font = `${Math.round(U * 0.4)}px "Lilita One", "Trebuchet MS", sans-serif`;
+      // «¡Justo!»/«¡Casi!»: dorado, más grande y con un saltito al aparecer (con menos movimiento, quieto)
+      const pop = f.oro && !reduceMotion ? 1 + 0.35 * Math.max(0, 1 - a / 0.18) : 1;
+      ctx.font = `${Math.round(U * (f.oro ? 0.46 : 0.4) * pop)}px "Lilita One", "Trebuchet MS", sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-      ctx.lineWidth = 5; ctx.strokeStyle = '#1d2340'; ctx.fillStyle = '#fffaf0';
-      const fx = f.x * U, fy = -f.y * RISE * U - U * 1.3 - a * U * 0.5;
+      ctx.lineWidth = 5; ctx.strokeStyle = '#1d2340'; ctx.fillStyle = f.oro ? '#ffd84d' : '#fffaf0';
+      const fx = f.x * U, fy = -f.y * RISE * U - U * 1.3 - (f.oro && reduceMotion ? 0 : a * U * 0.5);
       ctx.strokeText(f.text, fx, fy); ctx.fillText(f.text, fx, fy);
     }
     ctx.globalAlpha = 1;
