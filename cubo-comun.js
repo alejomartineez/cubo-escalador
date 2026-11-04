@@ -669,6 +669,7 @@
     esqui: [250, 1000, 2500, 5000],
     pulseada: [2, 5, 9, 14],
     guardia: [500, 2000, 5000, 10000],
+    esgrima: [1, 3, 6, 10],
   };
   const NOMBRES_TIER = ['Primeros pasos', 'Le agarraste la mano', 'Crack', 'Leyenda'];
   const TIERS = ['bronce', 'plata', 'oro', 'diamante'];
@@ -735,6 +736,8 @@
       prueba: p => !!p.marcas['guardia-combo'] },
     { id: 'pulseada-tps10', juego: 'pulseada', nombre: 'Diez por segundo', desc: 'Sostené 10 toques por segundo en la Pulseada.', medalla: 'oro',
       prueba: p => !!p.marcas['tps10'] },
+    { id: 'esgrima-racha', juego: 'esgrima', nombre: 'Muñeca de acero', desc: 'Hacé 10 paradas perfectas seguidas en Esgrima.', medalla: 'oro',
+      prueba: p => !!p.marcas['esgrima-racha'] },
     { id: 'escalador-x', juego: 'escalador', nombre: 'Escalera del infierno', desc: 'Sprint 100 en Extremo en menos de 15 s.', medalla: 'oro',
       prueba: p => mejorTabla(p, 'escalador', 'sprint-x') < 15000 },
     { id: 'escalador-lava', juego: 'escalador', nombre: 'Pies calientes', desc: 'Escapá de la lava por 150 escalones.', medalla: 'bronce',
