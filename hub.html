@@ -970,7 +970,40 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     }
   }
 
-  const DIBUJOS = { escalador: ilEscalador, lluvia: ilLluvia, ritmo: ilRitmo, voley: ilVoley, paleta: ilPaleta, esqui: ilEsqui, pulseada: ilPulseada };
+  function ilEsgrima(c, w, h, t) {
+    sky(c, w, h, '#f27d8e', '#ffd9de');
+    // la pista de costado; el rival se carga arriba o abajo, se tira y vos parás: chispas
+    const s = Math.min(w / 7.5, h / 4.2), piso = h * 0.8;
+    c.fillStyle = INK; rr(c, w * 0.04, piso + 4, w * 0.92, s * 0.3, 6); c.fill();
+    c.fillStyle = '#e9edf5'; c.strokeStyle = INK; c.lineWidth = 3; rr(c, w * 0.04, piso, w * 0.92, s * 0.3, 6); c.fill(); c.stroke();
+    c.fillStyle = 'rgba(255,79,109,.35)'; c.fillRect(w * 0.04 + 2, piso + 2, w * 0.1, s * 0.3 - 4); c.fillRect(w * 0.86, piso + 2, w * 0.1 - 2, s * 0.3 - 4);
+    const ciclo = 1500, k = Math.floor(t / ciclo), f = (t % ciclo) / ciclo, alto = k % 2 === 0;
+    const carga = f < 0.45, tira = f >= 0.45 && f < 0.62, p = tira ? (f - 0.45) / 0.17 : f >= 0.62 ? 1 - Math.min(1, (f - 0.62) / 0.3) : 0;
+    const xa = w * 0.3, xb = w * 0.7 - p * s * 1.1, lb = s * 1.25;
+    const hoja = (hx, hy, ang, dir) => {
+      const tx = hx + dir * Math.cos(ang) * lb, ty = hy + Math.sin(ang) * lb;
+      c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = Math.max(4, s * 0.11); c.beginPath(); c.moveTo(hx, hy); c.lineTo(tx, ty); c.stroke();
+      c.strokeStyle = '#eef2f9'; c.lineWidth = Math.max(2, s * 0.045); c.beginPath(); c.moveTo(hx, hy); c.lineTo(tx, ty); c.stroke();
+      c.fillStyle = '#c9d3e3'; c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); c.arc(hx, hy, Math.max(3, s * 0.1), 0, Math.PI * 2); c.fill(); c.stroke();
+      c.lineCap = 'butt';
+      return [tx, ty];
+    };
+    CC.dibujarCubo(c, xa + Math.sin(t / 420) * s * 0.08, piso, s, { mirar: 1, t });
+    CC.dibujarCubo(c, xb, piso, s, { mirar: -1, t, skin: { ...rival('rey'), cuerpo: '#ff7a59' }, efecto: false });
+    const ry = carga ? (alto ? piso - s * 1.05 : piso - s * 0.22) : (alto ? piso - s * 0.78 : piso - s * 0.42);
+    const ra = carga ? (alto ? -2.1 : 0.1) : (alto ? -0.25 : 0.25);
+    const [tx, ty] = hoja(xb - s * (carga && !alto ? 0.15 : 0.45), ry, ra, -1);
+    const para = f > 0.5 && f < 0.85;
+    hoja(xa + s * 0.45, para ? (alto ? piso - s * 0.75 : piso - s * 0.4) : piso - s * 0.55, para ? (alto ? -0.95 : 0.75) : -0.2, 1);
+    if (f > 0.6 && f < 0.75) {
+      const q = (f - 0.6) / 0.15;
+      c.strokeStyle = '#ffe14d'; c.lineWidth = 3; c.globalAlpha = 1 - q;
+      for (let i = 0; i < 8; i++) { const a = i * 0.785 + k; c.beginPath(); c.moveTo(tx + Math.cos(a) * s * 0.1, ty + Math.sin(a) * s * 0.1); c.lineTo(tx + Math.cos(a) * s * (0.2 + q * 0.4), ty + Math.sin(a) * s * (0.2 + q * 0.4)); c.stroke(); }
+      c.globalAlpha = 1;
+    }
+  }
+
+  const DIBUJOS = { escalador: ilEscalador, lluvia: ilLluvia, ritmo: ilRitmo, voley: ilVoley, paleta: ilPaleta, esqui: ilEsqui, pulseada: ilPulseada, esgrima: ilEsgrima };
   const DESC = {
     escalador: 'Tocá el lado donde está el próximo escalón. Si errás, te mareás. Sprint 100, 30 segundos, Libre y el nuevo modo Lava: subí antes de que te alcance.',
     lluvia: 'Movete entre carriles y esquivá los bloques que caen cada vez más rápido.',
@@ -979,6 +1012,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     paleta: 'Mové tu paleta con ◀ ▶ y devolvé la pelota. Pegale con la punta para cruzarla. Contra la máquina o de a dos en el mismo celu.',
     esqui: 'Mantené ◀ o ▶ para doblar y pasá entre las banderas. Cada vez más rápido.',
     pulseada: 'Alterná ◀ ▶ lo más rápido que puedas para ganarle la fuerza al rival. ¿Cuántos toques por segundo hacés?',
+    esgrima: 'Leé el ataque del rival y pará con ◀ Alta o ▶ Baja. Si parás justo antes del golpe, contraatacás. Cuidado con las fintas.',
   };
   const JUEGOS = CC.JUEGOS.map(j => ({ ...j, dibujo: DIBUJOS[j.id], desc: DESC[j.id] }));
 
@@ -1774,7 +1808,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   ];
   // dónde guarda cada juego su "Sonido: sí/no" (Opciones lo cambia en todos)
   const SONIDO_KEYS = ['cubo-escalador-records', 'cubo-lluvia-records', 'cubo-ritmo-records', 'cubo-voley', 'cubo-paleta-records',
-    'cubo-esqui', 'cubo-pulseada-records'];
+    'cubo-esqui', 'cubo-pulseada-records', 'cubo-esgrima-records'];
   const portada = $('portada'), ptCv = $('ptCubo');
   const sesion = (k, v) => { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch (e) {} return null; };
   let aterrizo = Infinity, saltito = -1e9;   // cuándo cayó el cubo en la portada y cuándo lo tocaron

@@ -17,6 +17,7 @@ La pantalla principal muestra un juego por slide. Todos los juegos suman XP al m
 | Paleta | Paleta y pelota en una mesa vertical: movés tu paleta con `←` `→` y le pegás con la punta para cruzarla. Contra la máquina (3 vidas, cada 3 puntos llega un rival mejor) o **de a dos en el mismo dispositivo** (cada uno con sus botones, el de arriba dados vuelta; en la compu, flechas y A/D), a 7 puntos. |
 | Esquí | Slalom entre banderas, cada vez más rápido. |
 | Pulseada | Alterná lo más rápido que puedas para ganarle al rival. |
+| Esgrima | Duelo de costado contra rivales cada vez mejores. El rival se carga arriba o abajo y se tira: parás con `←` (alta) o `→` (baja). Si parás justo antes del golpe es **parada perfecta**: contraataque automático y toque tuyo; si parás antes, lo bloqueás y retrocede un paso (si lo sacás de la pista, también es toque). Parar al aire o tarde te cuesta. Cada rival tiene su estilo (veloz, de fintas, mano pesada, jefe) y se le gana a 3 toques; el puntaje son los rivales vencidos seguidos. |
 
 Controles: `←` `→` o `A` `D` en la compu, `R` reinicia; botones grandes y ↻ en el celu. Todos los juegos tienen Fácil, Normal, Difícil, Extremo y Maestro.
 
