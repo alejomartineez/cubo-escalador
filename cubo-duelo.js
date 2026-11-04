@@ -18,6 +18,7 @@
     { id: 'pulseada', nombre: 'Pulseada', desc: 'Pulseada de verdad: tu fuerza contra la suya. Al mejor de 3.', pagina: 'pulseada.html' },
     { id: 'escalador', nombre: 'Escalador', desc: 'Carrera al escalón 100 con la misma escalera.', pagina: 'escalador.html' },
     { id: 'voley', nombre: 'Vóley', desc: 'Los dos contra el mismo rival: gana el que hace más puntos.', pagina: 'voley.html' },
+    { id: 'paleta', nombre: 'Paleta', desc: 'Cada uno con su paleta, cara a cara. Gana el primero que llega a 7.', pagina: 'paleta.html' },
   ];
   const juegoDe = id => JUEGOS.find(j => j.id === id);
   const skinDe = id => CC.SKINS.find(s => s.id === id) || CC.SKINS[0];

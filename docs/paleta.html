@@ -225,7 +225,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 <canvas id="cv"></canvas>
 
 <div class="hud" id="hud" hidden>
-  <div class="stat"><span class="big" id="hScore">0</span><span class="lbl">puntos</span></div>
+  <div class="stat"><span class="big" id="hScore">0</span><span class="lbl" id="hLbl">puntos</span></div>
   <div class="stat mid"><span class="vidas" id="hVidas">❤️❤️❤️</span><span class="lbl" id="hRival">rival 1</span></div>
   <div class="right">
     <div class="hbtns">
@@ -294,6 +294,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 </div>
 
 <script src="cubo-comun.js"></script>
+<script src="cubo-duelo.js"></script>
 <script>
 (() => {
   'use strict';
@@ -302,8 +303,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const $ = id => document.getElementById(id);
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  // Duelo 1v1 online contra un amigo (cubo-duelo.js): cada uno maneja su paleta, en vivo, a META_DOS puntos.
+  // Manda el anfitrión (el que retó): simula la pelota, los saques y los puntos y transmite el estado; el invitado mueve
+  // su paleta al instante, se la pasa al anfitrión y dibuja la pelota adelantándola con su velocidad. Cada uno se ve abajo.
+  const CD = window.CuboDuelo, DUELO = CD ? CD.partida() : null;
+  let sala = null;
   // desafío del día (?diario=1): contra la máquina en Normal, 3 intentos y los rivales juegan con la semilla del día
-  const DIA = CC && CC.diarioDe ? CC.diarioDe('paleta') : null;
+  const DIA = !DUELO && CC && CC.diarioDe ? CC.diarioDe('paleta') : null;
   let azar = Math.random;
 
   // ---------- reglas ----------
@@ -502,10 +508,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       // paletas
       const dirAbajo = G.demo ? null : (teclas.r1 ? 1 : 0) - (teclas.l1 ? 1 : 0);
       if (G.demo) moverIA(G.abajo, dt); else moverPaleta(G.abajo, dirAbajo, dt);
-      if (G.demo || G.modo === 'cpu') moverIA(G.arriba, dt);
+      if (G.red) seguirRival(G.arriba, dt);
+      else if (G.demo || G.modo === 'cpu') moverIA(G.arriba, dt);
       else moverPaleta(G.arriba, (teclas.r2 ? 1 : 0) - (teclas.l2 ? 1 : 0), dt);
 
-      if (G.fase === 'cuenta' || G.fase === 'punto') {
+      if (G.red) redTick(now, dt);
+      if (G.red && !G.red.host) invitado(dt);   // el invitado no decide nada: dibuja lo que manda el anfitrión
+      else if (G.fase === 'cuenta' || G.fase === 'punto') {
         const antes = Math.ceil(G.faseT / 0.5);
         G.faseT -= dt;
         if (G.fase === 'cuenta' && !G.demo && Math.ceil(G.faseT / 0.5) !== antes && G.faseT > 0) sfxTic();
@@ -556,6 +565,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function terminar() {
     if (!G || state !== 'play') return;
     ponerMarca(false);
+    if (G.red) return finRed();
     const dos = G.modo === 'dos';
     if (dos) {
       const ganoAbajo = G.score > G.contra;
@@ -633,14 +643,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // marcador grande, de fondo
     ctx.font = `400 ${Math.round(S * 2.6)}px "Lilita One", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = 'rgba(255,255,255,.14)';
-    if (G.modo === 'dos' && !G.demo) {
+    if ((G.modo === 'dos' || G.red) && !G.demo) {
       ctx.fillText(String(G.contra), mx + mw / 2, my + mh * 0.25);
       ctx.fillText(String(G.score), mx + mw / 2, my + mh * 0.75);
     } else if (!G.demo) ctx.fillText(String(G.score), mx + mw / 2, my + mh * 0.75);
     // paletas y cubos
     const yo = CC ? CC.skin() : null;
-    const otro = G.modo === 'dos' && !G.demo ? (CC ? { ...CC.SKINS[0], cuerpo: '#62c6ff' } : null) : (CC ? { ...CC.SKINS[0], cuerpo: G.rival.c } : null);
-    dibujarPaleta(G.arriba, G.modo === 'dos' && !G.demo ? '#62c6ff' : G.rival.c, true, otro, now);
+    const otro = G.red ? G.red.sk : G.modo === 'dos' && !G.demo ? (CC ? { ...CC.SKINS[0], cuerpo: '#62c6ff' } : null) : (CC ? { ...CC.SKINS[0], cuerpo: G.rival.c } : null);
+    dibujarPaleta(G.arriba, G.red ? G.red.color : G.modo === 'dos' && !G.demo ? '#62c6ff' : G.rival.c, true, otro, now);
     dibujarPaleta(G.abajo, (yo && yo.cuerpo) || '#ffcc29', false, yo, now);
     // pelota
     const b = G.bola;
@@ -678,6 +688,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         if (G.modo === 'dos') texto(n > 3 ? '3' : String(n), sy(FH * 0.38), Math.round(S * 2.4), true);
       }
       if (banner && now - banner.t < 1500) texto(banner.text, sy(FH * 0.38), Math.round(Math.min(34, S * 1.3)));
+      // online: si el otro deja de llegar un rato (se le cortó o minimizó el juego), se avisa
+      if (G.red && G.red.rx && now - G.red.rx > 1200) texto('Conexión lenta…', sy(FH * 0.38), Math.round(Math.min(30, S * 1.1)));
       for (const f of floats) {
         const k = (now - f.t) / 900;
         ctx.globalAlpha = 1 - k; texto(f.text, sy(f.y) - k * 30, Math.round(S * 0.9)); ctx.globalAlpha = 1;
@@ -686,10 +698,16 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     pintarHud();
   }
   function pintarHud() {
-    if (!G || G.demo || state !== 'play' || G.modo !== 'cpu') return;
-    const k = `${G.score}|${G.vidas}|${G.nivel}`;
+    if (!G || G.demo || state !== 'play' || (G.modo !== 'cpu' && !G.red)) return;
+    const k = `${G.score}|${G.vidas}|${G.nivel}|${G.contra}`;
     if (k === hudCache) return;
     hudCache = k;
+    if (G.red) {   // online: tus puntos a la izquierda, los del rival al medio
+      $('hScore').textContent = G.score; $('hLbl').textContent = 'vos';
+      $('hVidas').textContent = G.contra; $('hRival').textContent = DUELO.rival.apodo;
+      return;
+    }
+    $('hLbl').textContent = 'puntos';
     $('hScore').textContent = G.score;
     $('hVidas').textContent = G.vidas > 0 ? '❤️'.repeat(Math.min(5, G.vidas)) : '💔';
     $('hRival').textContent = `rival ${G.nivel + 1}: ${G.rival.n}`;
@@ -726,12 +744,18 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function start() {
     if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); modo = 'cpu'; }
     newRun(false, dif(), modo);
+    mostrarJuego();
+  }
+  function mostrarJuego() {
     state = 'play';
     const dos = G.modo === 'dos';
     $('menu').hidden = true; $('end').hidden = true;
     $('hud').hidden = dos; $('lado').hidden = !dos;
     $('pad').classList.remove('off'); $('pad2').hidden = !dos; $('pad2').classList.toggle('off', !dos);
-    $('hDif').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + G.D.name;
+    $('btnRestart').hidden = !!G.red;
+    $('btnQuit').textContent = G.red ? '← Salir' : '← Menú';
+    if (G.red) $('hDif').textContent = `a ${META_DOS} puntos`;
+    else $('hDif').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + G.D.name;
     soltarTeclas(); hudCache = '';
     ponerMarca(true);
     resize();
@@ -739,6 +763,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function cortar() { if (state === 'play' && G && !G.demo && !G.done && G.modo === 'cpu' && G.score > 0) return settle(); return null; }
   function restart() {
+    if (DUELO) return;
     const r = cortar();
     start();
     if (r && r.xp) banner = { text: `+${r.xp} XP`, t: performance.now() };
@@ -768,7 +793,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   $('btnMenu').addEventListener('click', showMenu);
   $('btnRank').addEventListener('click', () => verRanking(dif()));
   $('btnRank2').addEventListener('click', () => verRanking(G ? G.diff : dif()));
-  for (const id of ['btnQuit', 'btnQuit2']) $(id).addEventListener('click', showMenu);
+  for (const id of ['btnQuit', 'btnQuit2']) $(id).addEventListener('click', () => DUELO ? salirDuelo() : showMenu());
   for (const id of ['btnRestart', 'btnRestart2']) $(id).addEventListener('pointerdown', e => { e.preventDefault(); restart(); });
   $('btnMute').addEventListener('click', () => { muted = !muted; rec.muted = muted; saveRec(); renderMenu(); if (!muted) beep(660, 0.08); });
 
@@ -800,7 +825,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (state === 'play') {
       const t = teclaDe(e);
       if (t) { e.preventDefault(); teclas[t] = true; return; }
-      if (k === 'Escape') showMenu();
+      if (k === 'Escape') DUELO ? salirDuelo() : showMenu();
       else if ((k === 'r' || k === 'R') && !e.repeat) restart();
     } else if (state === 'menu') {
       if (k === 'ArrowUp' || k === 'ArrowDown') { e.preventDefault(); if (sel && !DIA) sel.siguiente(k === 'ArrowUp' ? -1 : 1); }
@@ -816,6 +841,183 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   addEventListener('blur', soltarTeclas);
   document.addEventListener('visibilitychange', () => { if (document.hidden) soltarTeclas(); });
 
+  // ---------- duelo online ----------
+  // Todo lo que viaja está del lado del anfitrión (él abajo); el invitado lo da vuelta: x → FW - x, y → FH - y.
+  // Anfitrión → invitado, ~20 por segundo: 's' { k: partido, q: nº de mensaje, f: fase, t: lo que falta de la fase,
+  //   b: [x, y, vx, vy, vel] de la pelota, h: [x, v] de su paleta, m: [sus puntos, los del invitado], n: golpes, r: rally }
+  // Invitado → anfitrión, ~25 por segundo mientras se mueve: 'y' { x, v } de su paleta (en sus coordenadas).
+  const r2 = v => Math.round(v * 100) / 100;
+  const lim = (v, a, b) => Math.max(a, Math.min(b, v));
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const latencia = () => Math.min(0.2, (sala ? sala.rtt : 160) / 2000);   // lo que tarda un mensaje en llegar (s)
+  function empezarRed(d) {
+    CD.cerrarCapa();
+    azar = CD.azar(d.semilla);
+    newRun(false, 'normal', 'red');
+    const sk = CD.skinDe(DUELO.rival.skin);
+    G.red = {
+      host: sala.host, k: d.semilla, sk, color: sk.cuerpo || '#62c6ff',
+      tx: 0, q: 0, ex: -1, ev: 0,   // lo último que mandé
+      rx: 0, ultimo: -1,            // cuándo llegó lo último del otro y qué número era
+      gx: FW / 2, gv: 0,            // la paleta del otro según su último mensaje (ya en mis coordenadas)
+      bola: null, ox: 0, oy: 0,     // invitado: la pelota que va adelantando y la corrección que se va desvaneciendo
+      n: 0, sono: -9, cerrado: false,
+    };
+    G.saca = d.semilla % 2 ? 'abajo' : 'arriba';
+    mostrarJuego();
+  }
+  // la paleta del otro: va hacia donde dijo que estaba, adelantada con su velocidad lo que tardó el mensaje
+  function seguirRival(p, dt) {
+    const R = G.red;
+    const edad = R.rx ? Math.min(0.15, (performance.now() - R.rx) / 1000 + latencia()) : 0;
+    const obj = lim(R.gx + R.gv * edad, p.hw, FW - p.hw);
+    p.x += (obj - p.x) * Math.min(1, dt * 20);
+    p.v = R.gv;
+  }
+  function redTick(now) {
+    const R = G.red;
+    if (R.host) {
+      if (now - R.tx < 50) return;
+      R.tx = now;
+      const b = G.bola, A = G.abajo;
+      sala.enviar('s', { k: R.k, q: ++R.q, f: G.fase, t: r2(G.faseT), b: [r2(b.x), r2(b.y), r2(b.vx), r2(b.vy), r2(b.vel)],
+        h: [r2(A.x), r2(A.v)], m: [G.score, G.contra], n: G.golpes, r: G.rally });
+    } else {
+      // mientras te movés va seguido; quieto, cada tanto (así el anfitrión sabe que seguís ahí)
+      const A = G.abajo, cambio = Math.abs(A.x - R.ex) > 0.005 || Math.abs(A.v - R.ev) > 0.05;
+      if (now - R.tx < (cambio ? 40 : 250)) return;
+      R.tx = now; R.ex = A.x; R.ev = A.v;
+      sala.enviar('y', { x: r2(A.x), v: r2(A.v) });
+    }
+  }
+  // Invitado: la pelota se mueve sola entre mensaje y mensaje (bandas y paletas, igual que en moverBola) y cada mensaje
+  // la pone donde dice el anfitrión. Sin puntos: eso lo decide él.
+  function rebote(b, p, dir, sonar) {
+    const off = lim((b.x - p.x) / (p.hw + R_BOLA), -1, 1);
+    const ang = lim(off + lim(p.v * 0.012, -0.25, 0.25), -1.1, 1.1);
+    b.vel = Math.min(G.D.tope, b.vel * G.D.crece);
+    b.vx = b.vel * Math.sin(ang); b.vy = dir * b.vel * Math.cos(ang);
+    b.y = p.y + dir * (R_BOLA + 0.02);
+    if (!sonar) return;
+    const punta = Math.abs(off) > 0.7;
+    p.golpe = G.t; G.red.sono = G.t;
+    chispas(b.x, p.y, punta ? '#ffcc29' : '#ffffff', punta ? 12 : 7, punta ? 1.3 : 0.9);
+    sfxPaleta(G.rally + 1); if (dir < 0) CC?.vibrar(8);
+  }
+  function avanzar(b, dt, sonar) {
+    const pasos = Math.max(1, Math.ceil(b.vel * dt / 0.12)), h = dt / pasos, A = G.abajo, B = G.arriba;
+    for (let k = 0; k < pasos; k++) {
+      const y0 = b.y;
+      b.x += b.vx * h; b.y = lim(b.y + b.vy * h, -0.8, FH + 0.8);
+      if (b.x < R_BOLA) { b.x = R_BOLA; b.vx = Math.abs(b.vx); if (sonar) sfxPared(); }
+      else if (b.x > FW - R_BOLA) { b.x = FW - R_BOLA; b.vx = -Math.abs(b.vx); if (sonar) sfxPared(); }
+      if (b.vy > 0 && y0 + R_BOLA <= A.y + 0.05 && b.y + R_BOLA >= A.y && Math.abs(b.x - A.x) <= A.hw + R_BOLA) rebote(b, A, -1, sonar);
+      else if (b.vy < 0 && y0 - R_BOLA >= B.y - 0.05 && b.y - R_BOLA <= B.y && Math.abs(b.x - B.x) <= B.hw + R_BOLA) rebote(b, B, 1, sonar);
+    }
+  }
+  function invitado(dt) {
+    const R = G.red, b = G.bola;
+    if (G.fase === 'cuenta' || G.fase === 'punto') {
+      const antes = Math.ceil(G.faseT / 0.5);
+      G.faseT = Math.max(0, G.faseT - dt);
+      if (G.fase === 'cuenta' && Math.ceil(G.faseT / 0.5) !== antes && G.faseT > 0) sfxTic();
+    } else if (G.fase === 'juego' && R.bola) {
+      // si dejan de llegar mensajes, la pelota espera en vez de seguir de largo
+      if (performance.now() - R.rx < 300) avanzar(R.bola, dt, true);
+      const k = Math.exp(-dt * 12);
+      R.ox *= k; R.oy *= k;
+      b.x = R.bola.x + R.ox; b.y = R.bola.y + R.oy; b.vx = R.bola.vx; b.vy = R.bola.vy; b.vel = R.bola.vel;
+      b.estela.push({ x: b.x, y: b.y });
+      if (b.estela.length > 10) b.estela.shift();
+    }
+  }
+  function recibirEstado(d) {
+    const R = G.red;
+    if (d.k !== R.k || !(d.q > R.ultimo) || !Array.isArray(d.b) || !Array.isArray(d.h) || !Array.isArray(d.m)) return;
+    R.ultimo = d.q; R.rx = performance.now();
+    const lat = latencia(), b = G.bola, antes = G.fase;
+    const [bx, by, bvx, bvy, vel] = d.b.map(Number);
+    R.gx = FW - (+d.h[0] || 0); R.gv = -(+d.h[1] || 0);
+    // marcador: los míos son los que él tiene "en contra"
+    const mio = +d.m[1] || 0, suyo = +d.m[0] || 0;
+    if (mio !== G.score || suyo !== G.contra) {
+      const gane = mio > G.score;
+      G.score = mio; G.contra = suyo; hudCache = '';
+      chispas(FW - bx, gane ? 0 : FH, gane ? '#ffcc29' : '#ff5d7d', 16, 1.4);
+      if (gane) sfxPunto(); else { sfxPierdo(); shake = reduceMotion ? 0 : 10; CC?.vibrar(40); }
+    }
+    // un golpe nuevo: si ya lo vi venir (y sonó), no suena dos veces
+    if (+d.n > R.n) {
+      R.n = +d.n; G.golpes = R.n; G.rally = +d.r || 0; G.mejorRally = Math.max(G.mejorRally, G.rally);
+      const mia = -bvy < 0, p = mia ? G.abajo : G.arriba;
+      if (G.t - R.sono > 0.35) {
+        p.golpe = G.t;
+        chispas(FW - bx, p.y, '#ffffff', 7, 0.9);
+        sfxPaleta(G.rally); if (mia) CC?.vibrar(8);
+      }
+    }
+    G.fase = d.f;
+    G.faseT = antes === d.f ? Math.min(G.faseT, Math.max(0, d.t - lat)) : Math.max(0, d.t - lat);
+    if (d.f === 'juego') {
+      // donde estaba la pelota cuando él mandó el mensaje, adelantada lo que tardó en llegar
+      const T = { x: FW - bx, y: FH - by, vx: -bvx, vy: -bvy, vel };
+      avanzar(T, lat, false);
+      const ox = b.x - T.x, oy = b.y - T.y;
+      // lo que venía dibujando y lo de verdad: si es poco, se corrige de a poco; si es mucho (un saque), salta
+      if (antes === 'juego' && R.bola && Math.hypot(ox, oy) < 1.5) { R.ox = ox; R.oy = oy; }
+      else { R.ox = R.oy = 0; b.estela = []; b.x = T.x; b.y = T.y; }
+      R.bola = T;
+    } else {
+      R.bola = null;
+      if (d.f !== 'cuenta') { b.x = FW - bx; b.y = FH - by; }
+      b.vel = vel;
+    }
+    if (d.f === 'fin' && !G.done) { G.done = true; setTimeout(terminar, 650); }
+  }
+  function finRed() {
+    const R = G.red;
+    if (R.cerrado) return;
+    R.cerrado = true; G.done = true;
+    state = 'duelo'; soltarTeclas();
+    $('hud').hidden = true; $('pad').classList.add('off');
+    if (R.host) sala.enviar('fin', { k: R.k, m: [G.score, G.contra] });
+    const gane = G.score > G.contra;
+    if (CC) CC.sumarXP(gane ? 15 : 10);
+    CD.resultado(sala, { gane,
+      texto: `Vos <b>${G.score}</b> · ${esc(DUELO.rival.apodo)} <b>${G.contra}</b>`,
+      nota: `Rally más largo: ${G.mejorRally} ${G.mejorRally === 1 ? 'golpe' : 'golpes'}` });
+  }
+  function salirDuelo() { if (sala && confirm('¿Salir del duelo? Lo perdés.')) sala.salir(); }
+  function conectarDuelo() {
+    state = 'duelo';
+    $('menu').hidden = true;
+    sala = CD.sala(DUELO, {
+      alConectar: () => sala.listo(),
+      alEmpezar: d => empezarRed(d),
+      alMensaje(ev, d) {
+        if (!G || !G.red || G.red.cerrado) return;
+        const R = G.red;
+        if (ev === 'y' && R.host) { R.gx = FW - (+d.x || 0); R.gv = -(+d.v || 0); R.rx = performance.now(); }
+        else if (ev === 's' && !R.host) recibirEstado(d);
+        else if (ev === 'fin' && !R.host && d.k === R.k && Array.isArray(d.m)) {
+          // por si se perdió el último estado: el resultado final lo dice el anfitrión
+          G.score = +d.m[1] || 0; G.contra = +d.m[0] || 0;
+          if (state === 'play') terminar();
+        }
+      },
+      alIrse() {
+        const jugando = G && G.red && !G.red.cerrado && state === 'play';
+        if (G && G.red) { G.red.cerrado = true; G.done = true; }
+        state = 'duelo'; soltarTeclas();
+        $('hud').hidden = true; $('pad').classList.add('off');
+        const quien = esc(DUELO.rival.apodo);
+        CD.resultado(sala, jugando ? { gane: true, sinRevancha: true, texto: `${quien} se fue del duelo.` }
+          : { titulo: 'Se fue', sinRevancha: true, texto: `${quien} salió del duelo.` });
+      },
+    });
+    CD.esperandoRival(sala);
+  }
+
   // ---------- arranque ----------
   let last = performance.now();
   function frame(now) {
@@ -824,8 +1026,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     requestAnimationFrame(frame);
   }
   showMenu();
+  if (DUELO) conectarDuelo();
   requestAnimationFrame(frame);
-  if (CC && CC.pedirApodo) setTimeout(() => CC.pedirApodo(), 600);
+  if (CC && CC.pedirApodo && !DUELO) setTimeout(() => CC.pedirApodo(), 600);
 })();
 </script>
 
