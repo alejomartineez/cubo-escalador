@@ -1505,6 +1505,11 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     $('amigosBtn').setAttribute('aria-label', 'Amigos: agregar, comparar y retar a un 1v1' + (n ? `. ${n} ${n === 1 ? 'solicitud nueva' : 'solicitudes nuevas'}` : ''));
   }
   // la lista cambia sola (cubo-duelo.js avisa en vivo); además se mira al entrar y al volver a la pestaña
+  // llegó progreso de la nube (de otro dispositivo): se repinta lo que esté a la vista
+  addEventListener('cubo-perfil', () => {
+    pintarPerfil(); pintarDiario();
+    if (abierta && abierta.id === 'sheetPersonaje') pintarPersonaje();
+  });
   addEventListener('cubo-amigos', () => {
     if (abierta && abierta.id === 'sheetAmigos') { vistas(); pintarAmigos(); }
     pintarBadgeAmigos();

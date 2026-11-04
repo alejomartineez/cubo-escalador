@@ -468,12 +468,20 @@
       diario: obj(p.diario),
       // temporadas: { [n]: { xp, cobrado } } · boost: partidas que quedan con doble XP · misiones: progreso del día y la semana
       temporadas: obj(p.temporadas),
-      boost: Math.max(0, Math.floor(+p.boost || 0)),
+      // boost = partidas de doble XP ganadas (boostG) menos las usadas (boostU): dos contadores que solo suben, así al
+      // juntar el perfil de dos dispositivos no se regeneran las que ya usaste
+      ...(() => {
+        const g = Math.max(0, Math.floor(p.boostG != null ? +p.boostG || 0 : +p.boost || 0)), u = Math.max(0, Math.floor(+p.boostU || 0));
+        return { boostG: g, boostU: u, boost: Math.max(0, g - u) };
+      })(),
       misiones: obj(p.misiones),
+      eleccion: +p.eleccion || 0,   // cuándo elegiste personaje, efecto, título o brillo (gana el más nuevo al juntar perfiles)
     };
   }
   let datos = leer();
-  const guardar = () => { try { localStorage.setItem(KEY, JSON.stringify(datos)); } catch (e) {} };
+  // Cada vez que se guarda, el progreso se sube solo a la nube un rato después (ver «progreso en la nube» más abajo).
+  const nube = { timer: 0, sincronizando: false, ya: false };
+  const guardar = () => { try { localStorage.setItem(KEY, JSON.stringify(datos)); } catch (e) {} programarNube(); };
   if (!datos.id) {
     datos.id = crypto.randomUUID ? crypto.randomUUID()
       : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
@@ -517,7 +525,7 @@
     datos = leer();
     const x = MARCOS.find(k => k.id === id);
     if (!x || !libre(x)) return false;
-    datos.marco = id; guardar();
+    datos.marco = id; datos.eleccion = Date.now(); guardar();
     return true;
   }
   function titulo() {
@@ -546,7 +554,7 @@
     datos = leer();
     const s = SKINS.find(k => k.id === id);
     if (!s || !libre(s)) return false;
-    datos.skin = id; guardar();
+    datos.skin = id; datos.eleccion = Date.now(); guardar();
     subirPendientes();   // el ranking muestra tu skin actual
     return true;
   }
@@ -570,6 +578,7 @@
     datos.codigos.push(...faltan);
     if (sk) datos.skin = sk.id;
     if (fx) datos.efecto = fx.id;
+    if (sk || fx) datos.eleccion = Date.now();
     guardar();
     subirPendientes();
     avisar(`<canvas width="96" height="104" style="width:48px;height:52px;flex:none"></canvas><div><b>¡${items.map(i => i.nombre).join(' y ')}!</b><span>${sk ? 'Personaje' : 'Efecto'} legendario desbloqueado</span></div>`, 4200);
@@ -588,14 +597,14 @@
     datos = leer();
     const e = EFECTOS.find(k => k.id === id);
     if (!e || !libre(e)) return false;
-    datos.efecto = id; guardar();
+    datos.efecto = id; datos.eleccion = Date.now(); guardar();
     return true;
   }
   function elegirTitulo(id) {
     datos = leer();
     const x = TITULOS.find(k => k.id === id);
     if (!x || !libre(x)) return false;
-    datos.titulo = id; guardar();
+    datos.titulo = id; datos.eleccion = Date.now(); guardar();
     subirPendientes();   // el ranking muestra tu título
     return true;
   }
@@ -692,7 +701,7 @@
     const ev = eventoXP();
     if (ev && xp > 0) xp = Math.round(xp * ev.mult);
     const boost = datos.boost > 0 && xp > 0;
-    if (boost) { xp *= 2; datos.boost--; }
+    if (boost) { xp *= 2; datos.boostU++; datos.boost--; }
     if (ev || boost) avisar(`<b>⚡ ${[ev && `${ev.nombre}: ${ev.texto}`, boost && `Doble XP (te quedan ${datos.boost})`].filter(Boolean).join(' · ')}</b>`, 2600);
     const cumplidas = avanzarMisiones({ partida: { juego: o.juego, dif: dif ? dif.id : null, record, valor, diario: !!dia } });
     guardar();
@@ -917,7 +926,7 @@
     const premios = premiosTemporada(T.n);
     for (let k = (+st.cobrado || 0) + 1; k <= nivel; k++) {
       const p = premios[k - 1];
-      if (p.boost) datos.boost = (+datos.boost || 0) + BOOST_PARTIDAS;
+      if (p.boost) { datos.boostG += BOOST_PARTIDAS; datos.boost += BOOST_PARTIDAS; }
       nuevos.push(p);
     }
     st.cobrado = Math.max(+st.cobrado || 0, nivel);
@@ -1150,6 +1159,7 @@
       subirTodo();   // al estrenar el apodo se suben todos tus récords
       guardar();
       await subirPendientes();
+      sincronizarNube(true);
       refrescarAmigos(true);   // si tenías amigos guardados de antes, ahora se pueden subir
       return { ok: true };
     })();
@@ -1171,10 +1181,138 @@
     subirTodo();
     guardar();
     await subirPendientes();
+    await sincronizarNube(true);   // trae tu progreso del otro dispositivo y lo junta con el de acá
     refrescarAmigos(true);   // los amigos de tu apodo (el servidor ya juntó los de este dispositivo)
     return { ok: true, apodo: r.apodo };
   }
   const claveLinda = c => (c && c.length === 8 ? c.slice(0, 4) + '-' + c.slice(4) : c);
+
+  // ---------- progreso en la nube ----------
+  // El perfil (XP, personajes, logros, récords, temporada, misiones, racha) se guarda también en Supabase, atado a tu id de
+  // jugador (tabla `perfiles` de supabase.sql). Solo con apodo. Se sube solo unos segundos después de cada cambio y al
+  // abrir el juego; si no hay internet, queda para cuando vuelva. Antes de subir se baja lo que hay en la nube y se junta
+  // con lo de acá quedándose con lo mejor de cada lado, así jugar en dos dispositivos (o entrar con tu clave en otro) no
+  // pisa nada. Lo que es de cada dispositivo (id, clave, amigos, cola del ranking, lo ya visto) no se sube.
+  const NUBE_KEY = 'cubo-nube';   // lo último que se subió, para no subir dos veces lo mismo
+  const DE_LA_NUBE = ['xp', 'skin', 'efecto', 'titulo', 'marco', 'eleccion', 'records', 'mejores', 'partidas', 'total', 'logros',
+    'marcas', 'extremo', 'maestro', 'codigos', 'diario', 'temporadas', 'boostG', 'boostU', 'misiones'];
+  const progreso = p => { const o = {}; for (const k of DE_LA_NUBE) o[k] = p[k]; return o; };
+  const objDe = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+  const maxObj = (a, b) => { const o = { ...a }; for (const [k, v] of Object.entries(objDe(b))) o[k] = Math.max(+o[k] || 0, +v || 0); return o; };
+  // Junta dos perfiles (a = este dispositivo, ya pasado por leer(); b = la nube) quedándose con lo mejor de cada lado.
+  function mezclar(a, b) {
+    const o = { ...a };
+    o.xp = Math.max(a.xp, +b.xp || 0);
+    o.total = Math.max(a.total, +b.total || 0);
+    o.partidas = maxObj(a.partidas, b.partidas);
+    o.boostG = Math.max(a.boostG, Math.floor(+b.boostG || 0)); o.boostU = Math.max(a.boostU, Math.floor(+b.boostU || 0));
+    o.boost = Math.max(0, o.boostG - o.boostU);
+    // logros: la fecha más vieja de cada uno; marcas y "jugado en Extremo/Maestro": la unión
+    const lb = objDe(b.logros);
+    o.logros = { ...lb, ...a.logros };
+    for (const [k, v] of Object.entries(lb)) if (+v && +v < +o.logros[k]) o.logros[k] = v;
+    o.marcas = { ...objDe(b.marcas), ...a.marcas }; o.extremo = { ...objDe(b.extremo), ...a.extremo }; o.maestro = { ...objDe(b.maestro), ...a.maestro };
+    o.codigos = [...new Set([...a.codigos, ...(Array.isArray(b.codigos) ? b.codigos.filter(c => typeof c === 'string') : [])])];
+    // récords: la mejor marca de cada tabla; el texto del récord de cada juego, del lado que tenía la mejor marca
+    const rb = objDe(b.records);
+    o.mejores = { ...a.mejores }; o.records = { ...rb, ...a.records };
+    for (const [k, v] of Object.entries(objDe(b.mejores))) {
+      const [jid, tid] = k.split(':'), tb = tablaDe(jid, tid);
+      if (isFinite(+v) && +v > 0 && (o.mejores[k] == null || (tb && mejor(tb, +v, o.mejores[k])))) {
+        o.mejores[k] = +v;
+        if (rb[jid]) o.records[jid] = String(rb[jid]);
+      }
+    }
+    // temporadas: el máximo de XP y de niveles cobrados de cada una
+    o.temporadas = { ...a.temporadas };
+    for (const [n, t] of Object.entries(objDe(b.temporadas))) {
+      const x = o.temporadas[n] || {}, y = objDe(t);
+      o.temporadas[n] = { ...x, xp: Math.max(+x.xp || 0, +y.xp || 0), cobrado: Math.max(+x.cobrado || 0, +y.cobrado || 0) };
+    }
+    // desafío del día: la mejor racha, la racha del último día jugado y, si es el mismo día, lo mejor de los dos
+    const da = a.diario, db = objDe(b.diario), d = { ...da };
+    d.mejorRacha = Math.max(+da.mejorRacha || 0, +db.mejorRacha || 0);
+    if (String(db.ultimo || '') > String(da.ultimo || '')) { d.ultimo = db.ultimo; d.racha = +db.racha || 0; }
+    else if (db.ultimo && db.ultimo === da.ultimo) d.racha = Math.max(+da.racha || 0, +db.racha || 0);
+    if (String(db.fecha || '') > String(da.fecha || '')) { d.fecha = db.fecha; d.juego = db.juego; d.intentos = +db.intentos || 0; d.mejor = db.mejor ?? null; }
+    else if (db.fecha && db.fecha === da.fecha) {
+      d.intentos = Math.max(+da.intentos || 0, +db.intentos || 0);
+      if (db.mejor != null && (da.mejor == null || +db.mejor > +da.mejor)) d.mejor = +db.mejor;
+    }
+    if (String(db.premio || '') > String(da.premio || '')) d.premio = db.premio;
+    o.diario = d;
+    // misiones: si son del mismo día (o semana), el progreso más alto de cada una y las cumplidas de los dos lados
+    const ma = a.misiones, mb = objDe(b.misiones), m = { ...ma };
+    const juntarProg = (x, y) => {
+      const r = { ...objDe(x) };
+      for (const [k, v] of Object.entries(objDe(y))) {
+        r[k] = Array.isArray(v) || Array.isArray(r[k]) ? [...new Set([...(Array.isArray(r[k]) ? r[k] : []), ...(Array.isArray(v) ? v : [])])]
+          : Math.max(+r[k] || 0, +v || 0);
+      }
+      return r;
+    };
+    for (const [clave, prog] of [['dia', 'd'], ['semana', 's']]) {
+      if (String(mb[clave] || '') > String(ma[clave] || '')) { m[clave] = mb[clave]; m[prog] = objDe(mb[prog]); }
+      else if (mb[clave] && mb[clave] === ma[clave]) m[prog] = juntarProg(ma[prog], mb[prog]);
+    }
+    o.misiones = m;
+    // personaje, efecto, título y brillo: los que elegiste más recientemente
+    if ((+b.eleccion || 0) > a.eleccion) for (const k of ['skin', 'efecto', 'titulo', 'marco', 'eleccion']) if (typeof b[k] === typeof a[k]) o[k] = b[k];
+    return o;
+  }
+  function programarNube() {
+    if (nube.sincronizando || !datos.apodo) return;
+    clearTimeout(nube.timer);
+    nube.timer = setTimeout(() => sincronizarNube(), 6000);
+  }
+  // Baja tu progreso de la nube (la primera vez que se abre la página, o con forzar), lo junta con el de acá y sube el
+  // resultado si cambió. Devuelve true si trajo algo nuevo.
+  async function sincronizarNube(forzar) {
+    clearTimeout(nube.timer);
+    datos = leer();
+    if (!datos.apodo || !rankingActivo() || navigator.onLine === false) return false;
+    if (nube.sincronizando) { nube.timer = setTimeout(() => sincronizarNube(forzar), 3000); return false; }
+    nube.sincronizando = true;
+    let cambio = false;
+    try {
+      if (!datos.clave) await subirPendientes();   // el jugador tiene que estar registrado
+      datos = leer();
+      if (!datos.apodo) return false;
+      let subido = null;
+      try { subido = localStorage.getItem(NUBE_KEY + ':' + datos.id); } catch (e) {}
+      if (forzar || !nube.ya || subido == null) {
+        const r = await api('rpc/bajar_perfil', { method: 'POST', body: JSON.stringify({ p_jugador: datos.id }) });
+        nube.ya = true;
+        datos = leer();
+        if (r && typeof r === 'object' && !Array.isArray(r)) {
+          const antes = JSON.stringify(progreso(datos)), nivelAntes = nivelDe(datos.xp).nivel;
+          const junto = mezclar(datos, r);
+          if (JSON.stringify(progreso(junto)) !== antes) {
+            datos = junto;
+            try { localStorage.setItem(KEY, JSON.stringify(datos)); } catch (e) {}
+            cambio = true;
+            const n = nivelDe(datos.xp).nivel;
+            if (n > nivelAntes) avisar(`<b>☁️ Trajimos tu progreso</b><br>Nivel ${n}`, 3200);
+          }
+        }
+      }
+      const json = JSON.stringify(progreso(datos));
+      if (json !== subido) {
+        const ok = await api('rpc/subir_perfil', { method: 'POST', body: JSON.stringify({ p_jugador: datos.id, p_datos: progreso(datos) }) });
+        if (ok === true) { try { localStorage.setItem(NUBE_KEY + ':' + datos.id, json); } catch (e) {} }
+        else nube.timer = setTimeout(() => sincronizarNube(), 8000);   // muy seguido: de nuevo en un rato
+      }
+    } catch (e) { /* sin conexión o falta el SQL nuevo: queda para la próxima */ }
+    finally { nube.sincronizando = false; }
+    if (cambio) {
+      revisarLogros();   // lo que se juntó puede destrabar algún logro (por ejemplo, Coleccionista)
+      if (firma() !== leer().skinSubida) subirPendientes();   // el ranking muestra el personaje que elegiste en el otro
+      dispatchEvent(new CustomEvent('cubo-perfil'));
+    }
+    return cambio;
+  }
+  addEventListener('online', () => sincronizarNube());
+  setTimeout(() => sincronizarNube(), 2000);
 
   // ---------- amigos ----------
   // Cada jugador con apodo tiene un código de amigo (6 letras). Poner el código de alguien le manda una solicitud:
@@ -4869,7 +5007,7 @@
     sumarXP, xpEscala, partida, importarRecord, anotarRecord, revisarLogros, tieneLogro,
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
     avisar, vibrar, volver, dibujarCubo, morir, sombra, pedirApodo, diario, diarioDe, azar, faltaTexto,
-    temporada, misiones, eventoXP, TEMP_XP,
+    temporada, misiones, eventoXP, TEMP_XP, sincronizarNube,
   };
   // Duelos 1v1 (cubo-duelo.js): usa la misma conexión a Supabase y escucha las invitaciones en todas las páginas.
   window.CuboComun.RANKING = RANKING;

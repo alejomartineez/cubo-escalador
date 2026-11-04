@@ -681,3 +681,41 @@ begin
   returning * into v_reto;
   return json_build_object('id', v_reto.id, 'sala', v_reto.sala, 'vence', v_reto.vence, 'huella', public.huella_de(v_para));
 end $$;
+
+-- ---------- Parte: progreso en la nube ----------
+-- El perfil de cada jugador (XP, personajes, logros, récords, temporada, misiones, racha) como un JSON, para no perderlo
+-- al cambiar de dispositivo. Lo sube y lo baja cubo-comun.js (sincronizarNube): antes de subir junta lo de la nube con lo
+-- del dispositivo, así que acá solo se guarda. Una fila por jugador. Nadie la lee directo: solo con tu id (subir_perfil,
+-- bajar_perfil), igual que las sombras.
+create table if not exists public.perfiles (
+  jugador     uuid primary key references public.jugadores (id) on delete cascade,
+  datos       jsonb not null check (jsonb_typeof(datos) = 'object' and octet_length(datos::text) <= 65536),
+  actualizado timestamptz not null default now()
+);
+alter table public.perfiles enable row level security;
+
+-- Guarda (o reemplaza) tu perfil. Una subida cada 3 s como mucho: si es más seguido devuelve false y el juego reintenta.
+create or replace function public.subir_perfil(p_jugador uuid, p_datos jsonb)
+returns boolean language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.jugadores where id = p_jugador) then return false; end if;
+  if p_datos is null or jsonb_typeof(p_datos) <> 'object' or octet_length(p_datos::text) > 65536 then return false; end if;
+  insert into public.perfiles as p (jugador, datos) values (p_jugador, p_datos)
+  on conflict (jugador) do update set datos = excluded.datos, actualizado = now()
+    where p.actualizado < now() - interval '3 seconds';
+  return found;
+exception when check_violation then return false;
+end $$;
+revoke all on function public.subir_perfil(uuid, jsonb) from public;
+grant execute on function public.subir_perfil(uuid, jsonb) to anon, authenticated;
+
+-- Tu perfil guardado (null si todavía no subiste ninguno).
+create or replace function public.bajar_perfil(p_jugador uuid)
+returns jsonb language sql stable security definer set search_path = public as $$
+  select datos from public.perfiles where jugador = p_jugador;
+$$;
+revoke all on function public.bajar_perfil(uuid) from public;
+grant execute on function public.bajar_perfil(uuid) to anon, authenticated;
+
+-- Al juntar dos jugadores (vincular_jugador), el perfil del que se borra se va con él (on delete cascade): el dispositivo
+-- todavía lo tiene y lo junta con el tuyo la próxima vez que sincroniza.
