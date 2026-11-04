@@ -253,7 +253,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   <div class="card">
     <button class="ter smallbtn back" id="btnBack" type="button">← Juegos</button>
     <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Paleta</h1></div>
-    <p class="intro">Mové tu paleta con <b>◀ ▶</b> y devolvé la pelota. Si le pegás con la punta, sale cruzada. ¿Cuántos puntos le hacés?</p>
+    <p class="intro" data-t>Mové tu paleta con <b>◀ ▶</b> y devolvé la pelota. Si le pegás con la punta, sale cruzada. ¿Cuántos puntos le hacés?</p>
     <div class="modos" id="modos" role="radiogroup" aria-label="Modo">
       <button class="modo" type="button" role="radio" data-m="cpu" aria-checked="true"><span>🤖</span>Contra la máquina<small>Rivales cada vez mejores</small></button>
       <button class="modo" type="button" role="radio" data-m="dos" aria-checked="false"><span>👥</span>2 jugadores<small>En el mismo celu o compu</small></button>
@@ -302,6 +302,66 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const $ = id => document.getElementById(id);
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js)
+  if (CC && CC.textos) CC.textos({
+    'Paleta': 'Paddle',
+    // HUD y botones
+    'puntos': 'points',
+    'rival {n}': 'rival {n}',
+    'rival {n}: {nombre}': 'rival {n}: {nombre}',
+    'Volver al menú (Esc)': 'Back to menu (Esc)',
+    'Menú': 'Menu',
+    'Reiniciar (R)': 'Restart (R)',
+    'Izquierda': 'Left',
+    'Derecha': 'Right',
+    'Izquierda del jugador de arriba': 'Top player\'s left',
+    'Derecha del jugador de arriba': 'Top player\'s right',
+    // menú
+    'Juegos': 'Games',
+    'Mové tu paleta con <b>◀ ▶</b> y devolvé la pelota. Si le pegás con la punta, sale cruzada. ¿Cuántos puntos le hacés?':
+      'Move your paddle with <b>◀ ▶</b> and hit the ball back. Hit it with the edge to send it at an angle. How many points can you score?',
+    'Modo': 'Mode',
+    'Contra la máquina': 'Vs. computer',
+    'Rivales cada vez mejores': 'Rivals keep getting better',
+    '2 jugadores': '2 players',
+    'En el mismo celu o compu': 'On the same phone or computer',
+    'Récord': 'Best',
+    'Jugar': 'Play',
+    'Ranking': 'Leaderboard',
+    'Sonido: sí': 'Sound: on',
+    'Sonido: no': 'Sound: off',
+    'Dificultad': 'Difficulty',
+    'mover la paleta': 'move the paddle',
+    'reiniciar': 'restart',
+    'Fácil': 'Easy', 'Normal': 'Normal', 'Difícil': 'Hard', 'Extremo': 'Extreme', 'Maestro': 'Master',
+    'Paleta ancha, pelota lenta y 5 vidas.': 'Wide paddle, slow ball and 5 lives.',
+    '3 vidas. Cada 3 puntos viene un rival mejor.': '3 lives. Every 3 points a better rival shows up.',
+    'Pelota más rápida y paleta más chica.': 'Faster ball and smaller paddle.',
+    'Rapidísima, paleta corta y 2 vidas. XP ×3.': 'Super fast, short paddle and 2 lives. XP ×3.',
+    'Una sola vida y la pelota vuela. XP ×4.': 'Just one life and the ball flies. XP ×4.',
+    'El Profe': 'The Prof',
+    // en el juego (canvas)
+    '¡Rival nuevo: {n}!': 'New rival: {n}!',
+    '¡Última vida!': 'Last life!',
+    '¡Te quedan {n}!': '{n} left!',
+    // fin de partida
+    '¡Partido!': 'Match!',
+    '¡Ganó el de abajo!': 'Bottom player wins!',
+    '¡Ganó el de arriba!': 'Top player wins!',
+    'abajo – arriba · a {n} puntos · {d}': 'bottom – top · first to {n} · {d}',
+    'Rally más largo: {n} golpe': 'Longest rally: {n} hit',
+    'Rally más largo: {n} golpes': 'Longest rally: {n} hits',
+    '¡Partidazo!': 'What a match!',
+    '¡Buena paleta!': 'Nice paddling!',
+    '¡Se terminó!': 'Game over!',
+    'punto · {d} · llegaste al rival {n}': 'point · {d} · you reached rival {n}',
+    'puntos · {d} · llegaste al rival {n}': 'points · {d} · you reached rival {n}',
+    'récord: {r}': 'best: {r}',
+    'Primer récord': 'First best score',
+    'Nuevo récord': 'New best',
+    'Otra vez': 'Again',
+  });
+  const T = (s, v) => (CC && CC.T ? CC.T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s);
   // desafío del día (?diario=1): contra la máquina en Normal, 3 intentos y los rivales juegan con la semilla del día
   const DIA = CC && CC.diarioDe ? CC.diarioDe('paleta') : null;
   let azar = Math.random;
@@ -312,22 +372,22 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const PUNTOS_RIVAL = 3, META_DOS = 7;
   // base y tope: velocidad de la pelota (unidades/s) · hw: media paleta · ia: velocidad del rival · err: cuánto le erra al principio
   const DIFS = {
-    facil:   { name: 'Fácil',   base: 6.5,  tope: 15, crece: 1.03,  hw: 1.5,  ia: 5,    err: 2.1, vidas: 5 },
-    normal:  { name: 'Normal',  base: 8,    tope: 18, crece: 1.04,  hw: 1.25, ia: 6.5,  err: 1.8, vidas: 3 },
-    dificil: { name: 'Difícil', base: 9.5,  tope: 21, crece: 1.045, hw: 1.1,  ia: 8,    err: 1.5, vidas: 3 },
-    extremo: { name: 'Extremo', base: 11,   tope: 24, crece: 1.05,  hw: 0.95, ia: 9.5,  err: 1.3, vidas: 2 },
-    maestro: { name: 'Maestro', base: 12.5, tope: 27, crece: 1.055, hw: 0.85, ia: 11,   err: 1.1, vidas: 1 },
+    facil:   { name: T('Fácil'),   base: 6.5,  tope: 15, crece: 1.03,  hw: 1.5,  ia: 5,    err: 2.1, vidas: 5 },
+    normal:  { name: T('Normal'),  base: 8,    tope: 18, crece: 1.04,  hw: 1.25, ia: 6.5,  err: 1.8, vidas: 3 },
+    dificil: { name: T('Difícil'), base: 9.5,  tope: 21, crece: 1.045, hw: 1.1,  ia: 8,    err: 1.5, vidas: 3 },
+    extremo: { name: T('Extremo'), base: 11,   tope: 24, crece: 1.05,  hw: 0.95, ia: 9.5,  err: 1.3, vidas: 2 },
+    maestro: { name: T('Maestro'), base: 12.5, tope: 27, crece: 1.055, hw: 0.85, ia: 11,   err: 1.1, vidas: 1 },
   };
   const NOTAS = {
-    facil: 'Paleta ancha, pelota lenta y 5 vidas.',
-    normal: '3 vidas. Cada 3 puntos viene un rival mejor.',
-    dificil: 'Pelota más rápida y paleta más chica.',
-    extremo: 'Rapidísima, paleta corta y 2 vidas. XP ×3.',
-    maestro: 'Una sola vida y la pelota vuela. XP ×4.',
+    facil: T('Paleta ancha, pelota lenta y 5 vidas.'),
+    normal: T('3 vidas. Cada 3 puntos viene un rival mejor.'),
+    dificil: T('Pelota más rápida y paleta más chica.'),
+    extremo: T('Rapidísima, paleta corta y 2 vidas. XP ×3.'),
+    maestro: T('Una sola vida y la pelota vuela. XP ×4.'),
   };
   const RIVALES = [
     { n: 'Tito', c: '#ff7a59' }, { n: 'Lola', c: '#8f6bff' }, { n: 'Rulo', c: '#3fc1c9' }, { n: 'Mora', c: '#ff6fae' },
-    { n: 'Coco', c: '#5b8cff' }, { n: 'Juana', c: '#f5b84a' }, { n: 'Tano', c: '#1fbf8a' }, { n: 'El Profe', c: '#2b3470' },
+    { n: 'Coco', c: '#5b8cff' }, { n: 'Juana', c: '#f5b84a' }, { n: 'Tano', c: '#1fbf8a' }, { n: T('El Profe'), c: '#2b3470' },
   ];
   const rivalDe = k => { const r = RIVALES[k % RIVALES.length], v = Math.floor(k / RIVALES.length); return { ...r, n: r.n + (v ? ' ' + ['II', 'III', 'IV', 'V'][Math.min(3, v - 1)] : '') }; };
   const XP_MALO = 2, XP_EXPERTO = 24;
@@ -465,7 +525,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         floats.push({ text: '+1', x: b.x, y: 1.6, t: performance.now() });
         if (G.score % PUNTOS_RIVAL === 0) {
           G.nivel++; G.rival = rivalDe(G.nivel);
-          banner = { text: `¡Rival nuevo: ${G.rival.n}!`, t: performance.now() };
+          banner = { text: T('¡Rival nuevo: {n}!', { n: G.rival.n }), t: performance.now() };
         }
         if (marca) marca.ver(G.score);
       }
@@ -473,7 +533,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       sfxPierdo(); shake = reduceMotion ? 0 : 10; CC?.vibrar(40);
       if (G.modo === 'cpu') {
         G.vidas--;
-        banner = G.vidas > 0 ? { text: G.vidas === 1 ? '¡Última vida!' : `¡Te quedan ${G.vidas}!`, t: performance.now() } : null;
+        banner = G.vidas > 0 ? { text: G.vidas === 1 ? T('¡Última vida!') : T('¡Te quedan {n}!', { n: G.vidas }), t: performance.now() } : null;
       } else G.contra++;
     }
     hudCache = '';
@@ -559,22 +619,22 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const dos = G.modo === 'dos';
     if (dos) {
       const ganoAbajo = G.score > G.contra;
-      $('eTitle').textContent = ganoAbajo ? '¡Ganó el de abajo!' : '¡Ganó el de arriba!';
+      $('eTitle').textContent = ganoAbajo ? T('¡Ganó el de abajo!') : T('¡Ganó el de arriba!');
       $('eNum').textContent = `${G.score} – ${G.contra}`;
-      $('eSub').textContent = `abajo – arriba · a ${META_DOS} puntos · ${G.D.name}`;
-      $('eSub2').textContent = `Rally más largo: ${G.mejorRally} ${G.mejorRally === 1 ? 'golpe' : 'golpes'}`;
+      $('eSub').textContent = T('abajo – arriba · a {n} puntos · {d}', { n: META_DOS, d: G.D.name });
+      $('eSub2').textContent = T(G.mejorRally === 1 ? 'Rally más largo: {n} golpe' : 'Rally más largo: {n} golpes', { n: G.mejorRally });
       $('eBadge').hidden = true; $('eXP').hidden = true; $('eLogros').hidden = true;
       if (CC) CC.sumarXP(10);   // un poco de XP por jugar con alguien
     } else {
       CC?.morir();
       const r = settle();
-      $('eTitle').textContent = G.score >= 15 ? '¡Partidazo!' : G.score >= 6 ? '¡Buena paleta!' : '¡Se terminó!';
+      $('eTitle').textContent = T(G.score >= 15 ? '¡Partidazo!' : G.score >= 6 ? '¡Buena paleta!' : '¡Se terminó!');
       $('eNum').textContent = G.score;
-      $('eSub').textContent = `${G.score === 1 ? 'punto' : 'puntos'} · ${G.D.name} · llegaste al rival ${G.nivel + 1}`;
-      $('eSub2').textContent = `Rally más largo: ${G.mejorRally} ${G.mejorRally === 1 ? 'golpe' : 'golpes'}` +
-        (r && !r.record && r.textoAnterior ? ` · récord: ${r.textoAnterior}` : '');
+      $('eSub').textContent = T(G.score === 1 ? 'punto · {d} · llegaste al rival {n}' : 'puntos · {d} · llegaste al rival {n}', { d: G.D.name, n: G.nivel + 1 });
+      $('eSub2').textContent = T(G.mejorRally === 1 ? 'Rally más largo: {n} golpe' : 'Rally más largo: {n} golpes', { n: G.mejorRally }) +
+        (r && !r.record && r.textoAnterior ? ' · ' + T('récord: {r}', { r: r.textoAnterior }) : '');
       $('eBadge').hidden = !(r && r.record);
-      if (r) $('eBadge').textContent = r.primera ? 'Primer récord' : 'Nuevo récord';
+      if (r) $('eBadge').textContent = r.primera ? T('Primer récord') : T('Nuevo récord');
       $('eXP').hidden = !r; if (r) $('eXP').textContent = `+${r.xp} XP`;
       const lg = (r && r.logros) || [];
       $('eLogros').hidden = !lg.length;
@@ -692,7 +752,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     hudCache = k;
     $('hScore').textContent = G.score;
     $('hVidas').textContent = G.vidas > 0 ? '❤️'.repeat(Math.min(5, G.vidas)) : '💔';
-    $('hRival').textContent = `rival ${G.nivel + 1}: ${G.rival.n}`;
+    $('hRival').textContent = T('rival {n}: {nombre}', { n: G.nivel + 1, nombre: G.rival.n });
   }
 
   // ---------- pantallas ----------
@@ -702,7 +762,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     sel = CC.selectorDif($('difs'), { juego: 'paleta', notas: NOTAS, alCambiar: () => renderMenu() });
     CC.selectorDif($('difs2'), { juego: 'paleta', compacto: true, alCambiar: () => renderMenu() });
     if (DIA) { modo = 'cpu'; DIA.menu($('difs'), [$('modos')]); }
-    CC.leyendaTeclas($('leyenda'), { jugar: 'mover la paleta', extra: [['R', 'reiniciar']] });
+    CC.leyendaTeclas($('leyenda'), { jugar: T('mover la paleta'), extra: [['R', T('reiniciar')]] });
   } else { $('difs').hidden = true; $('difs2').hidden = true; $('eDifL').hidden = true; }
   function renderMenu() {
     for (const b of $('modos').children) b.setAttribute('aria-checked', String(b.dataset.m === modo));
@@ -711,7 +771,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('mBest').parentNode.hidden = modo === 'dos';
     $('mBest').parentNode.parentNode.classList.toggle('solo', modo === 'dos');
     $('btnRank').hidden = !CC || modo === 'dos';
-    $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+    $('btnMute').textContent = muted ? T('Sonido: no') : T('Sonido: sí');
   }
   $('modos').addEventListener('click', e => {
     const b = e.target.closest('.modo'); if (!b) return;

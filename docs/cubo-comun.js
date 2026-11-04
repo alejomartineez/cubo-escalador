@@ -30,6 +30,339 @@
   // Ranking online (Supabase). La clave es la pública (publishable): solo deja leer el ranking y usar enviar_puntaje (ver supabase.sql).
   const RANKING = { url: 'https://gxdzuucgnozostryprkj.supabase.co', clave: 'sb_publishable_jxyT2zN6QwYD_zomchXL_A_pL3ibaY6' };
 
+  // ---------- idioma ----------
+  // Español (rioplatense, el original) o inglés. Se elige según el idioma del dispositivo y se cambia en Opciones de la
+  // portada (`cubo-idioma`; al cambiarlo se recarga la página). La clave de cada texto es el texto en español, tal cual:
+  //   T('Jugar') → 'Play' en inglés, 'Jugar' en español (si no está en el diccionario, queda en español).
+  //   T('Nivel {n}', { n: 5 }) → 'Level 5'. Los valores que son texto también se traducen si están en el diccionario.
+  // Cada archivo suma sus textos con textos({ 'en español': 'in English', ... }) (los juegos: CC.textos, al principio).
+  // En inglés, además, el HTML que ya está en la página y el que se agrega después se traduce solo (ver traducirNodo):
+  // los textos que coinciden enteros con una clave, sin contar emojis ni flechas de los costados (y los atributos
+  // aria-label, title, placeholder y alt). Si un texto tiene etiquetas adentro («Hacé <b>10</b>»), el elemento lleva
+  // data-t y la clave es su innerHTML. Lo que se dibuja en un canvas va siempre con T().
+  const IDIOMAS = [{ id: 'es', nombre: 'Español' }, { id: 'en', nombre: 'English' }];
+  const IDIOMA_KEY = 'cubo-idioma';
+  const idioma = (() => {
+    try { const g = localStorage.getItem(IDIOMA_KEY); if (IDIOMAS.some(i => i.id === g)) return g; } catch (e) {}
+    const n = (navigator.languages && navigator.languages[0]) || navigator.language || 'es';
+    return /^es\b/i.test(n) ? 'es' : 'en';
+  })();
+  const EN = new Map(), PATRONES = [];
+  const enIngles = idioma === 'en';
+  const conVars = (s, vars) => (vars ? s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? (typeof vars[k] === 'string' ? T(vars[k]) : vars[k]) : m)) : s);
+  function T(es, vars) {
+    es = String(es);
+    return conVars(enIngles ? (EN.get(es) ?? es) : es, vars);
+  }
+  function textos(dic) {
+    for (const [es, en] of Object.entries(dic || {})) {
+      if (EN.has(es)) continue;
+      EN.set(es, en);
+      // con {variables}: también sirve para traducir el HTML que ya viene armado («Nivel 5» → «Level 5»)
+      if (/\{\w+\}/.test(es)) {
+        const nombres = [];
+        const re = es.split(/(\{\w+\})/).map(p => {
+          const m = /^\{(\w+)\}$/.exec(p);
+          if (m) { nombres.push(m[1]); return '(.+?)'; }
+          return p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }).join('');
+        PATRONES.push({ re: new RegExp('^' + re + '$', 's'), nombres, en });
+      }
+    }
+    cacheT.clear();
+    if (enIngles && document.body) traducirNodo(document.body);
+  }
+  // Traduce un texto ya armado: exacto, o sin los emojis/flechas de los costados, o por un patrón con {variables}.
+  // null si no hay traducción.
+  const cacheT = new Map();
+  const NUCLEO = /^([^\p{L}\p{N}¿¡«"(]*)([\s\S]*?)([^\p{L}\p{N}?!.»")%]*)$/u;
+  function traducirTexto(t) {
+    if (!t || !/\p{L}/u.test(t)) return null;
+    if (cacheT.has(t)) return cacheT.get(t);
+    let r = null;
+    const m = NUCLEO.exec(t), [, ini, nucleo, fin] = m || ['', '', t, ''];
+    const buscar = s => {
+      if (EN.has(s)) return EN.get(s);
+      for (const p of PATRONES) {
+        const x = p.re.exec(s);
+        if (x) { const vars = {}; p.nombres.forEach((n, k) => { vars[n] = EN.get(x[k + 1]) ?? x[k + 1]; }); return conVars(p.en, vars); }
+      }
+      return null;
+    };
+    const trim = t.trim();
+    let x = buscar(trim);
+    if (x != null) r = t.replace(trim, () => x);
+    else if (nucleo && nucleo !== trim && (x = buscar(nucleo)) != null) r = ini + x + fin;
+    if (cacheT.size > 2000) cacheT.clear();
+    cacheT.set(t, r);
+    return r;
+  }
+  const ATRIBUTOS_T = ['aria-label', 'title', 'placeholder', 'alt'];
+  const SIN_TRADUCIR = 'script,style,textarea,[translate="no"],[contenteditable="true"]';
+  function traducirNodo(n) {
+    if (!enIngles || !n) return;
+    if (n.nodeType === 3) {
+      const p = n.parentElement;
+      if (!p || p.closest(SIN_TRADUCIR) || p.closest('[data-t]')) return;
+      const x = traducirTexto(n.nodeValue);
+      if (x != null && x !== n.nodeValue) n.nodeValue = x;
+      return;
+    }
+    if (n.nodeType !== 1 || n.closest(SIN_TRADUCIR)) return;
+    const els = [n, ...n.querySelectorAll('*')];
+    for (const el of els) {
+      if (el.matches(SIN_TRADUCIR)) continue;
+      for (const a of ATRIBUTOS_T) {
+        const v = el.getAttribute(a);
+        if (v) { const x = traducirTexto(v); if (x != null && x !== v) el.setAttribute(a, x); }
+      }
+      if (el.hasAttribute('data-t')) {
+        const k = el.innerHTML.trim().replace(/\s+/g, ' ');
+        if (EN.has(k)) el.innerHTML = EN.get(k);
+      }
+    }
+    const w = document.createTreeWalker(n, NodeFilter.SHOW_TEXT);
+    const nodos = [];
+    while (w.nextNode()) nodos.push(w.currentNode);
+    for (const t of nodos) traducirNodo(t);
+  }
+  if (enIngles) {
+    document.documentElement.lang = 'en';
+    const tituloOriginal = document.title;
+    const ponerTitulo = () => { const x = traducirTexto(document.title); if (x != null && x !== document.title) document.title = x; };
+    new MutationObserver(lista => {
+      for (const r of lista) {
+        if (r.type === 'childList') r.addedNodes.forEach(traducirNodo);
+        else if (r.type === 'characterData') traducirNodo(r.target);
+        else if (r.type === 'attributes') {
+          const v = r.target.getAttribute(r.attributeName), x = v && traducirTexto(v);
+          if (x != null && x !== v) r.target.setAttribute(r.attributeName, x);
+        }
+      }
+      if (document.title === tituloOriginal) ponerTitulo();
+    }).observe(document.documentElement, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATRIBUTOS_T });
+    const alCargar = () => { if (document.body) traducirNodo(document.body); ponerTitulo(); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', alCargar); else alCargar();
+  }
+  function ponerIdioma(id) {
+    if (!IDIOMAS.some(i => i.id === id)) return;
+    try { localStorage.setItem(IDIOMA_KEY, id); } catch (e) {}
+    location.reload();
+  }
+  // Para formatear números y fechas en el idioma elegido.
+  const LOCALE = enIngles ? 'en-US' : 'es-AR';
+  const tr = T;   // para las funciones donde `T` es otra cosa (la temporada)
+  // Decimales: «1,5» en español, «1.5» en inglés.
+  const coma = s => (enIngles ? String(s) : String(s).replace('.', ','));
+  // «¡Nivel 5!» / «Level 5!»
+  const exclamar = s => (enIngles ? '' : '¡') + s + '!';
+  // Como T(), pero sin traducir las variables: para lo que escribe un jugador (un apodo «Gato» no es «Cat»).
+  const Tlit = (es, vars) => T(es).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
+  // El diccionario de este archivo (al final de la sección, antes de los datos que lo usan).
+  textos({
+    // pantalla de carga (la arma build.mjs) y el botón de volver que se vuelve casita
+    'Cargando…': 'Loading…', 'Juegos': 'Games', 'Volver a los juegos': 'Back to games',
+    // dificultades
+    'Fácil': 'Easy', 'Difícil': 'Hard', 'Extremo': 'Extreme', 'Maestro': 'Master', 'Dificultad': 'Difficulty',
+    'Más lento y con más margen. Ideal para aprender.': 'Slower and more forgiving. Great for learning.',
+    'La experiencia de siempre.': 'The classic experience.',
+    'Arranca rápido desde el primer segundo.': 'Fast from the very first second.',
+    'Para dedos de acero: todo al máximo y sin perdón. XP ×3.': 'For fingers of steel: everything maxed out, no mercy. XP ×3.',
+    'Más allá de Extremo. Casi nadie lo termina. XP ×4.': 'Beyond Extreme. Almost nobody beats it. XP ×4.',
+    // leyenda de teclas
+    'En el juego': 'In game', 'En el menú': 'In menu', 'moverte': 'move', 'reiniciar': 'restart', 'dificultad': 'difficulty',
+    'jugar': 'play', 'salir': 'exit',
+    // personajes
+    'Clásico': 'Classic', 'Sandía': 'Watermelon', 'Menta': 'Mint', 'Gorra': 'Cap', 'Gato': 'Cat', 'Rana': 'Frog', 'Abeja': 'Bee',
+    'Pingüino': 'Penguin', 'Astronauta': 'Astronaut', 'Vaquero': 'Cowboy', 'Rey': 'King', 'Pirata': 'Pirate', 'Noche': 'Night',
+    'Vikingo': 'Viking', 'Zombi': 'Zombie', 'Oro': 'Gold', 'Mago': 'Wizard', 'Arcoíris': 'Rainbow', 'Galaxia': 'Galaxy',
+    'Diablito': 'Little Devil', 'Diamante': 'Diamond', 'Sabio': 'Sage', 'Cristal': 'Crystal', 'Tigre': 'Tiger', 'Caballero': 'Knight',
+    'Dragón': 'Dragon', 'Campeón': 'Champion', 'Guerrero': 'Warrior', 'Llama dorada': 'Golden Flame', 'Bestia carmesí': 'Crimson Beast',
+    'Celeste divino': 'Divine Sky', 'Instinto plateado': 'Silver Instinct', 'Astrónomo': 'Astronomer', 'Pulpo': 'Octopus',
+    'Samurái': 'Samurai', 'Cósmico': 'Cosmic', 'Dragón real': 'Royal Dragon', 'Fénix de hielo': 'Ice Phoenix', 'Leyenda': 'Legend',
+    'Paraguas': 'Umbrella', 'Cajita': 'Little Box', 'Equilibrista': 'Tightrope Walker', 'Playero': 'Beachgoer', 'Esquiador': 'Skier',
+    'Luchador': 'Wrestler', 'Fantasma': 'Phantom', 'Fénix': 'Phoenix', 'Holograma': 'Hologram', 'Sonrisa de metal': 'Metal Smile',
+    'Piloto': 'Racer', 'Neón rosa': 'Pink Neon', 'Visor cian': 'Cyan Visor', 'Neón lima': 'Lime Neon', 'Rey Neón': 'Neon King',
+    'Gorrito': 'Beanie', 'Visor polar': 'Polar Visor', 'Glaciar': 'Glacier', 'Rey del Hielo': 'Ice King', 'Aventurero': 'Adventurer',
+    'Héroe de la selva': 'Jungle Hero', 'Rey de la Selva': 'Jungle King', 'Llama eterna': 'Eternal Flame',
+    // pistas de las legendarias
+    'Los botones de la pantalla principal esconden una combinación.': 'The buttons on the main screen hide a combination.',
+    'Escapá muy, muy lejos de la lava.': 'Escape very, very far from the lava.',
+    'Hay minutos que se leen igual al derecho y al revés. Terminá una partida en uno.': 'Some times read the same forwards and backwards. Finish a game at one of them.',
+    'Se consigue con un código.': 'Unlocked with a code.',
+    'Solo la tiene quien hizo el juego.': "Only the game's creator has this one.",
+    'Hecha a pedido para un solo jugador.': 'Custom-made for a single player.',
+    'Nivel 30 de la temporada Neón.': 'Level 30 of the Neon season.',
+    'Nivel 30 de la temporada Hielo.': 'Level 30 of the Ice season.',
+    'Nivel 30 de la temporada Selva.': 'Level 30 of the Jungle season.',
+    'Jugá el desafío del día 30 días seguidos.': 'Play the daily challenge 30 days in a row.',
+    'Un verdadero maestro no deja ningún juego sin probar en su dificultad más alta.': 'A true master tries every game on its highest difficulty.',
+    'Al cubo le dan cosquillas. Hacele muchas seguidas y vas a ver cómo se pone.': 'The cube is ticklish. Tickle it a lot in a row and see what happens.',
+    // efectos
+    'Sin efecto': 'No effect', 'Chispas': 'Sparks', 'Burbujas': 'Bubbles', 'Corazones': 'Hearts', 'Confeti': 'Confetti', 'Fuego': 'Fire',
+    'Órbita': 'Orbit', 'Estrellas': 'Stars', 'Cometa': 'Comet', 'Rayos': 'Thunderbolts', 'Infierno': 'Inferno',
+    'Notas musicales': 'Music Notes', 'Huellitas': 'Paw Prints', 'Estela espacial': 'Space Trail', 'Nieve': 'Snow', 'Aura de ki': 'Ki Aura',
+    'Fuegos artificiales': 'Fireworks', 'Hojas al viento': 'Leaves in the Wind', 'Burbujas de jabón': 'Soap Bubbles',
+    'Electricidad': 'Electricity', 'Pétalos': 'Petals', 'Espiral galáctica': 'Galactic Spiral', 'Pixeles': 'Pixels',
+    'Corona de luz': 'Crown of Light', 'Alas de luz': 'Wings of Light', 'Agujero negro': 'Black Hole', 'Tormenta': 'Storm',
+    'Lluvia de código': 'Code Rain', 'Orbes de neón': 'Neon Orbs', 'Pulso de neón': 'Neon Pulse', 'Lluvia de neón': 'Neon Rain',
+    'Copos': 'Snowflakes', 'Escarcha': 'Frost', 'Cristales': 'Crystals', 'Hojitas': 'Little Leaves', 'Luciérnagas': 'Fireflies',
+    'Flores': 'Flowers', 'Llama de la racha': 'Streak Flame',
+    // títulos (en los datos quedan en español porque se suben así al ranking: se traducen al mostrarlos)
+    'Novato': 'Rookie', 'Saltarín': 'Hopper', 'Constante': 'Consistent', 'Veterano': 'Veteran', 'Experto': 'Expert',
+    'As de las flechas': 'Arrow Ace', 'Imparable': 'Unstoppable', 'Reflejos de gato': 'Cat Reflexes', 'Sin frenos': 'No Brakes',
+    'Inalcanzable': 'Untouchable', 'Cabeza fría': 'Cool Head', 'Dedos de oro': 'Golden Fingers', 'Mito': 'Myth', 'Titán': 'Titan',
+    'Rayo': 'Lightning', 'Fenómeno': 'Phenom', 'Imbatible': 'Unbeatable', 'Gran maestro': 'Grandmaster', 'Inmortal': 'Immortal',
+    'Supremo': 'Supreme', 'Leyenda viviente': 'Living Legend', 'Gran campeón': 'Grand Champion', 'Incansable': 'Tireless',
+    'Maratonista': 'Marathoner', 'Ojo de halcón': 'Hawk Eye', 'Pulso de acero': 'Steady Hand', 'Sin pestañear': 'Unblinking',
+    'Sesenta y contando': 'Sixty and Counting', 'Indomable': 'Indomitable', 'Sabio de las flechas': 'Arrow Sage',
+    'Implacable': 'Relentless', 'Hechicero': 'Sorcerer', 'Coloso': 'Colossus', 'Fuera de serie': 'One of a Kind',
+    'Estratega': 'Strategist', 'Prodigio': 'Prodigy', 'Invencible': 'Invincible', 'Astro': 'Star', 'Héroe': 'Hero',
+    'Titánico': 'Titanic', 'Elegido': 'Chosen One', 'Majestad': 'Majesty', 'Ocho infinito': 'Infinite Eight',
+    'Noventa y pico': 'Ninety-Something', 'Semidiós': 'Demigod', 'Deidad': 'Deity', 'Eterno': 'Eternal', 'Casi leyenda': 'Almost a Legend',
+    'Al borde': 'On the Edge', 'Uno más': 'One More', 'Centenario': 'Centurion', 'Luz de neón': 'Neon Light',
+    'Rey de la noche': 'King of the Night', 'Ciudad de luces': 'City of Lights', 'Leyenda de Neón': 'Neon Legend',
+    'Primera nevada': 'First Snow', 'Corazón de hielo': 'Heart of Ice', 'Sin frío': 'Coldproof', 'Leyenda del Hielo': 'Ice Legend',
+    'Explorador': 'Explorer', 'Instinto salvaje': 'Wild Instinct', 'Pura liana': 'Vine Swinger', 'Leyenda de la Selva': 'Jungle Legend',
+    // brillos y medallas
+    'Sin brillo': 'No glow', 'Bronce': 'Bronze', 'Plata': 'Silver', 'Platino': 'Platinum',
+    // juegos, modos y unidades
+    'Escalador': 'Climber', 'Lluvia': 'Rain', 'Ritmo': 'Rhythm', 'Vóley': 'Volley', 'Paleta': 'Paddle', 'Esquí': 'Ski',
+    'Pulseada': 'Arm Wrestling', '30 segundos': '30 seconds', 'Libre': 'Endless', 'Sprint 100 Extremo': 'Sprint 100 Extreme',
+    '30 segundos Extremo': '30 seconds Extreme', 'Libre Extremo': 'Endless Extreme', 'Lava Extremo': 'Lava Extreme',
+    'Sprint 100 Maestro': 'Sprint 100 Master', '30 segundos Maestro': '30 seconds Master', 'Libre Maestro': 'Endless Master',
+    'Lava Maestro': 'Lava Master', 'esc.': 'steps', 'rivales': 'rivals',
+    // logros
+    'Primeros pasos': 'First Steps', 'Le agarraste la mano': 'Getting the Hang of It', 'Crack': 'Pro',
+    'Hacé {v} o más en Normal o más difícil.': 'Score {v} or more on Normal or harder.',
+    'Arrancamos': 'Here We Go', 'Jugá tu primera partida.': 'Play your first game.',
+    'Jugá a todos los juegos al menos una vez.': 'Play every game at least once.',
+    'Jugá 50 partidas.': 'Play 50 games.', 'No paro más': "Can't Stop", 'Jugá 300 partidas.': 'Play 300 games.',
+    'Nivel 10': 'Level 10', 'Llegá al nivel 10.': 'Reach level 10.', 'Nivel 25': 'Level 25', 'Llegá al nivel 25.': 'Reach level 25.',
+    'Pacto con el diablo': 'Deal with the Devil', 'Terminá una partida en Extremo.': 'Finish a game on Extreme.',
+    'Sin miedo': 'Fearless', 'Jugá en Extremo en 5 juegos distintos.': 'Play Extreme in 5 different games.',
+    'Iluminado': 'Enlightened', 'Terminá una partida en Maestro.': 'Finish a game on Master.',
+    'Jugá en Maestro en 3 juegos distintos.': 'Play Master in 3 different games.',
+    'Coleccionista': 'Collector', 'Conseguí 10 logros.': 'Earn 10 achievements.',
+    'Leyenda viva': 'True Legend', 'Conseguí una medalla de diamante en cualquier juego.': 'Earn a diamond medal in any game.',
+    'Primer sprint': 'First Sprint', 'Sprint 100 en menos de 20 s.': 'Sprint 100 in under 20 s.',
+    'Dedos rápidos': 'Quick Fingers', 'Sprint 100 en menos de 14 s.': 'Sprint 100 in under 14 s.',
+    'Velocista': 'Sprinter', 'Sprint 100 en menos de 12 s.': 'Sprint 100 in under 12 s.',
+    'Dedos de rayo': 'Lightning Fingers', 'Sprint 100 en menos de 11 s. Muy pocos llegan.': 'Sprint 100 in under 11 s. Very few make it.',
+    'Inhumano': 'Inhuman', 'Sprint 100 en menos de 10.5 s.': 'Sprint 100 in under 10.5 s.',
+    'Sin un error': 'Flawless', 'Sprint 100 sin equivocarte ni una vez.': 'Sprint 100 without a single mistake.',
+    'Medio minuto': 'Half a Minute', 'Más de 200 escalones en 30 segundos.': 'Over 200 steps in 30 seconds.',
+    'Llegá al espacio en Libre (escalón 330).': 'Reach space in Endless (step 330).',
+    'Peloteo eterno': 'Endless Rally', 'Hacé un rally de 30 golpes en la Paleta.': 'Hit a 30-shot rally in Paddle.',
+    'Diez por segundo': 'Ten per Second', 'Sostené 10 toques por segundo en la Pulseada.': 'Keep up 10 taps per second in Arm Wrestling.',
+    'Escalera del infierno': 'Stairway to Hell', 'Sprint 100 en Extremo en menos de 15 s.': 'Sprint 100 on Extreme in under 15 s.',
+    'Pies calientes': 'Hot Feet', 'Escapá de la lava por 150 escalones.': 'Escape the lava for 150 steps.',
+    'Volcanólogo': 'Volcanologist', 'Escapá de la lava por 300 escalones.': 'Escape the lava for 300 steps.',
+    'Tres al hilo': 'Three in a Row', 'Jugá el desafío del día 3 días seguidos.': 'Play the daily challenge 3 days in a row.',
+    'Siete de siete': 'Seven for Seven', 'Jugá el desafío del día 7 días seguidos.': 'Play the daily challenge 7 days in a row.',
+    'Combinación secreta': 'Secret Combo', 'Encontraste la combinación de los botones.': 'You found the button combination.',
+    'Renacer': 'Reborn', 'Escapaste de la lava por 450 escalones.': 'You escaped the lava for 450 steps.',
+    'Hora espejo': 'Mirror Time', 'Terminaste una partida a una hora capicúa, como las 12:21.': 'You finished a game at a palindrome time, like 12:21.',
+    'Cosquillas': 'Tickles', 'Le hiciste cosquillas a tu personaje.': 'You tickled your character.',
+    'Maestro de todo': 'Master of All', 'Jugaste todos los juegos en Maestro.': 'You played every game on Master.',
+    // avisos de nivel, logros y códigos
+    'Nivel {n}': 'Level {n}', 'Desbloqueaste: {x}': 'Unlocked: {x}', 'Desbloqueaste {x}': 'Unlocked {x}', ' y ': ' and ',
+    'Logro bronce': 'Bronze achievement', 'Logro plata': 'Silver achievement', 'Logro oro': 'Gold achievement',
+    'Logro diamante': 'Diamond achievement',
+    'Personaje legendario desbloqueado': 'Legendary character unlocked', 'Efecto legendario desbloqueado': 'Legendary effect unlocked',
+    'Escribí un código.': 'Enter a code.', 'No se pudo revisar el código en este navegador.': "Couldn't check the code in this browser.",
+    'Ese código no existe.': "That code doesn't exist.",
+    // desafío del día
+    'Desafío del día': 'Daily challenge', 'Ranking del día': 'Daily leaderboard', 'Jugar el desafío': 'Play the challenge',
+    'El desafío de hoy es en <b>{j}</b>. Esta partida es normal.': "Today's challenge is in <b>{j}</b>. This is a regular game.",
+    'Intento {n} de {m} · tu mejor de hoy: <strong>{v}</strong>': 'Attempt {n} of {m} · your best today: <strong>{v}</strong>',
+    ' (¡mejoraste!)': ' (improved!)', ' · <strong>+{n} XP</strong> por jugarlo': ' · <strong>+{n} XP</strong> for playing',
+    ' · mañana hay otro (en {t})': ' · new one tomorrow (in {t})',
+    '{f} · Normal · el mismo nivel para todos · {n} intentos': '{f} · Normal · same level for everyone · {n} attempts',
+    '{f} · Normal · el mismo nivel para todos · te queda 1 intento': '{f} · Normal · same level for everyone · 1 attempt left',
+    '{f} · Normal · el mismo nivel para todos · te quedan {n} intentos': '{f} · Normal · same level for everyone · {n} attempts left',
+    'Ya usaste los {n} intentos de hoy. Mañana hay otro (en {t}).': "You've used all {n} attempts for today. New one tomorrow (in {t}).",
+    ' · tu mejor: <strong>{v}</strong>': ' · your best: <strong>{v}</strong>',
+    '🔥 {n} día': '🔥 {n} day', '🔥 {n} días seguidos': '🔥 {n} days in a row',
+    'Intento {n} de {m}': 'Attempt {n} of {m}', 'Seguir en modo normal': 'Keep playing normal mode',
+    // temporadas, eventos de XP y misiones
+    // (los patrones se prueban en orden: el más específico va primero)
+    'Neón': 'Neon', 'Hielo': 'Ice', 'Selva': 'Jungle', 'Temporada {t}: nivel {n}': 'Season {t}: level {n}', 'Temporada {n}': 'Season {n}',
+    'Luces, visores y brillo de ciudad de noche.': 'Lights, visors and the glow of the city at night.',
+    'Copos, gorritos y un frío que quema.': 'Snowflakes, beanies and a biting cold.',
+    'Hojas, capas de aventurero y un rey de la selva.': 'Leaves, adventurer capes and a king of the jungle.',
+    'Doble XP en tus próximas {n} partidas': 'Double XP for your next {n} games',
+    'Arranque de temporada': 'Season kickoff', 'Hora feliz': 'Happy hour', 'Finde de XP': 'XP weekend',
+    'Doble XP (te quedan {n})': 'Double XP ({n} left)', 'Misión cumplida': 'Mission complete',
+    'Jugá 5 partidas': 'Play 5 games', 'Jugá 3 partidas de {j}': 'Play 3 games of {j}', 'Ganá 300 XP': 'Earn 300 XP',
+    'Jugá el desafío del día': 'Play the daily challenge', 'Jugá 2 partidas en Difícil o más': 'Play 2 games on Hard or above',
+    'Jugá 3 juegos distintos': 'Play 3 different games', 'Superá un récord tuyo': 'Beat one of your records',
+    'Hacé {v} en {j} (Normal o más)': 'Score {v} in {j} (Normal or above)',
+    'Jugá 30 partidas': 'Play 30 games', 'Ganá 2.500 XP': 'Earn 2,500 XP', 'Jugá el desafío 5 días': 'Play the challenge on 5 days',
+    'Jugá a todos los juegos': 'Play every game', 'Superá 3 récords tuyos': 'Beat 3 of your records',
+    'Jugá 10 partidas en Difícil o más': 'Play 10 games on Hard or above',
+    'Trajimos tu progreso': 'Your progress is back',
+    // apodo, clave y amigos (mensajes de error)
+    'Necesitás internet para esto.': 'You need internet for this.',
+    'No se pudo guardar el apodo. Probá de nuevo en un rato.': "Couldn't save your nickname. Try again in a bit.",
+    '«{a}» ya es de otra persona. Elegí otro, o si es tuyo, entrá con tu clave.': '"{a}" is already taken. Pick another one, or if it\'s yours, sign in with your key.',
+    'El apodo tiene que tener entre 3 y 14 letras o números.': 'Your nickname must be 3 to 14 letters or numbers.',
+    'Escribí tu apodo y tu clave.': 'Enter your nickname and your key.',
+    'No se pudo conectar. Probá de nuevo en un rato.': "Couldn't connect. Try again in a bit.",
+    'El apodo y la clave no coinciden.': "The nickname and key don't match.",
+    'El código de amigo tiene 6 letras y números.': 'Friend codes have 6 letters and numbers.',
+    'Para agregar amigos primero elegí un apodo en cualquier ranking.': 'To add friends, first pick a nickname in any leaderboard.',
+    'Ese es tu propio código. Pasáselo a tus amigos.': "That's your own code. Share it with your friends.",
+    'Ya es tu amigo.': "You're already friends.",
+    'Ya le mandaste una solicitud. Falta que la acepte.': 'You already sent a request. Waiting for them to accept.',
+    'Los amigos se están actualizando. Probá de nuevo en un rato.': 'Friends are being updated. Try again in a bit.',
+    'No hay nadie con ese código.': 'No one has that code.',
+    'Mandaste muchas solicitudes seguidas. Esperá un rato.': 'You sent too many requests in a row. Wait a bit.',
+    'Tu apodo todavía no se subió. Probá de nuevo en unos segundos.': "Your nickname hasn't been uploaded yet. Try again in a few seconds.",
+    'No se pudo mandar la solicitud.': "Couldn't send the request.",
+    // ventana de ranking
+    'Ranking': 'Leaderboard', 'Cerrar': 'Close', 'Quiénes': 'Who', 'Todos': 'Everyone', 'Amigos': 'Friends', 'Modo': 'Mode',
+    'Tu apodo (3 a 14 letras)': 'Your nickname (3–14 letters)', 'Tu apodo': 'Your nickname', 'Guardar': 'Save', 'Clave': 'Key',
+    'Tu clave': 'Your key', 'Entrar': 'Sign in', 'Jugás como': 'Playing as', 'Cambiar apodo': 'Change nickname',
+    'Ocultar clave': 'Hide key', 'Jugar en otro dispositivo': 'Play on another device',
+    'Tu clave es <b class="clave" translate="no"></b>. En el otro celu o compu abrí un ranking, tocá «Ya tengo apodo» y poné tu apodo y esta clave. No se la pases a nadie.':
+      'Your key is <b class="clave" translate="no"></b>. On your other phone or computer, open a leaderboard, tap "I have a nickname" and enter your nickname and this key. Don\'t share it with anyone.',
+    'Conectate a internet para ver tu clave.': 'Connect to the internet to see your key.',
+    'Tu mejor marca de cada modo se sube sola al terminar la partida.': 'Your best score in each mode uploads automatically when the game ends.',
+    'Elegir un apodo nuevo': 'Pick a new nickname', 'Ya tengo apodo en otro dispositivo': 'I have a nickname on another device',
+    'La clave está en el ranking del dispositivo donde ya tenés tu apodo.': 'Your key is in the leaderboard on the device where you already have your nickname.',
+    '«{a}» ya es de otra persona. Si es tuyo, entrá con tu clave; si no, elegí otro.': '"{a}" is already taken. If it\'s yours, sign in with your key; if not, pick another one.',
+    'Poné un apodo para aparecer en el ranking. Es solo tuyo y tus récords se suben solos.': 'Pick a nickname to show up on the leaderboard. It\'s yours only and your records upload automatically.',
+    'Tu mejor de hoy: <strong>{v}</strong>': 'Your best today: <strong>{v}</strong>', 'Todavía no lo jugaste hoy.': "You haven't played it today.",
+    'Tu mejor marca: <strong>{v}</strong>': 'Your best score: <strong>{v}</strong>',
+    'El ranking online se está preparando.': 'The online leaderboard is getting ready.',
+    'Sin conexión. Tus récords se suben cuando vuelvas a tener internet.': "Offline. Your records will upload when you're back online.",
+    'el desafío de hoy': "today's challenge", 'este modo': 'this mode',
+    'Ni vos ni tus amigos jugaron {c} todavía.': "Neither you nor your friends have played {c} yet.",
+    'Todavía nadie jugó {c}. ¡Sé el primero!': 'Nobody has played {c} yet. Be the first!',
+    ' (vos)': ' (you)',
+    'No se pudo cargar el ranking. Probá de nuevo en un rato.': "Couldn't load the leaderboard. Try again in a bit.",
+    'Guardando…': 'Saving…', 'Revisando…': 'Checking…',
+    '¡Listo! Ahora jugás como {a} también en este dispositivo.': "Done! You're now playing as {a} on this device too.",
+    // apodo la primera vez
+    '¿Cómo te llamás?': "What's your name?", 'Tu nombre en el ranking': 'Your name on the leaderboard',
+    'Elegí un apodo y tus récords se suben solos al ranking de cada juego. Es solo tuyo: nadie más lo puede usar.':
+      "Pick a nickname and your records will upload to each game's leaderboard automatically. It's yours only: no one else can use it.",
+    'Listo': 'Done', 'Ahora no': 'Not now', 'Después lo podés cambiar desde cualquier ranking.': 'You can change it later from any leaderboard.',
+    'La clave está en el ranking del dispositivo donde ya tenés tu apodo («Jugar en otro dispositivo»).':
+      'Your key is in the leaderboard on the device where you already have your nickname ("Play on another device").',
+    '¡Hola, <span translate="no"></span>!': 'Hi, <span translate="no"></span>!', 'Ya estás en el ranking': "You're on the leaderboard",
+    // sombras
+    'Sombra': 'Ghost', 'Sombra de un amigo': "A friend's ghost",
+    'Bajás su mejor partida y corrés contra ella. Solo se ven las de amigos aceptados.': 'Download their best run and race against it. Only accepted friends show up.',
+    'Poné un apodo en el Ranking y sumá amigos para correr contra sus sombras.': 'Pick a nickname in the Leaderboard and add friends to race their ghosts.',
+    'Todavía no tenés amigos aceptados. Sumalos desde la portada, en Amigos.': "You don't have any accepted friends yet. Add them from the home screen, in Friends.",
+    'Bajando la sombra de {a}…': "Downloading {a}'s ghost…", '{a} todavía no tiene sombra en {m}.': "{a} doesn't have a ghost in {m} yet.",
+    'No se pudo bajar la sombra. Probá de nuevo.': "Couldn't download the ghost. Try again.",
+    'Hasta acá llegaste la otra vez: {v}': 'You got this far last time: {v}',
+    '¡Pasaste tu marca!': 'You beat your best!', 'La otra vez llegaste a {v}': 'Last time you reached {v}',
+  });
+
   // ---------- dificultades ----------
   const DIFS = [
     { id: 'facil', nombre: 'Fácil', xp: 1 },
@@ -137,7 +470,8 @@
       pista: 'Hay minutos que se leen igual al derecho y al revés. Terminá una partida en uno.' },
     { id: 'holograma', nombre: 'Holograma', legendaria: true, codigo: true, cuerpo: '#9fe8ff', extra: 'holograma', glow: '#9fe8ff',
       pista: 'Se consigue con un código.' },
-    { id: 'sombra', nombre: 'Sombra', legendaria: true, codigo: true, cuerpo: '#14152a', ojo: '#c08bff', extra: 'sombra', glow: '#8f6bff', sinCachetes: true,
+    // nombreEn: en inglés no sale del diccionario porque «Sombra» ahí es la sombra de tu mejor partida (Ghost)
+    { id: 'sombra', nombre: 'Sombra', nombreEn: 'Shadow', legendaria: true, codigo: true, cuerpo: '#14152a', ojo: '#c08bff', extra: 'sombra', glow: '#8f6bff', sinCachetes: true,
       pista: 'Se consigue con un código.' },
     { id: 'dev', nombre: 'Dev', legendaria: true, exclusiva: true, codigo: true, cuerpo: '#12142a', ojo: '#5ff5ff', extra: 'dev', glow: '#5ff5ff', sinCachetes: true, sinBoca: true,
       pista: 'Solo la tiene quien hizo el juego.' },
@@ -304,7 +638,7 @@
   function formato(valor, tb) {
     if (valor == null || !isFinite(valor)) return '—';
     if (tb && tb.formato === 'ms') return (valor / 1000).toFixed(2) + ' s';
-    return Math.round(valor).toLocaleString('es-AR') + (tb && tb.unidad ? ' ' + tb.unidad : '');
+    return Math.round(valor).toLocaleString(LOCALE) + (tb && tb.unidad ? ' ' + T(tb.unidad) : '');
   }
   const mejor = (tb, a, b) => (b == null ? true : tb && tb.orden === 'menor' ? a < b : a > b);
 
@@ -417,10 +751,19 @@
   for (const [jid, u] of Object.entries(UMBRALES)) {
     const j = juego(jid), tb = j.tablas[1];
     u.forEach((v, k) => LOGROS.push({
-      id: `${jid}-${k + 1}`, juego: jid, nombre: `${j.nombre}: ${NOMBRES_TIER[k]}`, medalla: TIERS[k],
-      desc: `Hacé ${formato(v, tb)} o más en Normal o más difícil.`,
+      id: `${jid}-${k + 1}`, juego: jid, nombre: `${T(j.nombre)}: ${T(NOMBRES_TIER[k])}`, medalla: TIERS[k],
+      desc: T('Hacé {v} o más en Normal o más difícil.', { v: formato(v, tb) }),
       prueba: p => (mejorEnJuego(p, jid, true) || 0) >= v,
     }));
+  }
+  // En inglés, los nombres, descripciones y pistas de personajes, efectos, brillos, medallas y logros quedan traducidos
+  // en los datos (así salen bien aunque se concatenen o se dibujen). Los TITULOS, DIFS y JUEGOS no: los títulos se
+  // suben al ranking en español y los otros se comparan; esos se traducen al mostrarlos (T() o el observer).
+  if (enIngles) {
+    for (const x of [...SKINS, ...EFECTOS, ...MARCOS, ...Object.values(MEDALLAS), ...LOGROS]) {
+      for (const k of ['nombre', 'desc', 'pista']) if (typeof x[k] === 'string') x[k] = T(x[k]);
+      if (x.nombreEn) x.nombre = x.nombreEn;
+    }
   }
   const tieneLogro = (p, l) => (l.prueba ? l.prueba(p) : (() => { const [a, b] = l.progreso(p); return a >= b; })());
 
@@ -561,16 +904,16 @@
   // Canjea un código. Devuelve { ok, skin } o { ok: false, msg }.
   async function canjear(texto) {
     const limpio = String(texto || '').toUpperCase().replace(/[\s-]/g, '');
-    if (!limpio) return { ok: false, msg: 'Escribí un código.' };
+    if (!limpio) return { ok: false, msg: T('Escribí un código.') };
     let hash = '';
     try {
       const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('cubo:' + limpio));
       hash = [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, '0')).join('');
-    } catch (e) { return { ok: false, msg: 'No se pudo revisar el código en este navegador.' }; }
+    } catch (e) { return { ok: false, msg: T('No se pudo revisar el código en este navegador.') }; }
     const ids = CODIGOS[hash] || [];
     const deCodigo = k => (k.startsWith('fx:') ? EFECTOS.find(e => e.codigo === k) : SKINS.find(x => x.id === k));
     const items = ids.map(deCodigo).filter(Boolean);
-    if (!items.length) return { ok: false, msg: 'Ese código no existe.' };
+    if (!items.length) return { ok: false, msg: T('Ese código no existe.') };
     const sk = items.find(i => SKINS.includes(i)), fx = items.find(i => EFECTOS.includes(i));
     datos = leer();
     const faltan = ids.filter(k => !datos.codigos.includes(k));
@@ -581,7 +924,7 @@
     if (sk || fx) datos.eleccion = Date.now();
     guardar();
     subirPendientes();
-    avisar(`<canvas width="96" height="104" style="width:48px;height:52px;flex:none"></canvas><div><b>¡${items.map(i => i.nombre).join(' y ')}!</b><span>${sk ? 'Personaje' : 'Efecto'} legendario desbloqueado</span></div>`, 4200);
+    avisar(`<canvas width="96" height="104" style="width:48px;height:52px;flex:none"></canvas><div><b>${exclamar(items.map(i => i.nombre).join(T(' y ')))}</b><span>${T(sk ? 'Personaje legendario desbloqueado' : 'Efecto legendario desbloqueado')}</span></div>`, 4200);
     const cv = document.querySelector('#cc-avisos .cc-aviso:last-child canvas');
     if (cv) { const c = cv.getContext('2d'); c.scale(2, 2); dibujarCubo(c, 24, 46, 28, { skin: sk || skin(), t: 900, efecto: fx ? fx.id : false }); }
     return { ok: true, items, skin: sk, efecto: fx };
@@ -630,7 +973,7 @@
     if (ahora > antes && !silencioso) avisoNivel(ahora, nuevas);
     if (!silencioso) avisoTemporada(nivT);
     premiarMisiones(cumplidas);
-    return { ganada: n, nivel: ahora, subio: ahora > antes, desbloqueadas: nuevas.map(s => s.nombre) };
+    return { ganada: n, nivel: ahora, subio: ahora > antes, desbloqueadas: nuevas.map(s => T(s.nombre)) };
   }
   function anotarRecord(jid, texto) {
     datos = leer(); datos.records[jid] = String(texto); guardar();
@@ -702,7 +1045,7 @@
     if (ev && xp > 0) xp = Math.round(xp * ev.mult);
     const boost = datos.boost > 0 && xp > 0;
     if (boost) { xp *= 2; datos.boostU++; datos.boost--; }
-    if (ev || boost) avisar(`<b>⚡ ${[ev && `${ev.nombre}: ${ev.texto}`, boost && `Doble XP (te quedan ${datos.boost})`].filter(Boolean).join(' · ')}</b>`, 2600);
+    if (ev || boost) avisar(`<b>⚡ ${[ev && `${ev.nombre}: ${ev.texto}`, boost && T('Doble XP (te quedan {n})', { n: datos.boost })].filter(Boolean).join(' · ')}</b>`, 2600);
     const cumplidas = avanzarMisiones({ partida: { juego: o.juego, dif: dif ? dif.id : null, record, valor, diario: !!dia } });
     guardar();
     const r = sumarSolo(xp);
@@ -740,7 +1083,7 @@
   const DIARIO_TABLA = { escalador: 'time' };   // la tabla normal que se juega ese día (si no está acá, 'normal')
   const DIA_MS = 864e5;
   const fechaDia = n => new Date(n * DIA_MS).toISOString().slice(0, 10);
-  const fechaLinda = f => new Date(f + 'T12:00:00Z').toLocaleDateString('es-AR', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+  const fechaLinda = f => new Date(f + 'T12:00:00Z').toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', timeZone: 'UTC' });
   // Generador con semilla (mulberry32, el mismo de los duelos) y la semilla de cada día sacada de la fecha (FNV-1a).
   function azar(semilla) {
     let a = semilla >>> 0;
@@ -793,7 +1136,7 @@
     const info = diario();
     if (info.juego !== jid) {   // link viejo: hoy toca otro juego, se juega normal
       try { history.replaceState(null, '', location.pathname); } catch (e) {}
-      setTimeout(() => avisar(`El desafío de hoy es en <b>${info.nombre}</b>. Esta partida es normal.`, 4200), 800);
+      setTimeout(() => avisar(T('El desafío de hoy es en <b>{j}</b>. Esta partida es normal.', { j: info.nombre }), 4200), 800);
       return null;
     }
     estilos();
@@ -801,8 +1144,8 @@
     function cartel(fin) {
       const el = document.createElement('div');
       el.className = 'cc-dia' + (fin ? ' fin' : '');
-      el.innerHTML = '<b>📅 Desafío del día</b><span class="txt"></span><span class="racha"></span>' +
-        '<button class="cc-dia-rk" type="button">🏆 Ranking del día</button>';
+      el.innerHTML = `<b>📅 ${T('Desafío del día')}</b><span class="txt"></span><span class="racha"></span>` +
+        `<button class="cc-dia-rk" type="button">🏆 ${T('Ranking del día')}</button>`;
       el.querySelector('button').addEventListener('click', () => verRanking({ juego: jid, diario: true }));
       carteles.push(el);
       return el;
@@ -813,19 +1156,20 @@
         const fin = el.classList.contains('fin');
         let t;
         if (fin && r) {
-          t = `Intento ${r.intentos} de ${DIARIO_INTENTOS} · tu mejor de hoy: <strong>${r.texto}</strong>` + (r.nueva && r.intentos > 1 ? ' (¡mejoraste!)' : '');
-          if (r.premio) t += ` · <strong>+${r.premio} XP</strong> por jugarlo`;
-          if (!r.quedan) t += ` · mañana hay otro (en ${faltaTexto(i.quedanMs)})`;
+          t = T('Intento {n} de {m} · tu mejor de hoy: <strong>{v}</strong>', { n: r.intentos, m: DIARIO_INTENTOS, v: r.texto }) +
+            (r.nueva && r.intentos > 1 ? T(' (¡mejoraste!)') : '');
+          if (r.premio) t += T(' · <strong>+{n} XP</strong> por jugarlo', { n: r.premio });
+          if (!r.quedan) t += T(' · mañana hay otro (en {t})', { t: faltaTexto(i.quedanMs) });
         } else {
-          const quedan = i.quedan === DIARIO_INTENTOS ? `${DIARIO_INTENTOS} intentos`
-            : i.quedan === 1 ? 'te queda 1 intento' : `te quedan ${i.quedan} intentos`;
-          t = i.quedan ? `${i.fechaLinda} · Normal · el mismo nivel para todos · ${quedan}`
-            : `Ya usaste los ${DIARIO_INTENTOS} intentos de hoy. Mañana hay otro (en ${faltaTexto(i.quedanMs)}).`;
-          if (i.texto) t += ` · tu mejor: <strong>${i.texto}</strong>`;
+          const base = '{f} · Normal · el mismo nivel para todos · ';
+          t = !i.quedan ? T('Ya usaste los {n} intentos de hoy. Mañana hay otro (en {t}).', { n: DIARIO_INTENTOS, t: faltaTexto(i.quedanMs) })
+            : T(base + (i.quedan === DIARIO_INTENTOS ? '{n} intentos' : i.quedan === 1 ? 'te queda 1 intento' : 'te quedan {n} intentos'),
+              { f: i.fechaLinda, n: i.quedan });
+          if (i.texto) t += T(' · tu mejor: <strong>{v}</strong>', { v: i.texto });
         }
         el.querySelector('.txt').innerHTML = t;
         const racha = fin && r ? r.racha : i.racha;
-        el.querySelector('.racha').textContent = racha > 0 ? `🔥 ${racha} ${racha === 1 ? 'día' : 'días seguidos'}` : '';
+        el.querySelector('.racha').textContent = racha > 0 ? T(racha === 1 ? '🔥 {n} día' : '🔥 {n} días seguidos', { n: racha }) : '';
       }
     }
     // el texto del botón "Otra vez" (cada juego lo arma distinto)
@@ -863,7 +1207,7 @@
         const c = cartel(false);
         if (alJugar) {
           const j = document.createElement('button');
-          j.type = 'button'; j.className = 'cc-dia-jugar'; j.textContent = '▶ Jugar el desafío';
+          j.type = 'button'; j.className = 'cc-dia-jugar'; j.textContent = '▶ ' + T('Jugar el desafío');
           j.addEventListener('click', alJugar);
           c.appendChild(j);
         }
@@ -877,7 +1221,7 @@
         for (const x of ocultar) if (x) x.hidden = true;
         pintar(r && r.diario);
         const q = diario().quedan;
-        textoBoton(btn, q ? `↻ Intento ${DIARIO_INTENTOS - q + 1} de ${DIARIO_INTENTOS} ` : '▸ Seguir en modo normal ');
+        textoBoton(btn, q ? `↻ ${T('Intento {n} de {m}', { n: DIARIO_INTENTOS - q + 1, m: DIARIO_INTENTOS })} ` : `▸ ${T('Seguir en modo normal')} `);
       },
     };
   }
@@ -891,13 +1235,13 @@
   const TEMP_INICIO = Date.UTC(2026, 10, 2);   // lunes 2 de noviembre de 2026, 00:00 UTC: arranca la temporada 1
   const TEMP_DIAS = 42, TEMP_NIVELES = 30, TEMP_XP = 250, BOOST_PARTIDAS = 3;
   const TEMPORADAS = [
-    { n: 1, nombre: 'Neón', color: '#ff3bd4', color2: '#5ff5ff', desc: 'Luces, visores y brillo de ciudad de noche.' },
-    { n: 2, nombre: 'Hielo', color: '#5cb8ff', color2: '#e8f7ff', desc: 'Copos, gorritos y un frío que quema.' },
-    { n: 3, nombre: 'Selva', color: '#1fbf6a', color2: '#ffcc29', desc: 'Hojas, capas de aventurero y un rey de la selva.' },
+    { n: 1, nombre: T('Neón'), color: '#ff3bd4', color2: '#5ff5ff', desc: T('Luces, visores y brillo de ciudad de noche.') },
+    { n: 2, nombre: T('Hielo'), color: '#5cb8ff', color2: '#e8f7ff', desc: T('Copos, gorritos y un frío que quema.') },
+    { n: 3, nombre: T('Selva'), color: '#1fbf6a', color2: '#ffcc29', desc: T('Hojas, capas de aventurero y un rey de la selva.') },
   ];
   function temporadaDe(ahora = Date.now()) {
     const n = Math.max(1, Math.floor((ahora - TEMP_INICIO) / (TEMP_DIAS * DIA_MS)) + 1);
-    const def = TEMPORADAS.find(x => x.n === n) || { n, nombre: `Temporada ${n}`, color: '#ffcc29', color2: '#fffaf0', desc: '' };
+    const def = TEMPORADAS.find(x => x.n === n) || { n, nombre: T('Temporada {n}', { n }), color: '#ffcc29', color2: '#fffaf0', desc: '' };
     const inicio = TEMP_INICIO + (n - 1) * TEMP_DIAS * DIA_MS;
     return { ...def, inicio, fin: inicio + TEMP_DIAS * DIA_MS };
   }
@@ -935,22 +1279,23 @@
   function avisoTemporada(niveles) {
     if (!niveles.length) return;
     const p = niveles[niveles.length - 1], T = temporadaDe();
-    const premio = p.items.length ? p.items.map(x => x.it.nombre).join(' + ') : `⚡ Doble XP en tus próximas ${BOOST_PARTIDAS} partidas`;
-    avisar(`<b>🏆 Temporada ${T.nombre}: nivel ${p.nivel}</b><br>${premio}`, 3600);
+    // (acá `T` es la temporada: la función de traducir es `tr`)
+    const premio = p.items.length ? p.items.map(x => tr(x.it.nombre)).join(' + ') : '⚡ ' + tr('Doble XP en tus próximas {n} partidas', { n: BOOST_PARTIDAS });
+    avisar(`<b>🏆 ${tr('Temporada {t}: nivel {n}', { t: T.nombre, n: p.nivel })}</b><br>${premio}`, 3600);
   }
 
   // Eventos de XP: el arranque de cada temporada (3 días), la hora feliz (de 20 a 21, hora tuya) y los fines de semana.
   function eventoXP(ahora = Date.now()) {
     const T = temporadaDe(ahora), d = new Date(ahora), evs = [];
-    if (ahora - T.inicio < 3 * DIA_MS) evs.push({ mult: 2, nombre: 'Arranque de temporada', hasta: T.inicio + 3 * DIA_MS });
-    if (d.getHours() === 20) { const h = new Date(d); h.setHours(21, 0, 0, 0); evs.push({ mult: 2, nombre: 'Hora feliz', hasta: +h }); }
+    if (ahora - T.inicio < 3 * DIA_MS) evs.push({ mult: 2, nombre: tr('Arranque de temporada'), hasta: T.inicio + 3 * DIA_MS });
+    if (d.getHours() === 20) { const h = new Date(d); h.setHours(21, 0, 0, 0); evs.push({ mult: 2, nombre: tr('Hora feliz'), hasta: +h }); }
     if (d.getDay() === 0 || d.getDay() === 6) {
       const h = new Date(d); h.setHours(24, 0, 0, 0); if (d.getDay() === 6) h.setDate(h.getDate() + 1);
-      evs.push({ mult: 1.5, nombre: 'Finde de XP', hasta: +h });
+      evs.push({ mult: 1.5, nombre: tr('Finde de XP'), hasta: +h });
     }
     if (!evs.length) return null;
     const e = evs.sort((a, b) => b.mult - a.mult)[0];
-    return { ...e, quedanMs: e.hasta - ahora, texto: `×${String(e.mult).replace('.', ',')} XP` };
+    return { ...e, quedanMs: e.hasta - ahora, texto: `×${coma(e.mult)} XP` };
   }
 
   // Misiones: 3 del día y 3 de la semana, iguales para todos (salen de la fecha). Se cumplen solas jugando y dan XP.
@@ -977,13 +1322,13 @@
     const r = azar(semillaDe('misiones:' + clave)), lista = pool.slice(), out = [];
     while (out.length < cuantas && lista.length) out.push(lista.splice(Math.floor(r() * lista.length), 1)[0]);
     return out.map((m, k) => {
-      const x = { ...m, clave: clave + ':' + k + ':' + m.id };
+      const x = { ...m, clave: clave + ':' + k + ':' + m.id, txt: T(m.txt) };
       if (m.id === 'juego' || m.id === 'marca') {
         const opciones = m.id === 'marca' ? JUEGOS.filter(j => UMBRALES[j.id]) : JUEGOS;
         const j = opciones[Math.floor(r() * opciones.length)];
         x.juego = j.id;
         if (m.id === 'marca') x.valor = UMBRALES[j.id][0];
-        x.txt = m.txt.replace('{j}', j.nombre).replace('{v}', m.id === 'marca' ? formato(x.valor, j.tablas[1]) : '');
+        x.txt = T(m.txt, { j: j.nombre, v: m.id === 'marca' ? formato(x.valor, j.tablas[1]) : '' });
       }
       if (m.id === 'distintos' && !m.meta) x.meta = JUEGOS.length;
       return x;
@@ -1043,7 +1388,7 @@
   function premiarMisiones(cumplidas) {
     if (!cumplidas.length) return 0;
     const xp = cumplidas.reduce((a, x) => a + x.xp, 0);
-    for (const x of cumplidas) avisar(`<b>🎯 Misión cumplida</b><br>${x.txt} · +${x.xp} XP`, 3200);
+    for (const x of cumplidas) avisar(`<b>🎯 ${T('Misión cumplida')}</b><br>${x.txt} · +${x.xp} XP`, 3200);
     sumarSolo(xp, false, true);
     return xp;
   }
@@ -1137,7 +1482,7 @@
   function limpiarApodo(s) {
     return String(s || '').normalize('NFC').replace(/[^\p{L}\p{N} _.\-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 14);
   }
-  const sinRed = () => (!rankingActivo() || navigator.onLine === false ? { ok: false, msg: 'Necesitás internet para esto.' } : null);
+  const sinRed = () => (!rankingActivo() || navigator.onLine === false ? { ok: false, msg: T('Necesitás internet para esto.') } : null);
   function subirTodo() {
     for (const [k, v] of Object.entries(datos.mejores)) { const [j, t] = k.split(':'); if (tablaDe(j, t)) encolar(j, t, v); }
   }
@@ -1151,9 +1496,9 @@
     return (async () => {
       let r;
       try { await subiendo; datos = leer(); r = await registrar(a); }
-      catch (e) { return { ok: false, msg: 'No se pudo guardar el apodo. Probá de nuevo en un rato.' }; }
-      if (r && r.estado === 'ocupado') return { ok: false, msg: `«${a}» ya es de otra persona. Elegí otro, o si es tuyo, entrá con tu clave.` };
-      if (!r || r.estado !== 'ok') return { ok: false, msg: 'El apodo tiene que tener entre 3 y 14 letras o números.' };
+      catch (e) { return { ok: false, msg: T('No se pudo guardar el apodo. Probá de nuevo en un rato.') }; }
+      if (r && r.estado === 'ocupado') return { ok: false, msg: Tlit('«{a}» ya es de otra persona. Elegí otro, o si es tuyo, entrá con tu clave.', { a }) };
+      if (!r || r.estado !== 'ok') return { ok: false, msg: T('El apodo tiene que tener entre 3 y 14 letras o números.') };
       datos = leer();
       datos.apodo = a; datos.clave = r.clave; datos.codigoAmigo = r.codigo || ''; datos.skinSubida = firma(); datos.apodoPerdido = '';
       subirTodo();   // al estrenar el apodo se suben todos tus récords
@@ -1167,15 +1512,15 @@
   // Usar en este dispositivo el apodo que ya tenés en otro, con su clave. Lo de acá se suma a lo tuyo.
   async function vincular(apodo, clave) {
     const a = limpiarApodo(apodo);
-    if (a.length < 3 || !String(clave || '').trim()) return { ok: false, msg: 'Escribí tu apodo y tu clave.' };
+    if (a.length < 3 || !String(clave || '').trim()) return { ok: false, msg: T('Escribí tu apodo y tu clave.') };
     const err = sinRed();
     if (err) return err;
     let r;
     try {
       await subiendo; datos = leer();
       r = await api('rpc/vincular_jugador', { method: 'POST', body: JSON.stringify({ p_apodo: a, p_clave: clave, p_viejo: datos.id }) });
-    } catch (e) { return { ok: false, msg: 'No se pudo conectar. Probá de nuevo en un rato.' }; }
-    if (!r || !r.id) return { ok: false, msg: 'El apodo y la clave no coinciden.' };
+    } catch (e) { return { ok: false, msg: T('No se pudo conectar. Probá de nuevo en un rato.') }; }
+    if (!r || !r.id) return { ok: false, msg: T('El apodo y la clave no coinciden.') };
     datos = leer();
     datos.id = r.id; datos.apodo = r.apodo; datos.clave = r.clave; datos.skinSubida = ''; datos.codigoAmigo = ''; datos.apodoPerdido = '';
     subirTodo();
@@ -1292,7 +1637,7 @@
             try { localStorage.setItem(KEY, JSON.stringify(datos)); } catch (e) {}
             cambio = true;
             const n = nivelDe(datos.xp).nivel;
-            if (n > nivelAntes) avisar(`<b>☁️ Trajimos tu progreso</b><br>Nivel ${n}`, 3200);
+            if (n > nivelAntes) avisar(`<b>☁️ ${T('Trajimos tu progreso')}</b><br>${T('Nivel {n}', { n })}`, 3200);
           }
         }
       }
@@ -1359,25 +1704,25 @@
   // Manda una solicitud. Devuelve { ok, estado: 'pendiente' | 'amigos', amigo } o { ok: false, msg }.
   async function agregarAmigo(codigo) {
     const c = limpiarCodigo(codigo);
-    if (c.length !== 6) return { ok: false, msg: 'El código de amigo tiene 6 letras y números.' };
+    if (c.length !== 6) return { ok: false, msg: T('El código de amigo tiene 6 letras y números.') };
     const err = sinRed();
     if (err) return err;
     datos = leer();
-    if (!datos.apodo) return { ok: false, msg: 'Para agregar amigos primero elegí un apodo en cualquier ranking.' };
-    if (c === datos.codigoAmigo) return { ok: false, msg: 'Ese es tu propio código. Pasáselo a tus amigos.' };
-    if (datos.amigosServidor && datos.amigos.some(a => a.codigo === c)) return { ok: false, msg: 'Ya es tu amigo.' };
-    if (datos.enviadas.some(a => a.codigo === c)) return { ok: false, msg: 'Ya le mandaste una solicitud. Falta que la acepte.' };
+    if (!datos.apodo) return { ok: false, msg: T('Para agregar amigos primero elegí un apodo en cualquier ranking.') };
+    if (c === datos.codigoAmigo) return { ok: false, msg: T('Ese es tu propio código. Pasáselo a tus amigos.') };
+    if (datos.amigosServidor && datos.amigos.some(a => a.codigo === c)) return { ok: false, msg: T('Ya es tu amigo.') };
+    if (datos.enviadas.some(a => a.codigo === c)) return { ok: false, msg: T('Ya le mandaste una solicitud. Falta que la acepte.') };
     let r;
     try {
       if (!datos.codigoAmigo) await subirPendientes();
       r = await rpcAmigos('pedir_amistad', { p_codigo: c });
     } catch (e) {
-      return { ok: false, msg: e.message === 'ranking 404' ? 'Los amigos se están actualizando. Probá de nuevo en un rato.' : 'No se pudo conectar. Probá de nuevo en un rato.' };
+      return { ok: false, msg: T(e.message === 'ranking 404' ? 'Los amigos se están actualizando. Probá de nuevo en un rato.' : 'No se pudo conectar. Probá de nuevo en un rato.') };
     }
     if (!r || r.error || !r.amigo) {
       const msg = { 'no-existe': 'No hay nadie con ese código.', propio: 'Ese es tu propio código. Pasáselo a tus amigos.',
         muchos: 'Mandaste muchas solicitudes seguidas. Esperá un rato.', 'sin-apodo': 'Tu apodo todavía no se subió. Probá de nuevo en unos segundos.' }[r && r.error];
-      return { ok: false, msg: msg || 'No se pudo mandar la solicitud.' };
+      return { ok: false, msg: msg ? T(msg) : T('No se pudo mandar la solicitud.') };
     }
     avisarAmistad(r.amigo.huella);
     await refrescarAmigos(true);
@@ -1390,7 +1735,7 @@
     const a = leer().recibidas.find(x => x.codigo === codigo);
     let r;
     try { r = await rpcAmigos('responder_amistad', { p_codigo: codigo, p_acepto: !!acepto }); }
-    catch (e) { return { ok: false, msg: 'No se pudo conectar. Probá de nuevo en un rato.' }; }
+    catch (e) { return { ok: false, msg: T('No se pudo conectar. Probá de nuevo en un rato.') }; }
     if (r === 'amigos' && a) avisarAmistad(a.huella);
     await refrescarAmigos(true);
     return { ok: true, estado: r };
@@ -1404,7 +1749,7 @@
     guardar();
     if (!datos.amigosServidor) return { ok: true };   // todavía no se subió: alcanza con sacarlo de acá
     try { await rpcAmigos('quitar_amistad', { p_codigo: codigo }); }
-    catch (e) { await refrescarAmigos(true); return { ok: false, msg: 'No se pudo conectar. Probá de nuevo en un rato.' }; }
+    catch (e) { await refrescarAmigos(true); return { ok: false, msg: T('No se pudo conectar. Probá de nuevo en un rato.') }; }
     if (a) avisarAmistad(a.huella);
     return { ok: true };
   }
@@ -1604,15 +1949,15 @@
     el.classList.toggle('compacto', !!o.compacto);
     el.style.setProperty('--n', lista.length);
     el.setAttribute('role', 'radiogroup');
-    el.setAttribute('aria-label', 'Dificultad');
+    el.setAttribute('aria-label', T('Dificultad'));
     el.innerHTML = lista.map(d => `<button type="button" class="cc-dif" role="radio" data-d="${d.id}" aria-checked="${d.id === v}">` +
-      `${iconoDif(d.id, o.compacto ? 20 : 24)}${d.nombre}<small>XP ×${String(d.xp).replace('.', ',')}</small></button>`).join('') +
+      `${iconoDif(d.id, o.compacto ? 20 : 24)}${T(d.nombre)}<small>XP ×${coma(d.xp)}</small></button>`).join('') +
       (o.sinNota || o.compacto ? '' : '<p class="cc-difs-nota" aria-live="polite"></p>');
     const nota = el.querySelector('.cc-difs-nota');
     function pintar(id) {
       v = id;
       for (const b of el.querySelectorAll('.cc-dif')) b.setAttribute('aria-checked', String(b.dataset.d === id));
-      if (nota) nota.textContent = (o.notas && o.notas[id]) || NOTAS_DIF[id];
+      if (nota) nota.textContent = T((o.notas && o.notas[id]) || NOTAS_DIF[id]);
     }
     function poner(id, avisar) {
       if (!lista.some(d => d.id === id)) return;
@@ -1635,9 +1980,9 @@
   function leyendaTeclas(el, o = {}) {
     estilos();
     el.classList.add('cc-teclas');
-    const extra = (o.extra || [['R', 'reiniciar']]).map(([k, t]) => `<kbd>${k}</kbd>${t}`).join(' ');
-    el.innerHTML = `<span class="g juego"><span class="t">En el juego</span><kbd class="f">←</kbd><kbd class="f">→</kbd>${o.jugar || 'moverte'} ${extra}</span>` +
-      (o.menu === false ? '' : `<span class="g menu"><span class="t">En el menú</span><kbd>↑</kbd><kbd>↓</kbd>${o.elegir || 'dificultad'} <kbd>Enter</kbd>jugar <kbd>Esc</kbd>salir</span>`);
+    const extra = (o.extra || [['R', 'reiniciar']]).map(([k, t]) => `<kbd>${k}</kbd>${T(t)}`).join(' ');
+    el.innerHTML = `<span class="g juego"><span class="t">${T('En el juego')}</span><kbd class="f">←</kbd><kbd class="f">→</kbd>${T(o.jugar || 'moverte')} ${extra}</span>` +
+      (o.menu === false ? '' : `<span class="g menu"><span class="t">${T('En el menú')}</span><kbd>↑</kbd><kbd>↓</kbd>${T(o.elegir || 'dificultad')} <kbd>Enter</kbd>${T('jugar')} <kbd>Esc</kbd>${T('salir')}</span>`);
   }
 
   // En pantallas grandes los paneles se agrandan con `zoom: var(--ui, 1)`.
@@ -1671,13 +2016,14 @@
   const CASA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 9.8v9.7h5V14h3v5.5h5V9.8"/></svg>';
   function casita() {
     for (const b of document.querySelectorAll('.overlay .card button')) {
-      if (!/Juegos\s*$/.test(b.textContent)) continue;
+      // en inglés el observer ya puede haber cambiado «Juegos» por «Games»
+      if (!/(Juegos|Games)\s*$/.test(b.textContent)) continue;
       estilos();
       const card = b.closest('.card'), fila = b.parentElement, brand = card.querySelector(':scope > .brand');
       b.className = 'cc-casa';
       b.innerHTML = CASA;
-      b.setAttribute('aria-label', 'Volver a los juegos');
-      b.title = 'Volver a los juegos';
+      b.setAttribute('aria-label', T('Volver a los juegos'));
+      b.title = T('Volver a los juegos');
       if (fila !== card && fila === card.firstElementChild) continue;   // ya está en la fila de arriba, con Ranking y Sonido
       if (brand) {
         // menú: la casita a la izquierda del nombre del juego, en la misma fila
@@ -1724,7 +2070,8 @@
   function avisoNivel(nivel, nuevas) {
     const nueva = [...nuevas].reverse().find(i => SKINS.includes(i));
     const el = avisar((nueva ? '<canvas width="96" height="104" style="width:48px;height:52px;flex:none"></canvas>' : '') +
-      `<div><b>¡Nivel ${nivel}!</b>` + (nuevas.length ? `<span>Desbloqueaste: ${nuevas.map(s => s.nombre).join(', ')}</span>` : '') + '</div>', 3600);
+      `<div><b>${exclamar(T('Nivel {n}', { n: nivel }))}</b>` +
+      (nuevas.length ? `<span>${T('Desbloqueaste: {x}', { x: nuevas.map(s => T(s.nombre)).join(', ') })}</span>` : '') + '</div>', 3600);
     const cv = el && el.querySelector('canvas');
     if (cv) { const c = cv.getContext('2d'); c.scale(2, 2); dibujarCubo(c, 24, 46, 28, { skin: nueva, t: 0, efecto: false }); }
   }
@@ -1732,7 +2079,7 @@
     const m = MEDALLAS[l.medalla];
     const premio = [...SKINS, ...EFECTOS].filter(i => i.logro === l.id).map(i => i.nombre);
     avisar(`<div class="cc-medalla" style="background:${m.color}">★</div><div><b>${l.nombre}</b>` +
-      `<span>Logro ${m.nombre.toLowerCase()} · +${m.xp} XP${premio.length ? ' · Desbloqueaste ' + premio.join(', ') : ''}</span></div>`, 3800);
+      `<span>${T('Logro ' + l.medalla)} · +${m.xp} XP${premio.length ? ' · ' + T('Desbloqueaste {x}', { x: premio.join(', ') }) : ''}</span></div>`, 3800);
   }
 
   // Clase CSS para pintar un apodo con el color de su personaje (solo legendarias; si no, '').
@@ -1755,14 +2102,14 @@
     const box = document.createElement('div');
     box.id = 'cc-rank';
     box.innerHTML = `<div class="cc-rk" role="dialog" aria-modal="true" aria-labelledby="cc-rank-t">
-      <header><div><h2 id="cc-rank-t">${dia ? 'Desafío del día' : 'Ranking'}</h2><small>${dia ? j.nombre + ' · ' + dia.fechaLinda : j.nombre}</small></div><button class="x" type="button" aria-label="Cerrar">✕</button></header>
-      <div class="seg quien" role="group" aria-label="Quiénes" hidden><button type="button" data-q="todos" aria-pressed="true">🌎 Todos</button><button type="button" data-q="amigos" aria-pressed="false">👥 Amigos</button></div>
-      ${conModos ? '<div class="seg modos" role="group" aria-label="Modo"></div>' : ''}<div class="seg difs" role="group" aria-label="Dificultad"${dia ? ' hidden' : ''}></div>
+      <header><div><h2 id="cc-rank-t">${T(dia ? 'Desafío del día' : 'Ranking')}</h2><small>${dia ? T(j.nombre) + ' · ' + dia.fechaLinda : T(j.nombre)}</small></div><button class="x" type="button" aria-label="${T('Cerrar')}">✕</button></header>
+      <div class="seg quien" role="group" aria-label="${T('Quiénes')}" hidden><button type="button" data-q="todos" aria-pressed="true">🌎 ${T('Todos')}</button><button type="button" data-q="amigos" aria-pressed="false">👥 ${T('Amigos')}</button></div>
+      ${conModos ? `<div class="seg modos" role="group" aria-label="${T('Modo')}"></div>` : ''}<div class="seg difs" role="group" aria-label="${T('Dificultad')}"${dia ? ' hidden' : ''}></div>
       <ol aria-live="polite"></ol>
       <div class="pie"><div class="yo-txt"></div>
-        <form class="f-apodo"><input name="a" maxlength="14" autocomplete="nickname" placeholder="Tu apodo (3 a 14 letras)" aria-label="Tu apodo"><button type="submit">Guardar</button></form>
-        <form class="f-clave" hidden><input name="a" maxlength="14" autocomplete="nickname" placeholder="Tu apodo" aria-label="Tu apodo">
-          <input name="c" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Clave" aria-label="Tu clave"><button type="submit">Entrar</button></form>
+        <form class="f-apodo"><input name="a" maxlength="14" autocomplete="nickname" placeholder="${T('Tu apodo (3 a 14 letras)')}" aria-label="${T('Tu apodo')}"><button type="submit">${T('Guardar')}</button></form>
+        <form class="f-clave" hidden><input name="a" maxlength="14" autocomplete="nickname" placeholder="${T('Tu apodo')}" aria-label="${T('Tu apodo')}">
+          <input name="c" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="${T('Clave')}" aria-label="${T('Tu clave')}"><button type="submit">${T('Entrar')}</button></form>
         <p class="ayuda"></p><button class="link otro" type="button"></button></div></div>`;
     document.body.appendChild(box);
     const $ = s => box.querySelector(s);
@@ -1778,22 +2125,23 @@
       const p = leer(), con = !!p.apodo && !editando;
       yoTxt.hidden = !con; form.hidden = con || conClave; formClave.hidden = con || !conClave;
       if (con) {
-        yoTxt.innerHTML = 'Jugás como <b></b><button class="link" type="button">Cambiar apodo</button>';
+        // el apodo va con translate="no": el observer no tiene que traducir un apodo «Gato»
+        yoTxt.innerHTML = `${T('Jugás como')} <b translate="no"></b><button class="link" type="button">${T('Cambiar apodo')}</button>`;
         const b = yoTxt.querySelector('b'); b.textContent = p.apodo; b.className = claseNombre(skin());
         yoTxt.querySelector('.link').addEventListener('click', () => { editando = true; verClave = false; pintarPie(); input.focus(); });
-        otro.textContent = verClave ? 'Ocultar clave' : 'Jugar en otro dispositivo';
+        otro.textContent = T(verClave ? 'Ocultar clave' : 'Jugar en otro dispositivo');
         if (verClave) {
-          ayuda.innerHTML = p.clave
-            ? `Tu clave es <b class="clave"></b>. En el otro celu o compu abrí un ranking, tocá «Ya tengo apodo» y poné tu apodo y esta clave. No se la pases a nadie.`
-            : 'Conectate a internet para ver tu clave.';
+          ayuda.innerHTML = T(p.clave
+            ? 'Tu clave es <b class="clave" translate="no"></b>. En el otro celu o compu abrí un ranking, tocá «Ya tengo apodo» y poné tu apodo y esta clave. No se la pases a nadie.'
+            : 'Conectate a internet para ver tu clave.');
           const c = ayuda.querySelector('.clave'); if (c) c.textContent = claveLinda(p.clave);
-        } else ayuda.textContent = aviso || 'Tu mejor marca de cada modo se sube sola al terminar la partida.';
+        } else ayuda.textContent = aviso || T('Tu mejor marca de cada modo se sube sola al terminar la partida.');
       } else {
         if (!input.value) input.value = p.apodo || p.apodoPerdido;
-        otro.textContent = conClave ? 'Elegir un apodo nuevo' : 'Ya tengo apodo en otro dispositivo';
-        ayuda.textContent = aviso || (conClave ? 'La clave está en el ranking del dispositivo donde ya tenés tu apodo.'
-          : p.apodoPerdido ? `«${p.apodoPerdido}» ya es de otra persona. Si es tuyo, entrá con tu clave; si no, elegí otro.`
-          : 'Poné un apodo para aparecer en el ranking. Es solo tuyo y tus récords se suben solos.');
+        otro.textContent = T(conClave ? 'Elegir un apodo nuevo' : 'Ya tengo apodo en otro dispositivo');
+        ayuda.textContent = aviso || (conClave ? T('La clave está en el ranking del dispositivo donde ya tenés tu apodo.')
+          : p.apodoPerdido ? Tlit('«{a}» ya es de otra persona. Si es tuyo, entrá con tu clave; si no, elegí otro.', { a: p.apodoPerdido })
+          : T('Poné un apodo para aparecer en el ranking. Es solo tuyo y tus récords se suben solos.'));
       }
     }
     otro.addEventListener('click', () => {
@@ -1807,11 +2155,11 @@
       if (segModos) segModos.hidden = !!dia;
       if (segModos && !dia) {
         segModos.style.setProperty('--n', modos.length);
-        segModos.innerHTML = modos.map(m => `<button type="button" data-m="${m}" aria-pressed="${m === modo}">${nombreModo(m)}</button>`).join('');
+        segModos.innerHTML = modos.map(m => `<button type="button" data-m="${m}" aria-pressed="${m === modo}">${T(nombreModo(m))}</button>`).join('');
       }
       const difs = DIFS.filter(d => j.tablas.some(t => modoDe(t) === modo && t.dif === d.id));
       segDifs.style.setProperty('--n', difs.length);
-      segDifs.innerHTML = difs.map(d => `<button type="button" data-d="${d.id}" aria-pressed="${d.id === tb.dif}">${iconoDif(d.id, 18)}${d.nombre}</button>`).join('');
+      segDifs.innerHTML = difs.map(d => `<button type="button" data-d="${d.id}" aria-pressed="${d.id === tb.dif}">${iconoDif(d.id, 18)}${T(d.nombre)}</button>`).join('');
     }
     const tablaPara = (modo, dif) => j.tablas.find(t => modoDe(t) === modo && t.dif === dif) || j.tablas.find(t => modoDe(t) === modo && t.dif === 'normal')
       || j.tablas.find(t => modoDe(t) === modo);
@@ -1823,11 +2171,11 @@
       pintarSegs();
       for (const b of segQuien.querySelectorAll('button')) b.setAttribute('aria-pressed', String((b.dataset.q === 'amigos') === soloAmigos));
       const tb = tablaDe(j.id, tid), mio = dia ? diario().mejor : leer().mejores[j.id + ':' + tid];
-      const tuyo = dia ? (mio != null ? `Tu mejor de hoy: <strong>${formato(mio, tb)}</strong>` : 'Todavía no lo jugaste hoy.')
-        : `Tu mejor marca: <strong>${formato(mio, tb)}</strong>`;
-      if (!rankingActivo()) { msg(`El ranking online se está preparando.<br>${tuyo}`); return; }
-      if (navigator.onLine === false) { msg(`Sin conexión. Tus récords se suben cuando vuelvas a tener internet.<br>${tuyo}`); return; }
-      msg('Cargando…');
+      const tuyo = dia ? (mio != null ? T('Tu mejor de hoy: <strong>{v}</strong>', { v: formato(mio, tb) }) : T('Todavía no lo jugaste hoy.'))
+        : T('Tu mejor marca: <strong>{v}</strong>', { v: formato(mio, tb) });
+      if (!rankingActivo()) { msg(`${T('El ranking online se está preparando.')}<br>${tuyo}`); return; }
+      if (navigator.onLine === false) { msg(`${T('Sin conexión. Tus récords se suben cuando vuelvas a tener internet.')}<br>${tuyo}`); return; }
+      msg(T('Cargando…'));
       const n = ++pedido;
       try {
         await esperarSubida();
@@ -1835,16 +2183,19 @@
         const { lista, yo } = await top(j.id, dia ? dia.tablaRanking : tid, 50, { amigos: soloAmigos, ...(dia ? { mio } : {}) });
         if (n !== pedido) return;
         const cosa = dia ? 'el desafío de hoy' : 'este modo';
-        if (!lista.length) { msg(soloAmigos ? `Ni vos ni tus amigos jugaron ${cosa} todavía.<br>${tuyo}` : `Todavía nadie jugó ${cosa}. ¡Sé el primero!<br>${tuyo}`); return; }
+        if (!lista.length) { msg(T(soloAmigos ? 'Ni vos ni tus amigos jugaron {c} todavía.' : 'Todavía nadie jugó {c}. ¡Sé el primero!', { c: cosa }) + `<br>${tuyo}`); return; }
         ol.innerHTML = '';
         const fila = f => {
           const li = document.createElement('li'); if (f.yo) li.className = 'yo';
           li.innerHTML = `<span class="p${f.puesto <= 3 ? ' m' + f.puesto : ''}">${f.puesto}</span><canvas width="52" height="60"></canvas><span class="n"></span><span class="v">${formato(f.valor, tb)}</span>`;
           const nm = li.querySelector('.n'), sk = SKINS.find(s => s.id === f.skin);
-          if (sk && sk.legendaria) { const t = document.createElement('span'); t.className = claseNombre(sk); t.textContent = f.apodo; nm.appendChild(t); }
-          else nm.textContent = f.apodo;
-          if (f.yo) nm.append(' (vos)');
-          if (f.titulo) { const tt = document.createElement('small'); tt.className = 'tt'; tt.textContent = f.titulo; nm.appendChild(tt); }
+          // el apodo, en su propio span con translate="no" (el observer no tiene que traducir un apodo «Gato»)
+          const ap = document.createElement('span'); ap.setAttribute('translate', 'no'); ap.textContent = f.apodo;
+          if (sk && sk.legendaria) ap.className = claseNombre(sk);
+          nm.appendChild(ap);
+          if (f.yo) nm.append(T(' (vos)'));
+          // el título llega del servidor en español
+          if (f.titulo) { const tt = document.createElement('small'); tt.className = 'tt'; tt.textContent = T(f.titulo); nm.appendChild(tt); }
           const c = li.querySelector('canvas').getContext('2d'); c.scale(2, 2);
           dibujarCubo(c, 13, 28, 18, { skin: sk || SKINS[0], t: 0, efecto: false });
           ol.appendChild(li);
@@ -1853,7 +2204,7 @@
         lista.forEach(fila);
         if (yo && yo.afuera) { const sep = document.createElement('li'); sep.className = 'sep'; sep.textContent = '···'; ol.appendChild(sep); fila(yo); }
         const mia = ol.querySelector('.yo'); if (mia) mia.scrollIntoView({ block: 'nearest' });
-      } catch (e) { if (n === pedido) msg(`No se pudo cargar el ranking. Probá de nuevo en un rato.<br>${tuyo}`); }
+      } catch (e) { if (n === pedido) msg(`${T('No se pudo cargar el ranking. Probá de nuevo en un rato.')}<br>${tuyo}`); }
     }
     function cerrar() { box.remove(); removeEventListener('keydown', tecla, true); if (previo && previo.focus) previo.focus(); if (o.alCerrar) o.alCerrar(); }
     function tecla(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); } else if (e.target.tagName !== 'INPUT') e.stopPropagation(); }
@@ -1864,8 +2215,8 @@
     form.addEventListener('submit', async e => {
       e.preventDefault();
       const r = ponerApodo(input.value);
-      if (!r) { ayuda.textContent = 'El apodo tiene que tener entre 3 y 14 letras o números.'; input.focus(); return; }
-      esperando(form, true); ayuda.textContent = 'Guardando…';
+      if (!r) { ayuda.textContent = T('El apodo tiene que tener entre 3 y 14 letras o números.'); input.focus(); return; }
+      esperando(form, true); ayuda.textContent = T('Guardando…');
       const res = await r;
       esperando(form, false);
       if (!res.ok) { ayuda.textContent = res.msg; input.focus(); return; }
@@ -1874,12 +2225,12 @@
     });
     formClave.addEventListener('submit', async e => {
       e.preventDefault();
-      esperando(formClave, true); ayuda.textContent = 'Revisando…';
+      esperando(formClave, true); ayuda.textContent = T('Revisando…');
       const res = await vincular(formClave.elements.a.value, formClave.elements.c.value);
       esperando(formClave, false);
       if (!res.ok) { ayuda.textContent = res.msg; formClave.elements.c.focus(); return; }
       conClave = false; editando = false; document.activeElement.blur && document.activeElement.blur();
-      pintarPie(`¡Listo! Ahora jugás como ${res.apodo} también en este dispositivo.`);
+      pintarPie(Tlit('¡Listo! Ahora jugás como {a} también en este dispositivo.', { a: res.apodo }));
       cargar();
     });
     cargar();
@@ -1900,27 +2251,27 @@
     const box = document.createElement('div');
     box.id = 'cc-rank';   // el mismo id que el ranking: los juegos ya ignoran sus teclas mientras está abierto
     box.innerHTML = `<div class="cc-rk cc-ap" role="dialog" aria-modal="true" aria-labelledby="cc-ap-t">
-      <header><div><h2 id="cc-ap-t">¿Cómo te llamás?</h2><small>Tu nombre en el ranking</small></div><button class="x" type="button" aria-label="Cerrar">✕</button></header>
+      <header><div><h2 id="cc-ap-t">${T('¿Cómo te llamás?')}</h2><small>${T('Tu nombre en el ranking')}</small></div><button class="x" type="button" aria-label="${T('Cerrar')}">✕</button></header>
       <div class="pie"><canvas width="132" height="120" aria-hidden="true"></canvas>
-        <p class="intro">Elegí un apodo y tus récords se suben solos al ranking de cada juego. Es solo tuyo: nadie más lo puede usar.</p>
-        <form class="f-apodo"><input name="a" maxlength="14" autocomplete="nickname" placeholder="Tu apodo (3 a 14 letras)" aria-label="Tu apodo"><button type="submit">Listo</button></form>
-        <form class="f-clave" hidden><input name="a" maxlength="14" autocomplete="nickname" placeholder="Tu apodo" aria-label="Tu apodo">
-          <input name="c" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Clave" aria-label="Tu clave"><button type="submit">Entrar</button></form>
+        <p class="intro">${T('Elegí un apodo y tus récords se suben solos al ranking de cada juego. Es solo tuyo: nadie más lo puede usar.')}</p>
+        <form class="f-apodo"><input name="a" maxlength="14" autocomplete="nickname" placeholder="${T('Tu apodo (3 a 14 letras)')}" aria-label="${T('Tu apodo')}"><button type="submit">${T('Listo')}</button></form>
+        <form class="f-clave" hidden><input name="a" maxlength="14" autocomplete="nickname" placeholder="${T('Tu apodo')}" aria-label="${T('Tu apodo')}">
+          <input name="c" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="${T('Clave')}" aria-label="${T('Tu clave')}"><button type="submit">${T('Entrar')}</button></form>
         <p class="ayuda" aria-live="polite"></p>
-        <div class="botones"><button class="link otro" type="button">Ya tengo apodo en otro dispositivo</button><button class="link no" type="button">Ahora no</button></div></div></div>`;
+        <div class="botones"><button class="link otro" type="button">${T('Ya tengo apodo en otro dispositivo')}</button><button class="link no" type="button">${T('Ahora no')}</button></div></div></div>`;
     document.body.appendChild(box);
     const $ = q => box.querySelector(q);
     const form = $('.f-apodo'), input = form.querySelector('input'), formClave = $('.f-clave'), ayuda = $('.ayuda'), otro = $('.otro');
     const cv = $('canvas').getContext('2d'); cv.scale(2, 2);
     dibujarCubo(cv, 33, 54, 38, { mirar: 0, t: 0, efecto: false });
-    const ayudaBase = 'Después lo podés cambiar desde cualquier ranking.';
+    const ayudaBase = T('Después lo podés cambiar desde cualquier ranking.');
     ayuda.textContent = ayudaBase;
     let conClave = false;
     otro.addEventListener('click', () => {
       conClave = !conClave;
       form.hidden = conClave; formClave.hidden = !conClave;
-      otro.textContent = conClave ? 'Elegir un apodo nuevo' : 'Ya tengo apodo en otro dispositivo';
-      ayuda.textContent = conClave ? 'La clave está en el ranking del dispositivo donde ya tenés tu apodo («Jugar en otro dispositivo»).' : ayudaBase;
+      otro.textContent = T(conClave ? 'Elegir un apodo nuevo' : 'Ya tengo apodo en otro dispositivo');
+      ayuda.textContent = conClave ? T('La clave está en el ranking del dispositivo donde ya tenés tu apodo («Jugar en otro dispositivo»).') : ayudaBase;
       setTimeout(() => (conClave ? formClave : form).querySelector('input').focus());
     });
     function cerrar() { box.remove(); removeEventListener('keydown', tecla, true); if (previo && previo.focus) previo.focus(); }
@@ -1930,15 +2281,15 @@
     $('.no').addEventListener('click', cerrar);
     const esperando = (f, si) => { for (const el of f.elements) el.disabled = si; };
     const listo = a => {
-      box.querySelector('.cc-ap').innerHTML = `<header><div><h2>¡Hola, <span></span>!</h2><small>Ya estás en el ranking</small></div></header>`;
+      box.querySelector('.cc-ap').innerHTML = `<header><div><h2>${T('¡Hola, <span translate="no"></span>!')}</h2><small>${T('Ya estás en el ranking')}</small></div></header>`;
       box.querySelector('h2 span').textContent = a;
       setTimeout(cerrar, 1300);
     };
     form.addEventListener('submit', async e => {
       e.preventDefault();
       const r = ponerApodo(input.value);
-      if (!r) { ayuda.textContent = 'El apodo tiene que tener entre 3 y 14 letras o números.'; input.focus(); return; }
-      esperando(form, true); ayuda.textContent = 'Guardando…';
+      if (!r) { ayuda.textContent = T('El apodo tiene que tener entre 3 y 14 letras o números.'); input.focus(); return; }
+      esperando(form, true); ayuda.textContent = T('Guardando…');
       const res = await r;
       esperando(form, false);
       if (!res.ok) { ayuda.textContent = res.msg; input.focus(); return; }
@@ -1946,7 +2297,7 @@
     });
     formClave.addEventListener('submit', async e => {
       e.preventDefault();
-      esperando(formClave, true); ayuda.textContent = 'Revisando…';
+      esperando(formClave, true); ayuda.textContent = T('Revisando…');
       const res = await vincular(formClave.elements.a.value, formClave.elements.c.value);
       esperando(formClave, false);
       if (!res.ok) { ayuda.textContent = res.msg; formClave.elements.c.focus(); return; }
@@ -4880,11 +5231,11 @@
     const box = document.createElement('div');
     box.id = 'cc-rank';
     box.innerHTML = `<div class="cc-rk" role="dialog" aria-modal="true" aria-labelledby="cc-sa-t">
-      <header><div><h2 id="cc-sa-t">Sombra de un amigo</h2><small></small></div><button class="x" type="button" aria-label="Cerrar">✕</button></header>
-      <ol aria-live="polite"></ol><div class="pie"><p class="ayuda">Bajás su mejor partida y corrés contra ella. Solo se ven las de amigos aceptados.</p></div></div>`;
+      <header><div><h2 id="cc-sa-t">${T('Sombra de un amigo')}</h2><small></small></div><button class="x" type="button" aria-label="${T('Cerrar')}">✕</button></header>
+      <ol aria-live="polite"></ol><div class="pie"><p class="ayuda">${T('Bajás su mejor partida y corrés contra ella. Solo se ven las de amigos aceptados.')}</p></div></div>`;
     document.body.appendChild(box);
     const ol = box.querySelector('ol'), ayuda = box.querySelector('.ayuda');
-    box.querySelector('small').textContent = o.titulo || (juego(o.juego) || {}).nombre || '';
+    box.querySelector('small').textContent = T(o.titulo || (juego(o.juego) || {}).nombre || '');
     function cerrar() { box.remove(); removeEventListener('keydown', tecla, true); if (previo && previo.focus) previo.focus(); }
     function tecla(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); } else e.stopPropagation(); }
     addEventListener('keydown', tecla, true);
@@ -4892,23 +5243,23 @@
     box.addEventListener('click', e => { if (e.target === box) cerrar(); });
     const msg = t => { ol.innerHTML = '<li class="msg"></li>'; ol.firstChild.textContent = t; };
     if (sinRed()) return msg(sinRed().msg);
-    if (!p.apodo) return msg('Poné un apodo en el Ranking y sumá amigos para correr contra sus sombras.');
-    if (!p.amigos.length) return msg('Todavía no tenés amigos aceptados. Sumalos desde la portada, en Amigos.');
+    if (!p.apodo) return msg(T('Poné un apodo en el Ranking y sumá amigos para correr contra sus sombras.'));
+    if (!p.amigos.length) return msg(T('Todavía no tenés amigos aceptados. Sumalos desde la portada, en Amigos.'));
     for (const a of p.amigos) {
       const li = document.createElement('li');
-      li.innerHTML = '<span class="n"></span>' + o.opciones.map((x, k) => `<button class="link" type="button" data-k="${k}"></button>`).join('');
+      li.innerHTML = '<span class="n" translate="no"></span>' + o.opciones.map((x, k) => `<button class="link" type="button" data-k="${k}"></button>`).join('');
       li.querySelector('.n').textContent = a.apodo;
-      li.querySelectorAll('button').forEach(b => { b.textContent = o.opciones[+b.dataset.k].nombre; b.style.marginLeft = '0'; });
+      li.querySelectorAll('button').forEach(b => { b.textContent = T(o.opciones[+b.dataset.k].nombre); b.style.marginLeft = '0'; });
       li.addEventListener('click', async e => {
         const b = e.target.closest('button'); if (!b) return;
         const op = o.opciones[+b.dataset.k];
-        ayuda.textContent = 'Bajando la sombra de ' + a.apodo + '…';
+        ayuda.textContent = Tlit('Bajando la sombra de {a}…', { a: a.apodo });
         try {
           const S = await sombraDeAmigo(a.codigo, o.juego, op.tabla);
-          if (!S) { ayuda.textContent = `${a.apodo} todavía no tiene sombra en ${op.nombre}${o.detalle ? ' (' + o.detalle + ')' : ''}.`; return; }
+          if (!S) { ayuda.textContent = Tlit('{a} todavía no tiene sombra en {m}.', { a: a.apodo, m: T(op.nombre) + (o.detalle ? ' (' + T(o.detalle) + ')' : '') }); return; }
           cerrar();
           o.alElegir(S, { apodo: a.apodo, codigo: a.codigo, skin: SKINS.find(s => s.id === a.skin) || SKINS[0] }, op.tabla);
-        } catch (err) { ayuda.textContent = 'No se pudo bajar la sombra. Probá de nuevo.'; }
+        } catch (err) { ayuda.textContent = T('No se pudo bajar la sombra. Probá de nuevo.'); }
       });
       ol.appendChild(li);
     }
@@ -4970,7 +5321,7 @@
       const el = document.createElement('div');
       el.className = 'cc-marca';
       el.innerHTML = '<i></i><span>🏁</span>';
-      el.title = 'Hasta acá llegaste la otra vez: ' + formato(recd, tb);
+      el.title = T('Hasta acá llegaste la otra vez: {v}', { v: formato(recd, tb) });
       document.body.appendChild(el);
       const barra = el.firstChild;
       let ultimo = -1, paso = false;
@@ -4981,14 +5332,14 @@
           if (q !== ultimo) { ultimo = q; barra.style.width = (f * 100) + '%'; }
           if (!paso && v > recd) {
             paso = true; el.classList.add('paso');
-            avisar('<b>¡Pasaste tu marca!</b><br>La otra vez llegaste a ' + formato(recd, tb), 2200);
+            avisar(`<b>${T('¡Pasaste tu marca!')}</b><br>${T('La otra vez llegaste a {v}', { v: formato(recd, tb) })}`, 2200);
           }
         },
         quitar() { el.remove(); },
       };
     },
     // "+0,8 s" / "−1,2 s" (negativo = vas adelante)
-    textoDif(ms) { const s = Math.abs(ms) / 1000; return (ms < 0 ? '−' : '+') + s.toFixed(1).replace('.', ',') + ' s'; },
+    textoDif(ms) { const s = Math.abs(ms) / 1000; return (ms < 0 ? '−' : '+') + coma(s.toFixed(1)) + ' s'; },
   };
 
   // Chrome bloquea (y avisa en consola) la vibración antes del primer toque del usuario.
@@ -5007,7 +5358,7 @@
     sumarXP, xpEscala, partida, importarRecord, anotarRecord, revisarLogros, tieneLogro,
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
     avisar, vibrar, volver, dibujarCubo, morir, sombra, pedirApodo, diario, diarioDe, azar, faltaTexto,
-    temporada, misiones, eventoXP, TEMP_XP, sincronizarNube,
+    temporada, misiones, eventoXP, TEMP_XP, sincronizarNube, T, Tsin: Tlit, textos, idioma, IDIOMAS, ponerIdioma, LOCALE, traducirNodo,
   };
   // Duelos 1v1 (cubo-duelo.js): usa la misma conexión a Supabase y escucha las invitaciones en todas las páginas.
   window.CuboComun.RANKING = RANKING;

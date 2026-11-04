@@ -219,14 +219,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   <button id="bR" type="button" aria-label="Doblar a la derecha">Doblar<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4 8 8-8 8"/></svg></button>
 </div>
 
-<div class="tip" id="tip" hidden>Mantené <b>◀</b> o <b>▶</b> para doblar.<br>Pasá entre las banderas marcadas.</div>
+<div class="tip" id="tip" hidden data-t>Mantené <b>◀</b> o <b>▶</b> para doblar.<br>Pasá entre las banderas marcadas.</div>
 
 <div class="overlay" id="menu">
   <div class="card menu">
     <div class="col">
       <button class="ter smallbtn back" id="btnBack" type="button">← Juegos</button>
       <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Esquí</h1></div>
-      <p class="intro">Mantené <b>◀</b> o <b>▶</b> para doblar y pasá entre cada par de <b>banderas</b>. Si salteás una, perdés una vida.</p>
+      <p class="intro" data-t>Mantené <b>◀</b> o <b>▶</b> para doblar y pasá entre cada par de <b>banderas</b>. Si salteás una, perdés una vida.</p>
       <canvas id="demo" aria-hidden="true"></canvas>
     </div>
     <div class="col">
@@ -277,6 +277,73 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const $ = id => document.getElementById(id);
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido; si no está, el juego anda solo
+  // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js).
+  // El traductor se llama tr porque T ya se usa para los tramos.
+  if (CC && CC.textos) CC.textos({
+    'Esquí': 'Ski',
+    // HUD y botones
+    'metros': 'meters',
+    'Vidas': 'Lives',
+    '{n} vida': '{n} life',
+    '{n} vidas': '{n} lives',
+    'racha {n}': 'streak {n}',
+    'Sombra {d} m': 'Ghost {d} m',
+    'Juegos': 'Games',
+    'Menú': 'Menu',
+    'Inicio': 'Home',
+    'Reiniciar (R)': 'Restart (R)',
+    'Doblar': 'Turn',
+    'Doblar a la izquierda': 'Turn left',
+    'Doblar a la derecha': 'Turn right',
+    'Mantené <b>◀</b> o <b>▶</b> para doblar.<br>Pasá entre las banderas marcadas.': 'Hold <b>◀</b> or <b>▶</b> to turn.<br>Go through the marked flags.',
+    // menú
+    'Mantené <b>◀</b> o <b>▶</b> para doblar y pasá entre cada par de <b>banderas</b>. Si salteás una, perdés una vida.':
+      'Hold <b>◀</b> or <b>▶</b> to turn and go through every pair of <b>flags</b>. Miss one and you lose a life.',
+    'Récord': 'Best',
+    'Jugar': 'Play',
+    'Ranking': 'Leaderboard',
+    'Sonido: sí': 'Sound: on',
+    'Sonido: no': 'Sound: off',
+    'Sombra: sí': 'Ghost: on',
+    'Sombra: no': 'Ghost: off',
+    'Un cubo transparente baja como en tu mejor partida': 'A see-through cube skis down like your best run',
+    'Dificultad': 'Difficulty',
+    'doblar': 'turn',
+    'otra vez': 'again',
+    'Fácil': 'Easy', 'Normal': 'Normal', 'Difícil': 'Hard', 'Extremo': 'Extreme', 'Maestro': 'Master',
+    'Puertas anchas y 4 vidas, pero acelera rápido.': 'Wide gates and 4 lives, but it speeds up fast.',
+    'Arranca andando y cada tanto viene un tramo distinto.': 'Starts at speed, and every so often a different section comes up.',
+    'Arranca rápido, puertas más angostas y más árboles.': 'Starts fast, with narrower gates and more trees.',
+    'Rapidísimo, zigzag cerrado y solo 2 vidas. XP ×3.': 'Super fast, tight zigzag and only 2 lives. XP ×3.',
+    'Una sola vida, sin flecha guía y a toda velocidad. XP ×4.': 'Just one life, no guide arrow and full speed. XP ×4.',
+    // en el juego (canvas)
+    '¡Zigzag!': 'Zigzag!', 'curvas cerradas': 'tight turns',
+    '¡Bosque!': 'Forest!', 'esquivá los árboles': 'dodge the trees',
+    '¡Turbo!': 'Turbo!', 'más velocidad, más metros': 'more speed, more meters',
+    '¡Puertas finitas!': 'Narrow gates!', 'apuntá al medio': 'aim for the middle',
+    '¡Árbol!': 'Tree!',
+    '¡Piedra!': 'Rock!',
+    '¡Racha {n}!': 'Streak {n}!',
+    '¡Bien!': 'Nice!',
+    '¡+1 vida!': '+1 life!',
+    '¡Te la salteaste!': 'Missed it!',
+    '¡Ya!': 'Go!',
+    'SALIDA': 'START',
+    // fin de partida
+    '¡Qué bajada!': 'What a run!', '¡Fin de la pista!': 'End of the run!', '¡Uy, la nieve!': 'Whoops, snow!', '¡Zas!': 'Wham!',
+    '{d} · {n} puerta · racha máx. {r} · {t} s': '{d} · {n} gate · best streak {r} · {t} s',
+    '{d} · {n} puertas · racha máx. {r} · {t} s': '{d} · {n} gates · best streak {r} · {t} s',
+    'Tu récord en {d}: {r}': 'Your best on {d}: {r}',
+    'Le ganaste a tu sombra por {n} m': 'You beat your ghost by {n} m',
+    'Tu sombra llegó {n} m más lejos': 'Your ghost went {n} m further',
+    'Empate con tu sombra': 'Tied with your ghost',
+    'Ya tenés sombra para la próxima': 'Your ghost is ready for next time',
+    'Primer récord': 'First best score',
+    'Nuevo récord': 'New best',
+    'Otra vez': 'Again',
+  });
+  const tr = (s, v) => (CC && CC.T ? CC.T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s);
+  const LOCALE = (CC && CC.LOCALE) || 'es-AR';
   // desafío del día (?diario=1): Normal, 3 intentos y la pista sale de la semilla del día, igual para todos
   const DIA = CC && CC.diarioDe ? CC.diarioDe('esqui') : null;
   let azar = Math.random;
@@ -290,21 +357,21 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // separación, zigzag (desvío / separación), obstáculos por tramo, qué tan rápido giran los esquís (rad/s),
   // vidas, cada cuántas puertas seguidas recuperás una (0 = nunca) y si se marca la próxima puerta con una flecha
   const DIFS = {
-    facil:   { nombre: 'Fácil',   v0: 8.5, grow: 1.2, cap: 16, gw: 7.0, nar: 0.2,  sp: 21, off: 0.5,  obst: 0.6, turn: 2.1, vidas: 4, racha: 8 },
-    normal:  { nombre: 'Normal',  v0: 11,  grow: 1.5, cap: 21, gw: 5.6, nar: 0.3,  sp: 20, off: 0.58, obst: 1.0, turn: 2.4, vidas: 3, racha: 10 },
-    dificil: { nombre: 'Difícil', v0: 14,  grow: 1.3, cap: 24, gw: 4.6, nar: 0.28, sp: 19, off: 0.66, obst: 1.5, turn: 2.8, vidas: 3, racha: 10 },
-    extremo: { nombre: 'Extremo', v0: 17,  grow: 1.3, cap: 27, gw: 3.8, nar: 0.22, sp: 18, off: 0.62, obst: 1.9, turn: 3.6, vidas: 2, racha: 12, zig: true },
-    maestro: { nombre: 'Maestro', v0: 19,  grow: 1.3, cap: 29, gw: 3.5, nar: 0.18, sp: 19, off: 0.6,  obst: 2.1, turn: 4.2, vidas: 1, racha: 0, zig: true, sinFlecha: true },
+    facil:   { nombre: tr('Fácil'),   v0: 8.5, grow: 1.2, cap: 16, gw: 7.0, nar: 0.2,  sp: 21, off: 0.5,  obst: 0.6, turn: 2.1, vidas: 4, racha: 8 },
+    normal:  { nombre: tr('Normal'),  v0: 11,  grow: 1.5, cap: 21, gw: 5.6, nar: 0.3,  sp: 20, off: 0.58, obst: 1.0, turn: 2.4, vidas: 3, racha: 10 },
+    dificil: { nombre: tr('Difícil'), v0: 14,  grow: 1.3, cap: 24, gw: 4.6, nar: 0.28, sp: 19, off: 0.66, obst: 1.5, turn: 2.8, vidas: 3, racha: 10 },
+    extremo: { nombre: tr('Extremo'), v0: 17,  grow: 1.3, cap: 27, gw: 3.8, nar: 0.22, sp: 18, off: 0.62, obst: 1.9, turn: 3.6, vidas: 2, racha: 12, zig: true },
+    maestro: { nombre: tr('Maestro'), v0: 19,  grow: 1.3, cap: 29, gw: 3.5, nar: 0.18, sp: 19, off: 0.6,  obst: 2.1, turn: 4.2, vidas: 1, racha: 0, zig: true, sinFlecha: true },
   };
   // Tramos especiales que se alternan con tramos comunes (más o menos cada 15 s): cambian la forma de la bajada.
   const TRAMOS = {
-    zigzag:  { txt: '¡Zigzag!', sub: 'curvas cerradas', off: 1.3, sp: 0.9, big: true },
-    bosque:  { txt: '¡Bosque!', sub: 'esquivá los árboles', obst: 2.4 },
-    turbo:   { txt: '¡Turbo!', sub: 'más velocidad, más metros', off: 0.3, sp: 1.25, obst: 0.4, vel: 1.25 },
-    finitas: { txt: '¡Puertas finitas!', sub: 'apuntá al medio', gw: 0.72, sp: 1.1 },
+    zigzag:  { txt: tr('¡Zigzag!'), sub: tr('curvas cerradas'), off: 1.3, sp: 0.9, big: true },
+    bosque:  { txt: tr('¡Bosque!'), sub: tr('esquivá los árboles'), obst: 2.4 },
+    turbo:   { txt: tr('¡Turbo!'), sub: tr('más velocidad, más metros'), off: 0.3, sp: 1.25, obst: 0.4, vel: 1.25 },
+    finitas: { txt: tr('¡Puertas finitas!'), sub: tr('apuntá al medio'), gw: 0.72, sp: 1.1 },
   };
   const EVENTOS = Object.keys(TRAMOS), LARGO_EVENTO = 6, LARGO_CALMA = 5, PRIMER_TRAMO = 4;
-  const TITLES = ['¡Qué bajada!', '¡Fin de la pista!', '¡Uy, la nieve!', '¡Zas!'];
+  const TITLES = ['¡Qué bajada!', '¡Fin de la pista!', '¡Uy, la nieve!', '¡Zas!'].map(s => tr(s));
   const GATE_COLORS = ['#ff5d7d', '#5b8cff'];
 
   // ---------- preferencias ----------
@@ -312,15 +379,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let pref = {};
   try { pref = JSON.parse(localStorage.getItem(PREF_KEY)) || {}; } catch (e) { pref = {}; }
   const savePref = () => { try { localStorage.setItem(PREF_KEY, JSON.stringify(pref)); } catch (e) {} };
-  const fmtN = n => Math.floor(n).toLocaleString('es-AR');
+  const fmtN = n => Math.floor(n).toLocaleString(LOCALE);
 
   // ---------- dificultad ----------
   const NOTAS = {
-    facil: 'Puertas anchas y 4 vidas, pero acelera rápido.',
-    normal: 'Arranca andando y cada tanto viene un tramo distinto.',
-    dificil: 'Arranca rápido, puertas más angostas y más árboles.',
-    extremo: 'Rapidísimo, zigzag cerrado y solo 2 vidas. XP ×3.',
-    maestro: 'Una sola vida, sin flecha guía y a toda velocidad. XP ×4.',
+    facil: tr('Puertas anchas y 4 vidas, pero acelera rápido.'),
+    normal: tr('Arranca andando y cada tanto viene un tramo distinto.'),
+    dificil: tr('Arranca rápido, puertas más angostas y más árboles.'),
+    extremo: tr('Rapidísimo, zigzag cerrado y solo 2 vidas. XP ×3.'),
+    maestro: tr('Una sola vida, sin flecha guía y a toda velocidad. XP ×4.'),
   };
   const sel = CC ? CC.selectorDif($('difs'), {
     juego: 'esqui',
@@ -329,8 +396,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }) : { valor: () => 'normal', siguiente() {} };
   if (CC) CC.selectorDif($('eDifs'), { juego: 'esqui', compacto: true, alCambiar: renderMenu });
   if (CC && CC.leyendaTeclas) {
-    CC.leyendaTeclas($('mTeclas'), { jugar: 'doblar' });
-    CC.leyendaTeclas($('eTeclas'), { jugar: 'doblar', extra: [['R', 'otra vez']] });
+    CC.leyendaTeclas($('mTeclas'), { jugar: tr('doblar') });
+    CC.leyendaTeclas($('eTeclas'), { jugar: tr('doblar'), extra: [['R', tr('otra vez')]] });
   }
   if (!CC) { $('difs').hidden = true; $('eDifs').parentNode.hidden = true; }
   const difId = () => (!DIA && DIFS[sel.valor()] ? sel.valor() : 'normal');
@@ -531,7 +598,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function textoSombra() {
     const d = Math.round((G.done ? G.final : G.y) - metrosSombra());
-    return { txt: 'Sombra ' + (d > 0 ? '+' : d < 0 ? '−' : '±') + fmtN(Math.abs(d)) + ' m', adelante: d > 0, atras: d < 0 };
+    return { txt: tr('Sombra {d} m', { d: (d > 0 ? '+' : d < 0 ? '−' : '±') + fmtN(Math.abs(d)) }), adelante: d > 0, atras: d < 0 };
   }
 
   // ---------- partida ----------
@@ -558,15 +625,16 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (G.graba && G.final > 0) {
       G.graba.marca(G.t * 1000, G.final);
       const nueva = CC.sombra.guardar('esqui', G.dif, G.graba, G.final), S = G.sombra;
-      if (S) { const d = G.final - S.max; linea = d > 0 ? `Le ganaste a tu sombra por ${fmtN(d)} m` : d < 0 ? `Tu sombra llegó ${fmtN(-d)} m más lejos` : 'Empate con tu sombra'; }
-      else if (nueva) linea = 'Ya tenés sombra para la próxima';
+      if (S) { const d = G.final - S.max; linea = d > 0 ? tr('Le ganaste a tu sombra por {n} m', { n: fmtN(d) }) : d < 0 ? tr('Tu sombra llegó {n} m más lejos', { n: fmtN(-d) }) : tr('Empate con tu sombra'); }
+      else if (nueva) linea = tr('Ya tenés sombra para la próxima');
     }
     $('eTitle').textContent = TITLES[Math.floor(Math.random() * TITLES.length)];
     $('eNum').textContent = fmtN(G.y) + ' m';
-    $('eSub').textContent = `${G.D.nombre} · ${G.passed} ${G.passed === 1 ? 'puerta' : 'puertas'} · racha máx. ${G.bestStreak} · ${G.t.toFixed(0)} s`;
-    $('eSub2').textContent = [r && !r.record && r.textoAnterior ? `Tu récord en ${G.D.nombre}: ${r.textoAnterior}` : '', linea].filter(Boolean).join(' · ');
+    $('eSub').textContent = tr(G.passed === 1 ? '{d} · {n} puerta · racha máx. {r} · {t} s' : '{d} · {n} puertas · racha máx. {r} · {t} s',
+      { d: G.D.nombre, n: G.passed, r: G.bestStreak, t: G.t.toFixed(0) });
+    $('eSub2').textContent = [r && !r.record && r.textoAnterior ? tr('Tu récord en {d}: {r}', { d: G.D.nombre, r: r.textoAnterior }) : '', linea].filter(Boolean).join(' · ');
     $('eXP').hidden = !r; if (r) $('eXP').textContent = `+${r.xp} XP`;
-    $('eBadge').hidden = !(r && r.record); if (r) $('eBadge').textContent = r.primera ? 'Primer récord' : 'Nuevo récord';
+    $('eBadge').hidden = !(r && r.record); if (r) $('eBadge').textContent = r.primera ? tr('Primer récord') : tr('Nuevo récord');
     const lg = r && r.logros && r.logros.length ? r.logros : [];
     $('eLogros').hidden = !lg.length;
     $('eLogros').innerHTML = lg.map(n => `<span>🏅 ${n.replace(/</g, '&lt;')}</span>`).join('');
@@ -583,9 +651,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (v != null) txt = CC.formato(v, CC.tablaDe('esqui', id));
     }
     $('mBest').textContent = txt;
-    $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+    $('btnMute').textContent = muted ? tr('Sonido: no') : tr('Sonido: sí');
     $('btnSombra').hidden = !conSombra;
-    if (conSombra) $('btnSombra').textContent = 'Sombra: ' + (CC.sombra.activa('esqui') ? 'sí' : 'no');
+    if (conSombra) $('btnSombra').textContent = CC.sombra.activa('esqui') ? tr('Sombra: sí') : tr('Sombra: no');
   }
   function restart() {
     if (state === 'play' && G && !G.demo && !G.done && G.y > 30) {
@@ -601,7 +669,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     resize();
     newRun(false, difId());
     prepararSombra();
-    $('hSombra').hidden = !G.sombra; $('hSombra').textContent = 'Sombra ±0 m'; $('hSombra').className = 'chip sombrachip';
+    $('hSombra').hidden = !G.sombra; $('hSombra').textContent = tr('Sombra {d} m', { d: '±0' }); $('hSombra').className = 'chip sombrachip';
     state = 'play';
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').classList.remove('off');
     hudCache = '';
@@ -691,7 +759,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   $('btnRestart').addEventListener('pointerdown', e => { e.preventDefault(); restart(); });
   $('btnRestart').addEventListener('click', e => { if (e.detail === 0) restart(); }); // Enter/espacio con foco
   $('btnBack').hidden = !CC;
-  if (!CC) { $('btnHome').textContent = 'Inicio'; $('btnRank').hidden = true; $('btnRank2').hidden = true; $('btnQuit').textContent = 'Menú'; }
+  if (!CC) { $('btnHome').textContent = tr('Inicio'); $('btnRank').hidden = true; $('btnRank2').hidden = true; $('btnQuit').textContent = tr('Menú'); }
   $('btnBack').addEventListener('click', () => CC?.volver());
   $('btnHome').addEventListener('click', () => CC ? CC.volver() : showMenu());
   $('btnAgain').addEventListener('click', start);
@@ -767,7 +835,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         burst(o.x, o.y, o.tree ? '#34b37a' : '#9aa6bf', 10, 0.8);
         if (!G.demo) {
           sfxHit(); CC?.vibrar(40); shake = reduceMotion ? 0 : 8;
-          floats.push({ text: o.tree ? '¡Árbol!' : '¡Piedra!', x: G.x, y: G.y, t: now, c: CREMA });
+          floats.push({ text: o.tree ? tr('¡Árbol!') : tr('¡Piedra!'), x: G.x, y: G.y, t: now, c: CREMA });
         }
       }
     }
@@ -785,14 +853,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         if (!G.demo) {
           sfxGate(G.streak);
           const extra = D.racha > 0 && G.streak % D.racha === 0 && G.lives < D.vidas;
-          floats.push({ text: G.streak >= 3 ? `¡Racha ${G.streak}!` : '¡Bien!', x: g.cx, y: g.y, t: now, c: CREMA });
-          if (extra) { G.lives++; sfxLife(); banner = { text: '¡+1 vida!', t: now }; }
+          floats.push({ text: G.streak >= 3 ? tr('¡Racha {n}!', { n: G.streak }) : tr('¡Bien!'), x: g.cx, y: g.y, t: now, c: CREMA });
+          if (extra) { G.lives++; sfxLife(); banner = { text: tr('¡+1 vida!'), t: now }; }
         }
       } else {
         g.state = 2; G.missed++; G.streak = 0; G.lives--;
         if (!G.demo) {
           sfxMiss(); CC?.vibrar(70); flashT = now; shake = reduceMotion ? 0 : 6;
-          floats.push({ text: '¡Te la salteaste!', x: g.cx, y: g.y, t: now, c: '#ffd0da' });
+          floats.push({ text: tr('¡Te la salteaste!'), x: g.cx, y: g.y, t: now, c: '#ffd0da' });
         }
         if (G.lives <= 0) { die(now); return; }
       }
@@ -825,7 +893,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         G.count -= dt;
         const c = Math.ceil(G.count / 0.8);
         if (c !== G.lastCount && !G.demo) { G.lastCount = c; if (c > 0) sfxCount(false); }
-        if (G.count <= 0) { banner = { text: '¡Ya!', t: now }; sfxCount(true); }
+        if (G.count <= 0) { banner = { text: tr('¡Ya!'), t: now }; sfxCount(true); }
       } else {
         if (!G.done) G.t += dt;
         let left = dt;
@@ -856,11 +924,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (sig !== hudCache) {
         hudCache = sig;
         $('hScore').textContent = fmtN(meters);
-        $('hStreak').textContent = 'racha ' + G.streak;
+        $('hStreak').textContent = tr('racha {n}', { n: G.streak });
         let hs = '';
         for (let k = 0; k < G.D.vidas; k++) hs += `<svg viewBox="0 0 26 24" class="${k < G.lives ? '' : 'off'}" aria-hidden="true"><path d="M13 22 3.6 12.6A5.6 5.6 0 0 1 13 5.2a5.6 5.6 0 0 1 9.4 7.4z" fill="#ff5d7d" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/></svg>`;
         $('hLives').innerHTML = hs;
-        $('hLives').setAttribute('aria-label', `${G.lives} ${G.lives === 1 ? 'vida' : 'vidas'}`);
+        $('hLives').setAttribute('aria-label', tr(G.lives === 1 ? '{n} vida' : '{n} vidas', { n: G.lives }));
         $('hDif').innerHTML = (CC ? CC.iconoDif(G.dif, 20) : '') + G.D.nombre;
         $('hDif').classList.toggle('hot', G.streak >= 10);
         if (som) {
@@ -1054,7 +1122,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx, ly - m * 3.4); ctx.moveTo(rx, ly); ctx.lineTo(rx, ly - m * 3.4); ctx.stroke();
       ctx.fillStyle = '#5b8cff'; rr(ctx, lx - m * 0.2, ly - m * 3.9, rx - lx + m * 0.4, m * 1.2, m * 0.3); ctx.fill(); ctx.stroke();
       ctx.fillStyle = CREMA; ctx.font = `${Math.round(m * 0.85)}px "Lilita One", "Trebuchet MS", sans-serif`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('SALIDA', (lx + rx) / 2, ly - m * 3.27);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(tr('SALIDA'), (lx + rx) / 2, ly - m * 3.27);
     } });
     if (G.sombra && state !== 'menu') { const ys = metrosSombra(); items.push({ y: ys - 0.01, f: () => drawSombra(now) }); }
     items.push({ y: G.y, f: () => drawSkier(now) });
@@ -1225,7 +1293,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       c.beginPath(); c.moveTo(ax - d * 4, cy - 8); c.lineTo(ax + d * 4, cy); c.lineTo(ax - d * 4, cy + 8); c.stroke();
       c.fillStyle = INK; c.font = '15px "Lilita One", "Trebuchet MS", sans-serif'; c.textBaseline = 'middle';
       c.textAlign = d < 0 ? 'left' : 'right';
-      c.fillText('Doblar', d < 0 ? kx + 27 : kx + kw - 27, cy + 1);
+      c.fillText(tr('Doblar'), d < 0 ? kx + 27 : kx + kw - 27, cy + 1);
     }
   }
 

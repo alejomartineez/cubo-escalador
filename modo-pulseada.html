@@ -265,14 +265,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   </div>
 </div>
 
-<div class="tip" id="tip" hidden>Alterná <b>◀ ▶ ◀ ▶</b> lo más rápido que puedas.<br>Repetir la misma flecha <b>no suma</b>.</div>
+<div class="tip" id="tip" data-t hidden>Alterná <b>◀ ▶ ◀ ▶</b> lo más rápido que puedas.<br>Repetir la misma flecha <b>no suma</b>.</div>
 
 <div class="overlay" id="menu">
   <div class="card menu">
     <div class="col">
       <button class="ter smallbtn back" id="btnBack" type="button">← Juegos</button>
       <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Pulseada</h1></div>
-      <p class="intro">Alterná <b>◀ ▶ ◀ ▶</b> lo más rápido que puedas para tumbarle el brazo a cada rival. Repetir la misma flecha <b>no suma</b>.</p>
+      <p class="intro" data-t>Alterná <b>◀ ▶ ◀ ▶</b> lo más rápido que puedas para tumbarle el brazo a cada rival. Repetir la misma flecha <b>no suma</b>.</p>
       <canvas id="demo" aria-label="Demo: alternar izquierda y derecha empuja la barra; repetir la misma flecha no hace nada"></canvas>
     </div>
     <div class="col">
@@ -324,6 +324,114 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const $ = id => document.getElementById(id);
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js)
+  if (CC && CC.textos) CC.textos({
+    // título, HUD y botones de juego
+    'Pulseada': 'Arm Wrestling',
+    'rival': 'rival',
+    'rivales': 'rivals',
+    'ronda': 'round',
+    'rondas': 'rounds',
+    'toques/s': 'taps/s',
+    'Juegos': 'Games',
+    'Reiniciar (R)': 'Restart (R)',
+    'Izquierda': 'Left',
+    'Derecha': 'Right',
+    'Alterná <b>◀ ▶ ◀ ▶</b> lo más rápido que puedas.<br>Repetir la misma flecha <b>no suma</b>.':
+      'Alternate <b>◀ ▶ ◀ ▶</b> as fast as you can.<br>Repeating the same arrow <b>doesn\'t count</b>.',
+    // cartel del rival
+    'Rival {n}': 'Rival {n}',
+    '¡Jefe!': 'Boss!',
+    'Pide unos {n} toques/s': 'Needs about {n} taps/s',
+    'Duelo · Ronda {n}': 'Duel · Round {n}',
+    'Vos {a} – {b} {n}': 'You {a} – {b} {n}',
+    'Gana el primero en llevarse 2 rondas.': 'First to win 2 rounds takes it.',
+    'Empuja como tu mejor ronda: {n} toques/s': 'Pushes like your best round: {n} taps/s',
+    'Si la superás, tu ronda pasa a ser la sombra.': 'Beat it and your round becomes the ghost.',
+    'Empuja parejo todo el rato.': 'Pushes steadily the whole time.',
+    'Arranca con todo y después afloja.': 'Starts strong, then eases off.',
+    'Arranca tranqui y aprieta al final.': 'Starts easy and squeezes hard at the end.',
+    'Pega tirones de golpe.': 'Pulls in sudden bursts.',
+    // rivales (los nombres que significan algo; los otros quedan igual)
+    'Ladrillo': 'Brick',
+    'La Morsa': 'The Walrus',
+    'Doña Yunque': 'Lady Anvil',
+    'El Toro': 'The Bull',
+    'Pochoclo': 'Popcorn',
+    'Capitán Bíceps': 'Captain Biceps',
+    'La Bestia': 'The Beast',
+    'Fierro': 'Iron',
+    'Reina Roca': 'Queen Rock',
+    'El Campeón': 'The Champ',
+    'Sombra': 'Ghost',
+    // menú
+    'Alterná <b>◀ ▶ ◀ ▶</b> lo más rápido que puedas para tumbarle el brazo a cada rival. Repetir la misma flecha <b>no suma</b>.':
+      'Alternate <b>◀ ▶ ◀ ▶</b> as fast as you can to pin each rival\'s arm. Repeating the same arrow <b>doesn\'t count</b>.',
+    'Demo: alternar izquierda y derecha empuja la barra; repetir la misma flecha no hace nada':
+      'Demo: alternating left and right pushes the bar; repeating the same arrow does nothing',
+    'Récord': 'Best',
+    'Mejor ritmo': 'Best speed',
+    'Jugar': 'Play',
+    'Ranking': 'Leaderboard',
+    'Sonido: sí': 'Sound: on',
+    'Sonido: no': 'Sound: off',
+    'Contra tu sombra': 'Race your ghost',
+    'Partida normal': 'Normal game',
+    'Dificultad': 'Difficulty',
+    'Otra vez': 'Again',
+    'Inicio': 'Home',
+    'Menú': 'Menu',
+    'alternar': 'alternate',
+    'otra vez': 'again',
+    'Fácil': 'Easy', 'Normal': 'Normal', 'Difícil': 'Hard', 'Extremo': 'Extreme', 'Maestro': 'Master',
+    'El primer rival pide unos 3,5 toques/s. Ideal para aprender.': 'The first rival needs about 3.5 taps/s. Great for learning.',
+    'Arranca en casi 5 toques/s y cada 5 rivales viene un jefe.': 'Starts at almost 5 taps/s, and every 5 rivals there\'s a boss.',
+    'Arrancan en 6 toques/s y repetir flecha te hace retroceder.': 'Starts at 6 taps/s, and repeating an arrow pushes you back.',
+    'Arrancan en 8 toques/s y cada error te hunde. XP ×3.': 'Starts at 8 taps/s, and every mistake sinks you. XP ×3.',
+    'Casi 10 toques/s desde el primero, sin ayuda y cada error pesa el doble. XP ×4.': 'Almost 10 taps/s from the first rival, no help, and every mistake counts double. XP ×4.',
+    // lo que se dibuja en el canvas
+    '¡Alterná!': 'Alternate!',
+    '¡Tirón!': 'Yank!',
+    '¡Ya!': 'Go!',
+    '¡Por poquito!': 'Just barely!',
+    '¡Ganaste!': 'You won!',
+    '¡Tiempo!': 'Time!',
+    '¡Uy!': 'Oops!',
+    'Vos {n}/s': 'You {n}/s',
+    '◀ ▶ ◀ ▶  alternando, empujás': '◀ ▶ ◀ ▶  alternate to push',
+    '◀ ◀  la misma flecha no suma': '◀ ◀  same arrow doesn\'t count',
+    // fin de partida
+    '¡Te ganó!': 'You lost!',
+    '¡Se acabó el tiempo!': 'Time\'s up!',
+    '¡Te ganó {n}!': '{n} beat you!',
+    'rival vencido seguido': 'rival beaten in a row',
+    'rivales vencidos seguidos': 'rivals beaten in a row',
+    'Tu ritmo máximo: <b>{n} toques/s</b> · mejor {m}': 'Your top speed: <b>{n} taps/s</b> · best {m}',
+    'Aguantá un segundo y pico alternando para medir tu ritmo': 'Keep alternating for a second or so to measure your speed',
+    '{d} · {n} flecha repetida': '{d} · {n} repeated arrow',
+    '{d} · {n} flechas repetidas': '{d} · {n} repeated arrows',
+    '{n} flecha repetida': '{n} repeated arrow',
+    '{n} flechas repetidas': '{n} repeated arrows',
+    'récord {p}': 'best {p}',
+    'Primer récord': 'First best',
+    'Nuevo récord': 'New best',
+    '+10 toques/s': '+10 taps/s',
+    'Logro: {n}': 'Achievement: {n}',
+    '¡Le ganaste a tu sombra!': 'You beat your ghost!',
+    '¡Te ganó tu sombra!': 'Your ghost beat you!',
+    'toques/s en la ronda': 'taps/s this round',
+    'Tu sombra: <b>{n} toques/s</b>': 'Your ghost: <b>{n} taps/s</b>',
+    'Esta ronda queda como tu nueva sombra.': 'This round is your new ghost.',
+    // duelo
+    '¿Salir del duelo? Lo perdés.': 'Leave the duel? You\'ll lose it.',
+    'Rondas: <b>{a} – {b}</b>': 'Rounds: <b>{a} – {b}</b>',
+    'Tu mejor ritmo: {n} toques/s': 'Your best speed: {n} taps/s',
+    '{q} se fue del duelo.': '{q} left the duel.',
+    'Se fue': 'They left',
+    '{q} salió del duelo.': '{q} left the duel.',
+  });
+  const T = (s, v) => (CC && CC.T ? CC.T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s);
+  const LOCALE = (CC && CC.LOCALE) || 'es-AR';
   const INK = '#1d2340', PAPER = '#fffaf0', GOLD = '#f5b84a';
 
   // Cada rival pide base + inc × (rivales ya vencidos) toques por segundo; cada 5.º es un jefe que pide `jefe` más.
@@ -348,24 +456,24 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const RIVALES = [
     { n: 'Tito Flan', c: '#ffe08a', o: 'dormido', x: [], e: 'parejo' },
     { n: 'Bochi', c: '#ff9ec0', o: 'redondos', x: ['cachetes', 'moño'], e: 'arranque' },
-    { n: 'Ladrillo', c: '#e0674a', o: 'enojado', x: ['cejota'], e: 'parejo' },
-    { n: 'La Morsa', c: '#9fb4cc', o: 'redondos', x: ['bigote'], e: 'remonta' },
+    { n: T('Ladrillo'), c: '#e0674a', o: 'enojado', x: ['cejota'], e: 'parejo' },
+    { n: T('La Morsa'), c: '#9fb4cc', o: 'redondos', x: ['bigote'], e: 'remonta' },
     { n: 'Turbo', c: '#6fd16a', o: 'enojado', x: ['vincha'], e: 'tirones' },
-    { n: 'Doña Yunque', c: '#b58bf0', o: 'lentes', x: ['rodete'], e: 'parejo' },
-    { n: 'El Toro', c: '#b0713f', o: 'enojado', x: ['cuernos', 'argolla'], e: 'arranque' },
-    { n: 'Pochoclo', c: '#fff3d6', o: 'redondos', x: ['lunares', 'cachetes'], e: 'tirones' },
+    { n: T('Doña Yunque'), c: '#b58bf0', o: 'lentes', x: ['rodete'], e: 'parejo' },
+    { n: T('El Toro'), c: '#b0713f', o: 'enojado', x: ['cuernos', 'argolla'], e: 'arranque' },
+    { n: T('Pochoclo'), c: '#fff3d6', o: 'redondos', x: ['lunares', 'cachetes'], e: 'tirones' },
     { n: 'Mecha', c: '#ff9b3d', o: 'enojado', x: ['pelos'], e: 'remonta' },
-    { n: 'Capitán Bíceps', c: '#5d9cff', o: 'negros', x: ['bigote'], e: 'parejo' },
-    { n: 'La Bestia', c: '#4f8f5a', o: 'enojado', x: ['dientes', 'cejota'], e: 'arranque' },
-    { n: 'Fierro', c: '#8d96a8', o: 'cuadrados', x: ['tornillos'], e: 'tirones' },
-    { n: 'Reina Roca', c: '#3d3552', o: 'enojado', ojo: PAPER, x: ['corona'], e: 'remonta' },
-    { n: 'El Campeón', c: '#ffc93c', o: 'negros', x: ['medalla', 'vincha'], e: 'tirones' },
+    { n: T('Capitán Bíceps'), c: '#5d9cff', o: 'negros', x: ['bigote'], e: 'parejo' },
+    { n: T('La Bestia'), c: '#4f8f5a', o: 'enojado', x: ['dientes', 'cejota'], e: 'arranque' },
+    { n: T('Fierro'), c: '#8d96a8', o: 'cuadrados', x: ['tornillos'], e: 'tirones' },
+    { n: T('Reina Roca'), c: '#3d3552', o: 'enojado', ojo: PAPER, x: ['corona'], e: 'remonta' },
+    { n: T('El Campeón'), c: '#ffc93c', o: 'negros', x: ['medalla', 'vincha'], e: 'tirones' },
   ];
   const ESTILOS = {
-    parejo: 'Empuja parejo todo el rato.',
-    arranque: 'Arranca con todo y después afloja.',
-    remonta: 'Arranca tranqui y aprieta al final.',
-    tirones: 'Pega tirones de golpe.',
+    parejo: T('Empuja parejo todo el rato.'),
+    arranque: T('Arranca con todo y después afloja.'),
+    remonta: T('Arranca tranqui y aprieta al final.'),
+    tirones: T('Pega tirones de golpe.'),
   };
   const ROMANOS = ['', ' II', ' III', ' IV', ' V', ' VI'];
   const esJefe = i => i % 5 === 4;
@@ -399,7 +507,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // Cada ronda graba los toques en el tiempo. La de mejor ritmo queda como sombra, y "Contra tu sombra" es una ronda
   // donde el rival empuja con esa curva, pasada por el mismo filtro que tu fuerza. Si la superás, queda la tuya.
   const conSombra = !!(CC && CC.sombra) && !DUELO;
-  const rivalSombra = () => ({ n: 'Sombra', nombre: 'Sombra', c: playerColor(), o: 'negros', x: [], e: 'parejo', jefe: false, sombra: true });
+  const rivalSombra = () => ({ n: T('Sombra'), nombre: T('Sombra'), c: playerColor(), o: 'negros', x: [], e: 'parejo', jefe: false, sombra: true });
   let modoSombra = false;
   // toques que llevaba la sombra a los `ft` s de pelea; cuando se termina su curva, sigue a su ritmo promedio
   function toquesSombra(S, ft) {
@@ -422,7 +530,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let rec = {};
   try { rec = JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { rec = {}; }
   const saveRec = () => { try { localStorage.setItem(REC_KEY, JSON.stringify(rec)); } catch (e) {} };
-  const fmt1 = n => n.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const fmt1 = n => n.toLocaleString(LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const rivales = n => n === 1 ? 'rival' : 'rivales';
 
   // ---------- sonido ----------
@@ -500,10 +608,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const r = G.rival, c = $('cartel');
     if (G.duelo) {
       const Du = G.duelo;
-      $('cNum').textContent = 'Duelo · Ronda ' + Du.ronda;
+      $('cNum').textContent = T('Duelo · Ronda {n}', { n: Du.ronda });
       $('cName').textContent = r.nombre;
-      $('cPide').textContent = `Vos ${Du.yo} – ${Du.el} ${r.nombre}`;
-      $('cEstilo').textContent = 'Gana el primero en llevarse 2 rondas.';
+      $('cPide').textContent = T('Vos {a} – {b} {n}', { a: Du.yo, b: Du.el, n: r.nombre });
+      $('cEstilo').textContent = T('Gana el primero en llevarse 2 rondas.');
       c.classList.remove('jefe');
       const fc = $('cFace').getContext('2d');
       fc.setTransform(1, 0, 0, 1, 0, 0); fc.clearRect(0, 0, 144, 144);
@@ -513,10 +621,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       return;
     }
     if (G.sombra) {
-      $('cNum').textContent = 'Contra tu sombra';
+      $('cNum').textContent = T('Contra tu sombra');
       $('cName').textContent = r.nombre;
-      $('cPide').textContent = 'Empuja como tu mejor ronda: ' + fmt1(ritmoSombra(G.sombra)) + ' toques/s';
-      $('cEstilo').textContent = 'Si la superás, tu ronda pasa a ser la sombra.';
+      $('cPide').textContent = T('Empuja como tu mejor ronda: {n} toques/s', { n: fmt1(ritmoSombra(G.sombra)) });
+      $('cEstilo').textContent = T('Si la superás, tu ronda pasa a ser la sombra.');
       c.classList.remove('jefe');
       const fc = $('cFace').getContext('2d');
       fc.setTransform(1, 0, 0, 1, 0, 0); fc.clearRect(0, 0, 144, 144);
@@ -525,11 +633,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
       return;
     }
-    $('cNum').textContent = 'Rival ' + (G.idx + 1) + (r.jefe ? ' · ¡Jefe!' : '');
+    $('cNum').textContent = T('Rival {n}', { n: G.idx + 1 }) + (r.jefe ? ' · ' + T('¡Jefe!') : '');
     c.classList.toggle('jefe', !!r.jefe);
     if (r.jefe && G.idx > 0) sfxJefe();
     $('cName').textContent = r.nombre;
-    $('cPide').textContent = 'Pide unos ' + fmt1(rivalTps(G.diff, G.idx)) + ' toques/s';
+    $('cPide').textContent = T('Pide unos {n} toques/s', { n: fmt1(rivalTps(G.diff, G.idx)) });
     $('cEstilo').textContent = ESTILOS[r.e];
     const fc = $('cFace').getContext('2d');
     fc.setTransform(1, 0, 0, 1, 0, 0); fc.clearRect(0, 0, 144, 144);
@@ -546,18 +654,18 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       G.wrong++;
       G.p = Math.max(-1, G.p - DIFS[G.diff].pen);
       bad(d); sfxBad(); CC?.vibrar(25);
-      if (now - G.lastBad > 450) { G.lastBad = now; floats.push({ text: '¡Alterná!', x: CX + d * U * 2.2, y: Y0 + 3.6 * U, t: now, c: '#ff4f5e' }); }
+      if (now - G.lastBad > 450) { G.lastBad = now; floats.push({ text: T('¡Alterná!'), x: CX + d * U * 2.2, y: Y0 + 3.6 * U, t: now, c: '#ff4f5e' }); }
       return;
     }
     G.next = -d; G.f += 1; G.valid++;
     if (G.graba) G.graba.g.marca(G.ft * 1000, ++G.graba.n);
     if (tipOn) { showTip(false); try { localStorage.setItem('cubo-pulseada-ayuda', '1'); } catch (e) {} }
     // ritmo sostenido: toques de los últimos 2 s, si cubren al menos 1,2 s
-    const T = G.taps;
-    T.push(now);
-    while (T.length && now - T[0] > 2000) T.shift();
-    const span = T[T.length - 1] - T[0];
-    if (span >= 1200) G.best = Math.max(G.best, (T.length - 1) / (span / 1000));
+    const toques = G.taps;
+    toques.push(now);
+    while (toques.length && now - toques[0] > 2000) toques.shift();
+    const span = toques[toques.length - 1] - toques[0];
+    if (span >= 1200) G.best = Math.max(G.best, (toques.length - 1) / (span / 1000));
     sfxTap(d, G.you);
   }
 
@@ -565,7 +673,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     cerrarGrabacion();
     G.phase = 'won'; G.pt = 0; G.score++;
     sfxWin(); CC?.vibrar(30);
-    banner = { text: G.timeout ? '¡Por poquito!' : '¡Ganaste!', t: now, ms: 1200 };
+    banner = { text: T(G.timeout ? '¡Por poquito!' : '¡Ganaste!'), t: now, ms: 1200 };
     slam(1);
   }
   function loseRound(now) {
@@ -573,7 +681,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     G.phase = 'lost'; G.pt = 0;
     sfxLose(); CC?.vibrar([40, 40, 60]);
     shake = reduceMotion ? 0 : 12;
-    banner = { text: G.timeout ? '¡Tiempo!' : '¡Uy!', t: now, ms: 1100 };
+    banner = { text: T(G.timeout ? '¡Tiempo!' : '¡Uy!'), t: now, ms: 1100 };
     slam(-1);
   }
   function slam(side) {
@@ -606,21 +714,21 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const res = finish() || { r: null, tpsRec: false, best: G.best };
     const r = res.r, D = DIFS[G.diff];
     if (G.sombra) { finSombra(res); return; }
-    $('eTitle').textContent = G.timeout ? '¡Se acabó el tiempo!' : `¡Te ganó ${G.rival.nombre}!`;
+    $('eTitle').textContent = G.timeout ? T('¡Se acabó el tiempo!') : T('¡Te ganó {n}!', { n: G.rival.nombre });
     $('eNum').textContent = G.score;
-    $('eSub').textContent = G.score === 1 ? 'rival vencido seguido' : 'rivales vencidos seguidos';
+    $('eSub').textContent = T(G.score === 1 ? 'rival vencido seguido' : 'rivales vencidos seguidos');
     $('eSub2').innerHTML = res.best > 0
-      ? `Tu ritmo máximo: <b>${fmt1(res.best)} toques/s</b> · mejor ${fmt1(rec.bestTps || res.best)}`
-      : 'Aguantá un segundo y pico alternando para medir tu ritmo';
-    $('eSub3').textContent = `${D.name} · ${G.wrong} ${G.wrong === 1 ? 'flecha repetida' : 'flechas repetidas'}` +
-      (r && r.textoAnterior && !r.record ? ` · récord ${r.textoAnterior}` : '');
+      ? T('Tu ritmo máximo: <b>{n} toques/s</b> · mejor {m}', { n: fmt1(res.best), m: fmt1(rec.bestTps || res.best) })
+      : T('Aguantá un segundo y pico alternando para medir tu ritmo');
+    $('eSub3').textContent = T(G.wrong === 1 ? '{d} · {n} flecha repetida' : '{d} · {n} flechas repetidas', { d: D.name, n: G.wrong }) +
+      (r && r.textoAnterior && !r.record ? ' · ' + T('récord {p}', { p: r.textoAnterior }) : '');
     $('eXP').hidden = !r;
     if (r) $('eXP').textContent = `+${r.xp} XP`;
     const b = [];
-    if (r && r.record) b.push(`<span class="badge">${r.primera ? 'Primer récord' : 'Nuevo récord'}</span>`);
-    if (res.tpsRec) b.push('<span class="badge tps">Mejor ritmo</span>');
-    if (res.best >= 10) b.push('<span class="badge tps">+10 toques/s</span>');
-    for (const l of (r && r.logros) || []) b.push(`<span class="badge">Logro: ${l.replace(/</g, '&lt;')}</span>`);
+    if (r && r.record) b.push(`<span class="badge">${T(r.primera ? 'Primer récord' : 'Nuevo récord')}</span>`);
+    if (res.tpsRec) b.push(`<span class="badge tps">${T('Mejor ritmo')}</span>`);
+    if (res.best >= 10) b.push(`<span class="badge tps">${T('+10 toques/s')}</span>`);
+    for (const l of (r && r.logros) || []) b.push(`<span class="badge">${T('Logro: {n}', { n: l }).replace(/</g, '&lt;')}</span>`);
     $('eBadges').innerHTML = b.join('');
     state = 'end';
     $('end').hidden = false; $('pad').classList.add('off'); $('cartel').hidden = true; showTip(false);
@@ -632,13 +740,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // fin de la ronda contra la sombra
   function finSombra(res) {
     const gane = G.score > 0, mio = G.ft > 0 ? G.valid / G.ft : 0;
-    $('eTitle').textContent = gane ? '¡Le ganaste a tu sombra!' : '¡Te ganó tu sombra!';
+    $('eTitle').textContent = T(gane ? '¡Le ganaste a tu sombra!' : '¡Te ganó tu sombra!');
     $('eNum').textContent = fmt1(mio);
-    $('eSub').textContent = 'toques/s en la ronda';
-    $('eSub2').innerHTML = `Tu sombra: <b>${fmt1(ritmoSombra(G.sombra))} toques/s</b>`;
-    $('eSub3').textContent = G.sombraNueva ? 'Esta ronda queda como tu nueva sombra.' : `${G.wrong} ${G.wrong === 1 ? 'flecha repetida' : 'flechas repetidas'}`;
+    $('eSub').textContent = T('toques/s en la ronda');
+    $('eSub2').innerHTML = T('Tu sombra: <b>{n} toques/s</b>', { n: fmt1(ritmoSombra(G.sombra)) });
+    $('eSub3').textContent = G.sombraNueva ? T('Esta ronda queda como tu nueva sombra.') : T(G.wrong === 1 ? '{n} flecha repetida' : '{n} flechas repetidas', { n: G.wrong });
     $('eXP').hidden = true;
-    $('eBadges').innerHTML = res.tpsRec ? '<span class="badge tps">Mejor ritmo</span>' : '';
+    $('eBadges').innerHTML = res.tpsRec ? `<span class="badge tps">${T('Mejor ritmo')}</span>` : '';
     state = 'end';
     $('end').hidden = false; $('pad').classList.add('off'); $('cartel').hidden = true; showTip(false);
     botonSombraFin();
@@ -648,7 +756,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function botonSombraFin() {
     const hay = conSombra && !!CC.sombra.cargar('pulseada', 'ritmo');
     $('btnSombraEnd').hidden = !hay;
-    $('btnSombraEnd').textContent = modoSombra ? '▶ Partida normal' : '👻 Contra tu sombra';
+    $('btnSombraEnd').textContent = modoSombra ? '▶ ' + T('Partida normal') : '👻 ' + T('Contra tu sombra');
   }
 
   // ---------- duelo ----------
@@ -699,7 +807,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('pad').classList.add('off'); $('cartel').hidden = true; showTip(false);
     const gane = Du.yo > Du.el, xp = gane ? 40 : 15;
     if (CC) CC.sumarXP(xp);
-    CD.resultado(sala, { gane, texto: `Rondas: <b>${Du.yo} – ${Du.el}</b>`, nota: `+${xp} XP · Tu mejor ritmo: ${fmt1(G.best)} toques/s` });
+    CD.resultado(sala, { gane, texto: T('Rondas: <b>{a} – {b}</b>', { a: Du.yo, b: Du.el }), nota: `+${xp} XP · ` + T('Tu mejor ritmo: {n} toques/s', { n: fmt1(G.best) }) });
   }
   function conectarDuelo() {
     $('menu').hidden = true;
@@ -720,8 +828,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         if (G && G.duelo) G.duelo.fin = true;
         state = 'duelo'; $('pad').classList.add('off'); $('cartel').hidden = true; showTip(false);
         const quien = DUELO.rival.apodo.replace(/</g, '&lt;');
-        CD.resultado(sala, jugando ? { gane: true, sinRevancha: true, texto: `${quien} se fue del duelo.` }
-          : { titulo: 'Se fue', sinRevancha: true, texto: `${quien} salió del duelo.` });
+        CD.resultado(sala, jugando ? { gane: true, sinRevancha: true, texto: T('{q} se fue del duelo.', { q: quien }) }
+          : { titulo: T('Se fue'), sinRevancha: true, texto: T('{q} salió del duelo.', { q: quien }) });
       },
     });
     CD.esperandoRival(sala);
@@ -730,11 +838,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // ---------- pantallas ----------
   // selector común; sin la librería, uno mínimo con los mismos ids
   const NOTAS = {
-    facil: 'El primer rival pide unos 3,5 toques/s. Ideal para aprender.',
-    normal: 'Arranca en casi 5 toques/s y cada 5 rivales viene un jefe.',
-    dificil: 'Arrancan en 6 toques/s y repetir flecha te hace retroceder.',
-    extremo: 'Arrancan en 8 toques/s y cada error te hunde. XP ×3.',
-    maestro: 'Casi 10 toques/s desde el primero, sin ayuda y cada error pesa el doble. XP ×4.',
+    facil: T('El primer rival pide unos 3,5 toques/s. Ideal para aprender.'),
+    normal: T('Arranca en casi 5 toques/s y cada 5 rivales viene un jefe.'),
+    dificil: T('Arrancan en 6 toques/s y repetir flecha te hace retroceder.'),
+    extremo: T('Arrancan en 8 toques/s y cada error te hunde. XP ×3.'),
+    maestro: T('Casi 10 toques/s desde el primero, sin ayuda y cada error pesa el doble. XP ×4.'),
   };
   const sel = CC ? CC.selectorDif($('difs'), { juego: 'pulseada', notas: NOTAS, alCambiar: renderMenu }) : (() => {
     // sin la librería: uno mínimo con las mismas dificultades
@@ -742,7 +850,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const el = $('difs');
     el.className = 'row';
     el.style.gridTemplateColumns = `repeat(${DIFF_IDS.length}, 1fr)`;
-    el.innerHTML = DIFF_IDS.map(id => `<button class="btn small" type="button" data-d="${id}">${DIFS[id].name}</button>`).join('');
+    el.innerHTML = DIFF_IDS.map(id => `<button class="btn small" type="button" data-d="${id}">${T(DIFS[id].name)}</button>`).join('');
     const pintar = () => { for (const b of el.children) b.classList.toggle('primary', b.dataset.d === v); };
     el.addEventListener('click', e => { const b = e.target.closest('button'); if (b) { v = b.dataset.d; pintar(); renderMenu(); } });
     pintar();
@@ -752,16 +860,16 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   else $('eDifBox').hidden = true;
   if (DIA) DIA.menu($('difs'));
   if (CC && CC.leyendaTeclas) {
-    CC.leyendaTeclas($('mTeclas'), { jugar: 'alternar' });
-    CC.leyendaTeclas($('eTeclas'), { jugar: 'alternar', extra: [['R', 'otra vez']] });
+    CC.leyendaTeclas($('mTeclas'), { jugar: T('alternar') });
+    CC.leyendaTeclas($('eTeclas'), { jugar: T('alternar'), extra: [['R', T('otra vez')]] });
   }
 
   function renderMenu() {
     const d = sel.valor();
     const best = CC ? CC.perfil().mejores['pulseada:' + d] : null;
-    $('mBest').textContent = best ? best + ' ' + rivales(best) : '—';
+    $('mBest').textContent = best ? best + ' ' + T(rivales(best)) : '—';
     $('mTps').textContent = rec.bestTps ? fmt1(rec.bestTps) + '/s' : '—';
-    $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+    $('btnMute').textContent = T(muted ? 'Sonido: no' : 'Sonido: sí');
     const S = conSombra ? CC.sombra.cargar('pulseada', 'ritmo') : null;
     $('btnSombra').hidden = !S || !!DIA;
     if (S) $('mSombra').textContent = fmt1(ritmoSombra(S)) + '/s';
@@ -775,7 +883,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     resize();
     const D = DIA ? 'normal' : sel.valor();
     newRun(D, S);
-    $('hDiff').innerHTML = S ? '👻 Sombra' : (CC ? CC.iconoDif(D, 16) : '') + DIFS[D].name;
+    $('hDiff').innerHTML = S ? '👻 ' + T('Sombra') : (CC ? CC.iconoDif(D, 16) : '') + T(DIFS[D].name);
     $('hDiff').classList.toggle('hot', D === 'extremo' || D === 'maestro');
     let seen = false;
     try { seen = !!localStorage.getItem('cubo-pulseada-ayuda'); } catch (e) {}
@@ -854,14 +962,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   $('btnSombra').addEventListener('click', () => start(true));
   $('btnSombraEnd').addEventListener('click', () => start(!modoSombra));
   $('btnQuit').addEventListener('click', () => {
-    if (DUELO) { if (sala && confirm('¿Salir del duelo? Lo perdés.')) sala.salir(); return; }
+    if (DUELO) { if (sala && confirm(T('¿Salir del duelo? Lo perdés.'))) sala.salir(); return; }
     if (G && G.score > 0) finish(); CC ? CC.volver() : showMenu();
   });
   $('btnRestart').addEventListener('pointerdown', e => { e.preventDefault(); restart(); });
   $('btnRestart').addEventListener('click', e => { if (e.detail === 0) restart(); });
   $('btnBack').hidden = !CC;
   $('btnRank').hidden = !CC; $('btnRankEnd').hidden = !CC;
-  if (!CC) { $('btnHome').textContent = 'Inicio'; $('btnQuit').textContent = 'Menú'; }
+  if (!CC) { $('btnHome').textContent = T('Inicio'); $('btnQuit').textContent = T('Menú'); }
   $('btnBack').addEventListener('click', () => CC?.volver());
   $('btnHome').addEventListener('click', () => CC ? CC.volver() : showMenu());
   $('btnRank').addEventListener('click', ranking);
@@ -920,7 +1028,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         G.phase = 'fight'; G.pt = 0; G.p = 0;
         G.sf = 0; G.sn = 0;
         if (conSombra && !G.duelo) G.graba = { g: CC.sombra.grabar(), n: 0 };
-        sfxCount(0); banner = { text: '¡Ya!', t: now, ms: 600 };
+        sfxCount(0); banner = { text: T('¡Ya!'), t: now, ms: 600 };
       }
     } else if (G.phase === 'fight') {
       G.ft += dt;
@@ -940,7 +1048,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         else if (G.ft >= D.round) { G.timeout = true; G.p > 0 ? winRound(now) : loseRound(now); }
       } else {
       const fo = forma(G.rival.e, G.ft);
-      if (fo.tiron && !G.tironOn) { sfxTiron(); floats.push({ text: '¡Tirón!', x: CX + U * 2.6, y: Y0 + 3.6 * U, t: now, c: G.rival.c }); }
+      if (fo.tiron && !G.tironOn) { sfxTiron(); floats.push({ text: T('¡Tirón!'), x: CX + U * 2.6, y: Y0 + 3.6 * U, t: now, c: G.rival.c }); }
       G.tironOn = fo.tiron;
       G.r1 += (rivalTps(G.diff, G.idx) * fo.m - G.r1) * a1;
       G.rv += (G.r1 - G.rv) * a2;
@@ -966,7 +1074,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (sig !== hudCache) {
         hudCache = sig;
         $('hScore').textContent = G.score;
-        $('hScoreLbl').textContent = G.duelo ? (G.score === 1 ? 'ronda' : 'rondas') : rivales(G.score);
+        $('hScoreLbl').textContent = T(G.duelo ? (G.score === 1 ? 'ronda' : 'rondas') : rivales(G.score));
         $('hTps').textContent = fmt1(G.you);
         $('hTps').classList.toggle('gana', G.phase === 'fight' && G.you > G.rv + 0.05);
       }
@@ -1124,7 +1232,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const inPlay = state === 'play' && G;
     const you = inPlay ? G.you : 4 + 2.5 * (1 + Math.sin(menuT * 0.9)) / 2, rv = inPlay ? G.rv : 4.6;
     ctx.fillStyle = INK;
-    ctx.textAlign = 'left'; ctx.fillText('Vos ' + fmt1(you) + '/s', bx, ty);
+    ctx.textAlign = 'left'; ctx.fillText(T('Vos {n}/s', { n: fmt1(you) }), bx, ty);
     // el nombre del rival no puede pisar el reloj del medio (en un duelo es el apodo de tu amigo, que puede ser largo)
     const lado = bw / 2 - (ctx.measureText('00,0 s').width + U * 0.5) / 2 - 6, cola = ' ' + fmt1(rv) + '/s';
     let nom = inPlay ? G.rival.nombre : rival.n;
@@ -1353,7 +1461,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       c.moveTo(ax - d * 5, ay - 8); c.lineTo(ax + d * 5, ay); c.lineTo(ax - d * 5, ay + 8);
       c.stroke();
       c.fillStyle = INK; c.font = '800 10.5px "Rubik", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
-      c.fillText(d < 0 ? 'Izquierda' : 'Derecha', ax, y + kh - 8);
+      c.fillText(T(d < 0 ? 'Izquierda' : 'Derecha'), ax, y + kh - 8);
       if (on) {
         c.font = '16px "Lilita One", "Trebuchet MS", sans-serif'; c.textAlign = 'center';
         c.lineWidth = 4; c.strokeStyle = INK; c.fillStyle = wrong ? '#ff4f5e' : '#8ff0b8';
@@ -1371,7 +1479,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // leyenda
     c.font = '800 13px "Rubik", system-ui, sans-serif'; c.textAlign = 'left'; c.textBaseline = 'alphabetic';
     c.fillStyle = alt ? INK : '#d8243a';
-    c.fillText(alt ? '◀ ▶ ◀ ▶  alternando, empujás' : '◀ ◀  la misma flecha no suma', kx0, h - 12);
+    c.fillText(T(alt ? '◀ ▶ ◀ ▶  alternando, empujás' : '◀ ◀  la misma flecha no suma'), kx0, h - 12);
   }
 
   resize();

@@ -314,7 +314,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   <button id="bR" type="button" aria-label="Derecha">Derecha<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4 8 8-8 8"/></svg></button>
 </div>
 
-<div class="tip" id="tip" hidden>Cuando una baldosa pisa la línea, tocá su flecha: <b class="l">◀</b> rosa o <b class="r">▶</b> azul</div>
+<div class="tip" id="tip" data-t hidden>Cuando una baldosa pisa la línea, tocá su flecha: <b class="l">◀</b> rosa o <b class="r">▶</b> azul</div>
 
 <div class="overlay" id="start">
   <div class="card menu">
@@ -325,7 +325,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     </div>
     <div class="col">
       <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Ritmo</h1></div>
-      <p class="intro">Tocá <b>◀</b> o <b>▶</b> justo cuando su baldosa pisa la línea. Las <b>doradas</b> de la ráfaga valen doble.</p>
+      <p class="intro" data-t>Tocá <b>◀</b> o <b>▶</b> justo cuando su baldosa pisa la línea. Las <b>doradas</b> de la ráfaga valen doble.</p>
       <canvas class="demo" id="demo" aria-hidden="true"></canvas>
     </div>
     <div class="col">
@@ -341,7 +341,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         <button class="btn" id="btnRank" type="button" hidden>🏆 Ranking</button>
         <button class="btn primary big" id="btnPlay" type="button">Jugar</button>
       </div>
-      <div class="foot kbhint" id="mKeys"><span><kbd>←</kbd> <kbd>→</kbd> tocan · <kbd>↑</kbd> <kbd>↓</kbd> dificultad · <kbd>Enter</kbd> juega</span></div>
+      <div class="foot kbhint" id="mKeys"><span data-t><kbd>←</kbd> <kbd>→</kbd> tocan · <kbd>↑</kbd> <kbd>↓</kbd> dificultad · <kbd>Enter</kbd> juega</span></div>
     </div>
   </div>
 </div>
@@ -353,8 +353,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="sub" id="cTxt"></span>
     </div>
     <ol class="cal-pasos" id="cPasos">
-      <li><b>🎧 Sonido.</b> Vas a escuchar 16 clics. Sin mirar la pantalla, tocá ◀ o ▶ justo con cada uno.</li>
-      <li><b>👀 Imagen.</b> Sin sonido, bajan 16 baldosas. Tocá ◀ o ▶ justo cuando cada una pisa la línea.</li>
+      <li data-t><b>🎧 Sonido.</b> Vas a escuchar 16 clics. Sin mirar la pantalla, tocá ◀ o ▶ justo con cada uno.</li>
+      <li data-t><b>👀 Imagen.</b> Sin sonido, bajan 16 baldosas. Tocá ◀ o ▶ justo cuando cada una pisa la línea.</li>
     </ol>
     <div class="cal-vis" id="cVis" hidden><span class="cal-oido" id="cOido" aria-hidden="true">🎧</span><canvas id="cPista" width="120" height="150" aria-hidden="true" hidden></canvas><div class="cal-bar"><span class="cero"></span><span class="lbl-a">Antes</span><span class="lbl-t">Tarde</span><div id="cDots"></div></div>
       <p class="cal-nota">Cada punto es un toque tuyo. Lo ideal es que caigan sobre la raya del medio; los grises son de práctica.</p></div>
@@ -378,7 +378,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <button class="btn primary" id="btnResume" type="button">Seguir</button>
     </div>
     <div class="foot">
-      <span><kbd>Esc</kbd> sigue · <kbd>R</kbd> reinicia</span>
+      <span data-t><kbd>Esc</kbd> sigue · <kbd>R</kbd> reinicia</span>
       <button class="ter smallbtn" id="btnMute2" type="button">Sonido: sí</button>
     </div>
   </div>
@@ -408,7 +408,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <button class="btn" id="btnHome" type="button">☰ Menú</button>
       <button class="ter btn" id="btnGames2" type="button" hidden>⌂ Juegos</button>
     </div>
-    <div id="eKeys"><p class="hint kbhint"><kbd>R</kbd> o <kbd>Enter</kbd> otra vez · <kbd>Esc</kbd> menú</p></div>
+    <div id="eKeys"><p class="hint kbhint" data-t><kbd>R</kbd> o <kbd>Enter</kbd> otra vez · <kbd>Esc</kbd> menú</p></div>
   </div>
 </div>
 
@@ -417,6 +417,127 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 (() => {
   'use strict';
   const CC = window.CuboComun; // perfil, XP y personaje compartidos; puede faltar y el juego anda igual
+  // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js)
+  if (CC && CC.textos) CC.textos({
+    // título, HUD y botones de juego
+    'Ritmo': 'Rhythm',
+    'puntos': 'points',
+    'combo': 'combo',
+    'Volver a Juegos': 'Back to Games',
+    'Empezar de nuevo (R)': 'Restart (R)',
+    'Pausa': 'Pause',
+    'Vida': 'Life',
+    'Izquierda': 'Left',
+    'Derecha': 'Right',
+    'Cuando una baldosa pisa la línea, tocá su flecha: <b class="l">◀</b> rosa o <b class="r">▶</b> azul':
+      'When a tile hits the line, tap its arrow: <b class="l">◀</b> pink or <b class="r">▶</b> blue',
+    // menú
+    'Juegos': 'Games',
+    'Calibrar': 'Calibrate',
+    'Sonido: sí': 'Sound: on',
+    'Sonido: no': 'Sound: off',
+    'Tocá <b>◀</b> o <b>▶</b> justo cuando su baldosa pisa la línea. Las <b>doradas</b> de la ráfaga valen doble.':
+      'Tap <b>◀</b> or <b>▶</b> right when its tile hits the line. <b>Gold</b> tiles in a burst are worth double.',
+    'Modo': 'Mode',
+    'Infinito': 'Endless',
+    'Canciones': 'Songs',
+    'Canción': 'Song',
+    'Música: Juhani Junkala (CC0)': 'Music: Juhani Junkala (CC0)',
+    'Ranking': 'Leaderboard',
+    'Jugar': 'Play',
+    'Jugar en {d}': 'Play {d}',
+    '<kbd>←</kbd> <kbd>→</kbd> tocan · <kbd>↑</kbd> <kbd>↓</kbd> dificultad · <kbd>Enter</kbd> juega':
+      '<kbd>←</kbd> <kbd>→</kbd> tap · <kbd>↑</kbd> <kbd>↓</kbd> difficulty · <kbd>Enter</kbd> play',
+    'tocar': 'tap',
+    'reiniciar': 'restart',
+    'otra vez': 'again',
+    'Dificultad': 'Difficulty',
+    'Fácil': 'Easy', 'Normal': 'Normal', 'Difícil': 'Hard', 'Extremo': 'Extreme', 'Maestro': 'Master',
+    'Más lento, pocas notas y mucho margen. Ideal para aprender.': 'Slower, few notes and lots of room. Great for learning.',
+    'Rápido pero con aire entre nota y nota.': 'Fast, but with some space between notes.',
+    'Arranca rápido y con corcheas desde el primer compás.': 'Starts fast, with eighth notes from the very first bar.',
+    'Rapidísimo, ventana de acierto mínima y cada error duele. XP ×3.': 'Super fast, a tiny timing window and every miss hurts. XP ×3.',
+    'Más rápido que el tope de Normal desde el arranque, 25 ms de margen y 4 errores te sacan. XP ×4.':
+      'Faster than Normal\'s top speed from the start, 25 ms of room, and 4 misses knock you out. XP ×4.',
+    'Récord en {d}:': 'Best on {d}:',
+    'Mejor combo:': 'Best combo:',
+    '{c} en {d}:': '{c} on {d}:',
+    'full combo': 'full combo',
+    'sin jugar': 'not played',
+    '{n} de 3 estrellas': '{n} of 3 stars',
+    'Cargando…': 'Loading…',
+    'No se pudo cargar la canción. Revisá la conexión y probá de nuevo.': 'Couldn\'t load the song. Check your connection and try again.',
+    // calibrador
+    'Cada celu, compu y auricular tarda un poquito distinto en mostrar la imagen y en hacer sonar la música. Con dos pruebas cortas medimos esa demora y la corregimos, así las notas te quedan a tiempo.':
+      'Every phone, computer and pair of headphones takes a slightly different time to show the picture and play the music. Two quick tests measure that delay and fix it, so the notes land on time.',
+    '<b>🎧 Sonido.</b> Vas a escuchar 16 clics. Sin mirar la pantalla, tocá ◀ o ▶ justo con cada uno.':
+      '<b>🎧 Sound.</b> You\'ll hear 16 clicks. Without looking at the screen, tap ◀ or ▶ right on each one.',
+    '<b>👀 Imagen.</b> Sin sonido, bajan 16 baldosas. Tocá ◀ o ▶ justo cuando cada una pisa la línea.':
+      '<b>👀 Picture.</b> With no sound, 16 tiles fall. Tap ◀ or ▶ right when each one hits the line.',
+    'Antes': 'Early',
+    'Tarde': 'Late',
+    'Cada punto es un toque tuyo. Lo ideal es que caigan sobre la raya del medio; los grises son de práctica.':
+      'Each dot is one of your taps. Ideally they land on the middle line; the gray ones are practice.',
+    'Saltear': 'Skip',
+    'Saltear y jugar': 'Skip and play',
+    'Cancelar': 'Cancel',
+    'Empezar': 'Start',
+    'Repetir': 'Retry',
+    'Listo': 'Done',
+    'Seguir': 'Continue',
+    '¡A jugar!': 'Let\'s play!',
+    'Prueba 1 de 2 · Sonido': 'Test 1 of 2 · Sound',
+    'Prueba 2 de 2 · Imagen': 'Test 2 of 2 · Picture',
+    'Mirá para otro lado y tocá ◀ o ▶ (o la pantalla) <b>justo cuando suena cada clic</b>. Los 4 primeros son de práctica.':
+      'Look away and tap ◀ or ▶ (or the screen) <b>right when each click sounds</b>. The first 4 are practice.',
+    'No va a sonar nada. Tocá ◀ o ▶ (o la pantalla) <b>justo cuando cada baldosa pisa la línea</b>. Las 4 primeras, grises, son de práctica.':
+      'There\'s no sound. Tap ◀ or ▶ (or the screen) <b>right when each tile hits the line</b>. The first 4, in gray, are practice.',
+    'No llegué a medir bien. Probá de nuevo tocando con cada clic.': 'Couldn\'t get a good reading. Try again, tapping with each click.',
+    'No llegué a medir bien. Probá de nuevo tocando cuando cada baldosa pisa la línea.': 'Couldn\'t get a good reading. Try again, tapping when each tile hits the line.',
+    'justo a tiempo': 'right on time',
+    '{n} ms tarde': '{n} ms late',
+    '{n} ms antes': '{n} ms early',
+    '¡Bien! Con el sonido tocás {x}. Falta la prueba con la imagen.': 'Nice! With sound you tap {x}. Now the picture test.',
+    'Sonido: {a} · imagen: {b}.': 'Sound: {a} · picture: {b}.',
+    'Ya quedó corregido.': 'All set.',
+    'Las notas se van a dibujar {n} ms más tarde para que coincidan con la música.': 'Notes will be drawn {n} ms later so they match the music.',
+    'Las notas se van a dibujar {n} ms antes para que coincidan con la música.': 'Notes will be drawn {n} ms earlier so they match the music.',
+    // pausa
+    'La música te espera donde la dejaste.': 'The music will wait right where you left it.',
+    'Menú': 'Menu',
+    '<kbd>Esc</kbd> sigue · <kbd>R</kbd> reinicia': '<kbd>Esc</kbd> resume · <kbd>R</kbd> restart',
+    // fin de partida
+    '¡Se cortó la música!': 'The music stopped!',
+    'Nuevo récord': 'New best',
+    'Corregir': 'Fix it',
+    'Otra vez': 'Again',
+    '<kbd>R</kbd> o <kbd>Enter</kbd> otra vez · <kbd>Esc</kbd> menú': '<kbd>R</kbd> or <kbd>Enter</kbd> again · <kbd>Esc</kbd> menu',
+    '{d} · combo máx {c} · {p} perfectos · {a}% de aciertos · {b} BPM': '{d} · max combo {c} · {p} perfect · {a}% hits · {b} BPM',
+    'Antes: {p}': 'Previous: {p}',
+    '¡Tu primer récord en {d}!': 'Your first best on {d}!',
+    'Récord en {d}: {n} pts': 'Best on {d}: {n} pts',
+    '¡nivel {n}!': 'level {n}!',
+    'Logro: {n}': 'Achievement: {n}',
+    'En promedio tocaste {x}.': 'On average you tapped {x}.',
+    'Listo, quedó corregido para la próxima.': 'Done, it\'s fixed for next time.',
+    '¡Full combo!': 'Full combo!',
+    '¡Canción completa!': 'Song complete!',
+    '{c} · {d} · {s} pts · {p}% de precisión · combo máx {m}': '{c} · {d} · {s} pts · {p}% accuracy · max combo {m}',
+    '{c} · {d} · llegaste al {a}% de la canción': '{c} · {d} · you made it {a}% through the song',
+    '¡Récord en esta canción!': 'New best on this song!',
+    'Mejor: {e} · {n} pts': 'Best: {e} · {n} pts',
+    // lo que se dibuja en el canvas
+    'Fallaste': 'Miss',
+    '¡Perfecto!': 'Perfect!',
+    'Bien': 'Good',
+    '¡Combo {n}!': 'Combo {n}!',
+    '¡Multiplicador x{n}!': 'Multiplier x{n}!',
+    '¡Ráfaga! · ×2': 'Burst! · ×2',
+    '¡Más rápido! · {n} BPM': 'Faster! · {n} BPM',
+    '¡Ya!': 'Go!',
+  });
+  const T = (s, v) => (CC && CC.T ? CC.T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s);
+  const LOCALE = (CC && CC.LOCALE) || 'es-AR';
   // desafío del día (?diario=1): Infinito en Normal, 3 intentos y la partitura sale de la semilla del día
   const DIA = CC && CC.diarioDe ? CC.diarioDe('ritmo') : null;
   let azar = Math.random;
@@ -471,7 +592,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     [[98, 198, 255], [201, 241, 255]], [[79, 180, 255], [255, 233, 176]], [[255, 138, 92], [255, 213, 158]],
     [[92, 58, 138], [255, 138, 138]], [[14, 26, 74], [59, 91, 176]], [[10, 4, 32], [26, 11, 58]],
   ];
-  const COUNT = ['3', '2', '1', '¡Ya!'];
+  const COUNT = ['3', '2', '1', T('¡Ya!')];
   const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 
   // ---------- récords ----------
@@ -537,7 +658,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     return (bufs[c.id] = b);
   }
   fetch('musica/canciones.json').then(r => r.json()).then(x => { CANCIONES = x; renderModo(); }).catch(() => {});
-  const fmt = n => n.toLocaleString('es-AR');
+  const fmt = n => n.toLocaleString(LOCALE);
 
   // ---------- audio ----------
   let actx = null, master = null, noiseBuf = null, bus = null, lat = 0, muted = !!rec.muted;
@@ -799,7 +920,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       sfx(150, 0.25, 'sawtooth', 0.06, 0.5);
       if (CC && tocando) CC.vibrar(20);
       shake = reduceMotion ? 0 : 6;
-      judgeTxt = { text: 'Fallaste', c: '#ff5d7d', t: p };
+      judgeTxt = { text: T('Fallaste'), c: '#ff5d7d', t: p };
     } else {
       n.res = 'hit';
       const perfect = res === 'perfect';
@@ -811,9 +932,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       playLead(n.m, perfect);
       burst(laneX[n.lane], hitY, LANE_COL[n.lane][0], perfect ? 14 : 7);
       rings.push({ x: laneX[n.lane], t: p, c: perfect ? '#ffcc29' : '#fffaf0' });
-      judgeTxt = { text: perfect ? '¡Perfecto!' : 'Bien', c: perfect ? '#ffcc29' : '#fffaf0', t: p };
-      if (G.combo % 25 === 0) { banner = { text: `¡Combo ${G.combo}!`, t: p }; sfxUp(); }
-      else if (G.combo % 10 === 0 && G.combo <= 30) { banner = { text: `¡Multiplicador x${mult()}!`, t: p }; sfxUp(); }
+      judgeTxt = { text: T(perfect ? '¡Perfecto!' : 'Bien'), c: perfect ? '#ffcc29' : '#fffaf0', t: p };
+      if (G.combo % 25 === 0) { banner = { text: T('¡Combo {n}!', { n: G.combo }), t: p }; sfxUp(); }
+      else if (G.combo % 10 === 0 && G.combo <= 30) { banner = { text: T('¡Multiplicador x{n}!', { n: mult() }), t: p }; sfxUp(); }
     }
     if (G.life <= 0) gameOver();
   }
@@ -838,14 +959,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const nb = G.bars.find(x => x.raf && x.i > G.shownRaf && x.t0 - 60 / x.bpm * G.D.ver <= now);
     if (nb) {
       G.shownRaf = nb.i + RAFAGA - 1; // los compases de ráfaga van seguidos
-      banner = { text: '¡Ráfaga! · ×2', t: performance.now(), gold: true };
+      banner = { text: T('¡Ráfaga! · ×2'), t: performance.now(), gold: true };
       sfxUp();
     }
     if (b && b.level > G.shownLevel) {
       G.shownLevel = b.level;
       if (b.bpm === G.shownBpm) return; // ya está al tope
       G.shownBpm = b.bpm;
-      banner = { text: `¡Más rápido! · ${b.bpm} BPM`, t: performance.now() };
+      banner = { text: T('¡Más rápido! · {n} BPM', { n: b.bpm }), t: performance.now() };
       sfxUp();
     }
   }
@@ -861,19 +982,20 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     sfx(440, 0.9, 'sawtooth', 0.06, 0.12);
     hideTip();
     if (G.cancion) { finCancion(false); setTimeout(() => { if (state === 'over') showEnd(); }, 1100); return; }
-    $('eTitle').textContent = '¡Se cortó la música!';
+    $('eTitle').textContent = T('¡Se cortó la música!');
     const { isRec, prev, r } = cerrarPartida();
     const hits = G.perfect + G.good, total = hits + G.miss;
     $('eNum').textContent = fmt(G.score);
-    $('eSub').textContent = `${G.D.name} · combo máx ${G.maxCombo} · ${G.perfect} perfectos · ${total ? Math.round(100 * hits / total) : 0}% de aciertos · ${G.shownBpm} BPM`;
-    $('eRec').textContent = isRec ? (prev ? `Antes: ${prev}` : '¡Tu primer récord en ' + G.D.name + '!')
-      : `Récord en ${G.D.name}: ${fmt(rec.bests[G.diff] || 0)} pts`;
+    $('eSub').textContent = T('{d} · combo máx {c} · {p} perfectos · {a}% de aciertos · {b} BPM',
+      { d: G.D.name, c: G.maxCombo, p: G.perfect, a: total ? Math.round(100 * hits / total) : 0, b: G.shownBpm });
+    $('eRec').textContent = isRec ? (prev ? T('Antes: {p}', { p: prev }) : T('¡Tu primer récord en {d}!', { d: G.D.name }))
+      : T('Récord en {d}: {n} pts', { d: G.D.name, n: fmt(rec.bests[G.diff] || 0) });
     $('eBadge').hidden = !isRec;
     $('eXP').hidden = !r;
-    if (r) $('eXP').textContent = `+${fmt(r.xp)} XP` + (r.subio ? ` · ¡nivel ${r.nivel}!` : '');
+    if (r) $('eXP').textContent = `+${fmt(r.xp)} XP` + (r.subio ? ' · ' + T('¡nivel {n}!', { n: r.nivel }) : '');
     const logros = r ? r.logros : [];
     $('eLogros').hidden = !logros.length;
-    $('eLogros').replaceChildren(...logros.map(n => Object.assign(document.createElement('li'), { textContent: 'Logro: ' + n })));
+    $('eLogros').replaceChildren(...logros.map(n => Object.assign(document.createElement('li'), { textContent: T('Logro: {n}', { n }) })));
     mostrarAjuste();
     setTimeout(() => { if (state === 'over') showEnd(); }, 1100);
   }
@@ -885,7 +1007,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const v = G.errs.slice().sort((a, b) => a - b), med = v.length >= 20 ? v[Math.floor(v.length / 2)] : 0;
     ajustePend = Math.abs(med) >= 0.012 ? med : 0;
     $('eAjuste').hidden = !ajustePend;
-    $('eAjTxt').textContent = `En promedio tocaste ${msTxt(med)}.`;
+    $('eAjTxt').textContent = T('En promedio tocaste {x}.', { x: msTxt(med) });
     $('btnAjuste').hidden = false;
   }
   $('btnAjuste').addEventListener('click', () => {
@@ -893,7 +1015,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     rec.desfase = tope((+rec.desfase || 0) + ajustePend);
     if (typeof rec.desfaseVis === 'number') rec.desfaseVis += ajustePend;
     saveRec(); ajustePend = 0;
-    $('eAjTxt').textContent = 'Listo, quedó corregido para la próxima.';
+    $('eAjTxt').textContent = T('Listo, quedó corregido para la próxima.');
     $('btnAjuste').hidden = true;
     $('btnAgain').focus({ preventScroll: true });
   });
@@ -937,18 +1059,18 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function finCancion(completa) {
     const c = G.cancion, { isRec, r, est, prec } = cerrarCancion(completa);
     const viejo = rec.canciones[c.id + ':' + G.diff];
-    $('eTitle').textContent = completa ? (G.miss === 0 ? '¡Full combo!' : '¡Canción completa!') : '¡Se cortó la música!';
+    $('eTitle').textContent = T(completa ? (G.miss === 0 ? '¡Full combo!' : '¡Canción completa!') : '¡Se cortó la música!');
     $('eNum').textContent = completa ? estrellas(est) : fmt(G.score);
     const avance = Math.round(100 * Math.max(0, Math.min(1, (G.vis - G.firstT) / (G.finT - G.firstT))));
-    $('eSub').textContent = completa ? `${c.nombre} · ${G.D.name} · ${fmt(G.score)} pts · ${Math.round(prec * 100)}% de precisión · combo máx ${G.maxCombo}`
-      : `${c.nombre} · ${G.D.name} · llegaste al ${avance}% de la canción`;
-    $('eRec').textContent = isRec ? '¡Récord en esta canción!' : viejo ? `Mejor: ${estrellas(viejo.est)} · ${fmt(viejo.score)} pts` : '';
+    $('eSub').textContent = completa ? T('{c} · {d} · {s} pts · {p}% de precisión · combo máx {m}', { c: c.nombre, d: G.D.name, s: fmt(G.score), p: Math.round(prec * 100), m: G.maxCombo })
+      : T('{c} · {d} · llegaste al {a}% de la canción', { c: c.nombre, d: G.D.name, a: avance });
+    $('eRec').textContent = isRec ? T('¡Récord en esta canción!') : viejo ? T('Mejor: {e} · {n} pts', { e: estrellas(viejo.est), n: fmt(viejo.score) }) : '';
     $('eBadge').hidden = !isRec;
     $('eXP').hidden = !r;
-    if (r) $('eXP').textContent = `+${fmt(r.xp)} XP` + (r.subio ? ` · ¡nivel ${r.nivel}!` : '');
+    if (r) $('eXP').textContent = `+${fmt(r.xp)} XP` + (r.subio ? ' · ' + T('¡nivel {n}!', { n: r.nivel }) : '');
     const logros = r ? r.logros : [];
     $('eLogros').hidden = !logros.length;
-    $('eLogros').replaceChildren(...logros.map(n => Object.assign(document.createElement('li'), { textContent: 'Logro: ' + n })));
+    $('eLogros').replaceChildren(...logros.map(n => Object.assign(document.createElement('li'), { textContent: T('Logro: {n}', { n }) })));
     mostrarAjuste();
   }
   function terminarCancion() {
@@ -972,7 +1094,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   // ---------- pantallas ----------
   function renderMute() {
-    for (const id of ['btnMute', 'btnMute2']) $(id).textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+    for (const id of ['btnMute', 'btnMute2']) $(id).textContent = T(muted ? 'Sonido: no' : 'Sonido: sí');
   }
   function toggleMute() {
     muted = !muted; rec.muted = muted; saveRec(); renderMute();
@@ -995,11 +1117,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   // selector de dificultad: el común de cubo-comun.js (con Extremo); sin la librería, uno propio igual
   const NOTAS = {
-    facil: 'Más lento, pocas notas y mucho margen. Ideal para aprender.',
-    normal: 'Rápido pero con aire entre nota y nota.',
-    dificil: 'Arranca rápido y con corcheas desde el primer compás.',
-    extremo: 'Rapidísimo, ventana de acierto mínima y cada error duele. XP ×3.',
-    maestro: 'Más rápido que el tope de Normal desde el arranque, 25 ms de margen y 4 errores te sacan. XP ×4.',
+    facil: T('Más lento, pocas notas y mucho margen. Ideal para aprender.'),
+    normal: T('Rápido pero con aire entre nota y nota.'),
+    dificil: T('Arranca rápido y con corcheas desde el primer compás.'),
+    extremo: T('Rapidísimo, ventana de acierto mínima y cada error duele. XP ×3.'),
+    maestro: T('Más rápido que el tope de Normal desde el arranque, 25 ms de margen y 4 errores te sacan. XP ×4.'),
   };
   const alCambiar = id => { diff = id; renderRecs(); renderAgain(); };
   const sel = CC ? CC.selectorDif($('diffs'), { juego: 'ritmo', notas: NOTAS, alCambiar }) : null;
@@ -1010,16 +1132,16 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('eDif').hidden = false;
     if (CC.leyendaTeclas) {
       $('mKeys').className = '';
-      CC.leyendaTeclas($('mKeys'), { jugar: 'tocar', extra: [['R', 'reiniciar']] });
-      CC.leyendaTeclas($('eKeys'), { jugar: 'tocar', extra: [['R', 'otra vez']] });
+      CC.leyendaTeclas($('mKeys'), { jugar: T('tocar'), extra: [['R', T('reiniciar')]] });
+      CC.leyendaTeclas($('eKeys'), { jugar: T('tocar'), extra: [['R', T('otra vez')]] });
     }
   } else {
     $('diffs').className = 'diffs';
-    $('diffs').setAttribute('role', 'radiogroup'); $('diffs').setAttribute('aria-label', 'Dificultad');
+    $('diffs').setAttribute('role', 'radiogroup'); $('diffs').setAttribute('aria-label', T('Dificultad'));
     for (const id of DIFF_IDS) {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'diff'; b.dataset.d = id; b.setAttribute('role', 'radio');
-      b.textContent = DIFFS[id].name;
+      b.textContent = T(DIFFS[id].name);
       b.addEventListener('click', () => setDiff(id));
       $('diffs').appendChild(b);
     }
@@ -1032,7 +1154,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // en la pantalla de fin, si elegiste otra dificultad, el botón principal lo dice
   function renderAgain() {
     const otra = state === 'end' && G && G.diff !== diff;
-    $('btnAgain').innerHTML = (otra ? '▶ Jugar en ' + DIFFS[diff].name : '↻ Otra vez') + ' <kbd class="kbhint">R</kbd>';
+    $('btnAgain').innerHTML = (otra ? '▶ ' + T('Jugar en {d}', { d: DIFFS[diff].name }) : '↻ ' + T('Otra vez')) + ' <kbd class="kbhint">R</kbd>';
   }
   function stepDiff(d) {
     if (sel) sel.siguiente(d);
@@ -1047,12 +1169,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     renderCanciones();
     if (modo === 'cancion' && cancionSel()) {
       const c = cancionSel(), x = rec.canciones[c.id + ':' + diff];
-      $('recline').innerHTML = `${c.nombre} en ${DIFFS[diff].name}: <b>${x ? estrellas(x.est) + ' · ' + fmt(x.score) + ' pts' + (x.fc ? ' · full combo' : '') : 'sin jugar'}</b>`;
+      $('recline').innerHTML = `${T('{c} en {d}:', { c: c.nombre, d: DIFFS[diff].name })} <b>${x ? estrellas(x.est) + ' · ' + fmt(x.score) + ' pts' + (x.fc ? ' · ' + T('full combo') : '') : T('sin jugar')}</b>`;
       return;
     }
     let best = rec.bests[diff] || 0;
     if (CC) best = Math.max(best, CC.perfil().mejores['ritmo:' + diff] || 0);
-    $('recline').innerHTML = `Récord en ${DIFFS[diff].name}: <b>${best ? fmt(best) + ' pts' : '—'}</b> · Mejor combo: <b>${rec.combos[diff] || '—'}</b>`;
+    $('recline').innerHTML = `${T('Récord en {d}:', { d: DIFFS[diff].name })} <b>${best ? fmt(best) + ' pts' : '—'}</b> · ${T('Mejor combo:')} <b>${rec.combos[diff] || '—'}</b>`;
   }
 
   function renderModo() {
@@ -1072,7 +1194,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     for (const c of CANCIONES) {
       const x = rec.canciones[c.id + ':' + diff], b = document.createElement('button');
       b.type = 'button'; b.className = 'cancion'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(c.id === cancionId));
-      b.innerHTML = `<b></b><small>${Math.round(c.bpm)} BPM · ${durTxt(c)}</small><span class="est" aria-label="${x ? x.est : 0} de 3 estrellas">${estrellas(x ? x.est : 0)}</span>`;
+      b.innerHTML = `<b></b><small>${Math.round(c.bpm)} BPM · ${durTxt(c)}</small><span class="est" aria-label="${T('{n} de 3 estrellas', { n: x ? x.est : 0 })}">${estrellas(x ? x.est : 0)}</span>`;
       b.querySelector('b').textContent = c.nombre;
       b.addEventListener('click', () => { cancionId = c.id; rec.cancion = c.id; saveRec(); renderRecs(); });
       box.appendChild(b);
@@ -1100,9 +1222,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (c && !bufs[c.id]) { // la canción se baja una vez y después queda guardada
       cargando = true;
       const btns = [$('btnPlay'), $('btnAgain')], antes = btns.map(b => b.innerHTML);
-      btns.forEach(b => { b.textContent = 'Cargando…'; b.disabled = true; });
+      btns.forEach(b => { b.textContent = T('Cargando…'); b.disabled = true; });
       cargarCancion(c).then(() => { cargando = false; btns.forEach((b, i) => { b.innerHTML = antes[i]; b.disabled = false; }); start(); },
-        () => { cargando = false; btns.forEach((b, i) => { b.innerHTML = antes[i]; b.disabled = false; }); alert('No se pudo cargar la canción. Revisá la conexión y probá de nuevo.'); });
+        () => { cargando = false; btns.forEach((b, i) => { b.innerHTML = antes[i]; b.disabled = false; }); alert(T('No se pudo cargar la canción. Revisá la conexión y probá de nuevo.')); });
       return;
     }
     if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); diff = 'normal'; modo = 'infinito'; }
@@ -1110,7 +1232,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     layout();
     newRun();
     state = 'play'; hudCache = '';
-    $('hDiff').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + G.D.name;
+    $('hDiff').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + T(G.D.name);
     $('hDiff').classList.toggle('ext', G.diff === 'extremo');
     $('hDiff').classList.toggle('mae', G.diff === 'maestro');
     if (G.cancion) { // la canción arranca para que su primer golpe caiga justo después de la cuenta
@@ -1163,7 +1285,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const tope = x => Math.max(-CAL_TOPE, Math.min(CAL_TOPE, +x || 0));
   const desfase = () => tope(rec.desfase);
   const corrImagen = () => (typeof rec.desfaseVis === 'number' ? tope(desfase() - rec.desfaseVis) : 0);
-  const msTxt = d => { const ms = Math.round(d * 1000); return Math.abs(ms) < 10 ? 'justo a tiempo' : `${Math.abs(ms)} ms ${ms > 0 ? 'tarde' : 'antes'}`; };
+  const msTxt = d => { const ms = Math.round(d * 1000); return Math.abs(ms) < 10 ? T('justo a tiempo') : T(ms > 0 ? '{n} ms tarde' : '{n} ms antes', { n: Math.abs(ms) }); };
   const pista = $('cPista'), pctx = pista.getContext('2d');
   function abrirCalib(antesDeJugar) {
     if (!ensureAudio()) return;
@@ -1171,12 +1293,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // primero una pantalla que explica para qué es y qué hay que hacer; las pruebas arrancan con «Empezar»
     cal = { antes: antesDeJugar, fase: 'intro', fin: true, ok: false };
     $('start').hidden = true; $('end').hidden = true; $('calib').hidden = false;
-    $('cTit').textContent = 'Calibrar';
-    $('cTxt').textContent = 'Cada celu, compu y auricular tarda un poquito distinto en mostrar la imagen y en hacer sonar la música. ' +
-      'Con dos pruebas cortas medimos esa demora y la corregimos, así las notas te quedan a tiempo.';
+    $('cTit').textContent = T('Calibrar');
+    $('cTxt').textContent = T('Cada celu, compu y auricular tarda un poquito distinto en mostrar la imagen y en hacer sonar la música. ' +
+      'Con dos pruebas cortas medimos esa demora y la corregimos, así las notas te quedan a tiempo.');
     $('cPasos').hidden = false; $('cVis').hidden = true; $('cRes').textContent = '';
-    $('cSkip').hidden = false; $('cSkip').textContent = antesDeJugar ? 'Saltear y jugar' : 'Cancelar';
-    $('cAgain').hidden = true; $('cOk').hidden = false; $('cOk').textContent = 'Empezar';
+    $('cSkip').hidden = false; $('cSkip').textContent = T(antesDeJugar ? 'Saltear y jugar' : 'Cancelar');
+    $('cAgain').hidden = true; $('cOk').hidden = false; $('cOk').textContent = T('Empezar');
     setTimeout(() => $('cOk').focus({ preventScroll: true }), 50);
     requestAnimationFrame(pulsoCalib);
   }
@@ -1184,10 +1306,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const per = 60 / CAL_BPM, sonido = fase === 'sonido';
     Object.assign(cal, { fase, t0: actx.currentTime + (sonido ? 1.2 : per * CAL_CAE + 0.6), toques: [], fin: false, ok: false });
     if (sonido) for (let k = 0; k < CAL_N; k++) voice(cal.t0 + k * per, k % 4 ? 1320 : 1760, 'square', 0.06, 0.06, 0, master);
-    $('cTit').textContent = sonido ? 'Prueba 1 de 2 · Sonido' : 'Prueba 2 de 2 · Imagen';
-    $('cTxt').innerHTML = sonido
+    $('cTit').textContent = T(sonido ? 'Prueba 1 de 2 · Sonido' : 'Prueba 2 de 2 · Imagen');
+    $('cTxt').innerHTML = T(sonido
       ? 'Mirá para otro lado y tocá ◀ o ▶ (o la pantalla) <b>justo cuando suena cada clic</b>. Los 4 primeros son de práctica.'
-      : 'No va a sonar nada. Tocá ◀ o ▶ (o la pantalla) <b>justo cuando cada baldosa pisa la línea</b>. Las 4 primeras, grises, son de práctica.';
+      : 'No va a sonar nada. Tocá ◀ o ▶ (o la pantalla) <b>justo cuando cada baldosa pisa la línea</b>. Las 4 primeras, grises, son de práctica.');
     $('cPasos').hidden = true; $('cVis').hidden = false;
     $('cOido').hidden = !sonido; pista.hidden = sonido;
     if (!sonido) {
@@ -1195,7 +1317,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       pista.width = 120 * dpr; pista.height = 150 * dpr; pctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     $('cDots').innerHTML = ''; $('cRes').textContent = '';
-    $('cSkip').hidden = false; $('cSkip').textContent = cal.antes ? 'Saltear y jugar' : 'Cancelar';
+    $('cSkip').hidden = false; $('cSkip').textContent = T(cal.antes ? 'Saltear y jugar' : 'Cancelar');
     $('cAgain').hidden = true; $('cOk').hidden = true;
   }
   function pulsoCalib(p) {
@@ -1238,8 +1360,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     cal.fin = true;
     const v = cal.toques.slice().sort((a, b) => a - b);
     if (v.length < 6) {
-      $('cRes').textContent = cal.fase === 'sonido' ? 'No llegué a medir bien. Probá de nuevo tocando con cada clic.'
-        : 'No llegué a medir bien. Probá de nuevo tocando cuando cada baldosa pisa la línea.';
+      $('cRes').textContent = T(cal.fase === 'sonido' ? 'No llegué a medir bien. Probá de nuevo tocando con cada clic.'
+        : 'No llegué a medir bien. Probá de nuevo tocando cuando cada baldosa pisa la línea.');
       $('cAgain').hidden = false; return;
     }
     const med = v[Math.floor(v.length / 2)];
@@ -1247,18 +1369,19 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       // el sonido ya queda guardado; la imagen se vuelve a medir contra este valor
       rec.desfase = med; delete rec.desfaseVis; saveRec();
       cal.ok = true;
-      $('cRes').textContent = `¡Bien! Con el sonido tocás ${msTxt(med)}. Falta la prueba con la imagen.`;
-      $('cAgain').hidden = false; $('cOk').hidden = false; $('cOk').textContent = 'Seguir';
+      $('cRes').textContent = T('¡Bien! Con el sonido tocás {x}. Falta la prueba con la imagen.', { x: msTxt(med) });
+      $('cAgain').hidden = false; $('cOk').hidden = false; $('cOk').textContent = T('Seguir');
       setTimeout(() => $('cOk').focus({ preventScroll: true }), 50);
       return;
     }
     rec.desfaseVis = med; rec.calibrado = 2; saveRec();
     cal.ok = true;
     const dif = Math.round(corrImagen() * 1000);
-    $('cRes').textContent = `Sonido: ${msTxt(desfase())} · imagen: ${msTxt(med)}. ` +
-      (Math.abs(dif) < 15 ? 'Ya quedó corregido.' : `Las notas se van a dibujar ${Math.abs(dif)} ms ${dif > 0 ? 'más tarde' : 'antes'} para que coincidan con la música.`);
+    $('cRes').textContent = T('Sonido: {a} · imagen: {b}.', { a: msTxt(desfase()), b: msTxt(med) }) + ' ' +
+      (Math.abs(dif) < 15 ? T('Ya quedó corregido.') : T(dif > 0 ? 'Las notas se van a dibujar {n} ms más tarde para que coincidan con la música.'
+        : 'Las notas se van a dibujar {n} ms antes para que coincidan con la música.', { n: Math.abs(dif) }));
     $('cSkip').hidden = true; $('cAgain').hidden = false; $('cOk').hidden = false;
-    $('cOk').textContent = cal.antes ? '¡A jugar!' : 'Listo';
+    $('cOk').textContent = T(cal.antes ? '¡A jugar!' : 'Listo');
     setTimeout(() => $('cOk').focus({ preventScroll: true }), 50);
   }
   function cerrarCalib(saltear) {
@@ -1465,7 +1588,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       ctx.fillStyle = on ? '#ffcc29' : '#fffaf0'; ctx.strokeStyle = '#1d2340'; ctx.lineWidth = 2.5;
       rb(kx, ky, kw, 26, 8); ctx.fill(); ctx.stroke();
       ctx.font = '13px "Lilita One", "Trebuchet MS", sans-serif';
-      const label = lane < 0 ? 'Izquierda' : 'Derecha', tw = ctx.measureText(label).width, aw = 9;
+      const label = T(lane < 0 ? 'Izquierda' : 'Derecha'), tw = ctx.measureText(label).width, aw = 9;
       const x0 = lx[lane] - (tw + aw + 4) / 2, cy = ky + 13, ax = lane < 0 ? x0 : x0 + tw + 4;
       ctx.strokeStyle = LANE_COL[lane][1]; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       ctx.beginPath();

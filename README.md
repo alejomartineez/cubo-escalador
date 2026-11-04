@@ -18,6 +18,12 @@ La pantalla principal muestra un juego por slide. Todos los juegos suman XP al m
 | Esquí | Slalom entre banderas, cada vez más rápido. |
 | Pulseada | Alterná lo más rápido que puedas para ganarle al rival. |
 
+**Idiomas:** español (rioplatense, el original) e inglés. Sale el del dispositivo y se cambia en Opciones de la portada (`cubo-idioma`; al cambiarlo se recarga la página). Cómo funciona (sección «idioma» de `cubo-comun.js`):
+- La clave de cada texto es el texto en español, tal cual: `CC.T('Jugar')` → «Play»; con variables, `CC.T('Te faltan {n} XP', { n })`. Si falta una traducción, queda en español.
+- Cada archivo suma lo suyo con `CC.textos({ 'español': 'English' })`, al principio de su script (el de `cubo-comun.js` va en la misma sección, antes de los datos).
+- En inglés, el HTML de la página (y el que se agrega después) se traduce solo: cada texto que coincide entero con una clave, sin contar emojis o flechas de los costados, y los `aria-label`, `title`, `placeholder` y `alt`. Una frase con etiquetas adentro lleva `data-t` y su clave es el `innerHTML`. Lo que se dibuja en un canvas va siempre con `T()`. Los apodos van con `translate="no"` (o `CC.Tsin`, que no traduce las variables) para que «Oro» no pase a «Gold».
+- Para sumar un texto nuevo: escribilo en español como siempre y agregá su entrada en el `textos` del archivo.
+
 Controles: `←` `→` o `A` `D` en la compu, `R` reinicia; botones grandes y ↻ en el celu. Todos los juegos tienen Fácil, Normal, Difícil, Extremo y Maestro.
 
 ## Progreso

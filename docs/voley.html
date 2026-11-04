@@ -262,7 +262,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   </div>
 </div>
 
-<div class="tip" id="tip" hidden>
+<div class="tip" id="tip" data-t hidden>
   <b>Mantené ◀ o ▶ para moverte.</b><br>La pelota rebota sola en vos. Si te estás moviendo cuando la tocás, sale un <b>remate</b>.
 </div>
 
@@ -290,7 +290,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       </svg>
       <h1>Vóley</h1>
     </div>
-    <p class="intro">Movete con <b>◀ ▶</b>: la pelota rebota sola en vos. Pegale con el <b>borde</b> para mandarla lejos y <b>movete al tocarla</b> para rematar.</p>
+    <p class="intro" data-t>Movete con <b>◀ ▶</b>: la pelota rebota sola en vos. Pegale con el <b>borde</b> para mandarla lejos y <b>movete al tocarla</b> para rematar.</p>
     <div class="howto" aria-hidden="true">
       <canvas id="mini"></canvas>
       <div class="keys">
@@ -343,6 +343,88 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const $ = id => document.getElementById(id);
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js)
+  if (CC && CC.textos) CC.textos({
+    // título, HUD y botones de juego
+    'Vóley': 'Volley',
+    'puntos': 'points',
+    'Vidas': 'Lives',
+    'vidas': 'lives',
+    '{n} vida': '{n} life',
+    '{n} vidas': '{n} lives',
+    'Juegos': 'Games',
+    'Reiniciar (R)': 'Restart (R)',
+    '{d} · Rival {n}': '{d} · Rival {n}',
+    '<b>Mantené ◀ o ▶ para moverte.</b><br>La pelota rebota sola en vos. Si te estás moviendo cuando la tocás, sale un <b>remate</b>.':
+      '<b>Hold ◀ or ▶ to move.</b><br>The ball bounces off you on its own. If you\'re moving when you touch it, you <b>spike</b> it.',
+    'Izquierda': 'Left',
+    'Derecha': 'Right',
+    // menú
+    'Ranking': 'Leaderboard',
+    'Sonido: sí': 'Sound: on',
+    'Sonido: no': 'Sound: off',
+    'Movete con <b>◀ ▶</b>: la pelota rebota sola en vos. Pegale con el <b>borde</b> para mandarla lejos y <b>movete al tocarla</b> para rematar.':
+      'Move with <b>◀ ▶</b>: the ball bounces off you on its own. Hit it with your <b>edge</b> to send it far, and <b>move as you touch it</b> to spike.',
+    'Récord': 'Best',
+    'Jugar': 'Play',
+    'Jugar en {d}': 'Play {d}',
+    'Otra vez': 'Again',
+    'Dificultad': 'Difficulty',
+    'Inicio': 'Home',
+    'Menú': 'Menu',
+    'moverte': 'move',
+    'reiniciar': 'restart',
+    'otra vez': 'again',
+    'Fácil': 'Easy', 'Normal': 'Normal', 'Difícil': 'Hard', 'Extremo': 'Extreme', 'Maestro': 'Master',
+    'Pelota lenta, 4 vidas y un rival que recién empieza.': 'Slow ball, 4 lives and a rival who\'s just starting out.',
+    'El rival mejora y la pelota acelera con cada punto.': 'The rival gets better and the ball speeds up with every point.',
+    'La pelota cae rápido y el rival ya sabe jugar desde el saque.': 'The ball drops fast and the rival knows how to play from the first serve.',
+    'La pelota vuela y el rival casi no falla. XP ×3.': 'The ball flies and the rival almost never misses. XP ×3.',
+    '2 vidas, remates a quemarropa y sin marca de dónde cae. XP ×4.': '2 lives, point-blank spikes and no mark showing where it lands. XP ×4.',
+    // lo que se dibuja en el canvas
+    '¡Ya!': 'Go!',
+    '¡Remate!': 'Spike!',
+    '¡Cruzada!': 'Cross shot!',
+    '¡Oro! +2': 'Gold! +2',
+    '¡{n} puntos!': '{n} points!',
+    '¡Punto!': 'Point!',
+    '¡Última vida!': 'Last life!',
+    '¡Uy!': 'Oops!',
+    '¡Se terminó!': 'Game over!',
+    '¡Pelota de oro! Vale 2': 'Golden ball! Worth 2',
+    'Tu saque': 'Your serve',
+    // fin de partida
+    '¡Récord!': 'New best!',
+    '¡Partidazo!': 'Great game!',
+    '¡Buen vóley!': 'Nice play!',
+    'punto · {d} · rival nivel {n}': 'point · {d} · rival level {n}',
+    'puntos · {d} · rival nivel {n}': 'points · {d} · rival level {n}',
+    '{n} remate': '{n} spike',
+    '{n} remates': '{n} spikes',
+    'rally más largo: {n} toque': 'longest rally: {n} hit',
+    'rally más largo: {n} toques': 'longest rally: {n} hits',
+    '{n} pelota de oro': '{n} golden ball',
+    '{n} pelotas de oro': '{n} golden balls',
+    'antes: {p}': 'previous: {p}',
+    'récord: {n}': 'best: {n}',
+    'Nuevo récord': 'New best',
+    'Primer récord': 'First best',
+    // duelo
+    '¿Salir del duelo? Lo perdés.': 'Leave the duel? You\'ll lose it.',
+    'Esperando a {n}': 'Waiting for {n}',
+    'Hiciste <b>{n}</b> punto. {q} va por {e} y sigue jugando.': 'You scored <b>{n}</b> point. {q} is at {e} and still playing.',
+    'Hiciste <b>{n}</b> puntos. {q} va por {e} y sigue jugando.': 'You scored <b>{n}</b> points. {q} is at {e} and still playing.',
+    'Salir': 'Exit',
+    'Empataron en <b>{n}</b> puntos.': 'It\'s a tie at <b>{n}</b> points.',
+    'Vos: <b>{n}</b> punto · {q}: <b>{s}</b>': 'You: <b>{n}</b> point · {q}: <b>{s}</b>',
+    'Vos: <b>{n}</b> puntos · {q}: <b>{s}</b>': 'You: <b>{n}</b> points · {q}: <b>{s}</b>',
+    '(y seguía)': '(still playing)',
+    '{q} se fue del duelo.': '{q} left the duel.',
+    'Se fue': 'They left',
+    '{q} salió del duelo.': '{q} left the duel.',
+  });
+  const T = (s, v) => (CC && CC.T ? CC.T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s);
+  const LOCALE = (CC && CC.LOCALE) || 'es-AR';
   // Duelo 1v1 contra un amigo (cubo-duelo.js): los dos juegan en Normal contra el mismo rival (misma semilla)
   // y gana el que hace más puntos antes de quedarse sin vidas. Se ven los puntos del otro en vivo.
   const CD = window.CuboDuelo, DUELO = CD ? CD.partida() : null;
@@ -379,11 +461,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   };
   const DIFF_NAMES = { facil: 'Fácil', normal: 'Normal', dificil: 'Difícil', extremo: 'Extremo', maestro: 'Maestro' };
   const NOTAS = {
-    facil: 'Pelota lenta, 4 vidas y un rival que recién empieza.',
-    normal: 'El rival mejora y la pelota acelera con cada punto.',
-    dificil: 'La pelota cae rápido y el rival ya sabe jugar desde el saque.',
-    extremo: 'La pelota vuela y el rival casi no falla. XP ×3.',
-    maestro: '2 vidas, remates a quemarropa y sin marca de dónde cae. XP ×4.',
+    facil: T('Pelota lenta, 4 vidas y un rival que recién empieza.'),
+    normal: T('El rival mejora y la pelota acelera con cada punto.'),
+    dificil: T('La pelota cae rápido y el rival ya sabe jugar desde el saque.'),
+    extremo: T('La pelota vuela y el rival casi no falla. XP ×3.'),
+    maestro: T('2 vidas, remates a quemarropa y sin marca de dónde cae. XP ×4.'),
   };
   // pelota de oro: de vez en cuando un saque vale doble
   const ORO_DESDE = 2, ORO_PROB = 0.22, ORO_SEGURO = 6;
@@ -394,7 +476,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   try { rec = JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { rec = {}; }
   if (!rec.byDiff || typeof rec.byDiff !== 'object') rec.byDiff = {};
   const saveRec = () => { try { localStorage.setItem(REC_KEY, JSON.stringify(rec)); } catch (e) {} };
-  const fmtN = n => n.toLocaleString('es-AR');
+  const fmtN = n => n.toLocaleString(LOCALE);
   function bestFor(d) {
     let b = rec.byDiff[d] || 0;
     try { if (CC) b = Math.max(b, CC.perfil().mejores['voley:' + d] || 0); } catch (e) {}
@@ -518,7 +600,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const g = b.g;
     let a = Math.max(apex, b.y + 0.3);
     for (let k = 0; k < 40; k++, a += 0.2) {
-      const vy = Math.sqrt(2 * g * (a - b.y)), T = vy / g + Math.sqrt(2 * Math.max(0.01, a - BR) / g), vx = (tx - b.x) / T;
+      const vy = Math.sqrt(2 * g * (a - b.y)), tVuelo = vy / g + Math.sqrt(2 * Math.max(0.01, a - BR) / g), vx = (tx - b.x) / tVuelo;
       const tn = (NET - b.x) / vx, yn = b.y + vy * tn - g * tn * tn / 2;
       b.vx = vx; b.vy = vy;
       if (!(tn > 0) || yn >= NET_H + BR + 0.18) break;
@@ -560,8 +642,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       launch(b, NET + 0.55 + depth * (CW / 2 - 1), apex);
       b.fast = smash;
       if (!G.demo) {
-        if (smash) { G.smashes++; sfxSmash(); floats.push({ text: '¡Remate!', x: b.x, y: b.y + 0.6, t: now }); }
-        else { sfxHit(); if (au > 0.7) floats.push({ text: '¡Cruzada!', x: b.x, y: b.y + 0.6, t: now }); }
+        if (smash) { G.smashes++; sfxSmash(); floats.push({ text: T('¡Remate!'), x: b.x, y: b.y + 0.6, t: now }); }
+        else { sfxHit(); if (au > 0.7) floats.push({ text: T('¡Cruzada!'), x: b.x, y: b.y + 0.6, t: now }); }
         if (smash) vibrate(8);
       }
       burst(b.x, b.y, smash ? '#ffcc29' : '#fffaf0', smash ? 12 : 6, smash ? 1.1 : 0.6);
@@ -610,12 +692,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       floats.push({ text: '+' + pts, x: b.x, y: 1.4, t: now });
       const vuelta = Math.floor(G.score / 5) > Math.floor(antes / 5);
       if (G.duelo) { sala.enviar('p', { p: G.score }); barraDuelo(); if (G.duelo.suyo != null) finDuelo(); }
-      banner = { text: G.oro ? '¡Oro! +2' : vuelta ? `¡${G.score - G.score % 5} puntos!` : '¡Punto!', t: now };
+      banner = { text: G.oro ? T('¡Oro! +2') : vuelta ? T('¡{n} puntos!', { n: G.score - G.score % 5 }) : T('¡Punto!'), t: now };
     } else {
       G.lives--; G.server = 'p';
       if (G.oro) burst(b.x, 0.5, '#c9a227', 6, 0.6);
       shake = reduceMotion ? 0 : 10; sfxLose(); vibrate(40);
-      banner = { text: G.lives > 0 ? (G.lives === 1 ? '¡Última vida!' : '¡Uy!') : '¡Se terminó!', t: now };
+      banner = { text: T(G.lives > 0 ? (G.lives === 1 ? '¡Última vida!' : '¡Uy!') : '¡Se terminó!'), t: now };
       if (G.lives <= 0) { G.done = true; if (CC && !G.demo) CC.morir(); }   // Geo se parte en pedazos
       if (G.duelo) barraDuelo();
     }
@@ -632,8 +714,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     b.held = server; b.heldT = server === 'r' ? 0.75 : 0.6;
     if (server === 'p') { b.x = G.px; b.y = SIDE + 3; }
     else { b.x = G.rx; b.y = SIDE + BR + 0.1; }
-    if (G.oro) { banner = { text: '¡Pelota de oro! Vale 2', t: performance.now() }; beep(1320, 0.1, 'triangle', 0.05, 1.2); }
-    else if (!G.demo && server === 'p') banner = { text: 'Tu saque', t: performance.now() };
+    if (G.oro) { banner = { text: T('¡Pelota de oro! Vale 2'), t: performance.now() }; beep(1320, 0.1, 'triangle', 0.05, 1.2); }
+    else if (!G.demo && server === 'p') banner = { text: T('Tu saque'), t: performance.now() };
   }
 
   // ---------- fin de partida ----------
@@ -653,19 +735,21 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (G.duelo) { G.duelo.mio = G.score; sala.enviar('fin', { p: G.score }); finDuelo(); return; }
     lastResult = r;
     const isRec = r ? r.record : G.score > before;
-    $('eTitle').textContent = isRec && G.score > 0 ? '¡Récord!' : G.score >= 15 ? '¡Partidazo!' : G.score >= 5 ? '¡Buen vóley!' : '¡Se terminó!';
+    $('eTitle').textContent = T(isRec && G.score > 0 ? '¡Récord!' : G.score >= 15 ? '¡Partidazo!' : G.score >= 5 ? '¡Buen vóley!' : '¡Se terminó!');
     $('eNum').textContent = fmtN(G.score);
-    $('eSub').textContent = `${G.score === 1 ? 'punto' : 'puntos'} · ${DIFF_NAMES[G.diff]} · rival nivel ${G.score + 1}`;
-    const prev = r && r.textoAnterior ? ` · antes: ${r.textoAnterior}` : '';
-    $('eSub2').textContent = `${G.smashes} ${G.smashes === 1 ? 'remate' : 'remates'} · rally más largo: ${G.maxRally} ${G.maxRally === 1 ? 'toque' : 'toques'}` +
-      (G.oros ? ` · ${G.oros} ${G.oros === 1 ? 'pelota' : 'pelotas'} de oro` : '') + (isRec ? prev : ` · récord: ${fmtN(bestFor(G.diff))}`);
+    $('eSub').textContent = T(G.score === 1 ? 'punto · {d} · rival nivel {n}' : 'puntos · {d} · rival nivel {n}', { d: DIFF_NAMES[G.diff], n: G.score + 1 });
+    const prev = r && r.textoAnterior ? ' · ' + T('antes: {p}', { p: r.textoAnterior }) : '';
+    $('eSub2').textContent = T(G.smashes === 1 ? '{n} remate' : '{n} remates', { n: G.smashes }) + ' · ' +
+      T(G.maxRally === 1 ? 'rally más largo: {n} toque' : 'rally más largo: {n} toques', { n: G.maxRally }) +
+      (G.oros ? ' · ' + T(G.oros === 1 ? '{n} pelota de oro' : '{n} pelotas de oro', { n: G.oros }) : '') +
+      (isRec ? prev : ' · ' + T('récord: {n}', { n: fmtN(bestFor(G.diff)) }));
     $('eXP').hidden = !r; if (r) $('eXP').textContent = `+${r.xp} XP`;
     $('eBadge').hidden = !(isRec && G.score > 0);
-    $('eBadge').textContent = r && r.primera ? 'Primer récord' : 'Nuevo récord';
+    $('eBadge').textContent = T(r && r.primera ? 'Primer récord' : 'Nuevo récord');
     const lg = r ? r.logros : [];
     $('eLogros').hidden = !lg.length;
     $('eLogros').innerHTML = '';
-    for (const n of lg) { const s = document.createElement('span'); s.textContent = '★ ' + n; $('eLogros').appendChild(s); }
+    for (const n of lg) { const s = document.createElement('span'); s.textContent = '★ ' + T(n); $('eLogros').appendChild(s); }
     showEnd();
     if (DIA) DIA.fin(r, $('btnAgain'), [$('difsFin').parentNode]);
   }
@@ -674,14 +758,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function renderMenu() {
     const best = bestFor(dif());
     $('mBest').textContent = best ? fmtN(best) : '—';
-    $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+    $('btnMute').textContent = T(muted ? 'Sonido: no' : 'Sonido: sí');
     renderAgain();
   }
   // en el fin, si elegiste otra dificultad, el botón principal lo dice
   function renderAgain() {
     if (DIA) return;
     const d = dif(), otra = G && !G.demo && state === 'end' && d !== G.diff;
-    $('againT').textContent = otra ? `▶ Jugar en ${DIFF_NAMES[d]}` : '↻ Otra vez';
+    $('againT').textContent = otra ? '▶ ' + T('Jugar en {d}', { d: DIFF_NAMES[d] }) : '↻ ' + T('Otra vez');
   }
   // R o ↻: partida nueva al instante; si cortás una con puntos, cuenta igual (XP y récord)
   function restart() {
@@ -692,7 +776,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (xp > 0) floats.push({ text: `+${xp} XP`, x: CW / 2, y: 4.5, t: performance.now(), big: true });
   }
   function leave(toGames) {
-    if (DUELO) { if (sala && confirm('¿Salir del duelo? Lo perdés.')) sala.salir(); return; }
+    if (DUELO) { if (sala && confirm(T('¿Salir del duelo? Lo perdés.'))) sala.salir(); return; }
     if (state === 'play' && G && !G.demo && !G.done && G.score > 0) settle();
     if (toGames && CC) CC.volver(); else showMenu();
   }
@@ -733,7 +817,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (el.children.length !== n) el.innerHTML = HEART.repeat(n);
     el.classList.toggle('muchas', n > 4);
     [...el.children].forEach((h, i) => h.classList.toggle('off', i >= G.lives));
-    el.setAttribute('aria-label', `${G.lives} ${G.lives === 1 ? 'vida' : 'vidas'}`);
+    el.setAttribute('aria-label', T(G.lives === 1 ? '{n} vida' : '{n} vidas', { n: G.lives }));
   }
 
   // ---------- entrada: se mantiene apretado ----------
@@ -807,7 +891,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   $('btnRestart').addEventListener('click', e => { if (e.detail === 0) restart(); }); // Enter/espacio con foco
   // sin la librería no hay pantalla de juegos ni ranking: los botones se esconden o vuelven al inicio
   $('btnBack').hidden = !CC; $('btnRank').hidden = !CC; $('btnRank2').hidden = !CC;
-  if (!CC) { $('btnHome').textContent = 'Inicio'; $('btnQuit').textContent = 'Menú'; }
+  if (!CC) { $('btnHome').textContent = T('Inicio'); $('btnQuit').textContent = T('Menú'); }
   $('btnBack').addEventListener('click', () => CC?.volver());
   $('btnHome').addEventListener('click', () => CC ? CC.volver() : showMenu());
   $('btnAgain').addEventListener('click', start);
@@ -822,8 +906,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     sel = CC.selectorDif($('difs'), { juego: 'voley', notas: NOTAS, alCambiar: () => { renderMenu(); if (state === 'menu') newRun(true, dif()); } });
     CC.selectorDif($('difsFin'), { juego: 'voley', compacto: true, alCambiar: () => renderMenu() });
     if (DIA) DIA.menu($('difs'));
-    CC.leyendaTeclas($('mTeclas'), { jugar: 'moverte', extra: [['R', 'reiniciar']] });
-    CC.leyendaTeclas($('eTeclas'), { jugar: 'moverte', extra: [['R', 'otra vez']] });
+    CC.leyendaTeclas($('mTeclas'), { jugar: T('moverte'), extra: [['R', T('reiniciar')]] });
+    CC.leyendaTeclas($('eTeclas'), { jugar: T('moverte'), extra: [['R', T('otra vez')]] });
   } else { $('difs').hidden = true; $('difBox').hidden = true; }
 
   // ---------- efectos ----------
@@ -864,7 +948,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const n = 3 - Math.floor(G.phaseT / 0.55);
       if (n !== G.count) {
         G.count = n;
-        if (n > 0) sfxTick(); else { sfxGo(); banner = { text: '¡Ya!', t: now }; G.phase = 'rally'; G.phaseT = 0; b.heldT = 0.15; }
+        if (n > 0) sfxTick(); else { sfxGo(); banner = { text: T('¡Ya!'), t: now }; G.phase = 'rally'; G.phaseT = 0; b.heldT = 0.15; }
       }
     }
 
@@ -954,7 +1038,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (sig !== hudCache) {
         hudCache = sig;
         $('hScore').textContent = fmtN(G.score);
-        $('hLevel').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + `${DIFF_NAMES[G.diff]} · Rival ${G.score + 1}`;
+        $('hLevel').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + T('{d} · Rival {n}', { d: DIFF_NAMES[G.diff], n: G.score + 1 });
         $('hLevel').classList.toggle('hot', G.skill >= G.D.smax - 1e-6);
         renderLives();
       }
@@ -1261,9 +1345,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     else {
       if (Du.mio != null) {   // terminaste vos: a esperar al otro
         state = 'duelo'; $('pad').classList.add('off');
-        CD.capa({ titulo: 'Esperando a ' + DUELO.rival.apodo, rival: DUELO.rival, cargando: true,
-          texto: `Hiciste <b>${Du.mio}</b> ${Du.mio === 1 ? 'punto' : 'puntos'}. ${quien} va por ${Du.el} y sigue jugando.`,
-          botones: [{ txt: 'Salir', accion: () => sala.salir() }] });
+        CD.capa({ titulo: T('Esperando a {n}', { n: DUELO.rival.apodo }), rival: DUELO.rival, cargando: true,
+          texto: T(Du.mio === 1 ? 'Hiciste <b>{n}</b> punto. {q} va por {e} y sigue jugando.' : 'Hiciste <b>{n}</b> puntos. {q} va por {e} y sigue jugando.',
+            { n: Du.mio, q: quien, e: Du.el }),
+          botones: [{ txt: T('Salir'), accion: () => sala.salir() }] });
       }
       return;
     }
@@ -1275,8 +1360,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const mio = Du.mio ?? G.score, suyo = Du.suyo ?? Du.el;
     CD.resultado(sala, {
       gane,
-      texto: gane === null ? `Empataron en <b>${mio}</b> puntos.`
-        : `Vos: <b>${mio}</b> ${mio === 1 ? 'punto' : 'puntos'} · ${quien}: <b>${suyo}</b>` + (Du.suyo == null || Du.mio == null ? ' (y seguía)' : ''),
+      texto: gane === null ? T('Empataron en <b>{n}</b> puntos.', { n: mio })
+        : T(mio === 1 ? 'Vos: <b>{n}</b> punto · {q}: <b>{s}</b>' : 'Vos: <b>{n}</b> puntos · {q}: <b>{s}</b>', { n: mio, q: quien, s: suyo }) +
+          (Du.suyo == null || Du.mio == null ? ' ' + T('(y seguía)') : ''),
     });
   }
   function conectarDuelo() {
@@ -1295,8 +1381,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         if (G && G.duelo) { G.duelo.fin = true; G.done = true; }
         state = 'duelo'; $('pad').classList.add('off');
         const quien = DUELO.rival.apodo.replace(/</g, '&lt;');
-        CD.resultado(sala, jugando ? { gane: true, sinRevancha: true, texto: `${quien} se fue del duelo.` }
-          : { titulo: 'Se fue', sinRevancha: true, texto: `${quien} salió del duelo.` });
+        CD.resultado(sala, jugando ? { gane: true, sinRevancha: true, texto: T('{q} se fue del duelo.', { q: quien }) }
+          : { titulo: T('Se fue'), sinRevancha: true, texto: T('{q} salió del duelo.', { q: quien }) });
       },
     });
     CD.esperandoRival(sala);

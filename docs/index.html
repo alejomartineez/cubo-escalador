@@ -351,17 +351,17 @@ button:disabled { cursor: not-allowed; opacity: .55; box-shadow: none; transform
 .item.leg { background: linear-gradient(160deg, #fff6d6, #f1e6ff 55%, #dcf7ff); }
 .item.leg[aria-pressed="true"] { background: linear-gradient(160deg, #ffe07a, #d8c4ff 55%, #a8eeff); }
 .item.leg::before {
-  content: "Legendaria"; position: absolute; top: -9px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+  content: var(--t-legendaria, "Legendaria"); position: absolute; top: -9px; left: 50%; transform: translateX(-50%); white-space: nowrap;
   padding: 1px 7px; border-radius: 99px; border: 2px solid var(--ink); background: #8f6bff; color: var(--paper); font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
 }
-.item.leg.exc::before { content: "Exclusiva"; background: #12142a; color: #5ff5ff; }
+.item.leg.exc::before { content: var(--t-exclusiva, "Exclusiva"); background: #12142a; color: #5ff5ff; }
 .item.leg .badge { top: auto; bottom: -8px; }
 .item.leg.lock { background: #2b2f4a; color: #c9cfe6; box-shadow: none; border-style: dashed; }
 .item.leg.lock canvas { opacity: 1; filter: brightness(0) invert(.18); }
 .item .formas-n { font-size: 10px; font-weight: 800; color: #c25a00; text-transform: uppercase; letter-spacing: .04em; }
 .formas-box { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 10px; padding: 14px 10px 10px;
   border: 2.5px dashed #ff8a1f; border-radius: 16px; background: #fff6ea; position: relative; }
-.formas-box::before { content: "Formas"; position: absolute; top: -10px; left: 14px; padding: 0 8px; background: #fff6ea; font-size: 11px; font-weight: 800; color: #c25a00; text-transform: uppercase; letter-spacing: .08em; }
+.formas-box::before { content: var(--t-formas, "Formas"); position: absolute; top: -10px; left: 14px; padding: 0 8px; background: #fff6ea; font-size: 11px; font-weight: 800; color: #c25a00; text-transform: uppercase; letter-spacing: .08em; }
 .item.titulo { min-height: 64px; justify-content: center; padding: 10px 6px; }
 .item.titulo span { font-family: var(--display); font-weight: 400; font-size: 15px; line-height: 1.1; text-align: center; }
 .seg.tres { grid-template-columns: repeat(4, auto); }
@@ -415,11 +415,11 @@ ol.pase li.listo .num svg { background: #6be0b5; }
 ol.pase li.lock .num svg { background: #fff; color: var(--muted); }
 ol.pase li.actual .num { background: var(--paper); color: var(--ink); animation: latido 1.2s ease-in-out infinite; }
 @keyframes latido { 0%, 100% { box-shadow: 0 0 0 3px #ff9a2e; } 50% { box-shadow: 0 0 0 8px rgba(255,154,46,.35); } }
-ol.pase li.actual .num::after { content: "Estás acá"; position: absolute; top: -18px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+ol.pase li.actual .num::after { content: var(--t-estas-aca, "Estás acá"); position: absolute; top: -18px; left: 50%; transform: translateX(-50%); white-space: nowrap;
   padding: 1px 6px; border-radius: 99px; background: var(--ink); color: var(--paper); font: 800 9.5px var(--body); letter-spacing: .04em; text-transform: uppercase; }
 ol.pase .premios { flex: 1; min-width: 0; display: flex; gap: 8px; flex-wrap: wrap; }
 ol.pase li.hito .premios { padding: 6px; border-radius: 16px; background: linear-gradient(135deg, #fff3c4, #ffd98a); border: 2.5px solid #e0a400; position: relative; }
-ol.pase li.hito .premios::before { content: "Hito"; position: absolute; top: -10px; right: 10px; padding: 0 7px; border-radius: 99px; background: #e0a400; border: 2px solid var(--ink);
+ol.pase li.hito .premios::before { content: var(--t-hito, "Hito"); position: absolute; top: -10px; right: 10px; padding: 0 7px; border-radius: 99px; background: #e0a400; border: 2px solid var(--ink);
   font: 800 10px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
 ol.pase li.hito .num { width: 52px; height: 52px; margin-left: -3px; font-size: 21px; }
 ol.pase .pr { position: relative; overflow: hidden; display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 150px; padding: 6px 10px 6px 6px; cursor: pointer; text-align: left;
@@ -707,7 +707,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       </div>
       <div class="grid" id="items"></div>
       <form class="codigo" id="codigoForm" autocomplete="off">
-        <label for="codigo">¿Tenés un<br>código?</label>
+        <label for="codigo" data-t>¿Tenés un<br>código?</label>
         <input id="codigo" maxlength="20" placeholder="CÓDIGO" spellcheck="false" autocapitalize="characters">
         <button type="submit">Canjear</button>
       </form>
@@ -774,7 +774,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       <div class="vs-local" id="vsLocal"></div>
       <h4 class="amigos-h">Online contra un amigo</h4>
       <div class="amigos" id="vsAmigos"></div>
-      <p class="tip">Online se juega en vivo: los dos a la vez, en Normal y con el mismo nivel, y ven cómo va el otro. Hay duelo de <b>Escalador</b>, <b>Pulseada</b> y <b>Vóley</b>.</p>
+      <p class="tip" data-t>Online se juega en vivo: los dos a la vez, en Normal y con el mismo nivel, y ven cómo va el otro. Hay duelo de <b>Escalador</b>, <b>Pulseada</b> y <b>Vóley</b>.</p>
     </div>
   </div>
 </div>
@@ -787,7 +787,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       <form class="amigo-form" id="amigoForm" autocomplete="off"><input id="amigoCodigo" maxlength="7" placeholder="CÓDIGO DE TU AMIGO" spellcheck="false" autocapitalize="characters" aria-label="Código de tu amigo"><button type="submit">Agregar</button></form>
       <p class="codigo-msg" id="amigoMsg" aria-live="polite"></p>
       <div class="amigos" id="amigos"></div>
-      <p class="tip">Cuando ponés el código de alguien le llega una <b>solicitud</b>: son amigos cuando la acepta. <b>Retar</b> lo invita a un 1v1 en vivo: juegan los dos a la vez y ven cómo va el otro. <b>Versus</b> compara sus mejores marcas en cada juego. En cada ranking podés tocar <b>👥 Amigos</b> para competir solo con ellos.</p>
+      <p class="tip" data-t>Cuando ponés el código de alguien le llega una <b>solicitud</b>: son amigos cuando la acepta. <b>Retar</b> lo invita a un 1v1 en vivo: juegan los dos a la vez y ven cómo va el otro. <b>Versus</b> compara sus mejores marcas en cada juego. En cada ranking podés tocar <b>👥 Amigos</b> para competir solo con ellos.</p>
     </div>
   </div>
 </div>
@@ -826,6 +826,11 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     <div class="card-h"><h3 id="tOpc">Opciones</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
     <div class="card-b">
       <div class="opcion">
+        <b>Idioma</b>
+        <div class="seg" role="group" aria-label="Idioma" id="opIdioma" translate="no"><button type="button" data-idioma="es" lang="es">Español</button><button type="button" data-idioma="en" lang="en">English</button></div>
+        <span>Language. Al principio sale el de tu dispositivo.</span>
+      </div>
+      <div class="opcion">
         <b>Sonido</b>
         <div class="seg" role="group" aria-label="Sonido" data-opcion="sonido"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div>
         <span>Vale para todos los juegos. Adentro de cada uno lo podés cambiar igual.</span>
@@ -840,7 +845,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
         <div class="seg" role="group" aria-label="Pantalla de inicio al entrar" data-opcion="portada"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div>
         <span>Si la sacás, entrás directo a los juegos. Para volver a verla tocá "TwoFingers" arriba.</span>
       </div>
-      <p class="creditos">Hecho por <a href="https://www.instagram.com/alejomartineez_/" target="_blank" rel="noopener">@alejomartineez_</a>. Música de Ritmo: Juhani Junkala (CC0).</p>
+      <p class="creditos" data-t>Hecho por <a href="https://www.instagram.com/alejomartineez_/" target="_blank" rel="noopener">@alejomartineez_</a>. Música de Ritmo: Juhani Junkala (CC0).</p>
     </div>
   </div>
 </div>
@@ -850,6 +855,246 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
 (() => {
   'use strict';
   const CC = window.CuboComun;
+  // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js). Los nombres de juegos, personajes,
+  // efectos, logros, etc. los traduce cubo-comun.js.
+  if (CC.textos) CC.textos({
+    // arriba
+    'Volver al menú principal': 'Back to main menu',
+    'Menú principal': 'Main menu',
+    'Instalar': 'Install',
+    'Tu personaje: cambiar personaje y efecto': 'Your character: change character and effect',
+    'Nivel {n}': 'Level {n}',
+    'Cambiar personaje': 'Change character',
+    '¡Nuevo!': 'New!',
+    'Nuevo': 'New',
+    '1v1: jugar contra alguien': '1v1: play against someone',
+    'Amigos: agregar, comparar y retar a un 1v1': 'Friends: add, compare and challenge to a 1v1',
+    '1 solicitud nueva': '1 new request',
+    '{n} solicitudes nuevas': '{n} new requests',
+    'Amigos': 'Friends',
+    // desafío del día
+    'Desafío del día': 'Daily challenge',
+    'Desafío: {juego}': 'Challenge: {juego}',
+    'Ranking del desafío de hoy': "Today's challenge leaderboard",
+    'Jugar': 'Play',
+    'Listo': 'Done',
+    'Te queda 1 intento': '1 attempt left',
+    'Te quedan {n} intentos': '{n} attempts left',
+    'tu mejor: {r}': 'your best: {r}',
+    'El mismo nivel para todos · {n} intentos': 'Same level for everyone · {n} attempts',
+    'Hecho · el próximo en {t}': 'Done · next one in {t}',
+    'Hecho ({r}) · el próximo en {t}': 'Done ({r}) · next one in {t}',
+    '1 día jugando el desafío': '1 day playing the challenge',
+    '{n} días seguidos jugando el desafío': '{n} days in a row playing the challenge',
+    '{nombre}: {texto} · quedan {t}': '{nombre}: {texto} · {t} left',
+    // pestañas y slides
+    'Juegos': 'Games',
+    'Secciones': 'Sections',
+    'Personaje': 'Character',
+    'Pase': 'Pass',
+    'Logros': 'Achievements',
+    'Ranking': 'Leaderboard',
+    '{juego}, juego {n} de {total}': '{juego}, game {n} of {total}',
+    'Juego anterior': 'Previous game',
+    'Juego siguiente': 'Next game',
+    'Tu récord': 'Your best',
+    'Ranking de {juego}': '{juego} leaderboard',
+    'Todos': 'All',
+    'Ver todos los juegos': 'See all games',
+    '{a} de {b} logros': '{a} of {b} achievements',
+    'Deslizá para ver los juegos': 'Swipe to see the games',
+    'Deslizá para ver los {n} juegos': 'Swipe to see the {n} games',
+    'Usá ← → para ver los {n} juegos': 'Use ← → to see the {n} games',
+    'Tocá el lado donde está el próximo escalón. Si errás, te mareás. Sprint 100, 30 segundos, Libre y el nuevo modo Lava: subí antes de que te alcance.':
+      'Tap the side where the next step is. Miss and you get dizzy. Sprint 100, 30 seconds, Free and the new Lava mode: climb before it catches you.',
+    'Movete entre carriles y esquivá los bloques que caen cada vez más rápido.': 'Move between lanes and dodge the blocks that fall faster and faster.',
+    'Tocá el lado de cada nota justo cuando llega a la línea, al ritmo de la música.': 'Tap the side of each note right as it hits the line, to the beat of the music.',
+    'Movete con ◀ ▶ y el cubo devuelve solo. Pegale con el borde para cruzarla. ¿Cuántos puntos le hacés al rival?':
+      'Move with ◀ ▶ and the cube hits it back on its own. Hit it with the edge to angle it. How many points can you score on your rival?',
+    'Mové tu paleta con ◀ ▶ y devolvé la pelota. Pegale con la punta para cruzarla. Contra la máquina o de a dos en el mismo celu.':
+      'Move your paddle with ◀ ▶ and send the ball back. Hit it with the tip to angle it. Against the computer or two players on the same phone.',
+    'Mantené ◀ o ▶ para doblar y pasá entre las banderas. Cada vez más rápido.': 'Hold ◀ or ▶ to turn and go between the flags. Faster and faster.',
+    'Alterná ◀ ▶ lo más rápido que puedas para ganarle la fuerza al rival. ¿Cuántos toques por segundo hacés?':
+      'Alternate ◀ ▶ as fast as you can to overpower your rival. How many taps per second can you do?',
+    // hoja del personaje
+    'Tu personaje': 'Your character',
+    'Cerrar': 'Close',
+    'Qué cambiar': 'What to change',
+    'Personajes': 'Characters',
+    'Efectos': 'Effects',
+    'Títulos': 'Titles',
+    'Brillos': 'Glows',
+    '¿Tenés un<br>código?': 'Got a<br>code?',
+    'CÓDIGO': 'CODE',
+    'Canjear': 'Redeem',
+    'Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 %, Extremo multiplica por 3 y Maestro por 4. Casi todo sale subiendo de nivel (en la pestaña Nivel ves qué da cada uno), algunas cosas con logros y las legendarias solo con secretos o códigos.':
+      'You earn XP in every game. The better you play, the more XP: a new best gives +25%, Extreme multiplies it by 3 and Master by 4. Almost everything unlocks by leveling up (the Pass tab shows what each level gives), some things with achievements, and legendaries only with secrets or codes.',
+    'Apodo en el ranking': 'Leaderboard nickname',
+    'Cambiar': 'Change',
+    'Temporada {n} · nivel {t}': 'Season {n} · level {t}',
+    'Código': 'Code',
+    'Secreto': 'Secret',
+    'Logro: {nombre}': 'Achievement: {nombre}',
+    'Legendarias · {a} de {b}': 'Legendaries · {a} of {b}',
+    '{n} formas': '{n} forms',
+    'Se desbloquea con el logro {nombre}.': 'Unlock it with the achievement {nombre}.',
+    'Se desbloquea con {req}.': 'Unlocks at {req}.',
+    'Se gana en el nivel {n}.': 'Unlocks at level {n}.',
+    'Se gana en: {req}.': 'Unlocks at: {req}.',
+    'Un brillo alrededor de tu personaje, sea cual sea. Sube de rango con tu nivel: bronce, plata, oro, platino, diamante y cósmico.':
+      'A glow around your character, whichever one you pick. It ranks up with your level: bronze, silver, gold, platinum, diamond and cosmic.',
+    'Brillo {nombre}': '{nombre} glow',
+    ' y ': ' and ',
+    'Ya tenías {nombres}.': 'You already had {nombres}.',
+    '¡Listo! Ya tenés {nombres} puesto.': 'Done! You now have {nombres} on.',
+    'Nivel {n} · {a} / {b} XP': 'Level {n} · {a} / {b} XP',
+    'En nivel {n} desbloqueás {cosas}.': 'At level {n} you unlock {cosas}.',
+    'Ya desbloqueaste todo lo que da el nivel.': "You've unlocked everything leveling up gives.",
+    'Todavía no tenés': "You don't have one yet",
+    'Legendaria': 'Legendary',
+    'Exclusiva': 'Exclusive',
+    'Formas': 'Forms',
+    // pase y temporada
+    'Camino': 'Path',
+    'Temporada': 'Season',
+    'Tu nivel': 'Your level',
+    'Camino de premios': 'Reward path',
+    'Subís de nivel jugando cualquier juego y cada nivel te da algo nuevo. Tocá un premio que ya tengas para usarlo. Lo que sale con logros o códigos lo ves en Personaje.':
+      'You level up by playing any game, and every level gives you something new. Tap a reward you already have to use it. Stuff from achievements or codes is in Character.',
+    'Efecto': 'Effect',
+    'Título': 'Title',
+    'Brillo': 'Glow',
+    '{n} días': '{n} days',
+    '¡Cumplida!': 'Done!',
+    'Temporada {n} · termina en {t}': 'Season {n} · ends in {t}',
+    'Nivel {n} de {max}': 'Level {n} of {max}',
+    '¡completa!': 'complete!',
+    'Doble XP en tu próxima partida': 'Double XP on your next game',
+    'Doble XP en tus próximas {n} partidas': 'Double XP on your next {n} games',
+    'Misiones del día': 'Daily missions',
+    'nuevas en {t}': 'new in {t}',
+    'De la semana': 'Weekly',
+    'Toda la XP que ganás suma a la temporada. Los premios de la temporada se ganan <b>solo mientras dura</b>: después quedan para quien los tiene. El nivel 30 es una legendaria exclusiva.':
+      'All the XP you earn counts toward the season. Season rewards can only be earned <b>while it lasts</b>: after that, whoever has them keeps them. Level 30 is an exclusive legendary.',
+    'Niveles {a}–{b}': 'Levels {a}–{b}',
+    'Completo': 'Complete',
+    'Bonus': 'Bonus',
+    'Doble XP · 3 partidas': 'Double XP · 3 games',
+    'Usando': 'Equipped',
+    'Legendaria · {tipo}': 'Legendary · {tipo}',
+    'Se gana en el nivel {n} de la temporada.': 'Unlocks at season level {n}.',
+    '¡Puesto!': 'Equipped!',
+    'Nivel {n} · ¡completo!': 'Level {n} · complete!',
+    'Niveles': 'Levels',
+    'Premios': 'Rewards',
+    'XP total': 'Total XP',
+    'Próximo premio · nivel {n}': 'Next reward · level {n}',
+    'Te faltan {n} XP': '{n} XP to go',
+    'Estás acá': 'You are here',
+    'Hito': 'Milestone',
+    // logros
+    'Bronce sale jugando, plata con práctica, oro es para muy buenos y diamante, para muy pocos. Cada logro da XP y algunos desbloquean personajes y efectos. Los secretos no dicen qué hay que hacer.':
+      "Bronze comes from playing, silver from practice, gold is for the really good and diamond for the very few. Every achievement gives XP and some unlock characters and effects. Secret ones don't tell you what to do.",
+    'General': 'General',
+    'Secretos': 'Secret',
+    'Logro secreto': 'Secret achievement',
+    'Seguí jugando para descubrirlo. Da algo legendario.': 'Keep playing to discover it. It gives something legendary.',
+    'Premio: {lista}.': 'Reward: {lista}.',
+    // 1v1
+    'En este dispositivo': 'On this device',
+    'Online contra un amigo': 'Online vs. a friend',
+    'Online se juega en vivo: los dos a la vez, en Normal y con el mismo nivel, y ven cómo va el otro. Hay duelo de <b>Escalador</b>, <b>Pulseada</b> y <b>Vóley</b>.':
+      "Online is live: you both play at the same time, on Normal with the same level, and see how the other one's doing. There are duels in <b>Climber</b>, <b>Arm Wrestling</b> and <b>Volley</b>.",
+    'Paleta de a dos': 'Two-player Paddle',
+    'Uno de cada lado de la pantalla. Gana el primero que llega a 7.': 'One on each side of the screen. First to 7 wins.',
+    'Para jugar online necesitás un apodo. Ponelo en cualquier ranking y después agregá a tus amigos con su código.':
+      'To play online you need a nickname. Set it on any leaderboard, then add your friends with their code.',
+    'Todavía no tenés amigos para retar.<br>Agregalos con su código en <b>Amigos</b>.': 'No friends to challenge yet.<br>Add them with their code in <b>Friends</b>.',
+    'Ir a Amigos': 'Go to Friends',
+    'Retar': 'Challenge',
+    'Sin conexión': 'Offline',
+    'Para retar a un amigo hace falta internet.': 'You need internet to challenge a friend.',
+    // amigos
+    'Tu código de amigo': 'Your friend code',
+    'Pasáselo para que te mande una solicitud': 'Share it so they can send you a request',
+    'Buscando tu código…': 'Getting your code…',
+    'Para tener tu código de amigo, primero elegí un apodo en cualquier ranking.': 'To get your friend code, first pick a nickname on any leaderboard.',
+    'Copiar': 'Copy',
+    'CÓDIGO DE TU AMIGO': "FRIEND'S CODE",
+    'Código de tu amigo': "Your friend's code",
+    'Agregar': 'Add',
+    'Cuando ponés el código de alguien le llega una <b>solicitud</b>: son amigos cuando la acepta. <b>Retar</b> lo invita a un 1v1 en vivo: juegan los dos a la vez y ven cómo va el otro. <b>Versus</b> compara sus mejores marcas en cada juego. En cada ranking podés tocar <b>👥 Amigos</b> para competir solo con ellos.':
+      "When you enter someone's code, they get a <b>request</b>: you're friends once they accept. <b>Challenge</b> invites them to a live 1v1: you both play at the same time and see how the other one's doing. <b>Versus</b> compares your best scores in each game. On any leaderboard, tap <b>👥 Friends</b> to compete only with them.",
+    'Amigo': 'Friend',
+    'Te quieren agregar': 'Friend requests',
+    'Quiere ser tu amigo': 'Wants to be your friend',
+    '¡{apodo} ya es tu amigo!': '{apodo} is now your friend!',
+    'Esa solicitud ya no está.': 'That request is gone.',
+    'Aceptar': 'Accept',
+    'Rechazar': 'Decline',
+    'Tus amigos': 'Your friends',
+    'Todavía no tenés amigos.<br>Pedile a alguien su código y ponelo arriba: le llega tu solicitud.':
+      "No friends yet.<br>Ask someone for their code and enter it above: they'll get your request.",
+    'Versus': 'Versus',
+    'Quitar amigo': 'Remove friend',
+    '¿Quitar a {apodo} de tus amigos?': 'Remove {apodo} from your friends?',
+    'Esperando que acepten': 'Waiting for them to accept',
+    'Solicitud enviada': 'Request sent',
+    'Cancelar': 'Cancel',
+    'Cancelaste la solicitud a {apodo}.': 'You canceled your request to {apodo}.',
+    'Cancelar la solicitud a {apodo}': 'Cancel the request to {apodo}',
+    '¡Agregame en TwoFingers! Mi código de amigo es {c}.': 'Add me on TwoFingers! My friend code is {c}.',
+    'Copiado. Pegáselo a tu amigo.': 'Copied. Paste it to your friend.',
+    'Buscando…': 'Searching…',
+    'Le mandaste una solicitud a {apodo}. Cuando la acepte, aparece en tus amigos.': "You sent {apodo} a request. Once they accept, they'll show up in your friends.",
+    // versus
+    'Cargando…': 'Loading…',
+    'No se pudo cargar. Probá de nuevo en un rato.': "Couldn't load. Try again in a bit.",
+    'Vos': 'You',
+    'Todavía no jugaron el mismo modo. Jugá uno que haya jugado {apodo} (o al revés) para empezar a sumar.':
+      "You haven't played the same mode yet. Play one {apodo} has played (or the other way around) to start scoring.",
+    '¡Le vas ganando a {apodo}! Cada modo que jugaron los dos es un punto.': "You're beating {apodo}! Each mode you've both played is a point.",
+    '{apodo} te va ganando. Superá sus marcas para dar vuelta el marcador.': '{apodo} is beating you. Top their scores to turn it around.',
+    'Van empatados. Cada modo que jugaron los dos es un punto.': "You're tied. Each mode you've both played is a point.",
+    'Modo': 'Mode',
+    '¡Jugalo!': 'Play it!',
+    // ranking / todos
+    'Todos los juegos': 'All games',
+    'Jugás como {apodo}. Elegí un juego para ver el ranking online.': 'You play as {apodo}. Pick a game to see the online leaderboard.',
+    'Elegí un juego para ver el ranking. Poné tu apodo para aparecer.': 'Pick a game to see the leaderboard. Set a nickname to show up on it.',
+    'Elegí un juego para ir directo.': 'Pick a game to jump right in.',
+    'Sin jugar': 'Not played',
+    'Récord: {r}': 'Best: {r}',
+    // instalar
+    '¡Instalado!': 'Installed!',
+    'Ya lo podés abrir sin internet.': 'You can now open it offline.',
+    'Instalalo en tu iPhone': 'Install it on your iPhone',
+    'Tocá Compartir y después "Agregar a inicio". Funciona sin internet.': 'Tap Share, then "Add to Home Screen". Works offline.',
+    // portada y opciones
+    'Juegos con solo dos flechas': 'Games with just two arrows',
+    '{n} juegos · solo dos flechas': '{n} games · just two arrows',
+    'Opciones': 'Options',
+    'Seguime': 'Follow me',
+    'Idioma': 'Language',
+    'Language. Al principio sale el de tu dispositivo.': "Idioma. It starts in your device's language.",
+    'Sonido': 'Sound',
+    'Sí': 'Yes',
+    'Vale para todos los juegos. Adentro de cada uno lo podés cambiar igual.': 'Applies to every game. You can still change it inside each one.',
+    'Vibración': 'Vibration',
+    'En el celu, cuando tocás, chocás o ganás algo.': 'On your phone, when you tap, crash or win something.',
+    'Esta pantalla al entrar': 'This screen on start',
+    'Pantalla de inicio al entrar': 'Start screen on launch',
+    'Si la sacás, entrás directo a los juegos. Para volver a verla tocá "TwoFingers" arriba.': 'If you turn it off, you go straight to the games. To see it again, tap "TwoFingers" at the top.',
+    'Hecho por <a href="https://www.instagram.com/alejomartineez_/" target="_blank" rel="noopener">@alejomartineez_</a>. Música de Ritmo: Juhani Junkala (CC0).':
+      'Made by <a href="https://www.instagram.com/alejomartineez_/" target="_blank" rel="noopener">@alejomartineez_</a>. Rhythm music: Juhani Junkala (CC0).',
+  });
+  const T = CC.T || ((s, v) => (v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s));
+  // como T, pero los valores van tal cual (apodos que escribió la gente: no se traducen aunque coincidan con una clave)
+  const Tsin = (s, v) => T(s).replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m));
+  const LOCALE = CC.LOCALE || 'es-AR';
+  // los rótulos que pone el CSS (content: …) no pasan por el DOM
+  for (const [v, s] of [['--t-legendaria', 'Legendaria'], ['--t-exclusiva', 'Exclusiva'], ['--t-formas', 'Formas'], ['--t-estas-aca', 'Estás acá'], ['--t-hito', 'Hito']])
+    document.documentElement.style.setProperty(v, JSON.stringify(T(s)));
   const $ = id => document.getElementById(id);
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const tactil = matchMedia('(hover: none)').matches;
@@ -1017,13 +1262,13 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
 
   const DIBUJOS = { escalador: ilEscalador, lluvia: ilLluvia, ritmo: ilRitmo, voley: ilVoley, paleta: ilPaleta, esqui: ilEsqui, pulseada: ilPulseada };
   const DESC = {
-    escalador: 'Tocá el lado donde está el próximo escalón. Si errás, te mareás. Sprint 100, 30 segundos, Libre y el nuevo modo Lava: subí antes de que te alcance.',
-    lluvia: 'Movete entre carriles y esquivá los bloques que caen cada vez más rápido.',
-    ritmo: 'Tocá el lado de cada nota justo cuando llega a la línea, al ritmo de la música.',
-    voley: 'Movete con ◀ ▶ y el cubo devuelve solo. Pegale con el borde para cruzarla. ¿Cuántos puntos le hacés al rival?',
-    paleta: 'Mové tu paleta con ◀ ▶ y devolvé la pelota. Pegale con la punta para cruzarla. Contra la máquina o de a dos en el mismo celu.',
-    esqui: 'Mantené ◀ o ▶ para doblar y pasá entre las banderas. Cada vez más rápido.',
-    pulseada: 'Alterná ◀ ▶ lo más rápido que puedas para ganarle la fuerza al rival. ¿Cuántos toques por segundo hacés?',
+    escalador: T('Tocá el lado donde está el próximo escalón. Si errás, te mareás. Sprint 100, 30 segundos, Libre y el nuevo modo Lava: subí antes de que te alcance.'),
+    lluvia: T('Movete entre carriles y esquivá los bloques que caen cada vez más rápido.'),
+    ritmo: T('Tocá el lado de cada nota justo cuando llega a la línea, al ritmo de la música.'),
+    voley: T('Movete con ◀ ▶ y el cubo devuelve solo. Pegale con el borde para cruzarla. ¿Cuántos puntos le hacés al rival?'),
+    paleta: T('Mové tu paleta con ◀ ▶ y devolvé la pelota. Pegale con la punta para cruzarla. Contra la máquina o de a dos en el mismo celu.'),
+    esqui: T('Mantené ◀ o ▶ para doblar y pasá entre las banderas. Cada vez más rápido.'),
+    pulseada: T('Alterná ◀ ▶ lo más rápido que puedas para ganarle la fuerza al rival. ¿Cuántos toques por segundo hacés?'),
   };
   const JUEGOS = CC.JUEGOS.map(j => ({ ...j, dibujo: DIBUJOS[j.id], desc: DESC[j.id] }));
 
@@ -1037,18 +1282,18 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
 
   JUEGOS.forEach((g, i) => {
     const s = document.createElement('section');
-    s.className = 'slide'; s.id = g.id; s.setAttribute('aria-label', `${g.nombre}, juego ${i + 1} de ${JUEGOS.length}`);
-    s.innerHTML = `<div class="head"><h2>${g.nombre}${g.nuevo ? '<span class="nuevo">Nuevo</span>' : ''}</h2></div>
+    s.className = 'slide'; s.id = g.id; s.setAttribute('aria-label', T('{juego}, juego {n} de {total}', { juego: g.nombre, n: i + 1, total: JUEGOS.length }));
+    s.innerHTML = `<div class="head"><h2>${g.nombre}${g.nuevo ? `<span class="nuevo">${T('Nuevo')}</span>` : ''}</h2></div>
       <div class="pager">
-        <button class="arrow" type="button" data-ir="-1" aria-label="Juego anterior">${ICO_PREV}</button>
+        <button class="arrow" type="button" data-ir="-1" aria-label="${T('Juego anterior')}">${ICO_PREV}</button>
         <div class="dots" aria-hidden="true"></div>
-        <button class="arrow" type="button" data-ir="1" aria-label="Juego siguiente">${ICO_NEXT}</button>
+        <button class="arrow" type="button" data-ir="1" aria-label="${T('Juego siguiente')}">${ICO_NEXT}</button>
       </div>
       <div class="stage"><canvas aria-hidden="true"></canvas></div>
       <div class="info"><p>${g.desc}</p><div class="row">
-        <span class="rec">Tu récord<b data-rec>—</b><small data-logros></small></span>
-        <button class="icon-btn" type="button" data-rank aria-label="Ranking de ${g.nombre}">${ICO_RANK}</button>
-        <button class="play" type="button">${ICO_PLAY}Jugar</button></div></div>`;
+        <span class="rec">${T('Tu récord')}<b data-rec>—</b><small data-logros></small></span>
+        <button class="icon-btn" type="button" data-rank aria-label="${T('Ranking de {juego}', { juego: g.nombre })}">${ICO_RANK}</button>
+        <button class="play" type="button">${ICO_PLAY}${T('Jugar')}</button></div></div>`;
     s.querySelector('.play').addEventListener('click', () => jugar(i));
     s.querySelector('canvas').addEventListener('click', () => jugar(i));
     s.querySelector('[data-rank]').addEventListener('click', () => CC.verRanking({ juego: g.id }));
@@ -1061,7 +1306,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   // "Ver todos" al lado de los puntos, solo en el primer pager visible de cada slide
   for (const p of slides.querySelectorAll('.pager')) {
     const b = document.createElement('button');
-    b.type = 'button'; b.className = 'all'; b.innerHTML = `${ICO_ALL}<span>Todos</span>`; b.setAttribute('aria-label', 'Ver todos los juegos');
+    b.type = 'button'; b.className = 'all'; b.innerHTML = `${ICO_ALL}<span>${T('Todos')}</span>`; b.setAttribute('aria-label', T('Ver todos los juegos'));
     b.addEventListener('click', () => abrirJuegos('todos'));
     p.insertBefore(b, p.lastElementChild);
   }
@@ -1072,19 +1317,19 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   function pintarDiario() {
     if (!CC.diario) { $('diario').hidden = true; return; }
     const d = CC.diario();
-    $('dTit').textContent = `📅 Desafío: ${d.nombre}`;
+    $('dTit').textContent = '📅 ' + T('Desafío: {juego}', { juego: d.nombre });
     $('dSub').textContent = d.quedan
-      ? (d.intentos ? `Te ${d.quedan === 1 ? 'queda 1 intento' : `quedan ${d.quedan} intentos`}` + (d.texto ? ` · tu mejor: ${d.texto}` : '') : `El mismo nivel para todos · ${d.maxIntentos} intentos`)
-      : `Hecho${d.texto ? ` (${d.texto})` : ''} · el próximo en ${CC.faltaTexto(d.quedanMs)}`;
+      ? (d.intentos ? (d.quedan === 1 ? T('Te queda 1 intento') : T('Te quedan {n} intentos', { n: d.quedan })) + (d.texto ? ' · ' + T('tu mejor: {r}', { r: d.texto }) : '') : T('El mismo nivel para todos · {n} intentos', { n: d.maxIntentos }))
+      : d.texto ? T('Hecho ({r}) · el próximo en {t}', { r: d.texto, t: CC.faltaTexto(d.quedanMs) }) : T('Hecho · el próximo en {t}', { t: CC.faltaTexto(d.quedanMs) });
     $('dRacha').hidden = !d.racha;
     $('dRacha').textContent = `🔥 ${d.racha}`;
-    $('dRacha').title = `${d.racha} ${d.racha === 1 ? 'día' : 'días seguidos'} jugando el desafío`;
-    $('dJugar').innerHTML = d.quedan ? `${ICO_PLAY}Jugar` : '✓ Listo';
+    $('dRacha').title = d.racha === 1 ? T('1 día jugando el desafío') : T('{n} días seguidos jugando el desafío', { n: d.racha });
+    $('dJugar').innerHTML = d.quedan ? `${ICO_PLAY}${T('Jugar')}` : '✓ ' + T('Listo');
     $('dJugar').disabled = !d.quedan;
     $('diario').style.background = d.quedan ? '' : '#eef7e8';
     const ev = CC.eventoXP && CC.eventoXP();
     $('dEv').hidden = !ev;
-    if (ev) $('dEv').textContent = `⚡ ${ev.nombre}: ${ev.texto} · quedan ${CC.faltaTexto(ev.quedanMs)}`;
+    if (ev) $('dEv').textContent = '⚡ ' + T('{nombre}: {texto} · quedan {t}', { nombre: ev.nombre, texto: ev.texto, t: CC.faltaTexto(ev.quedanMs) });
   }
   $('dJugar').addEventListener('click', () => { const d = CC.diario(); if (d.quedan) location.href = d.archivo; });
   $('dRank').addEventListener('click', () => CC.verRanking({ juego: CC.diario().juego, diario: true }));
@@ -1125,7 +1370,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   // ---------- ayuda de la primera vez ----------
   function ocultarCoach() { if (!$('coach').hidden) { $('coach').hidden = true; guardado('cubo-hub-coach', '1'); } }
   if (!guardado('cubo-hub-coach')) {
-    $('coachTxt').textContent = tactil ? `Deslizá para ver los ${JUEGOS.length} juegos` : `Usá ← → para ver los ${JUEGOS.length} juegos`;
+    $('coachTxt').textContent = T(tactil ? 'Deslizá para ver los {n} juegos' : 'Usá ← → para ver los {n} juegos', { n: JUEGOS.length });
     $('coach').hidden = false;
     // los 7 segundos cuentan desde que se cierra la portada
     setTimeout(function esperar() { if (!$('portada').hidden) setTimeout(esperar, 500); else setTimeout(ocultarCoach, 7000); });
@@ -1140,7 +1385,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   }
   function pintarPerfil() {
     const p = CC.perfil();
-    $('meLvl').textContent = 'Nivel ' + p.nivel;
+    $('meLvl').textContent = T('Nivel {n}', { n: p.nivel });
     $('meBar').style.width = Math.round(100 * p.enNivel / p.paraSiguiente) + '%';
     const n = CC.nuevos().length;
     $('meBadge').hidden = !n; $('tabBadge').hidden = !n; $('tabBadge').textContent = n;
@@ -1148,7 +1393,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       const s = slides.children[i];
       s.querySelector('[data-rec]').textContent = mejorTexto(g, p);
       const ls = CC.LOGROS.filter(l => l.juego === g.id);
-      s.querySelector('[data-logros]').textContent = ls.length ? `${ls.filter(l => p.logros[l.id]).length} de ${ls.length} logros` : '';
+      s.querySelector('[data-logros]').textContent = ls.length ? T('{a} de {b} logros', { a: ls.filter(l => p.logros[l.id]).length, b: ls.length }) : '';
     });
   }
 
@@ -1187,11 +1432,16 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   // personaje
   let seg = 'skins', formaAbierta = null;
   function requisito(it) {
-    if (it.temporada) return `Temporada ${it.temporada} · nivel ${it.tier}`;
+    if (it.temporada) return T('Temporada {n} · nivel {t}', { n: it.temporada, t: it.tier });
     const lg = it.logro && CC.LOGROS.find(x => x.id === it.logro);
-    if (it.legendaria && (it.codigo || !lg || lg.oculto)) return it.codigo ? 'Código' : 'Secreto';
-    if (it.logro) { const l = CC.LOGROS.find(x => x.id === it.logro); return 'Logro: ' + (l ? l.nombre : it.logro); }
-    return 'Nivel ' + it.nivel;
+    if (it.legendaria && (it.codigo || !lg || lg.oculto)) return it.codigo ? T('Código') : T('Secreto');
+    if (it.logro) return T('Logro: {nombre}', { nombre: lg ? lg.nombre : it.logro });
+    return T('Nivel {n}', { n: it.nivel });
+  }
+  // el aviso de algo bloqueado que no es legendario («Se desbloquea con el logro X.», «Se desbloquea con Nivel 5.»)
+  function comoSeDesbloquea(it) {
+    if (it.logro && !it.temporada) { const l = CC.LOGROS.find(x => x.id === it.logro); return T('Se desbloquea con el logro {nombre}.', { nombre: l ? l.nombre : it.logro }); }
+    return T('Se desbloquea con {req}.', { req: requisito(it) });
   }
   function pintarItems() {
     const p = CC.perfil(), box = $('items'), nuevos = CC.nuevos();
@@ -1217,7 +1467,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       const nuevo = nuevos.includes(seg === 'skins' ? it.id : 'fx:' + it.id);
       if (it.legendaria && !conTitulo) {
         conTitulo = true;
-        encabezado(`Legendarias · ${lista.filter(i => i.legendaria && CC.libre(i)).length} de ${lista.filter(i => i.legendaria).length}`);
+        encabezado(T('Legendarias · {a} de {b}', { a: lista.filter(i => i.legendaria && CC.libre(i)).length, b: lista.filter(i => i.legendaria).length }));
       }
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'item' + (libre ? '' : ' lock') + (it.legendaria ? ' leg' : '') + (it.exclusiva ? ' exc' : '');
@@ -1225,12 +1475,12 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       if (!libre) b.setAttribute('aria-disabled', 'true');
       const nombre = it.legendaria && !libre ? '???' : it.nombre;
       const nf = (it.formas || []).length;
-      b.innerHTML = `<canvas width="120" height="128"></canvas><span>${nombre}</span>${libre ? '' : `<small>${requisito(it)}</small>`}${nf ? `<span class="formas-n">${nf} formas</span>` : ''}${nuevo ? '<span class="badge">Nuevo</span>' : ''}`;
+      b.innerHTML = `<canvas width="120" height="128"></canvas><span>${nombre}</span>${libre ? '' : `<small>${requisito(it)}</small>`}${nf ? `<span class="formas-n">${T('{n} formas', { n: nf })}</span>` : ''}${nuevo ? `<span class="badge">${T('Nuevo')}</span>` : ''}`;
       it._cv = b.querySelector('canvas');
       b.addEventListener('click', () => {
         if (nf && libre) { formaAbierta = formaAbierta === it.id ? null : it.id; pintarItems(); return; }
         if (!libre) {
-          const txt = it.legendaria ? it.pista : `Se desbloquea con ${requisito(it).replace('Logro: ', 'el logro ')}.`;
+          const txt = it.legendaria ? it.pista : comoSeDesbloquea(it);
           CC.avisar(`<div><b>${nombre}</b><span>${txt}</span></div>`, 3000); return;
         }
         if (seg === 'skins' ? CC.elegirSkin(it.id) : CC.elegirEfecto(it.id)) {
@@ -1246,11 +1496,11 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
           const ok = CC.libre(f), fbtn = document.createElement('button');
           fbtn.type = 'button'; fbtn.className = 'item' + (ok ? '' : ' lock');
           fbtn.setAttribute('aria-pressed', String(p.skin.id === f.id));
-          fbtn.innerHTML = `<canvas width="120" height="128"></canvas><span></span>${ok ? '' : `<small>Nivel ${f.nivel}</small>`}`;
+          fbtn.innerHTML = `<canvas width="120" height="128"></canvas><span></span>${ok ? '' : `<small>${T('Nivel {n}', { n: f.nivel })}</small>`}`;
           fbtn.querySelector('span').textContent = f.nombre;
           f._cv = fbtn.querySelector('canvas');
           fbtn.addEventListener('click', () => {
-            if (!ok) { CC.avisar(`<div><b>${f.nombre}</b><span>Se gana en el nivel ${f.nivel}.</span></div>`, 2600); return; }
+            if (!ok) { CC.avisar(`<div><b>${f.nombre}</b><span>${T('Se gana en el nivel {n}.', { n: f.nivel })}</span></div>`, 2600); return; }
             if (CC.elegirSkin(f.id)) { CC.vibrar(10); pintarPersonaje(); }
           });
           fb.appendChild(fbtn);
@@ -1262,17 +1512,17 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   // brillos de nivel: se suman a cualquier personaje
   function pintarMarcos(p, box) {
     const h = document.createElement('p'); h.className = 'tip'; h.style.gridColumn = '1 / -1';
-    h.textContent = 'Un brillo alrededor de tu personaje, sea cual sea. Sube de rango con tu nivel: bronce, plata, oro, platino, diamante y cósmico.';
+    h.textContent = T('Un brillo alrededor de tu personaje, sea cual sea. Sube de rango con tu nivel: bronce, plata, oro, platino, diamante y cósmico.');
     box.appendChild(h);
     for (const it of CC.MARCOS) {
       const libre = CC.libre(it), b = document.createElement('button');
       b.type = 'button'; b.className = 'item' + (libre ? '' : ' lock');
       b.setAttribute('aria-pressed', String(p.marco && p.marco.id === it.id));
-      b.innerHTML = `<canvas width="120" height="128"></canvas><span></span>${libre ? '' : `<small>Nivel ${it.nivel}</small>`}`;
+      b.innerHTML = `<canvas width="120" height="128"></canvas><span></span>${libre ? '' : `<small>${T('Nivel {n}', { n: it.nivel })}</small>`}`;
       b.querySelector('span').textContent = it.nombre;
       it._cv = b.querySelector('canvas');
       b.addEventListener('click', () => {
-        if (!libre) { CC.avisar(`<div><b>Brillo ${it.nombre}</b><span>Se gana en el nivel ${it.nivel}.</span></div>`, 2600); return; }
+        if (!libre) { CC.avisar(`<div><b>${T('Brillo {nombre}', { nombre: it.nombre })}</b><span>${T('Se gana en el nivel {n}.', { n: it.nivel })}</span></div>`, 2600); return; }
         if (CC.elegirMarco(it.id)) { CC.vibrar(10); pintarPersonaje(); }
       });
       box.appendChild(b);
@@ -1282,13 +1532,13 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     const tempActual = CC.temporada ? CC.temporada().n : 0;
     for (const it of CC.TITULOS) {
       if (it.temporada && it.temporada > tempActual && !CC.libre(it)) continue;
-      const libre = CC.libre(it), b = document.createElement('button'), req = it.temporada ? `Temporada ${it.temporada} · nivel ${it.tier}` : `Nivel ${it.nivel}`;
+      const libre = CC.libre(it), b = document.createElement('button'), req = it.temporada ? T('Temporada {n} · nivel {t}', { n: it.temporada, t: it.tier }) : T('Nivel {n}', { n: it.nivel });
       b.type = 'button'; b.className = 'item titulo' + (libre ? '' : ' lock');
       b.setAttribute('aria-pressed', String(p.titulo.id === it.id));
       b.innerHTML = `<span></span>${libre ? '' : `<small>${req}</small>`}`;
       b.querySelector('span').textContent = it.nombre;
       b.addEventListener('click', () => {
-        if (!libre) { CC.avisar(`<div><b>${it.nombre}</b><span>Se gana en: ${req}.</span></div>`, 2600); return; }
+        if (!libre) { CC.avisar(`<div><b>${it.nombre}</b><span>${T('Se gana en: {req}.', { req })}</span></div>`, 2600); return; }
         if (CC.elegirTitulo(it.id)) { CC.vibrar(10); pintarPersonaje(); }
       });
       box.appendChild(b);
@@ -1297,8 +1547,8 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   $('codigoForm').addEventListener('submit', async e => {
     e.preventDefault();
     const r = await CC.canjear($('codigo').value);
-    const nombres = r.ok ? r.items.map(i => i.nombre).join(' y ') : '';
-    $('codigoMsg').textContent = r.ok ? (r.ya ? `Ya tenías ${nombres}.` : `¡Listo! Ya tenés ${nombres} puesto.`) : r.msg;
+    const nombres = r.ok ? r.items.map(i => i.nombre).join(T(' y ')) : '';
+    $('codigoMsg').textContent = r.ok ? (r.ya ? T('Ya tenías {nombres}.', { nombres }) : T('¡Listo! Ya tenés {nombres} puesto.', { nombres })) : r.msg;
     if (r.ok) {
       $('codigo').value = ''; $('codigo').blur();
       if (r.skin) CC.elegirSkin(r.skin.id);
@@ -1309,11 +1559,11 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   function pintarPersonaje() {
     const p = CC.perfil();
     $('bigName').textContent = p.skin.nombre + (p.efecto.id !== 'ninguno' ? ' · ' + p.efecto.nombre : '');
-    $('bigLvl').textContent = `Nivel ${p.nivel} · ${p.enNivel} / ${p.paraSiguiente} XP`;
+    $('bigLvl').textContent = T('Nivel {n} · {a} / {b} XP', { n: p.nivel, a: p.enNivel, b: p.paraSiguiente });
     $('bigBar').style.width = Math.round(100 * p.enNivel / p.paraSiguiente) + '%';
     const todos = [...CC.SKINS, ...CC.EFECTOS].filter(i => !i.logro && !i.codigo && i.nivel > p.nivel).sort((a, b) => a.nivel - b.nivel);
-    $('bigNext').textContent = todos.length ? `En nivel ${todos[0].nivel} desbloqueás ${todos.filter(i => i.nivel === todos[0].nivel).map(i => i.nombre).join(' y ')}.` : 'Ya desbloqueaste todo lo que da el nivel.';
-    $('apodoTxt').textContent = p.apodo ? `${p.apodo} · ${p.titulo.nombre}` : 'Todavía no tenés';
+    $('bigNext').textContent = todos.length ? T('En nivel {n} desbloqueás {cosas}.', { n: todos[0].nivel, cosas: todos.filter(i => i.nivel === todos[0].nivel).map(i => i.nombre).join(T(' y ')) }) : T('Ya desbloqueaste todo lo que da el nivel.');
+    $('apodoTxt').textContent = p.apodo ? `${p.apodo} · ${p.titulo.nombre}` : T('Todavía no tenés');
     CC.estilos();
     $('apodoTxt').className = p.apodo ? CC.claseNombre(p.skin) : '';
     pintarItems();
@@ -1335,7 +1585,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   $('apodoBtn').addEventListener('click', () => CC.verRanking({ juego: JUEGOS[actual].id, alCerrar: pintarPersonaje }));
 
   // camino de nivel: qué da cada nivel
-  const TIPO = { skin: 'Personaje', efecto: 'Efecto', titulo: 'Título', marco: 'Brillo' };
+  const TIPO = { skin: T('Personaje'), efecto: T('Efecto'), titulo: T('Título'), marco: T('Brillo') };
   const ICO_LISTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
   const ICO_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
   let paseCvs = [];
@@ -1355,54 +1605,54 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   // la hoja del pase tiene dos caminos: la temporada (6 semanas, con misiones) y el de nivel 1 a 100
   let caminoPase = CC.temporada ? 'temporada' : 'nivel';
   for (const b of document.querySelectorAll('[data-ps]')) b.addEventListener('click', () => { caminoPase = b.dataset.ps; abrirPase(); });
-  const diasTexto = ms => (ms >= 2 * 864e5 ? `${Math.ceil(ms / 864e5)} días` : CC.faltaTexto(ms));
+  const diasTexto = ms => (ms >= 2 * 864e5 ? T('{n} días', { n: Math.ceil(ms / 864e5) }) : CC.faltaTexto(ms));
   function filaMision(x) {
     const el = document.createElement('div');
     el.className = 'mi' + (x.hecha ? ' ok' : '');
-    el.innerHTML = `<span class="mi-t"></span><span class="mi-xp">+${x.xp} XP</span><span class="mi-b"><span><i style="width:${Math.round(100 * x.prog / x.meta)}%"></i></span>${x.hecha ? '¡Cumplida!' : `${x.prog.toLocaleString('es-AR')} / ${x.meta.toLocaleString('es-AR')}`}</span>`;
+    el.innerHTML = `<span class="mi-t"></span><span class="mi-xp">+${x.xp} XP</span><span class="mi-b"><span><i style="width:${Math.round(100 * x.prog / x.meta)}%"></i></span>${x.hecha ? T('¡Cumplida!') : `${x.prog.toLocaleString(LOCALE)} / ${x.meta.toLocaleString(LOCALE)}`}</span>`;
     el.querySelector('.mi-t').textContent = x.txt;
     return el;
   }
   function pintarTemporada() {
-    const T = CC.temporada(), M = CC.misiones(), p = CC.perfil(), box = $('tempBox');
-    box.innerHTML = `<div class="temp-hero" style="--tc:${T.color};--tc2:${T.color2}">
-        <small>Temporada ${T.n} · termina en ${diasTexto(T.quedanMs)}</small><b></b><span></span>
-        <div class="ph-bar"><i style="width:${Math.round(100 * T.enNivel / T.porNivel)}%"></i><span>Nivel ${T.nivel} de ${T.max} · ${T.nivel >= T.max ? '¡completa!' : `${T.enNivel} / ${T.porNivel} XP`}</span></div>
-        ${T.boost ? `<em>⚡ Doble XP en tus próximas ${T.boost} partidas</em>` : ''}</div>
-      <section class="mis"><h4>Misiones del día<small>nuevas en ${CC.faltaTexto(M.quedanDia)}</small></h4></section>
-      <section class="mis"><h4>De la semana<small>nuevas en ${diasTexto(M.quedanSemana)}</small></h4></section>
-      <p class="tip">Toda la XP que ganás suma a la temporada. Los premios de la temporada se ganan <b>solo mientras dura</b>: después quedan para quien los tiene. El nivel 30 es una legendaria exclusiva.</p>
+    const tp = CC.temporada(), M = CC.misiones(), p = CC.perfil(), box = $('tempBox');
+    box.innerHTML = `<div class="temp-hero" style="--tc:${tp.color};--tc2:${tp.color2}">
+        <small>${T('Temporada {n} · termina en {t}', { n: tp.n, t: diasTexto(tp.quedanMs) })}</small><b></b><span></span>
+        <div class="ph-bar"><i style="width:${Math.round(100 * tp.enNivel / tp.porNivel)}%"></i><span>${T('Nivel {n} de {max}', { n: tp.nivel, max: tp.max })} · ${tp.nivel >= tp.max ? T('¡completa!') : `${tp.enNivel} / ${tp.porNivel} XP`}</span></div>
+        ${tp.boost ? `<em>⚡ ${tp.boost === 1 ? T('Doble XP en tu próxima partida') : T('Doble XP en tus próximas {n} partidas', { n: tp.boost })}</em>` : ''}</div>
+      <section class="mis"><h4>${T('Misiones del día')}<small>${T('nuevas en {t}', { t: CC.faltaTexto(M.quedanDia) })}</small></h4></section>
+      <section class="mis"><h4>${T('De la semana')}<small>${T('nuevas en {t}', { t: diasTexto(M.quedanSemana) })}</small></h4></section>
+      <p class="tip">${T('Toda la XP que ganás suma a la temporada. Los premios de la temporada se ganan <b>solo mientras dura</b>: después quedan para quien los tiene. El nivel 30 es una legendaria exclusiva.')}</p>
       <div id="tempCamino"></div>`;
-    box.querySelector('.temp-hero b').textContent = T.nombre;
-    box.querySelector('.temp-hero > span').textContent = T.desc;
+    box.querySelector('.temp-hero b').textContent = tp.nombre;
+    box.querySelector('.temp-hero > span').textContent = tp.desc;
     const [secD, secS] = box.querySelectorAll('.mis');
     M.diarias.forEach(x => secD.appendChild(filaMision(x)));
     M.semanales.forEach(x => secS.appendChild(filaMision(x)));
     const camino = box.querySelector('#tempCamino');
-    for (let d = 0; d < T.premios.length; d += 10) {
-      const tramo = T.premios.slice(d, d + 10), hechos = tramo.filter(n => n.listo).length;
+    for (let d = 0; d < tp.premios.length; d += 10) {
+      const tramo = tp.premios.slice(d, d + 10), hechos = tramo.filter(n => n.listo).length;
       const sec = document.createElement('section'); sec.className = 'tramo' + (hechos === tramo.length ? ' hecho' : '');
-      sec.innerHTML = `<h4>Niveles ${d + 1}–${d + tramo.length}<span class="mini"><i style="width:${hechos * 10}%"></i></span><small>${hechos === tramo.length ? '✓ Completo' : hechos + '/' + tramo.length}</small></h4><ol class="pase"></ol>`;
+      sec.innerHTML = `<h4>${T('Niveles {a}–{b}', { a: d + 1, b: d + tramo.length })}<span class="mini"><i style="width:${hechos * 10}%"></i></span><small>${hechos === tramo.length ? '✓ ' + T('Completo') : hechos + '/' + tramo.length}</small></h4><ol class="pase"></ol>`;
       const ol = sec.querySelector('ol');
       for (const n of tramo) {
         const li = document.createElement('li');
-        li.className = (n.listo ? 'listo' : 'lock') + (n.items.length ? ' hito' : '') + (n.nivel === Math.min(T.max, T.nivel + 1) && !n.listo ? ' actual' : '');
+        li.className = (n.listo ? 'listo' : 'lock') + (n.items.length ? ' hito' : '') + (n.nivel === Math.min(tp.max, tp.nivel + 1) && !n.listo ? ' actual' : '');
         li.innerHTML = `<span class="num">${n.nivel}${n.listo ? ICO_LISTO : ICO_LOCK}</span><div class="premios"></div>`;
         const pr = li.querySelector('.premios');
-        if (n.boost) pr.innerHTML = '<span class="pr boostpr"><span class="tt-ico">⚡</span><span><small>Bonus</small><span class="nm">Doble XP · 3 partidas</span></span></span>';
+        if (n.boost) pr.innerHTML = `<span class="pr boostpr"><span class="tt-ico">⚡</span><span><small>${T('Bonus')}</small><span class="nm">${T('Doble XP · 3 partidas')}</span></span></span>`;
         for (const x of n.items) {
           const b = document.createElement('button'), usa = n.listo && elegido(p, x);
           b.type = 'button'; b.className = 'pr' + (x.it.legendaria ? ' leg' : ' pase');
           b.setAttribute('aria-pressed', String(usa));
           b.innerHTML = (x.tipo === 'titulo' ? '<span class="tt-ico" aria-hidden="true">🏷️</span>' : '<canvas width="96" height="104"></canvas>') +
-            `<span><small></small><span class="nm"></span></span>${usa ? '<span class="usando">Usando</span>' : ''}`;
-          b.querySelector('small').textContent = (x.it.legendaria ? 'Legendaria · ' : '') + TIPO[x.tipo];
+            `<span><small></small><span class="nm"></span></span>${usa ? `<span class="usando">${T('Usando')}</span>` : ''}`;
+          b.querySelector('small').textContent = x.it.legendaria ? T('Legendaria · {tipo}', { tipo: TIPO[x.tipo] }) : TIPO[x.tipo];
           b.querySelector('.nm').textContent = x.it.nombre;
           const cv = b.querySelector('canvas');
           if (cv) { paseCvs.push({ cv, x }); pintarPremio(cv, x, 900); }
           b.addEventListener('click', () => {
-            if (!n.listo) { CC.avisar(`<div><b>${x.it.nombre}</b><span>Se gana en el nivel ${n.nivel} de la temporada.</span></div>`, 2600); return; }
-            if (usar(x)) { CC.vibrar(10); CC.avisar(`<div><b>${x.it.nombre}</b><span>¡Puesto!</span></div>`, 1600); abrirPase(); pintarPerfil(); }
+            if (!n.listo) { CC.avisar(`<div><b>${x.it.nombre}</b><span>${T('Se gana en el nivel {n} de la temporada.', { n: n.nivel })}</span></div>`, 2600); return; }
+            if (usar(x)) { CC.vibrar(10); CC.avisar(`<div><b>${x.it.nombre}</b><span>${T('¡Puesto!')}</span></div>`, 1600); abrirPase(); pintarPerfil(); }
           });
           pr.appendChild(b);
         }
@@ -1414,7 +1664,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   function abrirPase() {
     for (const b of document.querySelectorAll('[data-ps]')) b.setAttribute('aria-pressed', String(b.dataset.ps === caminoPase));
     $('tempBox').hidden = caminoPase !== 'temporada'; $('nivelBox').hidden = caminoPase === 'temporada';
-    $('tPase').textContent = caminoPase === 'temporada' ? 'Temporada' : 'Tu nivel';
+    $('tPase').textContent = caminoPase === 'temporada' ? T('Temporada') : T('Tu nivel');
     if (caminoPase === 'temporada' && CC.temporada) {
       paseCvs = [];
       pintarTemporada();
@@ -1425,12 +1675,12 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     }
     const p = CC.perfil(), lista = CC.pase(), box = $('pase');
     const todos = lista.flatMap(n => n.premios.map(x => ({ ...x, listo: n.listo })));
-    $('paseNivel').textContent = p.nivel >= CC.PASE_MAX ? `Nivel ${p.nivel} · ¡completo!` : `Nivel ${p.nivel}`;
+    $('paseNivel').textContent = p.nivel >= CC.PASE_MAX ? T('Nivel {n} · ¡completo!', { n: p.nivel }) : T('Nivel {n}', { n: p.nivel });
     $('paseBar').style.width = Math.round(100 * p.enNivel / p.paraSiguiente) + '%';
     $('paseXP').textContent = `${p.enNivel} / ${p.paraSiguiente} XP`;
-    $('paseStats').innerHTML = `<div><b>${Math.min(p.nivel, CC.PASE_MAX)}/${CC.PASE_MAX}</b><span>Niveles</span></div>
-      <div><b>${todos.filter(x => x.listo).length}/${todos.length}</b><span>Premios</span></div>
-      <div><b>${p.xp.toLocaleString('es-AR')}</b><span>XP total</span></div>`;
+    $('paseStats').innerHTML = `<div><b>${Math.min(p.nivel, CC.PASE_MAX)}/${CC.PASE_MAX}</b><span>${T('Niveles')}</span></div>
+      <div><b>${todos.filter(x => x.listo).length}/${todos.length}</b><span>${T('Premios')}</span></div>
+      <div><b>${p.xp.toLocaleString(LOCALE)}</b><span>${T('XP total')}</span></div>`;
     paseCvs = [];
     // el próximo premio, bien grande
     const sig = lista.find(n => !n.listo && n.premios.length), sb = $('paseSig');
@@ -1439,7 +1689,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       let falta = p.paraSiguiente - p.enNivel;
       for (let n = p.nivel + 1; n < sig.nivel; n++) falta += 80 + 40 * (n - 1);
       sb.innerHTML = (x.tipo === 'titulo' ? '<span class="tt-ico">🏷️</span>' : '<canvas width="112" height="124"></canvas>') +
-        `<div><small>Próximo premio · nivel ${sig.nivel}</small><b></b><span>Te faltan ${falta.toLocaleString('es-AR')} XP</span></div>`;
+        `<div><small>${T('Próximo premio · nivel {n}', { n: sig.nivel })}</small><b></b><span>${T('Te faltan {n} XP', { n: falta.toLocaleString(LOCALE) })}</span></div>`;
       sb.querySelector('b').textContent = sig.premios.map(q => q.it.nombre).join(' + ');
       const cv = sb.querySelector('canvas'); if (cv) paseCvs.push({ cv, x, w: 56, h: 62 });
       sb.hidden = false;
@@ -1449,7 +1699,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     for (let d = 0; d < lista.length; d += 10) {
       const tramo = lista.slice(d, d + 10), hechos = tramo.filter(n => n.listo).length;
       const sec = document.createElement('section'); sec.className = 'tramo' + (hechos === tramo.length ? ' hecho' : '');
-      sec.innerHTML = `<h4>Niveles ${d + 1}–${d + tramo.length}<span class="mini"><i style="width:${hechos * 10}%"></i></span><small>${hechos === tramo.length ? '✓ Completo' : hechos + '/' + tramo.length}</small></h4><ol class="pase"></ol>`;
+      sec.innerHTML = `<h4>${T('Niveles {a}–{b}', { a: d + 1, b: d + tramo.length })}<span class="mini"><i style="width:${hechos * 10}%"></i></span><small>${hechos === tramo.length ? '✓ ' + T('Completo') : hechos + '/' + tramo.length}</small></h4><ol class="pase"></ol>`;
       const ol = sec.querySelector('ol');
       for (const n of tramo) {
         const li = document.createElement('li');
@@ -1461,14 +1711,14 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
           b.type = 'button'; b.className = 'pr' + (x.it.pase ? ' pase' : '');
           b.setAttribute('aria-pressed', String(usa));
           b.innerHTML = (x.tipo === 'titulo' ? '<span class="tt-ico" aria-hidden="true">🏷️</span>' : '<canvas width="96" height="104"></canvas>') +
-            `<span><small></small><span class="nm"></span></span>${usa ? '<span class="usando">Usando</span>' : ''}`;
+            `<span><small></small><span class="nm"></span></span>${usa ? `<span class="usando">${T('Usando')}</span>` : ''}`;
           b.querySelector('small').textContent = TIPO[x.tipo];
           b.querySelector('.nm').textContent = x.it.nombre;
           const cv = b.querySelector('canvas');
           if (cv) { paseCvs.push({ cv, x }); pintarPremio(cv, x, 900); }
           b.addEventListener('click', () => {
-            if (!n.listo) { CC.avisar(`<div><b>${x.it.nombre}</b><span>Se gana en el nivel ${n.nivel}.</span></div>`, 2600); return; }
-            if (usar(x)) { CC.vibrar(10); CC.avisar(`<div><b>${x.it.nombre}</b><span>¡Puesto!</span></div>`, 1600); abrirPase(); pintarPerfil(); }
+            if (!n.listo) { CC.avisar(`<div><b>${x.it.nombre}</b><span>${T('Se gana en el nivel {n}.', { n: n.nivel })}</span></div>`, 2600); return; }
+            if (usar(x)) { CC.vibrar(10); CC.avisar(`<div><b>${x.it.nombre}</b><span>${T('¡Puesto!')}</span></div>`, 1600); abrirPase(); pintarPerfil(); }
           });
           pr.appendChild(b);
         }
@@ -1501,9 +1751,9 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     const cuenta = m => hechos.filter(l => l.medalla === m).length;
     box.innerHTML = `<div class="resumen"><b>${hechos.length} / ${total}</b><div class="medallas">${Object.entries(CC.MEDALLAS).map(([k, m]) =>
       `<span class="med"><i style="background:${m.color}"></i>${cuenta(k)}</span>`).join('')}</div></div>
-      <p class="tip">Bronce sale jugando, plata con práctica, oro es para muy buenos y diamante, para muy pocos. Cada logro da XP y algunos desbloquean personajes y efectos. Los secretos no dicen qué hay que hacer.</p>`;
-    const grupos = [['General', CC.LOGROS.filter(l => !l.juego && !l.oculto)], ...JUEGOS.map(g => [g.nombre, CC.LOGROS.filter(l => l.juego === g.id && !l.oculto)]),
-      ['Secretos', CC.LOGROS.filter(l => l.oculto)]];
+      <p class="tip">${T('Bronce sale jugando, plata con práctica, oro es para muy buenos y diamante, para muy pocos. Cada logro da XP y algunos desbloquean personajes y efectos. Los secretos no dicen qué hay que hacer.')}</p>`;
+    const grupos = [[T('General'), CC.LOGROS.filter(l => !l.juego && !l.oculto)], ...JUEGOS.map(g => [g.nombre, CC.LOGROS.filter(l => l.juego === g.id && !l.oculto)]),
+      [T('Secretos'), CC.LOGROS.filter(l => l.oculto)]];
     for (const [nombre, ls] of grupos) {
       if (!ls.length) continue;
       const g = document.createElement('div'); g.className = 'grupo';
@@ -1513,7 +1763,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
         if (l.oculto && !ok) {
           const el = document.createElement('div');
           el.className = 'logro secreto';
-          el.innerHTML = `<span class="m">?</span><span class="t"><b>Logro secreto</b><span>Seguí jugando para descubrirlo. Da algo legendario.</span></span><span class="xp">+${m.xp}</span>`;
+          el.innerHTML = `<span class="m">?</span><span class="t"><b>${T('Logro secreto')}</b><span>${T('Seguí jugando para descubrirlo. Da algo legendario.')}</span></span><span class="xp">+${m.xp}</span>`;
           g.appendChild(el);
           continue;
         }
@@ -1522,7 +1772,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
         if (!ok && l.progreso) { try { const [a, b] = l.progreso(p); prog = `<div class="prog"><i style="width:${Math.min(100, Math.round(100 * a / b))}%"></i></div>`; } catch (e) {} }
         const el = document.createElement('div');
         el.className = 'logro' + (ok ? '' : ' no');
-        el.innerHTML = `<span class="m" style="background:${m.color}">${ok ? '★' : '?'}</span><span class="t"><b>${l.nombre}</b><span>${l.desc}${premio.length ? ' Premio: ' + premio.join(', ') + '.' : ''}</span>${prog}</span><span class="xp">+${m.xp}</span>`;
+        el.innerHTML = `<span class="m" style="background:${m.color}">${ok ? '★' : '?'}</span><span class="t"><b>${l.nombre}</b><span>${l.desc}${premio.length ? ' ' + T('Premio: {lista}.', { lista: premio.join(', ') }) : ''}</span>${prog}</span><span class="xp">+${m.xp}</span>`;
         g.appendChild(el);
       }
       box.appendChild(g);
@@ -1547,7 +1797,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   function pintarBadgeAmigos() {
     const n = CC.solicitudesNuevas ? CC.solicitudesNuevas() : 0;
     $('amigosBadge').hidden = !n; $('amigosBadge').textContent = n;
-    $('amigosBtn').setAttribute('aria-label', 'Amigos: agregar, comparar y retar a un 1v1' + (n ? `. ${n} ${n === 1 ? 'solicitud nueva' : 'solicitudes nuevas'}` : ''));
+    $('amigosBtn').setAttribute('aria-label', T('Amigos: agregar, comparar y retar a un 1v1') + (n ? '. ' + (n === 1 ? T('1 solicitud nueva') : T('{n} solicitudes nuevas', { n })) : ''));
   }
   // la lista cambia sola (cubo-duelo.js avisa en vivo); además se mira al entrar y al volver a la pestaña
   // llegó progreso de la nube (de otro dispositivo): se repinta lo que esté a la vista
@@ -1565,7 +1815,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   // ---------- 1v1 ----------
   // En el mismo dispositivo (Paleta de a dos) u online contra un amigo aceptado (cubo-duelo.js).
   const LOCALES = [
-    { href: 'paleta.html?dos=1', ico: '🏓', color: '#2ec27e', nombre: 'Paleta de a dos', desc: 'Uno de cada lado de la pantalla. Gana el primero que llega a 7.' },
+    { href: 'paleta.html?dos=1', ico: '🏓', color: '#2ec27e', nombre: T('Paleta de a dos'), desc: T('Uno de cada lado de la pantalla. Gana el primero que llega a 7.') },
   ];
   for (const l of LOCALES) {
     const b = document.createElement('button');
@@ -1577,16 +1827,16 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   function abrir1v1() {
     const p = CC.perfil(), box = $('vsAmigos');
     box.replaceChildren();
-    if (!p.apodo) box.insertAdjacentHTML('beforeend', '<div class="vacio-amigos">Para jugar online necesitás un apodo. Ponelo en cualquier ranking y después agregá a tus amigos con su código.</div>');
+    if (!p.apodo) box.insertAdjacentHTML('beforeend', `<div class="vacio-amigos">${T('Para jugar online necesitás un apodo. Ponelo en cualquier ranking y después agregá a tus amigos con su código.')}</div>`);
     else if (!p.amigos.length) {
-      box.insertAdjacentHTML('beforeend', '<div class="vacio-amigos">Todavía no tenés amigos para retar.<br>Agregalos con su código en <b>Amigos</b>.</div>');
-      boton(box, 'retar', '👥 Ir a Amigos', () => { cerrar(true); abrirAmigos(); });
+      box.insertAdjacentHTML('beforeend', `<div class="vacio-amigos">${T('Todavía no tenés amigos para retar.<br>Agregalos con su código en <b>Amigos</b>.')}</div>`);
+      boton(box, 'retar', '👥 ' + T('Ir a Amigos'), () => { cerrar(true); abrirAmigos(); });
     }
     for (const a of p.amigos) {
-      const el = filaAmigo(a, a.titulo || 'Amigo');
-      boton(el, 'retar', '⚔️ Retar', () => {
+      const el = filaAmigo(a, a.titulo || T('Amigo'));
+      boton(el, 'retar', '⚔️ ' + T('Retar'), () => {
         if (window.CuboDuelo) window.CuboDuelo.elegirJuego(a);
-        else CC.avisar('<div><b>Sin conexión</b><span>Para retar a un amigo hace falta internet.</span></div>');
+        else CC.avisar(`<div><b>${T('Sin conexión')}</b><span>${T('Para retar a un amigo hace falta internet.')}</span></div>`);
       });
       box.appendChild(el);
     }
@@ -1595,7 +1845,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   $('vsBtn').addEventListener('click', abrir1v1);
   function filaAmigo(a, sub, clase) {
     const el = document.createElement('div'); el.className = 'amigo' + (clase ? ' ' + clase : '');
-    el.innerHTML = `<canvas width="72" height="80"></canvas><span class="nm"><span class="ap"></span><small></small></span>`;
+    el.innerHTML = `<canvas width="72" height="80"></canvas><span class="nm"><span class="ap" translate="no"></span><small></small></span>`;
     const ap = el.querySelector('.ap'), sk = CC.SKINS.find(s => s.id === a.skin) || CC.SKINS[0];
     ap.textContent = a.apodo; ap.className = 'ap ' + CC.claseNombre(sk);
     el.querySelector('small').textContent = sub;
@@ -1617,105 +1867,106 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     const p = CC.perfil(), recibidas = p.recibidas || [], enviadas = p.enviadas || [];
     $('miCodigo').textContent = p.codigoAmigo ? p.codigoAmigo.slice(0, 3) + ' ' + p.codigoAmigo.slice(3) : '';
     $('copiarCodigo').hidden = !p.codigoAmigo;
-    $('miCodigoTxt').innerHTML = p.codigoAmigo ? 'Tu código de amigo<br><small style="opacity:.75">Pasáselo para que te mande una solicitud</small>'
-      : p.apodo ? 'Buscando tu código…' : 'Para tener tu código de amigo, primero elegí un apodo en cualquier ranking.';
+    $('miCodigoTxt').innerHTML = p.codigoAmigo ? `${T('Tu código de amigo')}<br><small style="opacity:.75">${T('Pasáselo para que te mande una solicitud')}</small>`
+      : p.apodo ? T('Buscando tu código…') : T('Para tener tu código de amigo, primero elegí un apodo en cualquier ranking.');
     if (p.apodo && !p.codigoAmigo) CC.subirPendientes().then(() => { if (CC.perfil().codigoAmigo) pintarAmigos(); });
     const box = $('amigos'); box.innerHTML = '';
     const msg = t => { $('amigoMsg').textContent = t; };
     // solicitudes que te llegaron
-    if (recibidas.length) tituloAmigos(box, 'Te quieren agregar', recibidas.length);
+    if (recibidas.length) tituloAmigos(box, T('Te quieren agregar'), recibidas.length);
     for (const a of recibidas) {
-      const el = filaAmigo(a, 'Quiere ser tu amigo', 'pide');
+      const el = filaAmigo(a, T('Quiere ser tu amigo'), 'pide');
       const responder = async acepto => {
         for (const b of el.querySelectorAll('button')) b.disabled = true;
         const r = await CC.responderSolicitud(a.codigo, acepto);
-        msg(!r.ok ? r.msg : r.estado === 'amigos' ? `¡${a.apodo} ya es tu amigo!` : r.estado === 'rechazada' ? '' : 'Esa solicitud ya no está.');
+        msg(!r.ok ? r.msg : r.estado === 'amigos' ? Tsin('¡{apodo} ya es tu amigo!', { apodo: a.apodo }) : r.estado === 'rechazada' ? '' : T('Esa solicitud ya no está.'));
         pintarAmigos();
       };
-      boton(el, 'aceptar', 'Aceptar', () => responder(true));
-      boton(el, 'rechazar', 'Rechazar', () => responder(false));
+      boton(el, 'aceptar', T('Aceptar'), () => responder(true));
+      boton(el, 'rechazar', T('Rechazar'), () => responder(false));
       box.appendChild(el);
     }
     // tus amigos
-    if (recibidas.length || enviadas.length) tituloAmigos(box, 'Tus amigos');
-    if (!p.amigos.length) box.insertAdjacentHTML('beforeend', '<div class="vacio-amigos">Todavía no tenés amigos.<br>Pedile a alguien su código y ponelo arriba: le llega tu solicitud.</div>');
+    if (recibidas.length || enviadas.length) tituloAmigos(box, T('Tus amigos'));
+    if (!p.amigos.length) box.insertAdjacentHTML('beforeend', `<div class="vacio-amigos">${T('Todavía no tenés amigos.<br>Pedile a alguien su código y ponelo arriba: le llega tu solicitud.')}</div>`);
     for (const a of p.amigos) {
-      const el = filaAmigo(a, a.titulo || 'Amigo');
-      boton(el, 'retar', '⚔️ Retar', () => {
+      const el = filaAmigo(a, a.titulo || T('Amigo'));
+      boton(el, 'retar', '⚔️ ' + T('Retar'), () => {
         if (window.CuboDuelo) window.CuboDuelo.elegirJuego(a);
-        else CC.avisar('<div><b>Sin conexión</b><span>Para retar a un amigo hace falta internet.</span></div>');
+        else CC.avisar(`<div><b>${T('Sin conexión')}</b><span>${T('Para retar a un amigo hace falta internet.')}</span></div>`);
       });
-      boton(el, 'vs', 'Versus', () => abrirVersus(a));
+      boton(el, 'vs', T('Versus'), () => abrirVersus(a));
       boton(el, 'quitar', '✕', async () => {
-        if (!confirm(`¿Quitar a ${a.apodo} de tus amigos?`)) return;
+        if (!confirm(Tsin('¿Quitar a {apodo} de tus amigos?', { apodo: a.apodo }))) return;
         const r = await CC.quitarAmigo(a.codigo);
         msg(r.ok ? '' : r.msg); pintarAmigos();
-      }).setAttribute('aria-label', 'Quitar amigo');
+      }).setAttribute('aria-label', T('Quitar amigo'));
       box.appendChild(el);
     }
     // las que mandaste y todavía no aceptaron
-    if (enviadas.length) tituloAmigos(box, 'Esperando que acepten', enviadas.length);
+    if (enviadas.length) tituloAmigos(box, T('Esperando que acepten'), enviadas.length);
     for (const a of enviadas) {
-      const el = filaAmigo(a, 'Solicitud enviada', 'espera');
-      boton(el, 'cancelar', 'Cancelar', async b => {
+      const el = filaAmigo(a, T('Solicitud enviada'), 'espera');
+      boton(el, 'cancelar', T('Cancelar'), async b => {
         b.disabled = true;
         const r = await CC.quitarAmigo(a.codigo);
-        msg(r.ok ? `Cancelaste la solicitud a ${a.apodo}.` : r.msg); pintarAmigos();
-      }).setAttribute('aria-label', `Cancelar la solicitud a ${a.apodo}`);
+        msg(r.ok ? Tsin('Cancelaste la solicitud a {apodo}.', { apodo: a.apodo }) : r.msg); pintarAmigos();
+      }).setAttribute('aria-label', Tsin('Cancelar la solicitud a {apodo}', { apodo: a.apodo }));
       box.appendChild(el);
     }
     if (refrescar) CC.refrescarAmigos(true);   // cuando llega, el evento cubo-amigos vuelve a pintar
   }
   $('copiarCodigo').addEventListener('click', async () => {
     const c = CC.perfil().codigoAmigo;
-    const texto = `¡Agregame en TwoFingers! Mi código de amigo es ${c}. ${location.origin + location.pathname}`;
+    const texto = Tsin('¡Agregame en TwoFingers! Mi código de amigo es {c}.', { c }) + ' ' + location.origin + location.pathname;
     try {
       if (navigator.share && tactil) await navigator.share({ text: texto });
-      else { await navigator.clipboard.writeText(texto); $('amigoMsg').textContent = 'Copiado. Pegáselo a tu amigo.'; }
+      else { await navigator.clipboard.writeText(texto); $('amigoMsg').textContent = T('Copiado. Pegáselo a tu amigo.'); }
     } catch (e) {}
   });
   $('amigoForm').addEventListener('submit', async e => {
     e.preventDefault();
-    const btn = $('amigoForm').querySelector('button'); btn.disabled = true; $('amigoMsg').textContent = 'Buscando…';
+    const btn = $('amigoForm').querySelector('button'); btn.disabled = true; $('amigoMsg').textContent = T('Buscando…');
     const r = await CC.agregarAmigo($('amigoCodigo').value);
     btn.disabled = false;
-    $('amigoMsg').textContent = !r.ok ? r.msg : r.estado === 'amigos' ? `¡${r.amigo.apodo} ya es tu amigo!`
-      : `Le mandaste una solicitud a ${r.amigo.apodo}. Cuando la acepte, aparece en tus amigos.`;
+    $('amigoMsg').textContent = !r.ok ? r.msg : r.estado === 'amigos' ? Tsin('¡{apodo} ya es tu amigo!', { apodo: r.amigo.apodo })
+      : Tsin('Le mandaste una solicitud a {apodo}. Cuando la acepte, aparece en tus amigos.', { apodo: r.amigo.apodo });
     if (r.ok) { $('amigoCodigo').value = ''; $('amigoCodigo').blur(); pintarAmigos(); }
   });
 
   // versus: tus mejores marcas contra las de un amigo
   async function abrirVersus(a) {
     const p = CC.perfil(), box = $('vsBox');
-    $('tVs').textContent = 'Versus';
-    box.innerHTML = '<p class="tip">Cargando…</p>';
+    $('tVs').textContent = T('Versus');
+    box.innerHTML = `<p class="tip">${T('Cargando…')}</p>`;
     abrir('sheetVersus');
     let r;
-    try { r = await CC.versus(a); } catch (e) { box.innerHTML = '<p class="tip">No se pudo cargar. Probá de nuevo en un rato.</p>'; return; }
+    try { r = await CC.versus(a); } catch (e) { box.innerHTML = `<p class="tip">${T('No se pudo cargar. Probá de nuevo en un rato.')}</p>`; return; }
     const skEl = CC.SKINS.find(s => s.id === a.skin) || CC.SKINS[0];
     const ambos = r.lista.filter(x => x.yo != null && x.el != null);
-    box.innerHTML = `<div class="vs-top"><div><canvas width="112" height="124"></canvas><div class="quien">Vos</div></div>
-      <div class="marcador">${r.yo} <i>–</i> ${r.el}</div><div><canvas width="112" height="124"></canvas><div class="quien"></div></div></div>
+    box.innerHTML = `<div class="vs-top"><div><canvas width="112" height="124"></canvas><div class="quien">${T('Vos')}</div></div>
+      <div class="marcador">${r.yo} <i>–</i> ${r.el}</div><div><canvas width="112" height="124"></canvas><div class="quien" translate="no"></div></div></div>
       <p class="tip"></p>`;
     box.querySelectorAll('.quien')[1].textContent = a.apodo;
     const [c1, c2] = [...box.querySelectorAll('canvas')].map(cv => { const c = cv.getContext('2d'); c.scale(2, 2); return c; });
     CC.dibujarCubo(c1, 28, 58, 34, { t: 900, efecto: false, mirar: 1 });
     CC.dibujarCubo(c2, 28, 58, 34, { skin: skEl, t: 900, efecto: false, mirar: -1 });
-    box.querySelector('.tip').textContent = !ambos.length ? `Todavía no jugaron el mismo modo. Jugá uno que haya jugado ${a.apodo} (o al revés) para empezar a sumar.`
-      : r.yo > r.el ? `¡Le vas ganando a ${a.apodo}! Cada modo que jugaron los dos es un punto.` : r.yo < r.el ? `${a.apodo} te va ganando. Superá sus marcas para dar vuelta el marcador.`
-      : 'Van empatados. Cada modo que jugaron los dos es un punto.';
+    const conApodo = s => Tsin(s, { apodo: a.apodo });
+    box.querySelector('.tip').textContent = !ambos.length ? conApodo('Todavía no jugaron el mismo modo. Jugá uno que haya jugado {apodo} (o al revés) para empezar a sumar.')
+      : r.yo > r.el ? conApodo('¡Le vas ganando a {apodo}! Cada modo que jugaron los dos es un punto.') : r.yo < r.el ? conApodo('{apodo} te va ganando. Superá sus marcas para dar vuelta el marcador.')
+      : T('Van empatados. Cada modo que jugaron los dos es un punto.');
     let ultimo = '';
     for (const x of r.lista) {
       if (x.juego !== ultimo) {
         ultimo = x.juego;
         const g = document.createElement('div'); g.className = 'vs-juego';
         const jg = JUEGOS.find(j => j.id === x.juego);
-        g.innerHTML = `<h4>${jg ? jg.nombre : x.juego}</h4><div class="vs-cab"><span>Modo</span><span>Vos</span><span></span></div>`;
+        g.innerHTML = `<h4>${jg ? jg.nombre : x.juego}</h4><div class="vs-cab"><span>${T('Modo')}</span><span>${T('Vos')}</span><span translate="no"></span></div>`;
         g.querySelector('.vs-cab span:last-child').textContent = a.apodo;
         box.appendChild(g);
       }
       const f = document.createElement('div'); f.className = 'vs-fila';
-      const val = (v, quien) => v == null ? `<span class="v falta">${quien === 'yo' ? '¡Jugalo!' : '—'}</span>` : `<span class="v${x.gana === quien ? ' gana' : ''}">${CC.formato(v, x.tb)}</span>`;
+      const val = (v, quien) => v == null ? `<span class="v falta">${quien === 'yo' ? T('¡Jugalo!') : '—'}</span>` : `<span class="v${x.gana === quien ? ' gana' : ''}">${CC.formato(v, x.tb)}</span>`;
       f.innerHTML = `<span></span>${val(x.yo, 'yo')}${val(x.el, 'el')}`;
       f.firstElementChild.textContent = x.tb.nombre;
       box.lastElementChild.appendChild(f);
@@ -1725,15 +1976,15 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   function abrirJuegos(modo) {
     modoJuegos = modo;
     const p = CC.perfil();
-    $('tJue').textContent = modo === 'ranking' ? 'Ranking' : 'Todos los juegos';
+    $('tJue').textContent = modo === 'ranking' ? T('Ranking') : T('Todos los juegos');
     $('jueTip').textContent = modo === 'ranking'
-      ? (p.apodo ? `Jugás como ${p.apodo}. Elegí un juego para ver el ranking online.` : 'Elegí un juego para ver el ranking. Poné tu apodo para aparecer.')
-      : 'Elegí un juego para ir directo.';
+      ? (p.apodo ? Tsin('Jugás como {apodo}. Elegí un juego para ver el ranking online.', { apodo: p.apodo }) : T('Elegí un juego para ver el ranking. Poné tu apodo para aparecer.'))
+      : T('Elegí un juego para ir directo.');
     const box = $('juegos'); box.innerHTML = '';
     JUEGOS.forEach((g, i) => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'jg';
-      b.innerHTML = `<canvas></canvas><span>${g.nombre}</span><small>${mejorTexto(g, p) === '—' ? (g.nuevo ? '¡Nuevo!' : 'Sin jugar') : 'Récord: ' + mejorTexto(g, p)}</small>`;
+      b.innerHTML = `<canvas></canvas><span>${g.nombre}</span><small>${mejorTexto(g, p) === '—' ? (g.nuevo ? T('¡Nuevo!') : T('Sin jugar')) : T('Récord: {r}', { r: mejorTexto(g, p) })}</small>`;
       b.addEventListener('click', () => {
         if (modoJuegos === 'ranking') CC.verRanking({ juego: g.id });
         else { cerrar(true); ir(i, false); }
@@ -1764,12 +2015,12 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   let pedido = null;
   const instalada = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
   addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedido = e; $('install').hidden = false; });
-  addEventListener('appinstalled', () => { $('install').hidden = true; CC.avisar('<div><b>¡Instalado!</b><span>Ya lo podés abrir sin internet.</span></div>'); });
+  addEventListener('appinstalled', () => { $('install').hidden = true; CC.avisar(`<div><b>${T('¡Instalado!')}</b><span>${T('Ya lo podés abrir sin internet.')}</span></div>`); });
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
   if (ios && !instalada) $('install').hidden = false;
   $('install').addEventListener('click', async () => {
     if (pedido) { pedido.prompt(); const r = await pedido.userChoice.catch(() => null); if (r && r.outcome === 'accepted') $('install').hidden = true; pedido = null; return; }
-    CC.avisar('<div><b>Instalalo en tu iPhone</b><span>Tocá Compartir y después "Agregar a inicio". Funciona sin internet.</span></div>', 5000);
+    CC.avisar(`<div><b>${T('Instalalo en tu iPhone')}</b><span>${T('Tocá Compartir y después "Agregar a inicio". Funciona sin internet.')}</span></div>`, 5000);
   });
 
   // ---------- dibujo ----------
@@ -1826,7 +2077,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   // el cubo de la portada, apoyado en su escalón (en px de CSS del canvas)
   const geoHeroe = (w, h) => ({ lado: Math.round(h * 0.42), pie: Math.round(h * 0.8), x: w / 2 });
 
-  $('ptSub').textContent = `${JUEGOS.length} juegos · solo dos flechas`;
+  $('ptSub').textContent = T('{n} juegos · solo dos flechas', { n: JUEGOS.length });
   $('ptRedes').innerHTML = REDES.map(r => `<a class="pt-red ${r.id}" href="${r.url}" target="_blank" rel="noopener" aria-label="${r.red}: ${r.nombre}"><i>${r.ico}</i>${r.nombre}</a>`).join('');
 
   function pintarHeroe(now) {
@@ -1866,7 +2117,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     portada.classList.remove('espera');
   }
   function mostrarPortada(vuelo) {
-    $('ptNivel').textContent = `Nivel ${CC.perfil().nivel}`;
+    $('ptNivel').textContent = T('Nivel {n}', { n: CC.perfil().nivel });
     portada.classList.remove('chau'); portada.classList.add('espera');
     portada.hidden = false;
     aterrizo = Infinity;
@@ -1931,6 +2182,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     portada: { ver: () => guardado('cubo-portada') !== '0', poner: si => guardado('cubo-portada', si ? '1' : '0') },
   };
   function pintarOpciones() {
+    for (const b of $('opIdioma').children) b.setAttribute('aria-pressed', String(b.dataset.idioma === CC.idioma));
     for (const g of document.querySelectorAll('[data-opcion]')) {
       const si = OPCIONES[g.dataset.opcion].ver();
       for (const b of g.children) b.setAttribute('aria-pressed', String((b.dataset.v === '1') === si));
@@ -1944,6 +2196,10 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       if (g.dataset.opcion === 'vibrar') CC.vibrar(30);
     });
   }
+  $('opIdioma').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (b && b.dataset.idioma !== CC.idioma) CC.ponerIdioma(b.dataset.idioma);   // recarga la página en el idioma nuevo
+  });
   $('ptOpciones').addEventListener('click', () => { pintarOpciones(); abrir('sheetOpciones'); });
 
   // ---------- arranque ----------

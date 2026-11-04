@@ -307,7 +307,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   <div class="card">
     <button class="ter smallbtn back" id="btnBack" type="button">← Juegos</button>
     <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Lluvia</h1></div>
-    <p class="intro">Cambiá de carril y que no te toque ningún bloque. Cada <b>moneda</b> suma 5.</p>
+    <p class="intro" data-t>Cambiá de carril y que no te toque ningún bloque. Cada <b>moneda</b> suma 5.</p>
     <div class="howto" aria-hidden="true">
       <canvas id="mini"></canvas>
       <div class="keys">
@@ -360,6 +360,68 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const $ = id => document.getElementById(id);
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js)
+  if (CC && CC.textos) CC.textos({
+    'Lluvia': 'Rain',
+    // HUD y botones
+    'puntos': 'points',
+    'segundos': 'seconds',
+    'Volver al menú (Esc)': 'Back to menu (Esc)',
+    'Menú': 'Menu',
+    'Reiniciar (R)': 'Restart (R)',
+    '{d} · Nivel {n}': '{d} · Level {n}',
+    '{n} vidas': '{n} lives',
+    'Izquierda': 'Left',
+    'Derecha': 'Right',
+    // ayuda de la primera vez
+    'Tocá un botón para cambiar de carril': 'Tap a button to switch lanes',
+    'Usá ← → para cambiar de carril': 'Use ← → to switch lanes',
+    'Esquivá los bloques que caen y juntá monedas. Arranca con tu primer toque.': 'Dodge the falling blocks and grab coins. It starts with your first tap.',
+    'Los botones de abajo mueven tu cubo. Esquivá los bloques y juntá monedas. Arranca con tu primer toque.': 'The buttons below move your cube. Dodge the blocks and grab coins. It starts with your first tap.',
+    'También A y D, o los botones de abajo. Esquivá los bloques y juntá monedas. Arranca cuando te muevas.': 'A and D work too, or the buttons below. Dodge the blocks and grab coins. It starts when you move.',
+    // menú
+    'Juegos': 'Games',
+    'Inicio': 'Home',
+    'Cambiá de carril y que no te toque ningún bloque. Cada <b>moneda</b> suma 5.': 'Switch lanes and don\'t let any block hit you. Each <b>coin</b> is worth 5.',
+    'Récord': 'Best',
+    'Jugar': 'Play',
+    'Ranking': 'Leaderboard',
+    'Sonido: sí': 'Sound: on',
+    'Sonido: no': 'Sound: off',
+    'Dificultad': 'Difficulty',
+    'cambiar de carril': 'switch lanes',
+    'otra vez': 'again',
+    'Fácil': 'Easy', 'Normal': 'Normal', 'Difícil': 'Hard', 'Extremo': 'Extreme', 'Maestro': 'Master',
+    'Tres vidas y bloques más lentos. Ideal para aprender.': 'Three lives and slower blocks. Great for learning.',
+    'Arranca con ritmo y cada 15 s pasa algo: monedas o ráfagas.': 'Starts at a good pace, and every 15 s something happens: coins or rushes.',
+    'Arranca rápido y con filas de a tres desde el principio.': 'Starts fast, with rows of three right from the start.',
+    'Velocidad al tope y filas pegadas desde el segundo 0. XP ×3.': 'Top speed and tight rows from second 0. XP ×3.',
+    'Más rápido que Extremo, sin monedas y te tenés que mover en cada fila. XP ×4.': 'Faster than Extreme, no coins, and you have to move on every row. XP ×4.',
+    // en el juego (canvas)
+    '¡Esquivá!': 'Dodge!',
+    '¡Última vida!': 'Last life!',
+    '¡Te quedan {n}!': '{n} left!',
+    '¡Lluvia de monedas!': 'Coin shower!',
+    '¡Ráfaga dorada ×2!': 'Golden rush ×2!',
+    'Tocá un botón para arrancar': 'Tap a button to start',
+    'Movete para arrancar': 'Move to start',
+    // fin de partida
+    '¡Plaf!': 'Splat!', '¡Te dio!': 'Got you!', '¡Auch!': 'Ouch!', '¡Bonk!': 'Bonk!',
+    'Nuevo récord': 'New best',
+    'Nuevo récord · antes {n}': 'New best · was {n}',
+    'Otra vez': 'Again',
+    'puntos · {t} s · nivel {n} · {d}': 'points · {t} s · level {n} · {d}',
+    '{n} bloque esquivado': '{n} block dodged',
+    '{n} bloques esquivados': '{n} blocks dodged',
+    '{n} moneda': '{n} coin',
+    '{n} monedas': '{n} coins',
+    'récord en {d}: {n}': 'best on {d}: {n}',
+    '×{x} por {d}': '×{x} for {d}',
+    '+25 % por récord': '+25% for new best',
+    'incluye logros': 'includes achievements',
+  });
+  const T = (s, v) => (CC && CC.T ? CC.T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s);
+  const LOCALE = (CC && CC.LOCALE) || 'es-AR';
   // desafío del día (?diario=1): Normal, 3 intentos y las filas salen de la semilla del día, iguales para todos
   const DIA = CC && CC.diarioDe ? CC.diarioDe('lluvia') : null;
   let azar = Math.random;
@@ -374,7 +436,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     ['#ff7a95', '#d94a6c'], ['#ffad4d', '#d9801c'], ['#3fdca8', '#16a676'],
     ['#5cb0ff', '#2f7fe0'], ['#c08bff', '#8f55e0'],
   ];
-  const TITLES = ['¡Plaf!', '¡Te dio!', '¡Auch!', '¡Bonk!'];
+  const TITLES = ['¡Plaf!', '¡Te dio!', '¡Auch!', '¡Bonk!'].map(s => T(s));
   // la dificultad corre un "reloj efectivo" (t0 + t * rate) que decide velocidad y densidad.
   // Normal arranca ya con algo de presión (como el segundo 15 de antes) y avanza 1,25 veces más rápido;
   // Fácil tiene 3 vidas y bloques más lentos, pero también sube; Difícil arranca cerca del tope;
@@ -382,19 +444,19 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // con más filas de 3 bloques y el carril libre cambia en cada fila (no hay respiro quedándose quieto).
   // vidas: golpes que aguanta · coinP: chance de moneda por fila · p3Add: filas de 3 extra · mover: el carril libre nunca se repite
   const DIFFS = {
-    facil:   { name: 'Fácil',   t0: 10,  rate: 1.4,  vMul: 0.85, ivMul: 1.1,  vidas: 3, coinP: 0.3 },
-    normal:  { name: 'Normal',  t0: 15,  rate: 1.25, vMul: 1,    ivMul: 1,    vidas: 1, coinP: 0.24 },
-    dificil: { name: 'Difícil', t0: 55,  rate: 1.1,  vMul: 1.05, ivMul: 0.95, vidas: 1, coinP: 0.22 },
-    extremo: { name: 'Extremo', t0: 90,  rate: 1,    vMul: 1.15, ivMul: 0.88, vidas: 1, coinP: 0.2 },
-    maestro: { name: 'Maestro', t0: 95,  rate: 1,    vMul: 1.22, ivMul: 0.85, vidas: 1, coinP: 0, p3Add: 0.15, mover: true },
+    facil:   { name: T('Fácil'),   t0: 10,  rate: 1.4,  vMul: 0.85, ivMul: 1.1,  vidas: 3, coinP: 0.3 },
+    normal:  { name: T('Normal'),  t0: 15,  rate: 1.25, vMul: 1,    ivMul: 1,    vidas: 1, coinP: 0.24 },
+    dificil: { name: T('Difícil'), t0: 55,  rate: 1.1,  vMul: 1.05, ivMul: 0.95, vidas: 1, coinP: 0.22 },
+    extremo: { name: T('Extremo'), t0: 90,  rate: 1,    vMul: 1.15, ivMul: 0.88, vidas: 1, coinP: 0.2 },
+    maestro: { name: T('Maestro'), t0: 95,  rate: 1,    vMul: 1.22, ivMul: 0.85, vidas: 1, coinP: 0, p3Add: 0.15, mover: true },
   };
   const DIFF_IDS = Object.keys(DIFFS);
   const NOTAS = {
-    facil: 'Tres vidas y bloques más lentos. Ideal para aprender.',
-    normal: 'Arranca con ritmo y cada 15 s pasa algo: monedas o ráfagas.',
-    dificil: 'Arranca rápido y con filas de a tres desde el principio.',
-    extremo: 'Velocidad al tope y filas pegadas desde el segundo 0. XP ×3.',
-    maestro: 'Más rápido que Extremo, sin monedas y te tenés que mover en cada fila. XP ×4.',
+    facil: T('Tres vidas y bloques más lentos. Ideal para aprender.'),
+    normal: T('Arranca con ritmo y cada 15 s pasa algo: monedas o ráfagas.'),
+    dificil: T('Arranca rápido y con filas de a tres desde el principio.'),
+    extremo: T('Velocidad al tope y filas pegadas desde el segundo 0. XP ×3.'),
+    maestro: T('Más rápido que Extremo, sin monedas y te tenés que mover en cada fila. XP ×4.'),
   };
   // XP por partida (antes del multiplicador): 6 para una floja (unos 30 s en Normal), 60 para una de experto (unos 2:40 en Normal)
   const XP_MALO = 100, XP_EXPERTO = 1300;
@@ -407,7 +469,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const saveRec = () => { try { localStorage.setItem(REC_KEY, JSON.stringify(rec)); } catch (e) {} };
   // el récord único de antes pasa a ser el de Normal
   if (!rec.byDiff || typeof rec.byDiff !== 'object') rec.byDiff = rec.best ? { normal: rec.best } : {};
-  const fmtN = n => n.toLocaleString('es-AR');
+  const fmtN = n => n.toLocaleString(LOCALE);
   function bestFor(d) {
     let b = rec.byDiff[d] || 0;
     if (CC) { try { b = Math.max(b, CC.perfil().mejores['lluvia:' + d] || 0); } catch (e) {} }
@@ -505,7 +567,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (G.wait) {
       G.wait = false; $('pad').classList.remove('wait');
       if (!$('help').hidden) { $('help').hidden = true; rec.help = 1; saveRec(); }
-      banner = { text: '¡Esquivá!', t: now };
+      banner = { text: T('¡Esquivá!'), t: now };
     }
     G.face = d;
     const nl = G.lane + d;
@@ -536,7 +598,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       G.blocks = G.blocks.filter(x => x !== b);
       burst(laneX(b.lane), (b.y * FLOOR) + blockS() / 2, b.c[0], 12, 1);
       shake = reduceMotion ? 0 : 7; sfxBonk(); CC?.vibrar(30);
-      banner = { text: G.vidas === 1 ? '¡Última vida!' : `¡Te quedan ${G.vidas}!`, t: now };
+      banner = { text: G.vidas === 1 ? T('¡Última vida!') : T('¡Te quedan {n}!', { n: G.vidas }), t: now };
       hudCache = '';
       return;
     }
@@ -552,18 +614,19 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const D = DIFFS[G.diff], r = settle();
     $('eTitle').textContent = TITLES[Math.floor(Math.random() * TITLES.length)];
     $('eNum').textContent = fmtN(G.score);
-    $('eSub').textContent = `puntos · ${G.t.toFixed(1)} s · nivel ${G.level} · ${D.name}`;
+    $('eSub').textContent = T('puntos · {t} s · nivel {n} · {d}', { t: G.t.toFixed(1), n: G.level, d: D.name });
     $('eBadge').hidden = !r.record;
-    $('eBadge').textContent = r.record && r.anterior ? `Nuevo récord · antes ${fmtN(r.anterior)}` : 'Nuevo récord';
-    $('eSub2').textContent = `${G.dodged} ${G.dodged === 1 ? 'bloque esquivado' : 'bloques esquivados'} · ${G.coinsN} ${G.coinsN === 1 ? 'moneda' : 'monedas'}` +
-      (r.record || !bestFor(G.diff) ? '' : ` · récord en ${D.name}: ${fmtN(bestFor(G.diff))}`);
+    $('eBadge').textContent = r.record && r.anterior ? T('Nuevo récord · antes {n}', { n: fmtN(r.anterior) }) : T('Nuevo récord');
+    $('eSub2').textContent = T(G.dodged === 1 ? '{n} bloque esquivado' : '{n} bloques esquivados', { n: G.dodged }) + ' · ' +
+      T(G.coinsN === 1 ? '{n} moneda' : '{n} monedas', { n: G.coinsN }) +
+      (r.record || !bestFor(G.diff) ? '' : ' · ' + T('récord en {d}: {n}', { d: D.name, n: fmtN(bestFor(G.diff)) }));
     $('eXP').hidden = $('eXPd').hidden = !CC;
     $('eXP').textContent = `+${fmtN(r.xp)} XP`;
     const dm = CC && CC.DIFS.find(x => x.id === G.diff);
     const parts = [];
-    if (dm && dm.xp !== 1) parts.push(`×${String(dm.xp).replace('.', ',')} por ${D.name}`);
-    if (r.record && r.anterior != null) parts.push('+25 % por récord');
-    if (r.logros.length) parts.push('incluye logros');
+    if (dm && dm.xp !== 1) parts.push(T('×{x} por {d}', { x: dm.xp.toLocaleString(LOCALE), d: D.name }));
+    if (r.record && r.anterior != null) parts.push(T('+25 % por récord'));
+    if (r.logros.length) parts.push(T('incluye logros'));
     $('eXPd').textContent = parts.join(' · ');
     $('eXPd').hidden = !parts.length;
     const lg = $('eLogros');
@@ -585,12 +648,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // en la pantalla de fin, el mismo selector en chico: la próxima partida usa lo que elijas ahí
     CC.selectorDif($('diffs2'), { juego: 'lluvia', compacto: true, alCambiar: () => renderMenu() });
     if (DIA) DIA.menu(selBox);
-    CC.leyendaTeclas($('leyenda'), { jugar: 'cambiar de carril' });
-    CC.leyendaTeclas($('leyenda2'), { jugar: 'cambiar de carril', extra: [['R', 'otra vez']] });
+    CC.leyendaTeclas($('leyenda'), { jugar: T('cambiar de carril') });
+    CC.leyendaTeclas($('leyenda2'), { jugar: T('cambiar de carril'), extra: [['R', T('otra vez')]] });
   } else {
     $('diffs2').hidden = $('eDifL').hidden = true;
     let v = DIFFS[rec.diff] ? rec.diff : 'normal';
-    selBox.className = 'diffs'; selBox.setAttribute('role', 'radiogroup'); selBox.setAttribute('aria-label', 'Dificultad');
+    selBox.className = 'diffs'; selBox.setAttribute('role', 'radiogroup'); selBox.setAttribute('aria-label', T('Dificultad'));
     selBox.innerHTML = DIFF_IDS.map(d => `<button class="diff" type="button" role="radio" data-d="${d}">${DIFFS[d].name}</button>`).join('') +
       '<p class="diffs-nota" aria-live="polite"></p>';
     const poner = d => {
@@ -608,7 +671,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (!sel) return;
     const best = bestFor(diffNow());
     $('mBest').textContent = best ? fmtN(best) : '—';
-    $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+    $('btnMute').textContent = muted ? T('Sonido: no') : T('Sonido: sí');
   }
   // R o ↻: partida nueva al instante; si cortás una en curso, cuenta como jugada (récord y XP)
   function restart() {
@@ -634,10 +697,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     banner = null;
     // la primera vez, una ayuda breve que se va con el primer toque
     if (!rec.help) {
-      $('helpT').textContent = touchy ? 'Tocá un botón para cambiar de carril' : 'Usá ← → para cambiar de carril';
+      $('helpT').textContent = touchy ? T('Tocá un botón para cambiar de carril') : T('Usá ← → para cambiar de carril');
       $('helpS').textContent = touchy
-        ? 'Los botones de abajo mueven tu cubo. Esquivá los bloques y juntá monedas. Arranca con tu primer toque.'
-        : 'También A y D, o los botones de abajo. Esquivá los bloques y juntá monedas. Arranca cuando te muevas.';
+        ? T('Los botones de abajo mueven tu cubo. Esquivá los bloques y juntá monedas. Arranca con tu primer toque.')
+        : T('También A y D, o los botones de abajo. Esquivá los bloques y juntá monedas. Arranca cuando te muevas.');
       $('help').hidden = false;
     }
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
@@ -704,7 +767,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   $('btnRestart').addEventListener('click', e => { if (e.detail === 0) restart(); }); // Enter/espacio con foco
   // sin la librería no hay pantalla de juegos ni ranking: "← Juegos" se esconde en el inicio y vuelve al inicio en el fin
   $('btnBack').hidden = $('btnRank').hidden = $('btnRank2').hidden = !CC;
-  if (!CC) $('btnHome').textContent = 'Inicio';
+  if (!CC) $('btnHome').textContent = T('Inicio');
   $('btnBack').addEventListener('click', () => CC?.volver());
   $('btnHome').addEventListener('click', () => CC ? CC.volver() : showMenu());
   $('btnRank').addEventListener('click', openRanking);
@@ -806,7 +869,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         if (lvl > G.level) {
           G.level = lvl;
           G.ev = lvl % 2 === 0 && DIFFS[G.diff].coinP > 0 ? 'monedas' : 'rafaga'; G.evT = G.t;
-          if (!G.demo) { sfxLevel(); banner = { text: G.ev === 'monedas' ? '¡Lluvia de monedas!' : '¡Ráfaga dorada ×2!', t: now }; }
+          if (!G.demo) { sfxLevel(); banner = { text: G.ev === 'monedas' ? T('¡Lluvia de monedas!') : T('¡Ráfaga dorada ×2!'), t: now }; }
         }
       }
     } else if (G.demo && G.done && now - G.deadT > 900) newRun(true);
@@ -829,8 +892,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         $('hScore').textContent = fmtN(G.score); $('hTime').textContent = G.t.toFixed(1);
         if (marca) marca.ver(G.score);
         const D = DIFFS[G.diff], vv = Math.max(0, G.vidas);
-        $('hLevel').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + D.name + ' · Nivel ' + G.level +
-          (D.vidas > 1 ? ` <span class="vidas" aria-label="${vv} vidas">${'♥'.repeat(vv)}${'♡'.repeat(D.vidas - vv)}</span>` : '');
+        $('hLevel').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + T('{d} · Nivel {n}', { d: D.name, n: G.level }) +
+          (D.vidas > 1 ? ` <span class="vidas" aria-label="${T('{n} vidas', { n: vv })}">${'♥'.repeat(vv)}${'♡'.repeat(D.vidas - vv)}</span>` : '');
         $('hLevel').classList.toggle('hot', G.level >= 5);
       }
     }
@@ -953,7 +1016,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       ctx.globalAlpha = reduceMotion ? 1 : 0.75 + 0.25 * Math.sin(now / 220);
       ctx.font = `${Math.round(Math.min(LW * 0.42, W / 13))}px "Lilita One", "Trebuchet MS", sans-serif`;
       ctx.lineWidth = 6;
-      const txt = touchy ? 'Tocá un botón para arrancar' : 'Movete para arrancar', by = FLOOR * 0.42;
+      const txt = touchy ? T('Tocá un botón para arrancar') : T('Movete para arrancar'), by = FLOOR * 0.42;
       ctx.strokeText(txt, W / 2, by); ctx.fillText(txt, W / 2, by);
       ctx.globalAlpha = 1;
     }

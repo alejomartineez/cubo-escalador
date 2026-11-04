@@ -308,6 +308,117 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 <script>
 (() => {
   'use strict';
+  const CC = window.CuboComun; // perfil, XP y personaje compartidos (cubo-comun.js)
+  // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js)
+  if (CC && CC.textos) CC.textos({
+    // HTML: HUD, tutorial y flechas
+    'Escalador': 'Climber',
+    'escalones': 'steps',
+    'segundos': 'seconds',
+    'quedan': 'left',
+    'mejor': 'best',
+    'de {n}': 'of {n}',
+    'Reiniciar (R)': 'Restart (R)',
+    'Menú': 'Menu',
+    '{n} esc/s': '{n} steps/s',
+    '{n} esc.': '{n} steps',
+    'Lava a {n} esc.': 'Lava {n} steps away',
+    'Sombra': 'Ghost',
+    'Tocá el lado del próximo escalón': 'Tap the side of the next step',
+    '◀ si sube a la izquierda · ▶ si sube a la derecha': '◀ if it goes up to the left · ▶ if it goes up to the right',
+    'Izquierda': 'Left',
+    'Derecha': 'Right',
+    // menú
+    'Tocá la flecha del lado donde está el próximo escalón. Si le errás, el cubo queda mareado.': 'Tap the arrow on the side of the next step. Miss, and your cube gets dizzy.',
+    'Dificultad': 'Difficulty',
+    'Modo': 'Mode',
+    'Juegos': 'Games',
+    'Ranking': 'Leaderboard',
+    'Un cubo transparente repite tu mejor partida': 'A see-through cube replays your best run',
+    'Correr contra la mejor partida de un amigo': "Race a friend's best run",
+    'Amigo': 'Friend',
+    'Sombra: sí': 'Ghost: on',
+    'Sombra: no': 'Ghost: off',
+    'Sonido: sí': 'Sound: on',
+    'Sonido: no': 'Sound: off',
+    'Récord': 'Best',
+    'Nuevo': 'New',
+    'Sprint 100': 'Sprint 100',
+    '30 segundos': '30 seconds',
+    'Libre': 'Free',
+    'Lava': 'Lava',
+    'Llegá al escalón 100 lo más rápido posible.': 'Reach step 100 as fast as you can.',
+    'Subí todo lo que puedas antes de que suene.': 'Climb as high as you can before time runs out.',
+    'Sin reloj. Subí hasta el espacio y más allá.': 'No clock. Climb to space and beyond.',
+    'La lava sube cada vez más rápido. ¡Que no te alcance!': "The lava rises faster and faster. Don't let it catch you!",
+    'Mareo de medio segundo y ves todos los escalones.': 'Half a second of dizziness, and you see every step.',
+    'Mareo de 1 segundo, ves 4 escalones y si te quedás quieto 2 s, el escalón se rompe. XP ×3.': 'One second of dizziness, you see 4 steps, and if you stand still for 2 s the step breaks. XP ×3.',
+    'Ves 3 escalones, un error termina la partida y el escalón se rompe a los 1,6 s. XP ×4.': 'You see 3 steps, one mistake ends the run, and the step breaks after 1.6 s. XP ×4.',
+    'subir': 'climb',
+    'dificultad <kbd>1</kbd>–<kbd>4</kbd> modo': 'difficulty <kbd>1</kbd>–<kbd>4</kbd> mode',
+    'otra vez': 'again',
+    '¿Salir del duelo? Lo perdés.': "Leave the duel? You'll lose it.",
+    // en el juego (canvas y carteles de altura)
+    '¡Afuera!': "You're out!",
+    '¡Ups!': 'Oops!',
+    'Escalón {n}': 'Step {n}',
+    'Atardecer': 'Sunset',
+    'Anochecer': 'Nightfall',
+    'Estratosfera': 'Stratosphere',
+    'El espacio': 'Space',
+    'La Luna': 'The Moon',
+    'Planetas': 'Planets',
+    'Espacio profundo': 'Deep space',
+    'Maestro': 'Master',
+    'Extremo': 'Extreme',
+    // fin de partida
+    '¡Llegaste!': 'You made it!',
+    '¡Llegaste arriba!': 'You reached the top!',
+    '¡Tiempo!': "Time's up!",
+    '¡Te alcanzó la lava!': 'The lava got you!',
+    '¡Se rompió el escalón!': 'The step broke!',
+    '¡Un error y afuera!': 'One mistake and out!',
+    'Nuevo récord': 'New best',
+    'Otra vez': 'Again',
+    'Dificultad para la próxima': 'Difficulty for next time',
+    'Modos': 'Modes',
+    '{n} error · {v} esc/s': '{n} mistake · {v} steps/s',
+    '{n} errores · {v} esc/s': '{n} mistakes · {v} steps/s',
+    'escalones · {v} por segundo': 'steps · {v} per second',
+    'escalones · {s} s': 'steps · {s} s',
+    'récord {r}': 'best {r}',
+    'No te quedes quieto: el escalón se rompe.': "Don't stand still: the step breaks.",
+    'En Maestro el Sprint tiene que salir perfecto.': 'In Master, the Sprint has to be perfect.',
+    'Extremo ×3': 'Extreme ×3',
+    'Maestro ×4': 'Master ×4',
+    'Logros: {l}': 'Achievements: {l}',
+    '{t} s (Sprint 100)': '{t} s (Sprint 100)',
+    '{n} esc. en 30 s': '{n} steps in 30 s',
+    '{n} esc. escapando de la lava': '{n} steps fleeing the lava',
+    '{n} esc. en Libre': '{n} steps in Free',
+    // sombra
+    'ya tenés sombra para la próxima': 'your ghost is ready for next time',
+    'la sombra de {n}': "{n}'s ghost",
+    'La sombra de {n}': "{n}'s ghost",
+    'tu sombra': 'your ghost',
+    'Tu sombra': 'Your ghost',
+    'le ganaste a {q} por {t} s': 'you beat {q} by {t} s',
+    '{q} te ganó por {t} s': '{q} beat you by {t} s',
+    'empate con {q}': 'tied with {q}',
+    'le ganaste a {q} por {n} esc.': 'you beat {q} by {n} steps',
+    '{q} hizo {n} esc. más': '{q} climbed {n} more steps',
+    '±0,0 s': '±0.0 s',
+    // duelo
+    'Llegaste arriba en <b>{t} s</b>': 'You reached the top in <b>{t} s</b>',
+    '{q} iba por el {n}': '{q} was on step {n}',
+    '{q} llegó en <b>{t} s</b>': '{q} made it in <b>{t} s</b>',
+    'vos: {t} s': 'you: {t} s',
+    'vos ibas por el {n}': 'you were on step {n}',
+    '{q} se fue del duelo.': '{q} left the duel.',
+    '{q} salió del duelo.': '{q} quit the duel.',
+    'Se fue': 'They left',
+  });
+  const T = (s, v) => (CC && CC.T ? CC.T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s);
   const cv = document.getElementById('cv');
   const ctx = cv.getContext('2d');
   const $ = id => document.getElementById(id);
@@ -326,17 +437,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const TIME_LIMIT = 30000;
 
   const MODES = {
-    sprint: { key: '1', name: 'Sprint 100', desc: 'Llegá al escalón 100 lo más rápido posible.' },
-    time:   { key: '2', name: '30 segundos', desc: 'Subí todo lo que puedas antes de que suene.' },
-    free:   { key: '3', name: 'Libre', desc: 'Sin reloj. Subí hasta el espacio y más allá.' },
-    lava:   { key: '4', name: 'Lava', desc: 'La lava sube cada vez más rápido. ¡Que no te alcance!', nuevo: true },
+    sprint: { key: '1', name: T('Sprint 100'), desc: T('Llegá al escalón 100 lo más rápido posible.') },
+    time:   { key: '2', name: T('30 segundos'), desc: T('Subí todo lo que puedas antes de que suene.') },
+    free:   { key: '3', name: T('Libre'), desc: T('Sin reloj. Subí hasta el espacio y más allá.') },
+    lava:   { key: '4', name: T('Lava'), desc: T('La lava sube cada vez más rápido. ¡Que no te alcance!'), nuevo: true },
   };
   const SUFIJO = { normal: '', extremo: '-x', maestro: '-m' };
   const LOCAL = { normal: '', extremo: 'X', maestro: 'M' };
   const NOTAS = {
-    normal: 'Mareo de medio segundo y ves todos los escalones.',
-    extremo: 'Mareo de 1 segundo, ves 4 escalones y si te quedás quieto 2 s, el escalón se rompe. XP ×3.',
-    maestro: 'Ves 3 escalones, un error termina la partida y el escalón se rompe a los 1,6 s. XP ×4.',
+    normal: T('Mareo de medio segundo y ves todos los escalones.'),
+    extremo: T('Mareo de 1 segundo, ves 4 escalones y si te quedás quieto 2 s, el escalón se rompe. XP ×3.'),
+    maestro: T('Ves 3 escalones, un error termina la partida y el escalón se rompe a los 1,6 s. XP ×4.'),
   };
   const ZONES = [
     ['#ff7a95', '#d94a6c'], ['#ffad4d', '#d9801c'], ['#3fdca8', '#16a676'],
@@ -353,8 +464,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     [950, [2, 1, 10],      [18, 10, 42]],
   ];
   const ZONE_NAMES = [ // cartel que aparece al pasar cada altura
-    [130, 'Atardecer'], [190, 'Anochecer'], [255, 'Estratosfera'], [330, 'El espacio'],
-    [440, 'La Luna'], [650, 'Planetas'], [950, 'Espacio profundo'],
+    [130, T('Atardecer')], [190, T('Anochecer')], [255, T('Estratosfera')], [330, T('El espacio')],
+    [440, T('La Luna')], [650, T('Planetas')], [950, T('Espacio profundo')],
   ];
   const BALLOONS = [['#ff5d7d', '#ffd1db'], ['#ffcc29', '#fff1b8'], ['#1fbf8a', '#c4f5e2'], ['#5cb0ff', '#d4e9ff']];
   const PLANETS = [ // claro, oscuro, anillo
@@ -362,7 +473,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     ['#c6b3ff', '#5a3fc8', '#e6dcff'], ['#ffe08a', '#b8890f', '#fff1c4'],
   ];
   const NEBULA = ['170,90,255', '255,90,170', '60,200,220', '90,120,255'];
-  const CC = window.CuboComun; // perfil, XP y personaje compartidos (cubo-comun.js)
   // Duelo 1v1 contra un amigo (cubo-duelo.js): Sprint 100 en Normal con la misma escalera para los dos.
   const CD = window.CuboDuelo, DUELO = CD ? CD.partida() : null;
   let sala = null, azar = Math.random;
@@ -469,7 +579,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       G.combo = 0; G.errors++;
       if (!G.demo) {
         shake = reduceMotion ? 0 : 7; sfxBonk();
-        floats.push({ text: G.dif === 'maestro' ? '¡Afuera!' : '¡Ups!', x: G.rx, y: G.ry, t: now });
+        floats.push({ text: G.dif === 'maestro' ? T('¡Afuera!') : T('¡Ups!'), x: G.rx, y: G.ry, t: now });
         if (G.dif === 'maestro') { G.stunUntil = Infinity; perder(now, 'error'); }
       }
     }
@@ -491,8 +601,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (!CC || G.demo || !(valor > 0)) return null;
     try {
       return CC.partida({ juego: 'escalador', tabla: tabla(G.mode, G.dif), valor, xp: xpDe(G.mode, valor), marcas, diario: DIA || undefined,
-        texto: G.mode === 'sprint' ? fmtS(valor) + ' s (Sprint 100)' : G.mode === 'time' ? valor + ' esc. en 30 s'
-          : G.mode === 'lava' ? valor + ' esc. escapando de la lava' : valor + ' esc. en Libre' });
+        texto: G.mode === 'sprint' ? T('{t} s (Sprint 100)', { t: fmtS(valor) }) : G.mode === 'time' ? T('{n} esc. en 30 s', { n: valor })
+          : G.mode === 'lava' ? T('{n} esc. escapando de la lava', { n: valor }) : T('{n} esc. en Libre', { n: valor }) });
     } catch (e) { return null; }
   }
   function guardarLocal(mode, d, valor) {
@@ -507,18 +617,18 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     let title, num, sub, valor;
     if (G.mode === 'sprint') {
       valor = Math.round(now - G.t0);
-      title = '¡Llegaste arriba!'; num = fmtS(valor) + ' s';
-      sub = `${G.errors} ${G.errors === 1 ? 'error' : 'errores'} · ${(SPRINT_GOAL / (valor / 1000)).toFixed(1)} esc/s`;
+      title = T('¡Llegaste arriba!'); num = fmtS(valor) + ' s';
+      sub = T(G.errors === 1 ? '{n} error · {v} esc/s' : '{n} errores · {v} esc/s', { n: G.errors, v: (SPRINT_GOAL / (valor / 1000)).toFixed(1) });
     } else {
       valor = G.i;
-      title = '¡Tiempo!'; num = G.i;
-      sub = `escalones · ${(G.i / (TIME_LIMIT / 1000)).toFixed(1)} por segundo`;
+      title = T('¡Tiempo!'); num = G.i;
+      sub = T('escalones · {v} por segundo', { v: (G.i / (TIME_LIMIT / 1000)).toFixed(1) });
     }
     sfxWin();
     const anterior = recDe(G.mode, G.dif);
     const isRec = guardarLocal(G.mode, G.dif, valor);
     const r = cerrar(valor, G.mode === 'sprint' && G.errors === 0 ? ['escalador-limpio'] : []);
-    if (!isRec && anterior) sub += ` · récord ${G.mode === 'sprint' ? fmtS(anterior) + ' s' : anterior}`;
+    if (!isRec && anterior) sub += ' · ' + T('récord {r}', { r: G.mode === 'sprint' ? fmtS(anterior) + ' s' : anterior });
     sub += finSombra(valor);
     pintarFin(title, num, sub, isRec, r);
     if (DIA) DIA.fin(r, $('btnAgain'), [$('difs2').parentNode, $('btnModes')]);
@@ -541,12 +651,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function elegirAmigo() {
     CC.sombra.elegirAmigo({
-      juego: 'escalador', titulo: 'Escalador · ' + CC.DIFS.find(d => d.id === dif).nombre, detalle: CC.DIFS.find(d => d.id === dif).nombre,
-      opciones: [{ tabla: tabla('sprint', dif), nombre: 'Sprint 100' }, { tabla: tabla('time', dif), nombre: '30 s' }],
+      juego: 'escalador', titulo: T('Escalador') + ' · ' + T(CC.DIFS.find(d => d.id === dif).nombre), detalle: T(CC.DIFS.find(d => d.id === dif).nombre),
+      opciones: [{ tabla: tabla('sprint', dif), nombre: T('Sprint 100') }, { tabla: tabla('time', dif), nombre: '30 s' }],
       alElegir(S, amigo, t) { const mode = t.startsWith('sprint') ? 'sprint' : 'time'; contraAmigo = { S, amigo, mode, dif }; start(mode); },
     });
   }
-  const deQuien = () => (G.sombraDe ? 'la sombra de ' + G.sombraDe.apodo : 'tu sombra');
+  // mayus: al principio de la frase («La sombra de…», «Tu sombra…»)
+  const deQuien = mayus => (G.sombraDe ? T(mayus ? 'La sombra de {n}' : 'la sombra de {n}', { n: G.sombraDe.apodo }) : T(mayus ? 'Tu sombra' : 'tu sombra'));
   // Cuánto vas adelante o atrás. Sprint: en segundos (negativo = adelante). 30 s: en escalones (positivo = adelante).
   function difSombra(el) {
     const S = G.sombra;
@@ -558,22 +669,22 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function textoSombra(el) {
     const d = difSombra(el);
-    if (d.esc != null) return { txt: (d.esc > 0 ? '+' : d.esc < 0 ? '−' : '±') + Math.abs(d.esc) + ' esc.', adelante: d.esc > 0, atras: d.esc < 0 };
-    return { txt: Math.abs(d.ms) < 50 ? '±0,0 s' : CC.sombra.textoDif(d.ms), adelante: d.ms <= -50, atras: d.ms >= 50 };
+    if (d.esc != null) return { txt: T('{n} esc.', { n: (d.esc > 0 ? '+' : d.esc < 0 ? '−' : '±') + Math.abs(d.esc) }), adelante: d.esc > 0, atras: d.esc < 0 };
+    return { txt: Math.abs(d.ms) < 50 ? T('±0,0 s') : CC.sombra.textoDif(d.ms), adelante: d.ms <= -50, atras: d.ms >= 50 };
   }
   // Al terminar: guarda la curva si fue tu mejor partida y arma el renglón "contra la sombra".
   function finSombra(valor) {
     if (!G.graba) return '';
     const S = G.sombra;
     const nueva = CC.sombra.guardar('escalador', tabla(G.mode, G.dif), G.graba, valor);
-    if (!S) return nueva ? ' · ya tenés sombra para la próxima' : '';
-    const q = deQuien(), Q = q[0].toUpperCase() + q.slice(1);
+    if (!S) return nueva ? ' · ' + T('ya tenés sombra para la próxima') : '';
+    const q = deQuien(false), Q = deQuien(true);
     if (G.mode === 'sprint') {
       const d = valor - S.fin;
-      return d < 0 ? ` · le ganaste a ${q} por ${fmtS(-d)} s` : d > 0 ? ` · ${Q} te ganó por ${fmtS(d)} s` : ` · empate con ${q}`;
+      return ' · ' + (d < 0 ? T('le ganaste a {q} por {t} s', { q, t: fmtS(-d) }) : d > 0 ? T('{q} te ganó por {t} s', { q: Q, t: fmtS(d) }) : T('empate con {q}', { q }));
     }
     const d = valor - S.max;
-    return d > 0 ? ` · le ganaste a ${q} por ${d} esc.` : d < 0 ? ` · ${Q} hizo ${-d} esc. más` : ` · empate con ${q}`;
+    return ' · ' + (d > 0 ? T('le ganaste a {q} por {n} esc.', { q, n: d }) : d < 0 ? T('{q} hizo {n} esc. más', { q: Q, n: -d }) : T('empate con {q}', { q }));
   }
   // El cubo de la sombra, transparente, en el escalón al que había llegado a esta altura de la partida.
   function drawSombra(now) {
@@ -630,8 +741,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (!repetir && Du.mio == null && CC && G.i > 0) CC.sumarXP(G.i / 6);
     CD.resultado(sala, {
       gane,
-      texto: gane ? `Llegaste arriba en <b>${fmtS(Du.mio)} s</b>` + (Du.suyo != null ? ` · ${quien}: ${fmtS(Du.suyo)} s` : ` · ${quien} iba por el ${Du.el}`)
-        : `${quien} llegó en <b>${fmtS(Du.suyo)} s</b>` + (Du.mio != null ? ` · vos: ${fmtS(Du.mio)} s` : ` · vos ibas por el ${G.i}`),
+      texto: gane ? T('Llegaste arriba en <b>{t} s</b>', { t: fmtS(Du.mio) }) + (Du.suyo != null ? ` · ${quien}: ${fmtS(Du.suyo)} s` : ' · ' + T('{q} iba por el {n}', { q: quien, n: Du.el }))
+        : T('{q} llegó en <b>{t} s</b>', { q: quien, t: fmtS(Du.suyo) }) + ' · ' + (Du.mio != null ? T('vos: {t} s', { t: fmtS(Du.mio) }) : T('vos ibas por el {n}', { n: G.i })),
     });
   }
   function conectarDuelo() {
@@ -653,8 +764,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         if (G && G.duelo) { G.duelo.fin = true; G.done = true; }
         state = 'duelo'; $('pad').hidden = true;
         const quien = DUELO.rival.apodo.replace(/</g, '&lt;');
-        CD.resultado(sala, jugando ? { gane: true, sinRevancha: true, texto: `${quien} se fue del duelo.` }
-          : { titulo: 'Se fue', sinRevancha: true, texto: `${quien} salió del duelo.` });
+        CD.resultado(sala, jugando ? { gane: true, sinRevancha: true, texto: T('{q} se fue del duelo.', { q: quien }) }
+          : { titulo: T('Se fue'), sinRevancha: true, texto: T('{q} salió del duelo.', { q: quien }) });
       },
     });
     CD.esperandoRival(sala);
@@ -665,19 +776,19 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     G.done = true; G.endT = now;
     if (CC) CC.morir();   // personajes con muerte propia (Geo se parte en pedazos)
     const valor = G.i;
-    let title = por === 'lava' ? '¡Te alcanzó la lava!' : por === 'derrumbe' ? '¡Se rompió el escalón!' : '¡Un error y afuera!', num, sub, isRec = false, r = null;
+    let title = T(por === 'lava' ? '¡Te alcanzó la lava!' : por === 'derrumbe' ? '¡Se rompió el escalón!' : '¡Un error y afuera!'), num, sub, isRec = false, r = null;
     if (G.mode === 'sprint') {
       num = G.i + ' / ' + SPRINT_GOAL;
-      sub = por === 'derrumbe' ? 'No te quedes quieto: el escalón se rompe.' : 'En Maestro el Sprint tiene que salir perfecto.';
+      sub = T(por === 'derrumbe' ? 'No te quedes quieto: el escalón se rompe.' : 'En Maestro el Sprint tiene que salir perfecto.');
       if (CC && G.i > 0) CC.sumarXP(G.i / 6);
     } else {
       num = valor;
       const seg = G.started ? ((now - G.t0) / 1000).toFixed(1) : '0';
-      sub = `escalones · ${seg} s`;
+      sub = T('escalones · {s} s', { s: seg });
       const anterior = recDe(G.mode, G.dif);
       isRec = valor > 0 && guardarLocal(G.mode, G.dif, valor);
       r = cerrar(valor);
-      if (!isRec && anterior) sub += ` · récord ${anterior}`;
+      if (!isRec && anterior) sub += ' · ' + T('récord {r}', { r: anterior });
       sub += finSombra(valor);
     }
     if (por === 'lava') { beep(110, 0.5, 'sawtooth', 0.07, 0.5); beep(70, 0.6, 'square', 0.05); }
@@ -690,7 +801,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('eTitle').textContent = title; $('eNum').textContent = num; $('eSub').textContent = sub;
     $('eBadge').hidden = !isRec;
     $('eXp').hidden = !r;
-    if (r) $('eXp').innerHTML = `<b>+${r.xp} XP</b>` + (G.dif === 'extremo' ? ' · Extremo ×3' : G.dif === 'maestro' ? ' · Maestro ×4' : '') + (r.logros.length ? `<span>Logros: ${r.logros.join(', ')}</span>` : '');
+    if (r) $('eXp').innerHTML = `<b>+${r.xp} XP</b>` + (G.dif === 'extremo' ? ' · ' + T('Extremo ×3') : G.dif === 'maestro' ? ' · ' + T('Maestro ×4') : '') + (r.logros.length ? `<span>${T('Logros: {l}', { l: r.logros.map(x => T(x)).join(', ') })}</span>` : '');
   }
 
   // ---------- pantallas ----------
@@ -698,15 +809,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const box = $('modes'); box.innerHTML = '';
     for (const [id, m] of Object.entries(MODES)) {
       const v = recDe(id, dif);
-      const r = !v ? '—' : id === 'sprint' ? fmtS(v) + ' s' : v + ' esc.';
+      const r = !v ? '—' : id === 'sprint' ? fmtS(v) + ' s' : T('{n} esc.', { n: v });
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'mode' + (id === 'lava' ? ' lava' : ''); b.id = 'mode-' + id;
-      b.innerHTML = `<span class="key">${m.key}</span><span><span class="mname">${m.name}${m.nuevo ? '<span class="nuevo">Nuevo</span>' : ''}</span><span class="mdesc">${m.desc}</span></span><span class="mrec">Récord<b>${r}</b></span>`;
+      b.innerHTML = `<span class="key">${m.key}</span><span><span class="mname">${m.name}${m.nuevo ? `<span class="nuevo">${T('Nuevo')}</span>` : ''}</span><span class="mdesc">${m.desc}</span></span><span class="mrec">${T('Récord')}<b>${r}</b></span>`;
       b.addEventListener('click', () => start(id));
       box.appendChild(b);
     }
-    $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
-    if (CC && CC.sombra && !DUELO) { $('btnSombraAmigo').hidden = !CC.rankingActivo(); $('btnSombra').hidden = false; $('btnSombra').textContent = 'Sombra: ' + (CC.sombra.activa('escalador') ? 'sí' : 'no'); }
+    $('btnMute').textContent = T(muted ? 'Sonido: no' : 'Sonido: sí');
+    if (CC && CC.sombra && !DUELO) { $('btnSombraAmigo').hidden = !CC.rankingActivo(); $('btnSombra').hidden = false; $('btnSombra').textContent = T(CC.sombra.activa('escalador') ? 'Sombra: sí' : 'Sombra: no'); }
   }
   // Partida cortada a la mitad (R, Menú): Libre cuenta como terminada; Sprint y 30 s suman un poco de XP.
   function cortar() {
@@ -727,10 +838,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     prepararSombra();
     state = 'play';
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').hidden = false;
-    $('hTimeLbl').textContent = mode === 'time' ? 'quedan' : mode === 'sprint' ? 'segundos' : mode === 'lava' ? 'segundos' : 'mejor';
-    $('hStepsLbl').textContent = mode === 'sprint' ? `de ${SPRINT_GOAL}` : 'escalones';
+    $('hTimeLbl').textContent = T(mode === 'time' ? 'quedan' : mode === 'sprint' ? 'segundos' : mode === 'lava' ? 'segundos' : 'mejor');
+    $('hStepsLbl').textContent = mode === 'sprint' ? T('de {n}', { n: SPRINT_GOAL }) : T('escalones');
     $('hX').hidden = dif === 'normal';
-    if (CC && dif !== 'normal') { $('hX').innerHTML = CC.iconoDif(dif, 16) + (dif === 'maestro' ? 'Maestro' : 'Extremo'); $('hX').className = 'chip ' + (dif === 'maestro' ? 'mchip' : 'xchip'); }
+    if (CC && dif !== 'normal') { $('hX').innerHTML = CC.iconoDif(dif, 16) + T(dif === 'maestro' ? 'Maestro' : 'Extremo'); $('hX').className = 'chip ' + (dif === 'maestro' ? 'mchip' : 'xchip'); }
     $('hLava').hidden = mode !== 'lava';
     $('hSombra').hidden = !G.sombra;
     $('tuto').hidden = !!rec.tuto;
@@ -784,7 +895,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   bindPad($('bL'), -1); bindPad($('bR'), 1);
   cv.addEventListener('pointerdown', e => { if (state === 'play') { e.preventDefault(); input(e.clientX < W / 2 ? -1 : 1); } });
   $('btnQuit').addEventListener('click', () => {
-    if (DUELO) { if (sala && confirm('¿Salir del duelo? Lo perdés.')) sala.salir(); return; }
+    if (DUELO) { if (sala && confirm(T('¿Salir del duelo? Lo perdés.'))) sala.salir(); return; }
     showMenu();
   });
   $('btnModes').addEventListener('click', showMenu);
@@ -803,8 +914,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     CC.selectorDif($('difs2'), { juego: 'escalador', difs: DIFS3, compacto: true, alCambiar: cambioDif });
     dif = sel.valor();
     if (DIA) { dif = 'normal'; DIA.menu($('difs'), [$('difs').previousElementSibling, $('modes').previousElementSibling, $('modes')], () => start('time')); }
-    CC.leyendaTeclas($('keys'), { jugar: 'subir', elegir: 'dificultad <kbd>1</kbd>–<kbd>4</kbd> modo' });
-    CC.leyendaTeclas($('keys2'), { jugar: 'subir', extra: [['R', 'otra vez']] });
+    CC.leyendaTeclas($('keys'), { jugar: T('subir'), elegir: T('dificultad <kbd>1</kbd>–<kbd>4</kbd> modo') });
+    CC.leyendaTeclas($('keys2'), { jugar: T('subir'), extra: [['R', T('otra vez')]] });
     // récords de antes de que existiera el perfil común: pasan al perfil y al ranking, y destraban logros
     for (const [k, t] of [['sprint', 'sprint'], ['time', 'time'], ['free', 'free'], ['sprintX', 'sprint-x'], ['timeX', 'time-x'], ['freeX', 'free-x']]) {
       if (rec[k]) CC.importarRecord('escalador', t, rec[k]);
@@ -1044,7 +1155,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (state === 'play' && !G.demo && G.zone < ZONE_NAMES.length && G.i >= ZONE_NAMES[G.zone][0]) {
       const [at, name] = ZONE_NAMES[G.zone++];
       const z = $('zone');
-      $('zoneAt').textContent = 'Escalón ' + at; $('zoneName').textContent = name;
+      $('zoneAt').textContent = T('Escalón {n}', { n: at }); $('zoneName').textContent = name;
       z.classList.remove('show'); void z.offsetWidth; z.classList.add('show');
       beep(660, 0.12, 'triangle', 0.05); setTimeout(() => beep(990, 0.18, 'triangle', 0.05), 110);
     }
@@ -1082,14 +1193,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (sig !== hudCache) {
         hudCache = sig;
         if (G.mode === 'lava') {
-          $('hLava').textContent = '🔥 Lava a ' + dist + ' esc.';
+          $('hLava').textContent = '🔥 ' + T('Lava a {n} esc.', { n: dist });
           $('hLava').classList.toggle('hot', dist < 5);
         }
         $('hSteps').textContent = steps; $('hTime').textContent = time;
-        $('hSpeed').textContent = speed + ' esc/s';
+        $('hSpeed').textContent = T('{n} esc/s', { n: speed });
         $('hSpeed').classList.toggle('hot', speed >= 7);
         if (som) {
-          $('hSombra').textContent = (G.sombraDe ? G.sombraDe.apodo : 'Sombra') + ' ' + som.txt;
+          $('hSombra').textContent = (G.sombraDe ? G.sombraDe.apodo : T('Sombra')) + ' ' + som.txt;
           $('hSombra').classList.toggle('adelante', som.adelante); $('hSombra').classList.toggle('atras', som.atras);
         }
       }

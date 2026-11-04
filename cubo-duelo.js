@@ -7,6 +7,77 @@
   'use strict';
   const CC = window.CuboComun;
   if (!CC || !CC.RANKING || window.CuboDuelo) return;
+  // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js)
+  if (CC.textos) CC.textos({
+    // juegos 1v1
+    'Pulseada': 'Arm Wrestling',
+    'Escalador': 'Climber',
+    'Vóley': 'Volley',
+    'Pulseada de verdad: tu fuerza contra la suya. Al mejor de 3.': 'A real arm-wrestling match: your strength against theirs. Best of 3.',
+    'Carrera al escalón 100 con la misma escalera.': 'Race to step 100 on the same staircase.',
+    'Los dos contra el mismo rival: gana el que hace más puntos.': 'You both face the same opponent: most points wins.',
+    // ventana del medio
+    'Vos': 'You',
+    'OK': 'OK',
+    'Volver': 'Back',
+    'Salir': 'Exit',
+    'Cancelar': 'Cancel',
+    // retar
+    'Primero, tu apodo': 'First, your nickname',
+    'Para retar a alguien necesitás un apodo (y tu código de amigo). Ponelo en cualquier ranking.': 'To challenge someone you need a nickname (and your friend code). Set it on any leaderboard.',
+    'Listo': 'Done',
+    'Todavía no': 'Not yet',
+    'Para retar a {n} tiene que aceptar tu solicitud de amistad.': '{n} has to accept your friend request before you can challenge them.',
+    'Retar a {n}': 'Challenge {n}',
+    'Le llega la invitación al toque si tiene el juego abierto, y si no cuando entre (dura 10 minutos).': 'They get the invite right away if they have the game open, or as soon as they come back (it lasts 10 minutes).',
+    'Mandando el reto…': 'Sending challenge…',
+    'No se pudo': 'Something went wrong',
+    'Los retos se están preparando. Probá de nuevo en un rato.': 'Challenges are still being set up. Try again in a bit.',
+    'No hay conexión. Probá de nuevo en un rato.': 'No connection. Try again in a bit.',
+    'Tu apodo todavía no se subió. Esperá unos segundos y probá de nuevo.': "Your nickname hasn't been uploaded yet. Wait a few seconds and try again.",
+    'No encontramos a tu amigo. Quizás cambió de código.': "We couldn't find your friend. Maybe their code changed.",
+    '{n} ya no está en tus amigos (o todavía no aceptó tu solicitud).': "{n} isn't in your friends anymore (or hasn't accepted your request yet).",
+    'Mandaste muchos retos seguidos. Esperá un minuto.': 'You sent too many challenges in a row. Wait a minute.',
+    'No se pudo mandar el reto.': "Couldn't send the challenge.",
+    'Uy': 'Oops',
+    // esperando la respuesta
+    'Esperando a {n}': 'Waiting for {n}',
+    'Lo retaste a <b>{j}</b>. Apenas acepte, arranca.': 'You challenged them to <b>{j}</b>. It starts as soon as they accept.',
+    'Si no tiene el juego abierto, le aparece cuando entre. Vence en <span data-reloj>{t}</span>.': "If they don't have the game open, they'll see it when they come back. Expires in <span data-reloj>{t}</span>.",
+    'Cancelar reto': 'Cancel challenge',
+    'Ahora no puede': "Can't play now",
+    'No respondió': 'No answer',
+    '{n} no puede jugar ahora. Probá más tarde.': "{n} can't play right now. Try again later.",
+    '{n} no aceptó a tiempo. Mandale otro cuando esté.': "{n} didn't accept in time. Send another one later.",
+    '¡Aceptado!': 'Accepted!',
+    'Abriendo {j}…': 'Opening {j}…',
+    // invitaciones
+    'Te retaron': "You've been challenged",
+    '{n} te reta a {j}': '{n} challenges you to {j}',
+    '¡Acepto!': "I'm in!",
+    'Ahora no': 'Not now',
+    'Entrando…': 'Joining…',
+    'Se venció': 'Expired',
+    'El reto de {n} ya no está. Retalo vos desde Amigos.': "{n}'s challenge is gone. Challenge them back from Friends.",
+    '¡Aceptó tu reto!': 'Challenge accepted!',
+    '{n} ya está en {j} esperándote.': '{n} is already in {j}, waiting for you.',
+    '¡Vamos!': "Let's go!",
+    // la sala
+    'No llegó': "They didn't show up",
+    '{n} no entró al duelo. Quizás cerró el juego.': "{n} didn't join the duel. Maybe they closed the game.",
+    '¡{n} quiere la revancha!': '{n} wants a rematch!',
+    'Duelo contra {n}': 'Duel vs {n}',
+    'Esperando a que entre {n}…': 'Waiting for {n} to join…',
+    '¡Ya!': 'Go!',
+    '¡Ganaste!': 'You won!',
+    'Perdiste': 'You lost',
+    'Empate': 'Tie',
+    'Revancha': 'Rematch',
+    'Esperando…': 'Waiting…',
+  });
+  const T = (s, v) => (CC && CC.T ? CC.T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s);
+  // para textos con un apodo adentro: el apodo no se traduce (si alguien se llama «Oro», no pasa a «Gold»)
+  const Tsin = (s, v) => (CC && CC.Tsin ? CC.Tsin(s, v) : T(s, v));
   const RED = CC.RANKING;
   const INK = '#1d2340', CREMA = '#fffaf0';
   const ESTADO = 'cubo-duelo';            // sessionStorage: el duelo que se está por jugar en esta pestaña
@@ -15,9 +86,9 @@
 
   // Juegos que se pueden jugar 1v1. Los dos juegan con las mismas condiciones (misma semilla, Normal).
   const JUEGOS = [
-    { id: 'pulseada', nombre: 'Pulseada', desc: 'Pulseada de verdad: tu fuerza contra la suya. Al mejor de 3.', pagina: 'pulseada.html' },
-    { id: 'escalador', nombre: 'Escalador', desc: 'Carrera al escalón 100 con la misma escalera.', pagina: 'escalador.html' },
-    { id: 'voley', nombre: 'Vóley', desc: 'Los dos contra el mismo rival: gana el que hace más puntos.', pagina: 'voley.html' },
+    { id: 'pulseada', nombre: T('Pulseada'), desc: T('Pulseada de verdad: tu fuerza contra la suya. Al mejor de 3.'), pagina: 'pulseada.html' },
+    { id: 'escalador', nombre: T('Escalador'), desc: T('Carrera al escalón 100 con la misma escalera.'), pagina: 'escalador.html' },
+    { id: 'voley', nombre: T('Vóley'), desc: T('Los dos contra el mismo rival: gana el que hace más puntos.'), pagina: 'voley.html' },
   ];
   const juegoDe = id => JUEGOS.find(j => j.id === id);
   const skinDe = id => CC.SKINS.find(s => s.id === id) || CC.SKINS[0];
@@ -193,8 +264,8 @@
     el.id = 'cd-capa'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
     const p = CC.perfil();
     el.innerHTML = `<div class="cd-card">
-      ${o.rival ? `<div class="vs"><div class="${o.gano === 'yo' ? 'gano' : ''}"><canvas width="128" height="140"></canvas><small>Vos</small></div><i>VS</i>
-        <div class="${o.gano === 'el' ? 'gano' : ''}"><canvas width="128" height="140"></canvas><small>${esc(o.rival.apodo)}</small></div></div>` : ''}
+      ${o.rival ? `<div class="vs"><div class="${o.gano === 'yo' ? 'gano' : ''}"><canvas width="128" height="140"></canvas><small>${T('Vos')}</small></div><i>VS</i>
+        <div class="${o.gano === 'el' ? 'gano' : ''}"><canvas width="128" height="140"></canvas><small translate="no">${esc(o.rival.apodo)}</small></div></div>` : ''}
       ${o.titulo ? `<h2 class="${o.gane ? 'gane' : ''}">${esc(o.titulo)}</h2>` : ''}
       ${o.cargando ? '<div class="rueda" aria-hidden="true"></div>' : ''}
       ${o.html || ''}
@@ -234,15 +305,15 @@
   function elegirJuego(amigo) {
     const p = CC.perfil();
     if (!p.apodo || !p.codigoAmigo) {
-      capa({ titulo: 'Primero, tu apodo', texto: 'Para retar a alguien necesitás un apodo (y tu código de amigo). Ponelo en cualquier ranking.', botones: [{ txt: 'Listo', si: true, accion: cerrarCapa }] });
+      capa({ titulo: T('Primero, tu apodo'), texto: T('Para retar a alguien necesitás un apodo (y tu código de amigo). Ponelo en cualquier ranking.'), botones: [{ txt: T('Listo'), si: true, accion: cerrarCapa }] });
       return;
     }
     if (!p.amigos.some(a => a.codigo === amigo.codigo)) {
-      capa({ titulo: 'Todavía no', rival: amigo, texto: `Para retar a ${esc(amigo.apodo)} tiene que aceptar tu solicitud de amistad.`, botones: [{ txt: 'OK', si: true, accion: cerrarCapa }] });
+      capa({ titulo: T('Todavía no'), rival: amigo, texto: Tsin('Para retar a {n} tiene que aceptar tu solicitud de amistad.', { n: esc(amigo.apodo) }), botones: [{ txt: 'OK', si: true, accion: cerrarCapa }] });
       return;
     }
-    const el = capa({ titulo: 'Retar a ' + amigo.apodo, rival: amigo, nota: 'Le llega la invitación al toque si tiene el juego abierto, y si no cuando entre (dura 10 minutos).',
-      html: '<div class="cd-juegos"></div>', botones: [{ txt: 'Cancelar', accion: cerrarCapa }], alCerrar: () => {} });
+    const el = capa({ titulo: Tsin('Retar a {n}', { n: amigo.apodo }), rival: amigo, nota: T('Le llega la invitación al toque si tiene el juego abierto, y si no cuando entre (dura 10 minutos).'),
+      html: '<div class="cd-juegos"></div>', botones: [{ txt: T('Cancelar'), accion: cerrarCapa }], alCerrar: () => {} });
     const box = el.querySelector('.cd-juegos');
     for (const j of JUEGOS) {
       const b = document.createElement('button');
@@ -255,7 +326,7 @@
   let esperando = null;   // el reto que mandaste y estás esperando
   async function retar(amigo, juego) {
     const p = CC.perfil();
-    capa({ titulo: 'Mandando el reto…', rival: amigo, cargando: true });
+    capa({ titulo: T('Mandando el reto…'), rival: amigo, cargando: true });
     const mia = await huella();
     let r;
     try {
@@ -263,15 +334,15 @@
       r = await rpc('retar', { p_jugador: p.id, p_codigo: amigo.codigo, p_juego: juego, p_dif: 'normal' });
     } catch (e) {
       if (e.faltaSql) faltaTabla();
-      capa({ titulo: 'No se pudo', texto: e.faltaSql ? 'Los retos se están preparando. Probá de nuevo en un rato.' : 'No hay conexión. Probá de nuevo en un rato.',
+      capa({ titulo: T('No se pudo'), texto: e.faltaSql ? T('Los retos se están preparando. Probá de nuevo en un rato.') : T('No hay conexión. Probá de nuevo en un rato.'),
         botones: [{ txt: 'OK', si: true, accion: cerrarCapa }] });
       return;
     }
     if (!r || r.error) {
-      const msg = { 'sin-apodo': 'Tu apodo todavía no se subió. Esperá unos segundos y probá de nuevo.', 'no-existe': 'No encontramos a tu amigo. Quizás cambió de código.',
-        'no-amigos': `${esc(amigo.apodo)} ya no está en tus amigos (o todavía no aceptó tu solicitud).`,
-        muchos: 'Mandaste muchos retos seguidos. Esperá un minuto.' }[r && r.error] || 'No se pudo mandar el reto.';
-      capa({ titulo: 'Uy', texto: msg, botones: [{ txt: 'OK', si: true, accion: cerrarCapa }] });
+      const msg = { 'sin-apodo': T('Tu apodo todavía no se subió. Esperá unos segundos y probá de nuevo.'), 'no-existe': T('No encontramos a tu amigo. Quizás cambió de código.'),
+        'no-amigos': Tsin('{n} ya no está en tus amigos (o todavía no aceptó tu solicitud).', { n: esc(amigo.apodo) }),
+        muchos: T('Mandaste muchos retos seguidos. Esperá un minuto.') }[r && r.error] || T('No se pudo mandar el reto.');
+      capa({ titulo: T('Uy'), texto: msg, botones: [{ txt: 'OK', si: true, accion: cerrarCapa }] });
       if (r && r.error === 'sin-apodo') CC.subirPendientes();
       if (r && r.error === 'no-amigos') CC.refrescarAmigos(true);
       return;
@@ -293,10 +364,10 @@
     const terminar = () => { fin = true; clearInterval(poll); clearInterval(reloj); if (esperando === reto) esperando = null; };
     esperando = reto;
     const restante = () => { const s = Math.max(0, Math.round((Date.parse(reto.vence) - Date.now()) / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
-    const el = capa({ titulo: 'Esperando a ' + reto.rival.apodo, rival: reto.rival, cargando: true,
-      texto: `Lo retaste a <b>${esc(j ? j.nombre : reto.juego)}</b>. Apenas acepte, arranca.`,
-      nota: `Si no tiene el juego abierto, le aparece cuando entre. Vence en <span data-reloj>${restante()}</span>.`,
-      botones: [{ txt: 'Cancelar reto', accion: () => cancelar() }], alCerrar: () => { if (!fin) cancelar(true); } });
+    const el = capa({ titulo: Tsin('Esperando a {n}', { n: reto.rival.apodo }), rival: reto.rival, cargando: true,
+      texto: T('Lo retaste a <b>{j}</b>. Apenas acepte, arranca.', { j: esc(j ? j.nombre : reto.juego) }),
+      nota: T('Si no tiene el juego abierto, le aparece cuando entre. Vence en <span data-reloj>{t}</span>.', { t: restante() }),
+      botones: [{ txt: T('Cancelar reto'), accion: () => cancelar() }], alCerrar: () => { if (!fin) cancelar(true); } });
     const reloj = setInterval(() => {
       const r = el.querySelector('[data-reloj]'); if (r) r.textContent = restante();
       if (Date.parse(reto.vence) <= Date.now()) respuesta('vencido');
@@ -314,8 +385,8 @@
       if (estado === 'aceptado') { terminar(); capaCerrar = null; irAJugar(reto, 'host'); return; }
       if (estado === 'pendiente') return;
       terminar(); capaCerrar = null; quitarEnviado(reto.id);
-      capa({ titulo: estado === 'rechazado' ? 'Ahora no puede' : 'No respondió', rival: reto.rival,
-        texto: estado === 'rechazado' ? `${esc(reto.rival.apodo)} no puede jugar ahora. Probá más tarde.` : `${esc(reto.rival.apodo)} no aceptó a tiempo. Mandale otro cuando esté.`,
+      capa({ titulo: estado === 'rechazado' ? T('Ahora no puede') : T('No respondió'), rival: reto.rival,
+        texto: Tsin(estado === 'rechazado' ? '{n} no puede jugar ahora. Probá más tarde.' : '{n} no aceptó a tiempo. Mandale otro cuando esté.', { n: esc(reto.rival.apodo) }),
         botones: [{ txt: 'OK', si: true, accion: cerrarCapa }] });
     }
     reto.responder = respuesta;
@@ -330,7 +401,7 @@
     const j = juegoDe(reto.juego);
     if (!j) return;
     guardarJSON(sessionStorage, ESTADO, { id: reto.id, sala: reto.sala, juego: reto.juego, dif: reto.dif || 'normal', rol, rival: reto.rival });
-    capa({ titulo: '¡Aceptado!', rival: reto.rival, cargando: true, texto: `Abriendo ${esc(j.nombre)}…` });
+    capa({ titulo: T('¡Aceptado!'), rival: reto.rival, cargando: true, texto: T('Abriendo {j}…', { j: esc(j.nombre) }) });
     location.href = j.pagina + '?duelo=' + encodeURIComponent(reto.sala);
   }
 
@@ -352,10 +423,10 @@
     estilos();
     const r = mostrando, j = juegoDe(r.juego);
     const el = document.createElement('div');
-    el.id = 'cd-reto'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-label', 'Te retaron');
+    el.id = 'cd-reto'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-label', T('Te retaron'));
     el.innerHTML = `<canvas width="96" height="104"></canvas><div class="t"><b></b><span></span></div>
-      <div class="bs"><button type="button" class="cd-btn si" data-si>¡Acepto!</button><button type="button" class="cd-btn" data-no>Ahora no</button></div>`;
-    el.querySelector('b').textContent = `${r.apodo} te reta a ${j.nombre}`;
+      <div class="bs"><button type="button" class="cd-btn si" data-si>${T('¡Acepto!')}</button><button type="button" class="cd-btn" data-no>${T('Ahora no')}</button></div>`;
+    el.querySelector('b').textContent = Tsin('{n} te reta a {j}', { n: r.apodo, j: j.nombre });
     el.querySelector('span').textContent = j.desc;
     cubito(el.querySelector('canvas'), skinDe(r.skin), 1);
     el.querySelector('[data-si]').addEventListener('click', e => aceptar(r, e.currentTarget));
@@ -371,15 +442,15 @@
     if (mostrando && mostrando.id === id) { if (retoEl) retoEl.remove(); retoEl = null; mostrando = null; siguiente(); }
   }
   async function aceptar(r, btn) {
-    btn.disabled = true; btn.textContent = 'Entrando…';
+    btn.disabled = true; btn.textContent = T('Entrando…');
     marcarVisto(r.id);
     if (!sinTabla) {
       let estado = null;
       try { estado = await rpc('responder_reto', { p_jugador: CC.perfil().id, p_id: r.id, p_estado: 'aceptado' }); }
-      catch (e) { if (e.faltaSql) faltaTabla(); else { btn.disabled = false; btn.textContent = '¡Acepto!'; return; } }
+      catch (e) { if (e.faltaSql) faltaTabla(); else { btn.disabled = false; btn.textContent = T('¡Acepto!'); return; } }
       if (!sinTabla && estado !== 'aceptado') {
         sacar(r.id);
-        capa({ titulo: 'Se venció', texto: `El reto de ${esc(r.apodo)} ya no está. Retalo vos desde Amigos.`, botones: [{ txt: 'OK', si: true, accion: cerrarCapa }] });
+        capa({ titulo: T('Se venció'), texto: Tsin('El reto de {n} ya no está. Retalo vos desde Amigos.', { n: esc(r.apodo) }), botones: [{ txt: 'OK', si: true, accion: cerrarCapa }] });
         return;
       }
     }
@@ -412,8 +483,8 @@
       const reto = leerJSON(localStorage, ENVIADOS, []).find(x => x.id === d.id);
       if (!reto || ev !== 'acepto' || enDuelo) return;
       quitarEnviado(reto.id);
-      capa({ titulo: '¡Aceptó tu reto!', rival: reto.rival, texto: `${esc(reto.rival.apodo)} ya está en ${esc(juegoDe(reto.juego).nombre)} esperándote.`,
-        botones: [{ txt: '¡Vamos!', si: true, accion: () => irAJugar(reto, 'host') }, { txt: 'Ahora no', accion: cerrarCapa }] });
+      capa({ titulo: T('¡Aceptó tu reto!'), rival: reto.rival, texto: Tsin('{n} ya está en {j} esperándote.', { n: esc(reto.rival.apodo), j: esc(juegoDe(reto.juego).nombre) }),
+        botones: [{ txt: T('¡Vamos!'), si: true, accion: () => irAJugar(reto, 'host') }, { txt: T('Ahora no'), accion: cerrarCapa }] });
     }
   }
   let ultimaRevision = 0, tAmistad = null;
@@ -462,7 +533,7 @@
       else if (ev === 'listo') {
         elListo = true;
         const n = document.querySelector('#cd-capa [data-revancha]');
-        if (n && !n.textContent) n.textContent = `¡${cfg.rival.apodo} quiere la revancha!`;
+        if (n && !n.textContent) n.textContent = Tsin('¡{n} quiere la revancha!', { n: cfg.rival.apodo });
         arrancar();
       }
       else if (ev === 'empezar') {
@@ -491,8 +562,8 @@
     }, 2000);
     tEspera = setTimeout(() => {
       if (s.conectado || cerrada) return;
-      capa({ titulo: 'No llegó', rival: cfg.rival, texto: `${nombre} no entró al duelo. Quizás cerró el juego.`,
-        botones: [{ txt: 'Volver', si: true, accion: () => s.salir() }] });
+      capa({ titulo: T('No llegó'), rival: cfg.rival, texto: T('{n} no entró al duelo. Quizás cerró el juego.', { n: nombre }),
+        botones: [{ txt: T('Volver'), si: true, accion: () => s.salir() }] });
     }, 60000);
     s.enviar = (ev, d) => ch.enviar(ev, d);
     // Avisás que estás para jugar (la primera vez y en cada revancha). Arranca cuando los dos están.
@@ -516,8 +587,8 @@
 
   // Pantalla de espera hasta que entra el otro
   function esperandoRival(s) {
-    capa({ titulo: 'Duelo contra ' + s.rival.apodo, rival: s.rival, cargando: true, texto: `Esperando a que entre ${esc(s.rival.apodo)}…`,
-      botones: [{ txt: 'Salir', accion: () => s.salir() }] });
+    capa({ titulo: Tsin('Duelo contra {n}', { n: s.rival.apodo }), rival: s.rival, cargando: true, texto: Tsin('Esperando a que entre {n}…', { n: esc(s.rival.apodo) }),
+      botones: [{ txt: T('Salir'), accion: () => s.salir() }] });
   }
   // 3, 2, 1, ¡Ya! y después cb()
   function cuenta(cb, alNumero) {
@@ -525,7 +596,7 @@
     cerrarCapa();
     let el = document.getElementById('cd-cuenta');
     if (!el) { el = document.createElement('div'); el.id = 'cd-cuenta'; el.setAttribute('aria-live', 'assertive'); document.body.appendChild(el); }
-    const pasos = ['3', '2', '1', '¡Ya!'];
+    const pasos = ['3', '2', '1', T('¡Ya!')];
     pasos.forEach((t, i) => setTimeout(() => {
       el.innerHTML = `<b>${t}</b>`;
       if (alNumero) alNumero(3 - i);
@@ -535,12 +606,12 @@
   // Resultado con revancha. o: { gane: true | false | null, texto }
   function resultado(s, o) {
     const ver = () => capa({
-      titulo: o.titulo || (o.gane === true ? '¡Ganaste!' : o.gane === false ? 'Perdiste' : 'Empate'), gane: o.gane === true,
+      titulo: o.titulo || (o.gane === true ? T('¡Ganaste!') : o.gane === false ? T('Perdiste') : T('Empate')), gane: o.gane === true,
       rival: s.rival, gano: o.gane === true ? 'yo' : o.gane === false ? 'el' : '', texto: o.texto, nota: o.nota,
       html: o.sinRevancha ? '' : '<p data-revancha style="color:#e0365a;font-weight:800"></p>',
-      botones: o.sinRevancha ? [{ txt: 'Volver', si: true, accion: () => s.salir() }] : [
-        { txt: 'Revancha', si: true, accion: b => { b.disabled = true; b.textContent = 'Esperando…'; s.listo(); } },
-        { txt: 'Salir', accion: () => s.salir() }],
+      botones: o.sinRevancha ? [{ txt: T('Volver'), si: true, accion: () => s.salir() }] : [
+        { txt: T('Revancha'), si: true, accion: b => { b.disabled = true; b.textContent = T('Esperando…'); s.listo(); } },
+        { txt: T('Salir'), accion: () => s.salir() }],
     });
     ver();
   }
@@ -551,7 +622,7 @@
     if (o === null) { if (hudEl) hudEl.remove(); hudEl = null; return; }
     if (!hudEl) {
       hudEl = document.createElement('div'); hudEl.id = 'cd-hud'; hudEl.setAttribute('aria-hidden', 'true');
-      hudEl.innerHTML = '<div class="f"><span>Vos</span><span class="b"><i></i></span><em></em></div><div class="f"><span></span><span class="b"><i></i></span><em></em></div>';
+      hudEl.innerHTML = `<div class="f"><span>${T('Vos')}</span><span class="b"><i></i></span><em></em></div><div class="f"><span translate="no"></span><span class="b"><i></i></span><em></em></div>`;
       document.body.appendChild(hudEl);
     }
     if (o.top != null) hudEl.style.top = o.top + 'px';
