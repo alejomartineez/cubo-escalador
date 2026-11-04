@@ -1,0 +1,1395 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="Subí por un pasadizo saltando de pared en pared: mantené para cargar el salto y soltá para saltar.">
+<link rel="canonical" href="https://alejomartineez.github.io/cubo-escalador/pasadizo.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TwoFingers">
+<meta property="og:locale" content="es_AR">
+<meta property="og:url" content="https://alejomartineez.github.io/cubo-escalador/pasadizo.html">
+<meta property="og:title" content="Pasadizo · TwoFingers">
+<meta property="og:description" content="Subí por un pasadizo saltando de pared en pared: mantené para cargar el salto y soltá para saltar.">
+<meta property="og:image" content="https://alejomartineez.github.io/cubo-escalador/og/pasadizo.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Pasadizo · TwoFingers">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Pasadizo · TwoFingers">
+<meta name="twitter:description" content="Subí por un pasadizo saltando de pared en pared: mantené para cargar el salto y soltá para saltar.">
+<meta name="twitter:image" content="https://alejomartineez.github.io/cubo-escalador/og/pasadizo.png">
+<meta name="theme-color" content="#62c6ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TwoFingers">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%2226%22%20height%3D%2226%22%20rx%3D%226%22%20fill%3D%22%23ffcc29%22%20stroke%3D%22%231d2340%22%20stroke-width%3D%223%22%2F%3E%3Crect%20x%3D%2210%22%20y%3D%2210%22%20width%3D%224%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%231d2340%22%2F%3E%3Crect%20x%3D%2218%22%20y%3D%2210%22%20width%3D%224%22%20height%3D%227%22%20rx%3D%222%22%20fill%3D%22%231d2340%22%2F%3E%3C%2Fsvg%3E">
+<link rel="apple-touch-icon" href="icono-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}
+#cargando{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+background:#62c6ff;transition:opacity .3s ease,visibility .3s}
+#cargando.fuera{opacity:0;visibility:hidden}
+#cargando i{position:relative;width:64px;height:64px;border-radius:14px;background:#ffcc29;border:4px solid #1d2340;box-shadow:0 6px 0 #1d2340;animation:cc-salto .6s cubic-bezier(.3,0,.4,1) infinite alternate}
+#cargando i::before,#cargando i::after{content:"";position:absolute;top:16px;width:9px;height:14px;border-radius:5px;background:#1d2340}
+#cargando i::before{left:14px}#cargando i::after{right:14px}
+#cargando b{font:800 15px system-ui,sans-serif;color:#1d2340;letter-spacing:.04em}
+#cargando s{display:block;width:120px;height:8px;border-radius:99px;border:2.5px solid #1d2340;background:#fffaf0;overflow:hidden;text-decoration:none}
+#cargando s::after{content:"";display:block;height:100%;width:40%;background:#ff5d7d;border-radius:99px;animation:cc-barra 1s ease-in-out infinite}
+@keyframes cc-salto{from{transform:translateY(0) scale(1.06,.94)}to{transform:translateY(-26px) rotate(8deg)}}
+@keyframes cc-barra{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
+@media (prefers-reduced-motion:reduce){#cargando i,#cargando s::after{animation:none}}</style>
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))</script>
+</head>
+<body>
+<div id="cargando" aria-hidden="true"><i></i><s></s><b>Cargando…</b></div>
+<title>Pasadizo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" data-fuentes href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:wght@400;600;800&display=swap" onload="this.onload=null;this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:wght@400;600;800&display=swap"></noscript>
+<style>
+/* Layout: el pasadizo ocupa toda la pantalla y sube; HUD arriba, dos botones gigantes abajo que se mantienen apretados. */
+:root {
+  --sky: #5b3f2e;
+  --ink: #1d2340;
+  --paper: #fffaf0;
+  --cube: #ffcc29;
+  --accent: #ff5d7d;
+  --good: #1fbf8a;
+  --muted: #5b6382;
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body {
+  background: var(--sky); color: var(--ink); font-family: var(--body); overflow: hidden;
+  user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; touch-action: none;
+}
+#cv { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.hud {
+  position: fixed; top: 0; left: 0; right: 0;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 12px;
+  pointer-events: none; zoom: var(--ui, 1);
+}
+.stat { display: flex; flex-direction: column; line-height: 1; }
+.stat.mid { align-items: center; }
+.big {
+  font-family: var(--display); font-size: clamp(34px, 7vw, 52px); color: var(--paper); font-variant-numeric: tabular-nums;
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); white-space: nowrap;
+}
+.big small { font-size: .55em; }
+.zona {
+  font-family: var(--display); font-size: clamp(19px, 4.6vw, 26px); color: var(--paper); white-space: nowrap;
+  -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 0 2px 0 var(--ink);
+}
+.lbl {
+  font-weight: 800; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--paper); margin-top: 6px;
+  text-shadow: 1px 0 0 var(--ink), -1px 0 0 var(--ink), 0 1px 0 var(--ink), 0 -1px 0 var(--ink), 0 2px 0 var(--ink);
+}
+.right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  font-weight: 800; font-size: 13px; padding: 5px 10px; border-radius: 999px;
+  background: var(--paper); border: 2px solid var(--ink); font-variant-numeric: tabular-nums;
+}
+.chip svg { flex: none; color: var(--ink); }
+.hbtns { display: flex; gap: 8px; }
+.smallbtn {
+  pointer-events: auto; font: 800 13px var(--body); color: var(--ink); white-space: nowrap;
+  background: var(--paper); border: 2px solid var(--ink); border-radius: 999px;
+  padding: 5px 12px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; min-height: 40px; min-width: 44px;
+}
+.smallbtn.icon { font-size: 17px; line-height: 1; }
+.smallbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+
+.pad {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 560px; margin: 0 auto;
+  zoom: var(--ui, 1);
+}
+.pad.off { visibility: hidden; }
+.pad button {
+  position: relative; overflow: hidden;
+  height: clamp(70px, 12vh, 110px); border-radius: 22px; background: var(--paper); color: var(--ink);
+  border: 3px solid var(--ink); box-shadow: 0 7px 0 var(--ink);
+  display: flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; touch-action: none;
+  font: 400 clamp(19px, 5.4vw, 26px) var(--display); transition: transform .05s, box-shadow .05s;
+}
+.pad button > * { position: relative; }
+.pad button svg { width: 36px; height: 36px; flex: none; }
+/* mientras se mantiene apretado, el botón se llena con la carga */
+.pad button::before {
+  content: ""; position: absolute; left: 0; bottom: 0; width: 100%; height: calc(var(--c, 0) * 100%);
+  background: var(--cube); transition: background .1s;
+}
+.pad button.on { transform: translateY(5px); box-shadow: 0 2px 0 var(--ink); background: #ffe9a3; }
+.pad button.max::before { background: #ffb020; }
+.pad button.rosca::before { background: var(--accent); }
+
+.overlay {
+  position: fixed; inset: 0; display: flex; overflow-y: auto; touch-action: pan-y;
+  padding-top: max(24px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: rgba(29, 35, 64, .3);
+}
+.card {
+  width: min(420px, 100%); margin: auto; background: var(--paper);
+  border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink);
+  padding: 20px; display: flex; flex-direction: column; gap: 14px; zoom: var(--ui, 1);
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo {
+  width: 48px; height: 48px; flex: none; border-radius: 10px; background: var(--cube);
+  border: 3px solid var(--ink); position: relative; transform: rotate(-6deg);
+}
+.logo::before, .logo::after { content: ""; position: absolute; top: 13px; width: 8px; height: 11px; border-radius: 4px; background: var(--ink); }
+.logo::before { left: 11px; } .logo::after { right: 11px; }
+h1, h2 { font-family: var(--display); font-weight: 400; margin: 0; line-height: 1; text-wrap: balance; }
+h1 { font-size: clamp(32px, 9vw, 42px); }
+h2 { font-size: 34px; }
+.intro { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.45; }
+.intro b { color: var(--ink); }
+.back { align-self: flex-start; }
+.go { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: stretch; }
+.best[hidden] { display: none; }
+.best {
+  display: flex; flex-direction: column; justify-content: center; padding: 6px 14px;
+  border: 3px solid var(--ink); border-radius: 14px; background: #fff;
+  font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.best b { font-family: var(--display); font-weight: 400; font-size: 24px; letter-spacing: 0; color: var(--ink); text-transform: none; font-variant-numeric: tabular-nums; line-height: 1.1; }
+kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-width: 3px; border-radius: 6px; padding: 0 5px; color: var(--ink); background: #fff; }
+
+.result { text-align: center; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.result .num { font-family: var(--display); font-size: 64px; line-height: 1; font-variant-numeric: tabular-nums; }
+.result .num small { font-size: .5em; }
+.result .sub { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lbl-dif { margin: 0 0 -6px; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: center; }
+.xp {
+  font-family: var(--display); font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums;
+  background: var(--cube); border: 2px solid var(--ink); border-radius: 999px; padding: 5px 14px; margin-top: 4px;
+}
+.badge {
+  font-weight: 800; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+  background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
+}
+.logros { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 2px; }
+.logro { font-weight: 800; font-size: 13px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 4px 10px; }
+.logro::before { content: "★ "; color: #e0a000; }
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; }
+.btn {
+  font: 800 16px var(--body); color: var(--ink); padding: 14px 10px; cursor: pointer;
+  background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn.small { padding: 10px; font-size: 15px; }
+.btn.big { font: 400 26px var(--display); padding: 12px 10px; }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+@media (max-width: 380px) { .card { padding: 16px; gap: 12px; } }
+@media (pointer: coarse) { .kbd-only { display: none; } }
+@media (pointer: fine) { .card { gap: 12px; } }
+@media (prefers-reduced-motion: reduce) { .pad button, .btn { transition: none; } }
+/* jerarquía de botones: un solo protagonista por pantalla (igual que los otros juegos) */
+.card .btn.primary { background: var(--cube); border: 3px solid var(--ink); box-shadow: 0 6px 0 var(--ink); font-family: var(--display); font-weight: 400; font-size: 24px; letter-spacing: .01em; }
+.card .btn.primary:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
+.card .btn:not(.primary) { background: #fff; border-width: 2px; box-shadow: 0 2px 0 var(--ink); font-family: var(--body); font-weight: 800; font-size: 15px; }
+.card .btn:not(.primary):active { transform: translateY(2px); box-shadow: none; }
+.card .ter { background: transparent !important; border: 2px solid var(--ink) !important; box-shadow: 0 2px 0 var(--ink) !important; color: var(--ink);
+  font: 800 14px var(--body) !important; padding: 8px 14px !important; min-height: 44px; }
+.card .ter:active { transform: translateY(2px); box-shadow: 0 0 0 var(--ink) !important; }
+</style>
+
+<canvas id="cv"></canvas>
+
+<div class="hud" id="hud" hidden>
+  <div class="stat"><span class="big" id="hScore">0 <small>m</small></span><span class="lbl">altura</span></div>
+  <div class="stat mid"><span class="zona" id="hZona">Mina</span><span class="lbl" id="hSub">zona 1</span></div>
+  <div class="right">
+    <div class="hbtns">
+      <button class="smallbtn" id="btnQuit" type="button" title="Volver al menú (Esc)">← Menú</button>
+      <button class="smallbtn icon" id="btnRestart" type="button" aria-label="Reiniciar (R)" title="Reiniciar (R)">↻</button>
+    </div>
+    <span class="chip" id="hDif">Normal</span>
+  </div>
+</div>
+
+<div class="pad off" id="pad">
+  <button id="bL" type="button" aria-label="Cargar salto a la izquierda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 7 12l8 8"/></svg><span>Izquierda</span></button>
+  <button id="bR" type="button" aria-label="Cargar salto a la derecha"><span>Derecha</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4 8 8-8 8"/></svg></button>
+</div>
+
+<div class="overlay" id="menu">
+  <div class="card">
+    <button class="ter smallbtn back" id="btnBack" type="button">← Juegos</button>
+    <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Pasadizo</h1></div>
+    <p class="intro">Tu cubo se pega a las paredes. <b>Mantené ◀ o ▶</b> para cargar y <b>soltá</b> para saltar: cuanto más cargás, más alto llegás. Ojo con los pinches, los huecos y las paredes que se rompen.</p>
+    <div id="difs"></div>
+    <div class="go">
+      <span class="best">Récord<b id="mBest">—</b></span>
+      <button class="btn primary big" id="btnPlay" type="button">Jugar</button>
+    </div>
+    <div class="row">
+      <button class="btn small" id="btnRank" type="button">🏆 Ranking</button>
+      <button class="ter btn small" id="btnMute" type="button">Sonido: sí</button>
+    </div>
+    <div id="leyenda"></div>
+  </div>
+</div>
+
+<div class="overlay" id="end" hidden>
+  <div class="card">
+    <div class="result">
+      <h2 id="eTitle">¡Te caíste!</h2>
+      <span class="num" id="eNum">0</span>
+      <span class="sub" id="eSub"></span>
+      <span class="badge" id="eBadge" hidden>Nuevo récord</span>
+      <span class="sub" id="eSub2"></span>
+      <span class="xp" id="eXP" hidden>+0 XP</span>
+      <div class="logros" id="eLogros" hidden></div>
+    </div>
+    <button class="btn primary big" id="btnAgain" type="button">↻ Otra vez <kbd class="kbd-only">R</kbd></button>
+    <p class="lbl-dif" id="eDifL">Dificultad</p>
+    <div id="difs2"></div>
+    <div class="row">
+      <button class="btn small" id="btnRank2" type="button">🏆 Ranking</button>
+      <button class="ter btn small" id="btnMenu" type="button">☰ Menú</button>
+      <button class="ter btn small" id="btnHome" type="button">⌂ Juegos</button>
+    </div>
+  </div>
+</div>
+
+<script src="cubo-comun.js"></script>
+<script>
+(() => {
+  'use strict';
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  // desafío del día (?diario=1): Normal, 3 intentos y el pasadizo sale de la semilla del día (igual para todos)
+  const DIA = CC && CC.diarioDe ? CC.diarioDe('pasadizo') : null;
+  let azar = Math.random;
+
+  // ---------- reglas ----------
+  // Todo se mide en "unidades": el cubo mide 1 (la caja que choca, 0,9) y 1 unidad = 1 metro de altura.
+  // Pegado a una pared, mantener la flecha carga el salto y soltarla salta. Para el lado contrario a la pared
+  // cruza el pasadizo (cuanto más cargado, más rápido y más alto); para el lado de la pared, trepa un poquito.
+  const HALF = 0.45, GRAV = 38, CAIDA_MAX = 24, PASO = 1 / 120;
+  const VX0 = 6.5, VX1 = 3.2, VY0 = 3.5, VY1 = 18.5;   // cruzar: vx = VX0 + VX1·carga, vy = VY0 + VY1·carga
+  const VT0 = 5, VT1 = 7, VTX = 2;                      // trepar por la misma pared: vy = VT0 + VT1·carga, empujando hacia ella
+  const MURO = 60;                                      // las paredes de roca siguen hasta acá a cada lado
+  // carga: segundos hasta el máximo · rosca: cuánto aguanta en el máximo antes de pasarse de rosca (0 = nunca)
+  // guia: qué parte del arco se ve · fragil: segundos que aguanta una pared frágil · peligro: cuántas trampas
+  // sube: la cámara sube sola (unidades por segundo) · racha: qué tan ancha es, como mínimo, la carga que sirve
+  const DIFS = {
+    facil:   { name: 'Fácil',   carga: 1.1,  rosca: 0,    guia: 1,    fragil: 2.6, peligro: 0.55, sube: 0,    racha: 5 },
+    normal:  { name: 'Normal',  carga: 0.95, rosca: 0,    guia: 1,    fragil: 1.9, peligro: 1,    sube: 0,    racha: 4 },
+    dificil: { name: 'Difícil', carga: 0.85, rosca: 0.45, guia: 0.5,  fragil: 1.5, peligro: 1.25, sube: 0.3,  racha: 3 },
+    extremo: { name: 'Extremo', carga: 0.75, rosca: 0.3,  guia: 0.25, fragil: 1.2, peligro: 1.5,  sube: 0.45, racha: 3 },
+    maestro: { name: 'Maestro', carga: 0.7,  rosca: 0.2,  guia: 0,    fragil: 1.0, peligro: 1.7,  sube: 0.55, racha: 2 },
+  };
+  const NOTAS = {
+    facil: 'Carga lenta, arco guía hasta donde caés y paredes que aguantan.',
+    normal: 'El arco guía te muestra dónde vas a caer. Sin apuro.',
+    dificil: 'Guía corta, la carga se pasa de rosca y la cámara sube sola.',
+    extremo: 'Casi sin guía, más trampas y la cámara más rápida. XP ×3.',
+    maestro: 'Sin guía: medí la carga a ojo. XP ×4.',
+  };
+  const XP_MALO = 10, XP_EXPERTO = 260;
+  const MUESTRAS = 32;   // cuántas cargas distintas prueba el generador para cada lado
+
+  // zonas: el color cambia a medida que subís
+  const ZONAS = [
+    { m: 0,   nombre: 'Mina',      fondo: '#6b4a35', fondo2: '#3e2a1f', roca: '#c48a5a', roca2: '#a06c43', borde: '#f0bb88' },
+    { m: 70,  nombre: 'Cristales', fondo: '#4a3a86', fondo2: '#251c47', roca: '#8f72dc', roca2: '#6d52bd', borde: '#d3c4ff' },
+    { m: 160, nombre: 'Hielo',     fondo: '#3778ad', fondo2: '#1b3d5e', roca: '#a9dcf5', roca2: '#7fbfe2', borde: '#f2fbff' },
+    { m: 280, nombre: 'Magma',     fondo: '#73301f', fondo2: '#3a130d', roca: '#7a5251', roca2: '#5c3a3a', borde: '#ff9a5a' },
+    { m: 420, nombre: 'Cielo',     fondo: '#62c6ff', fondo2: '#2e78d4', roca: '#a3aed0', roca2: '#8590b5', borde: '#ffffff' },
+    { m: 600, nombre: 'Espacio',   fondo: '#252b5e', fondo2: '#0b0e26', roca: '#6b7396', roca2: '#525a7c', borde: '#d6dcff' },
+  ];
+
+  // ---------- récords y sonido ----------
+  const REC_KEY = 'cubo-pasadizo-records';
+  let rec = {};
+  try { rec = JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { rec = {}; }
+  const saveRec = () => { try { localStorage.setItem(REC_KEY, JSON.stringify(rec)); } catch (e) {} };
+  let actx = null, muted = !!rec.muted, ruidoBuf = null;
+  function audio() {
+    if (muted) return null;
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      return actx;
+    } catch (e) { return null; }
+  }
+  function beep(freq, dur, type = 'triangle', vol = 0.07, slide = 0, delay = 0) {
+    const a = audio(); if (!a) return;
+    try {
+      const t = a.currentTime + delay, o = a.createOscillator(), g = a.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, t);
+      if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, t + dur);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+    } catch (e) {}
+  }
+  // ruido filtrado: polvo, piedras, el viento del vacío
+  function ruido(dur, vol, freq, q = 1) {
+    const a = audio(); if (!a) return;
+    try {
+      if (!ruidoBuf) {
+        ruidoBuf = a.createBuffer(1, a.sampleRate * 0.6, a.sampleRate);
+        const d = ruidoBuf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      }
+      const t = a.currentTime, s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+      s.buffer = ruidoBuf; f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q;
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      s.connect(f).connect(g).connect(a.destination); s.start(t); s.stop(t + dur + 0.02);
+    } catch (e) {}
+  }
+  // el tono de la carga: sube mientras mantenés (y tiembla si se pasa de rosca)
+  let tono = null;
+  function tonoCarga(c, rosca) {
+    const a = audio(); if (!a) return;
+    try {
+      if (!tono) {
+        const o = a.createOscillator(), g = a.createGain();
+        o.type = 'triangle'; o.frequency.value = 180; g.gain.value = 0;
+        o.connect(g).connect(a.destination); o.start();
+        g.gain.setTargetAtTime(0.045, a.currentTime, 0.03);
+        tono = { o, g };
+      }
+      const f = 170 * Math.pow(2, c * 1.7) * (rosca ? 1 + 0.06 * Math.sin(performance.now() / 22) : 1);
+      tono.o.frequency.setTargetAtTime(f, a.currentTime, 0.012);
+    } catch (e) {}
+  }
+  function cortarTono() {
+    if (!tono || !actx) { tono = null; return; }
+    const { o, g } = tono; tono = null;
+    try { g.gain.setTargetAtTime(0, actx.currentTime, 0.015); o.stop(actx.currentTime + 0.1); } catch (e) {}
+  }
+  const sfxMax = () => beep(1320, 0.06, 'square', 0.035);
+  const sfxSalto = c => { beep(260 + 260 * c, 0.16, 'sine', 0.06, 1.9); ruido(0.12, 0.05 + 0.05 * c, 1800, 0.8); };
+  const sfxPegar = g => { const k = Math.min(1, g / 14); beep(120 + 60 * k, 0.08, 'square', 0.04 + 0.03 * k, 0.55); ruido(0.09, 0.06 + 0.06 * k, 700, 0.9); };
+  const sfxRompe = () => { ruido(0.45, 0.14, 380, 0.7); beep(90, 0.3, 'sawtooth', 0.04, 0.5); };
+  const sfxCruje = () => ruido(0.06, 0.05, 900, 2);
+  const sfxPinches = () => { beep(190, 0.34, 'sawtooth', 0.07, 0.4); ruido(0.2, 0.1, 2500, 1); };
+  const sfxVacio = () => { beep(520, 0.7, 'triangle', 0.06, 0.18); ruido(0.7, 0.07, 500, 0.5); };
+  const sfxCaida = () => beep(440, 0.55, 'triangle', 0.06, 0.25);
+  const sfxMarca = () => [784, 1046].forEach((f, i) => beep(f, 0.1, 'square', 0.035, 0, i * 0.07));
+  const sfxZona = () => [523, 659, 784, 1046].forEach((f, i) => beep(f, 0.13, 'square', 0.04, 0, i * 0.08));
+
+  // ---------- utilidades ----------
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const hexRGB = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const mezclar = (a, b, k) => { const A = hexRGB(a), B = hexRGB(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * k).toString(16).padStart(2, '0')).join(''); };
+  // número "al azar" fijo para cada dibujo (no toca el azar del juego, así el desafío sale igual)
+  const hash = n => { let x = Math.imul((n | 0) ^ 0x9e3779b9, 0x85ebca6b); x ^= x >>> 13; x = Math.imul(x, 0xc2b2ae35); x ^= x >>> 16; return (x >>> 0) / 4294967296; };
+  const CLAVES = ['fondo', 'fondo2', 'roca', 'roca2', 'borde'];
+  const cacheZona = new Map();
+  const zonaIdx = m => { let i = 0; while (i + 1 < ZONAS.length && m >= ZONAS[i + 1].m) i++; return i; };
+  function zonaEn(m) {
+    const k = Math.round(m * 2) / 2;
+    let z = cacheZona.get(k);
+    if (z) return z;
+    const i = zonaIdx(k), a = ZONAS[i], b = ZONAS[i + 1];
+    z = a;
+    if (b && k > b.m - 18) { const f = (k - (b.m - 18)) / 18; z = { ...a }; for (const c of CLAVES) z[c] = mezclar(a[c], b[c], f); }
+    cacheZona.set(k, z);
+    return z;
+  }
+
+  // ---------- el pasadizo ----------
+  // Se arma de a tramos de 2 a 5 m de alto: cada uno tiene su ancho, su corrimiento y lo que hay en cada pared
+  // (roca, pinches, pared frágil o un hueco al vacío) y a veces una saliente. Todo sale de azar() y se genera por
+  // altura, así el desafío del día es igual para todos. Mientras se genera, una "ruta" va saltando con la misma
+  // física del juego y comprueba que siempre haya un salto posible hacia arriba (con un margen de carga que sirva);
+  // si un tramo nuevo la deja trabada, se rehace más fácil.
+  function rect(M, x0, x1, y0, y1, tipo, lado) {
+    return { id: M.nid++, x0, x1, y0, y1, tipo, tipo0: tipo, lado, dano: 0, roto: false };
+  }
+  function nuevoMundo(rnd, D, demo) {
+    const M = { rnd, D, demo, tramos: [], top: 0, nid: 1, seguro: 0, hist: [], trabas: 0 };
+    const t0 = { y0: 0, y1: 3.6, w: 4.4, c: 0, xl: -2.2, xr: 2.2, L: [], R: [], sal: [] };
+    t0.L.push(rect(M, -MURO, t0.xl, 0, t0.y1, 'roca', -1));
+    t0.R.push(rect(M, t0.xr, MURO, 0, t0.y1, 'roca', 1));
+    const piso = rect(M, -MURO, MURO, -30, 0, 'roca', 0);
+    piso.piso = true;
+    t0.sal.push(piso);
+    M.tramos.push(t0); M.top = t0.y1;
+    M.ruta = { x: 0, y: HALF, lado: 0, rect: piso };
+    return M;
+  }
+  function generarTramo(M) {
+    const { rnd, D } = M, s = M.seguro, prev = M.tramos[M.tramos.length - 1];
+    // los primeros metros, sin trampas; después van apareciendo hasta los ~120 m
+    const y0 = prev.y1, prog = y0 < 9 ? 0 : Math.min(1, 0.15 + y0 / 140);
+    const pel = (M.demo ? 0.7 : D.peligro) * prog * (1 - s / 3);
+    const h = 2.2 + rnd() * 2.6;
+    // el ancho camina y a veces cambia de golpe: se angosta o se ensancha
+    const wMin = 2.5, wMax = Math.min(6.6, 4.6 + y0 / 50);
+    let w = prev.w + (rnd() - 0.5) * 1.8;
+    if (rnd() < 0.22 * prog) w = wMin + rnd() * (wMax - wMin);
+    w = clamp(w, wMin, wMax);
+    if (s >= 2) w = clamp(w, 3.2, 4.8);
+    const lim = 3.9 - w / 2;
+    let c = clamp(prev.c + (rnd() - 0.5) * 1.3, -lim, lim);
+    let xl = c - w / 2, xr = c + w / 2;
+    // si la ruta está agarrada justo abajo, el tramo nuevo no se mete donde está el cubo
+    const R = M.ruta, enRuta = R.y + HALF > y0 - 0.01;
+    if (enRuta) { xl = Math.min(xl, R.x - HALF); xr = Math.max(xr, R.x + HALF); w = xr - xl; c = (xl + xr) / 2; }
+    // redondeado a milésimas: dos caras que tienen que coincidir coinciden de verdad
+    xl = Math.round(xl * 1000) / 1000; xr = Math.round(xr * 1000) / 1000;
+    const t = { y0, y1: Math.round((y0 + h) * 1000) / 1000, w, c, xl, xr, L: [], R: [], sal: [] };
+    let hueco = false, pinchesTodo = false;
+    for (const lado of [-1, 1]) {
+      const lista = lado < 0 ? t.L : t.R, cara = lado < 0 ? t.xl : t.xr;
+      const x0 = lado < 0 ? -MURO : cara, x1 = lado < 0 ? cara : MURO;
+      const a = rnd(), b = rnd(), d = rnd();
+      const pH = hueco || h < 2.6 ? 0 : 0.09 * pel, pP = 0.32 * pel, pF = 0.15 * pel;
+      if (a < pH) { lista.push(rect(M, x0, x1, y0, t.y1, 'hueco', lado)); hueco = true; }
+      else if (a < pH + pP) {
+        if (d < 0.22 * pel && !pinchesTodo && !hueco) { lista.push(rect(M, x0, x1, y0, t.y1, 'pinches', lado)); pinchesTodo = true; }
+        else {
+          // media pared con pinches: abajo o arriba
+          const corte = y0 + h * (0.3 + 0.4 * b), abajo = d < 0.6;
+          lista.push(rect(M, x0, x1, y0, corte, abajo ? 'pinches' : 'roca', lado), rect(M, x0, x1, corte, t.y1, abajo ? 'roca' : 'pinches', lado));
+        }
+      } else if (a < pH + pP + pF) lista.push(rect(M, x0, x1, y0, t.y1, 'fragil', lado));
+      else lista.push(rect(M, x0, x1, y0, t.y1, 'roca', lado));
+    }
+    // salientes: una cornisa chiquita donde pararse (o con la que darse la cabeza)
+    for (const lado of [-1, 1]) {
+      const a = rnd(), b = rnd(), d = rnd();
+      if (s >= 3 || a > 0.18 + 0.12 * prog) continue;
+      const ancho = Math.min(0.95 + b * 0.55, w - 1.35);
+      if (ancho < 0.9) continue;
+      const ys = y0 + 0.5 + d * Math.max(0, h - 1.4);
+      if (enRuta && ys < R.y + HALF + 1.2) continue;
+      const pieza = (lado < 0 ? t.L : t.R).find(r => ys >= r.y0 && ys + 0.35 <= r.y1);
+      if (!pieza || pieza.tipo === 'hueco' || pieza.tipo === 'pinches') continue;
+      const cara = lado < 0 ? t.xl : t.xr;
+      t.sal.push(rect(M, lado < 0 ? cara : cara - ancho, lado < 0 ? cara + ancho : cara, ys, ys + 0.35, 'saliente', lado));
+    }
+    M.tramos.push(t); M.top = t.y1;
+  }
+  // un tramo más, y la ruta avanza todo lo que pueda; si se traba, se rehacen los tramos de arriba más fáciles
+  function generar(M) {
+    generarTramo(M);
+    avanzarRuta(M);
+    const encerrada = !libre(M, M.ruta.x, M.ruta.y, true);
+    if (!encerrada && M.top - M.ruta.y <= 8.5) return;
+    M.trabas++;
+    if (M.seguro >= 3 || encerrada) {
+      // vuelve atrás hasta un lugar agarrado a un tramo de más abajo (así se rehace también el tramo donde se trabó)
+      const iR = tramoDe(M, M.ruta.rect);
+      let h = M.hist.pop();
+      while (h && tramoDe(M, h.ruta.rect) >= iR) h = M.hist.pop();
+      if (h) M.ruta = h.ruta; else suavizar(M);
+    }
+    M.seguro = Math.min(3, M.seguro + 1);
+    podar(M);
+  }
+  function podar(M) {
+    const R = M.ruta;
+    while (M.tramos.length > 1) {
+      const t = M.tramos[M.tramos.length - 1];
+      // se rehace todo lo que está arriba del tramo donde se agarra la ruta
+      if (t.L.includes(R.rect) || t.R.includes(R.rect) || t.sal.includes(R.rect)) break;
+      M.tramos.pop();
+    }
+    M.top = M.tramos[M.tramos.length - 1].y1;
+  }
+  function tramoDe(M, r) {
+    for (let i = M.tramos.length - 1; i >= 0; i--) { const t = M.tramos[i]; if (t.L.includes(r) || t.R.includes(r) || t.sal.includes(r)) return i; }
+    return 0;
+  }
+  // último recurso (casi nunca pasa): las trampas y salientes cerca de la ruta pasan a ser roca lisa
+  function suavizar(M) {
+    for (const t of M.tramos) {
+      if (t.y1 < M.ruta.y - 6) continue;
+      for (const r of [...t.L, ...t.R]) if (r.tipo0 !== 'roca') r.tipo = r.tipo0 = 'roca';
+      t.sal = t.sal.filter(r => r.piso || r === M.ruta.rect || r.y1 < M.ruta.y - HALF);
+    }
+  }
+  function avanzarRuta(M) {
+    const need = M.demo ? 3 : M.D.racha;
+    for (let vuelta = 0; vuelta < 8; vuelta++) {
+      const R = M.ruta;
+      const cands = [];
+      for (const dir of [-1, 1]) {
+        let racha = [];
+        for (let k = 0; k <= MUESTRAS; k++) {
+          const r = simular(M, R, dir, k / MUESTRAS, true);
+          // que suba y que todo el salto quede adentro de lo ya generado
+          const ok = r.tipo === 'pegar' && r.top + HALF <= M.top - 0.2 && r.y >= R.y + 0.7;
+          if (ok) racha.push(r);
+          if (!ok || k === MUESTRAS) {
+            if (racha.length >= need) {
+              const medio = racha[racha.length >> 1];
+              cands.push({ ...medio, puntaje: racha.length + (medio.y - R.y) * 0.6 });
+            }
+            racha = [];
+          }
+        }
+      }
+      // la mejor que tenga por dónde seguir (que no quede con una saliente o un techo encima)
+      cands.sort((a, b) => b.puntaje - a.puntaje);
+      const mejor = cands.find(r => salida(M, r));
+      if (!mejor) return;
+      M.hist.push({ ruta: R });
+      if (M.hist.length > 4) M.hist.shift();
+      M.ruta = { x: mejor.x, y: mejor.y, lado: mejor.lado, rect: mejor.rect };
+      M.seguro = Math.max(0, M.seguro - 1);
+    }
+  }
+
+  function salida(M, r) {
+    for (const dir of r.lado ? [-r.lado, r.lado] : [-1, 1]) if (simular(M, r, dir, 0.8, true).top - r.y > 1.6) return true;
+    return false;
+  }
+
+  // ---------- física (la misma para el juego, el arco guía y el generador) ----------
+  // gen = true: lo que mira el generador (las paredes como se generaron, sin las que rompiste)
+  const tipoDe = (r, gen) => (gen ? r.tipo0 : r.tipo);
+  function desde(M, ya) {
+    const T = M.tramos; let lo = 0, hi = T.length - 1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (T[m].y1 < ya) lo = m + 1; else hi = m; }
+    return lo;
+  }
+  function cerca(M, ya, yb, cb) {
+    const T = M.tramos;
+    for (let i = desde(M, ya); i < T.length && T[i].y0 <= yb; i++) {
+      const t = T[i];
+      for (const r of t.L) cb(r);
+      for (const r of t.R) cb(r);
+      for (const r of t.sal) cb(r);
+    }
+  }
+  const EPS = 1e-6;
+  // con qué se superpone el cubo: los pinches y el vacío mandan (los pinches perdonan un poquito).
+  // Las salientes se atraviesan desde abajo y de costado: solo frenan al caer encima (yAntes: dónde estaba antes del paso).
+  // Si toca varios a la vez, cuenta la primera cara que encuentra en la dirección en que se mueve (eje 'x' o 'y').
+  function choque(M, p, gen, eje, yAntes) {
+    let mejor = null, pinche = null, cara = 0, sol = 0;
+    const dir = eje === 'x' ? Math.sign(p.vx) : p.vy > 0 ? 1 : -1;
+    cerca(M, p.y - HALF, p.y + HALF, r => {
+      if (pinche || p.x + HALF <= r.x0 + EPS || p.x - HALF >= r.x1 - EPS) return;
+      if (r.tipo0 === 'saliente' && !(eje === 'y' && p.vy <= 0 && yAntes - HALF >= r.y1 - 1e-4)) return;
+      const tp = tipoDe(r, gen), m = tp === 'pinches' ? 0.08 : EPS;
+      if (p.y + HALF <= r.y0 + m || p.y - HALF >= r.y1 - m) return;
+      if (tp === 'pinches') { pinche = r; return; }
+      // qué tan "primero" está esta cara (más grande = la toca antes)
+      const c = eje === 'x' ? (dir > 0 ? -r.x0 : r.x1) : (dir > 0 ? -r.y0 : r.y1);
+      const so = eje === 'x' ? Math.min(p.y + HALF, r.y1) - Math.max(p.y - HALF, r.y0) : Math.min(p.x + HALF, r.x1) - Math.max(p.x - HALF, r.x0);
+      if (!mejor || c > cara + 1e-9 || (Math.abs(c - cara) <= 1e-9 && so > sol)) { mejor = r; cara = c; sol = so; }
+    });
+    return pinche || mejor;
+  }
+  function libre(M, x, y, gen) {
+    let ok = true;
+    cerca(M, y - HALF, y + HALF, r => {
+      if (!ok || r.tipo0 === 'saliente') return;
+      const m = tipoDe(r, gen) === 'pinches' ? 0.08 : EPS;   // el mismo margen que perdona choque()
+      if (x + HALF > r.x0 + EPS && x - HALF < r.x1 - EPS && y + HALF > r.y0 + m && y - HALF < r.y1 - m) ok = false;
+    });
+    return ok;
+  }
+  // la pared pegajosa (o los pinches) que el cubo tiene justo al lado. tol: hasta qué distancia se estira para
+  // agarrarse (al trepar, una pared que se corre un poquito igual sirve: el cubo se arrima)
+  function alLado(M, p, gen, soloDir, tol = 0.02) {
+    const cands = [];
+    let muerte = null;
+    cerca(M, p.y - HALF, p.y + HALF, r => {
+      if (muerte || r.tipo0 === 'saliente') return;
+      const gl = (p.x - HALF) - r.x1, gr = r.x0 - (p.x + HALF);
+      const lado = gl > -0.02 && gl < tol ? -1 : gr > -0.02 && gr < tol ? 1 : 0;
+      if (!lado || (soloDir && lado !== soloDir)) return;
+      const gap = lado < 0 ? gl : gr;
+      const tp = tipoDe(r, gen), s = Math.min(p.y + HALF, r.y1) - Math.max(p.y - HALF, r.y0);
+      if (tp === 'pinches') { if (s > 0.08 && gap < 0.02) muerte = { tipo: 'muerte', rect: r }; return; }
+      if (tp === 'hueco' || s < 0.44) return;
+      cands.push({ tipo: 'pegar', lado, rect: r, golpe: Math.abs(p.vy || 0), s, dx: gap < 0.02 ? 0 : lado * gap });
+    });
+    if (muerte) return muerte;
+    cands.sort((a, b) => b.s - a.s);
+    return cands.find(c => !c.dx || libre(M, p.x + c.dx, p.y, gen)) || null;
+  }
+  // chocó de costado contra r
+  function tocar(M, p, r, dir, gen) {
+    const tp = tipoDe(r, gen);
+    if (tp === 'pinches') return { tipo: 'muerte', rect: r };
+    if (tp === 'hueco') return { tipo: 'vacio', rect: r };
+    if (p.y >= r.y1 - 0.1) {
+      // llegó justo al borde de arriba: se sube encima
+      const m = Math.min(0.35, (r.x1 - r.x0) / 2);
+      const nx = dir > 0 ? r.x0 + m : r.x1 - m, ny = r.y1 + HALF;
+      if (libre(M, nx, ny, gen)) { p.x = nx; p.y = ny; return { tipo: 'pegar', lado: 0, rect: r, golpe: Math.abs(p.vy), borde: true }; }
+    }
+    if (p.y < r.y0 + 0.1) { p.vx = 0; return null; }   // con la puntita no se agarra: sigue de largo
+    return { tipo: 'pegar', lado: dir, rect: r, golpe: Math.abs(p.vx) };
+  }
+  function paso(M, p, gen) {
+    p.vy = Math.max(-CAIDA_MAX, p.vy - GRAV * PASO);
+    if (p.vx) {
+      p.x += p.vx * PASO;
+      const r = choque(M, p, gen, 'x');
+      if (r) {
+        const dir = p.vx > 0 ? 1 : -1, tp = tipoDe(r, gen);
+        p.x = dir > 0 ? r.x0 - HALF : r.x1 + HALF;
+        if (p.trepa && p.vy > 0 && tp !== 'pinches' && tp !== 'hueco') {
+          // trepando: sube pegado a la pared; si llega al borde de arriba, se sube encima
+          if (p.y >= r.y1 - 0.1) { const c = tocar(M, p, r, dir, gen); if (c && c.lado === 0) return c; }
+        } else {
+          const c = tocar(M, p, r, dir, gen);
+          if (c) return c;
+        }
+      }
+    }
+    const yAntes = p.y;
+    p.y += p.vy * PASO;
+    const r = choque(M, p, gen, 'y', yAntes);
+    if (r) {
+      const tp = tipoDe(r, gen);
+      if (tp === 'pinches') return { tipo: 'muerte', rect: r };
+      if (tp === 'hueco') return { tipo: 'vacio', rect: r };
+      if (p.vy > 0) {
+        // si el techo apenas toca la esquina del cubo, lo corre para el lado más corto y sigue subiendo
+        const izq = r.x0 - HALF - p.x, der = r.x1 + HALF - p.x;
+        const corre = -izq < der ? izq : der;
+        if (Math.abs(corre) < 0.5 && libre(M, p.x + corre, p.y, gen)) p.x += corre;
+        else { p.y = r.y0 - HALF; p.vy = 0; p.cabeza = true; }
+      }
+      else { const g = -p.vy; p.y = r.y1 + HALF; return { tipo: 'pegar', lado: 0, rect: r, golpe: g }; }
+    }
+    if ((!p.vx || p.trepa) && p.vy <= 0) {
+      const c = alLado(M, p, gen, p.trepa ? Math.sign(p.vx) : 0, 0.3);
+      if (c && c.dx) p.x += c.dx;
+      return c;
+    }
+    return null;
+  }
+  function lanzar(M, p, dir, c, gen) {
+    const contra = p.lado === dir || (p.lado === 0 && !!alLado(M, p, gen, dir));
+    p.trepa = contra;
+    if (contra) { p.vx = dir * VTX; p.vy = VT0 + VT1 * c; }
+    else { p.vx = dir * (VX0 + VX1 * c); p.vy = VY0 + VY1 * c; }
+    p.lado = null;
+  }
+  // el salto entero, sin dibujarlo: dónde termina (y los puntos del camino, para el arco guía)
+  function simular(M, p0, dir, c, gen, puntos, piso = -Infinity) {
+    const p = { x: p0.x, y: p0.y, vx: 0, vy: 0, lado: p0.lado };
+    if (!libre(M, p.x, p.y, gen)) return { tipo: 'cae', x: p.x, y: p.y, top: p.y };
+    lanzar(M, p, dir, c, gen);
+    let top = p.y;
+    if (puntos) puntos.push(p.x, p.y);
+    for (let k = 0; k < 230; k++) {
+      const r = paso(M, p, gen);
+      if (p.y > top) top = p.y;
+      if (puntos && k % 3 === 2) puntos.push(p.x, p.y);
+      if (r) { if (puntos) puntos.push(p.x, p.y); r.x = p.x; r.y = p.y; r.top = top; return r; }
+      if (p.y < p0.y - 14 || p.y + HALF < piso) break;
+    }
+    return { tipo: 'cae', x: p.x, y: p.y, top };
+  }
+  // la carga según cuánto venís manteniendo: llega a 1 y ahí se queda; en las difíciles se pasa de rosca y vuelve a bajar
+  function valorCarga(t, D) {
+    const k = t / D.carga;
+    if (k <= 1) return k;
+    if (!D.rosca || t < D.carga + D.rosca) return 1;
+    const f = ((t - D.carga - D.rosca) / D.carga) % 2;
+    return f < 1 ? 1 - f : f - 1;
+  }
+
+  // ---------- canvas ----------
+  let W = 0, H = 0, S = 40, BASE = 0;
+  function resize() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = innerWidth; H = innerHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // la línea de abajo (de ahí para abajo te caíste) va justo arriba de los botones
+    BASE = state === 'menu' ? H : $('pad').getBoundingClientRect().top - 6;
+    S = Math.max(16, Math.min(W / 8.8, BASE / 12.5));
+  }
+  addEventListener('resize', resize);
+  const vistaH = () => BASE / S;
+  const sx = x => W / 2 + x * S, sy = y => BASE - (y - G.cam) * S;
+
+  // ---------- estado ----------
+  let state = 'menu';   // menu | play | end
+  let G = null, shake = 0, particles = [], floats = [], banner = null;
+  const teclas = { l: false, r: false };
+  let ultimaDir = 0;
+
+  function newRun(demo, d = 'normal') {
+    const D = DIFS[d];
+    const M = nuevoMundo(demo ? Math.random : azar, D, demo);
+    G = {
+      demo, diff: d, D, M, t: 0, acc: 0, cam: -1.3, camT: -1.3,
+      p: { x: 0, y: HALF, vx: 0, vy: 0, estado: 'pegado', lado: 0, rect: M.ruta.rect, aplastar: 0, estirar: 0, normal: 0, mirar: 1 },
+      carga: null, guia: null, max: 0, saltos: 0, empezo: false, proxMarca: 25, zona: 0,
+      done: false, settled: false, r: null, muerte: null, ia: null, record: null,
+    };
+    particles = []; floats = []; banner = null; shake = 0;
+    if (!demo) G.record = CC ? CC.perfil().mejores['pasadizo:' + d] || null : rec[d] || null;
+    generarHasta();
+  }
+  function generarHasta() {
+    const objetivo = G.cam + vistaH() + 26;
+    for (let n = 0; G.M.top < objetivo && n < 60; n++) generar(G.M);
+  }
+
+  // ---------- jugar ----------
+  const dirApretada = () => (ultimaDir && teclas[ultimaDir < 0 ? 'l' : 'r'] ? ultimaDir : teclas.l ? -1 : teclas.r ? 1 : 0);
+  function empezarCarga(dir) {
+    G.carga = { dir, t: 0, c: 0, rosca: false };
+    G.p.mirar = dir;
+  }
+  function cancelarCarga() { if (G) { G.carga = null; G.guia = null; } cortarTono(); pintarBotones(); }
+  function saltar() {
+    const p = G.p, k = G.carga;
+    if (!k || p.estado !== 'pegado' || G.done) return;
+    const lado = p.lado, rect0 = p.rect;
+    lanzar(G.M, p, k.dir, k.c, false);
+    p.estado = 'vuelo'; p.rect = null; p.estirar = 1; p.aplastar = 0; p.mirar = k.dir; p.cabeza = false;
+    G.acc = 0; G.carga = null; G.guia = null; G.saltos++; G.empezo = true;
+    // polvito donde estaba apoyado
+    if (rect0) polvo(p.x + (lado ? lado * HALF : 0), p.y - (lado ? 0 : HALF), lado ? -lado : 0, lado ? 0 : 1, 5, zonaEn(p.y).borde);
+    if (!G.demo) { cortarTono(); sfxSalto(k.c); CC?.vibrar(6); }
+    pintarBotones();
+  }
+  function contacto(c) {
+    const p = G.p;
+    if (c.tipo === 'muerte') return morir('pinches', c.rect);
+    if (c.tipo === 'vacio') return morir('vacio', c.rect);
+    p.estado = 'pegado'; p.lado = c.lado; p.rect = c.rect; p.vx = 0; p.vy = 0; G.acc = 0;
+    p.normal = c.lado; p.aplastar = Math.min(1, 0.35 + (c.golpe || 0) / 16); p.estirar = 0;
+    p.mirar = c.lado ? -c.lado : p.mirar;
+    const z = zonaEn(p.y);
+    if (c.lado) polvo(p.x + c.lado * HALF, p.y, -c.lado, 0, 9, z.borde);
+    else polvo(p.x, p.y - HALF, 0, 1, 9, z.borde);
+    if (!G.demo) { sfxPegar(c.golpe || 0); CC?.vibrar(c.golpe > 10 ? 14 : 7); }
+  }
+  function romper(r) {
+    r.tipo = 'hueco'; r.roto = true; r.rompio = G.t;
+    const z = zonaEn(r.y0), cara = r.lado < 0 ? r.x1 : r.x0;
+    for (let y = r.y0 + 0.2; y < r.y1; y += 0.35) {
+      for (let k = 0; k < 2; k++) particles.push({ x: cara - r.lado * (0.1 + Math.random() * 0.6), y, vx: -r.lado * (1 + Math.random() * 2), vy: Math.random() * 2,
+        g: 22, life: 0.6 + Math.random() * 0.5, age: 0, s: 0.14 + Math.random() * 0.18, c: Math.random() < 0.5 ? z.roca : '#e3c08f', rot: Math.random() * 6 });
+    }
+    const p = G.p;
+    if (p.rect === r) { p.estado = 'vuelo'; p.vx = 0; p.vy = 0; p.rect = null; G.acc = 0; cancelarCarga(); }
+    if (!G.demo) { sfxRompe(); shake = reduceMotion ? 0 : 5; CC?.vibrar(25); }
+  }
+  function morir(tipo, r) {
+    if (G.done) return;
+    G.done = true; G.muerte = tipo; G.carga = null; G.guia = null;
+    cortarTono(); pintarBotones();
+    const p = G.p;
+    if (tipo === 'pinches') {
+      if (!G.demo) { sfxPinches(); shake = reduceMotion ? 0 : 12; CC?.vibrar(60); }
+      p.oculto = true;
+      if (!(CC && !G.demo && CC.morir(cv))) chispas(p.x, p.y, G.demo ? '#fffaf0' : '#ffcc29', 18);
+      chispas(p.x, p.y, '#eef2fb', 8);
+    } else if (tipo === 'vacio') {
+      p.vacio = { t: 0, dir: r ? r.lado : 1, x: p.x, y: p.y };
+      if (!G.demo) { sfxVacio(); CC?.vibrar(40); }
+    } else if (!G.demo) { sfxCaida(); CC?.vibrar(40); }
+    if (G.demo) { const g = G; setTimeout(() => { if (G === g && state === 'menu') newRun(true); }, 1300); }
+    else setTimeout(terminar, tipo === 'caida' ? 450 : 950);
+  }
+  function subirMax(h) {
+    G.max = h;
+    const m = Math.floor(h);
+    if (G.demo) return;
+    if (m >= G.proxMarca) {
+      floats.push({ text: `${G.proxMarca} m`, x: G.p.x, y: G.p.y + 1, t: performance.now() });
+      G.proxMarca += 25; sfxMarca();
+    }
+    const z = zonaIdx(m);
+    if (z !== G.zona) { G.zona = z; banner = { text: `¡${ZONAS[z].nombre}!`, t: performance.now() }; sfxZona(); hudCache = ''; }
+    if (marca) marca.ver(m);
+  }
+
+  // la máquina del menú: elige un salto que la deje más arriba y carga justo lo necesario
+  function pensarDemo(dt) {
+    const p = G.p;
+    if (p.estado !== 'pegado' || G.done) { G.ia = null; return; }
+    if (!G.ia) G.ia = { espera: 0.25 + Math.random() * 0.45, plan: null };
+    if (G.ia.espera > 0) { G.ia.espera -= dt; return; }
+    if (!G.ia.plan) {
+      const ops = [];
+      for (const dir of [-1, 1]) {
+        const ok = [];
+        for (let k = 0; k <= 20; k++) { const r = simular(G.M, p, dir, k / 20, false); ok.push(r.tipo === 'pegar' && r.y > p.y + 0.6 ? r.y : null); }
+        for (let k = 1; k < 20; k++) if (ok[k] != null && ok[k - 1] != null && ok[k + 1] != null) ops.push({ dir, c: k / 20, y: ok[k] });
+      }
+      ops.sort((a, b) => b.y - a.y);
+      G.ia.plan = ops.length ? ops[Math.floor(Math.random() * Math.min(3, ops.length))] : { dir: Math.random() < 0.5 ? -1 : 1, c: 0.6 };
+      empezarCarga(G.ia.plan.dir);
+    }
+    if (G.carga && G.carga.c >= G.ia.plan.c) { saltar(); G.ia = null; }
+  }
+
+  // ---------- actualizar ----------
+  function update(now, dt) {
+    if (!G) return;
+    G.t += dt;
+    const p = G.p, M = G.M;
+    if ((state === 'play' || G.demo) && !G.done) {
+      if (G.demo) pensarDemo(dt);
+      if (p.estado === 'pegado' && p.rect && p.rect.tipo === 'fragil') {
+        const r = p.rect, antes = r.dano / G.D.fragil;
+        r.dano += dt;
+        if (!G.demo && Math.floor(antes * 4) !== Math.floor((r.dano / G.D.fragil) * 4)) sfxCruje();
+        if (r.dano >= G.D.fragil) romper(r);
+      }
+      if (p.estado === 'pegado') {
+        if (!G.carga && !G.demo) { const d = dirApretada(); if (d) empezarCarga(d); }
+        if (G.carga) {
+          const k = G.carga, antes = k.c;
+          k.t += dt; k.c = valorCarga(k.t, G.D);
+          k.rosca = !!G.D.rosca && k.t > G.D.carga + G.D.rosca;
+          if (!G.demo) {
+            if (antes < 1 && k.c >= 1) sfxMax();
+            tonoCarga(k.c, k.rosca);
+            if (G.D.guia > 0) { const pts = []; const r = simular(M, p, k.dir, k.c, false, pts, G.cam); G.guia = { pts, r }; }
+            pintarBotones();
+          }
+        }
+      } else if (p.estado === 'vuelo') {
+        G.acc += dt;
+        while (G.acc >= PASO && p.estado === 'vuelo' && !G.done) {
+          G.acc -= PASO;
+          const c = paso(M, p, false);
+          if (c) contacto(c);
+        }
+      }
+      if (p.estado === 'pegado' && p.y - HALF > G.max) subirMax(p.y - HALF);
+      // cámara: sigue para arriba con suavidad (nunca baja); en las difíciles sube sola
+      const vh = vistaH();
+      if (p.estado === 'pegado') G.camT = Math.max(G.camT, p.y - vh * 0.3);
+      else if (p.y > G.cam + vh * 0.7) G.camT = Math.max(G.camT, p.y - vh * 0.7);
+      if (G.empezo && G.D.sube && !G.demo) G.camT += G.D.sube * (1 + Math.min(0.6, G.max / 400)) * dt;
+      G.cam += (G.camT - G.cam) * Math.min(1, dt * 3.2);
+      if (p.y + HALF < G.cam - 0.05) morir('caida');
+    }
+    if (p.vacio) p.vacio.t += dt;
+    p.aplastar = Math.max(0, p.aplastar - dt / 0.2);
+    p.estirar = Math.max(0, p.estirar - dt / 0.28);
+    generarHasta();
+    for (const q of particles) { q.age += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy -= (q.g ?? 9) * dt; q.vx *= 1 - dt * 2; }
+    particles = particles.filter(q => q.age < q.life);
+    floats = floats.filter(f => now - f.t < 1100);
+    shake = Math.max(0, shake - dt * 40);
+  }
+  function polvo(x, y, nx, ny, n, color) {
+    for (let k = 0; k < n; k++) {
+      const a = (Math.random() - 0.5) * 2.2, sp = 1 + Math.random() * 2.6;
+      // sale para afuera de la superficie, abriéndose
+      const vx = nx ? nx * sp * Math.cos(a * 0.5) : Math.sin(a) * sp * 1.4;
+      const vy = ny ? ny * sp * 0.6 * Math.abs(Math.cos(a)) : Math.sin(a) * sp;
+      particles.push({ x: x + (ny ? (Math.random() - 0.5) * 0.8 : 0), y: y + (nx ? (Math.random() - 0.5) * 0.8 : 0), vx, vy, g: 3,
+        life: 0.35 + Math.random() * 0.3, age: 0, s: 0.08 + Math.random() * 0.1, c: color, polvo: true });
+    }
+  }
+  function chispas(x, y, color, n) {
+    for (let k = 0; k < n; k++) {
+      const a = Math.random() * Math.PI * 2, sp = 3 + Math.random() * 6;
+      particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: 14, life: 0.35 + Math.random() * 0.35, age: 0, s: 0.1 + Math.random() * 0.12, c: color });
+    }
+  }
+
+  // ---------- fin de partida ----------
+  function settle() {
+    if (!G || G.settled || G.demo) return G && G.r;
+    G.settled = true;
+    const v = Math.floor(G.max);
+    if (v > (rec[G.diff] || 0)) { rec[G.diff] = v; saveRec(); }
+    if (!CC) return null;
+    G.r = CC.partida({ juego: 'pasadizo', tabla: G.diff, valor: v, texto: `${v} m (${G.D.name})`,
+      xp: CC.xpEscala(v, XP_MALO, XP_EXPERTO), marcas: G.diff === 'maestro' && v >= 100 ? ['pasadizo-ciego'] : [], diario: DIA || undefined });
+    return G.r;
+  }
+  const TITULOS = { pinches: '¡Pinchado!', vacio: '¡Al vacío!', caida: '¡Te caíste!' };
+  function terminar() {
+    if (!G || state !== 'play') return;
+    ponerMarca(false);
+    const r = settle(), m = Math.floor(G.max);
+    $('eTitle').textContent = m >= 150 ? '¡Qué subida!' : TITULOS[G.muerte] || '¡Se terminó!';
+    $('eNum').innerHTML = `${m} <small>m</small>`;
+    $('eSub').textContent = `${G.D.name} · ${ZONAS[zonaIdx(m)].nombre} · ${G.saltos} ${G.saltos === 1 ? 'salto' : 'saltos'}`;
+    $('eSub2').textContent = (m >= 150 ? (G.muerte === 'pinches' ? 'Te pinchaste' : G.muerte === 'vacio' ? 'Caíste al vacío' : 'Te caíste') : '') +
+      (r && !r.record && r.textoAnterior ? `${m >= 150 ? ' · ' : ''}Récord: ${r.textoAnterior}` : '');
+    $('eBadge').hidden = !(r && r.record);
+    if (r) $('eBadge').textContent = r.primera ? 'Primer récord' : 'Nuevo récord';
+    $('eXP').hidden = !r; if (r) $('eXP').textContent = `+${r.xp} XP`;
+    const lg = (r && r.logros) || [];
+    $('eLogros').hidden = !lg.length;
+    $('eLogros').replaceChildren(...lg.map(n => Object.assign(document.createElement('span'), { className: 'logro', textContent: n })));
+    if (DIA) DIA.fin(r, $('btnAgain'), [$('difs2'), $('eDifL')]);
+    $('btnRank2').hidden = !CC;
+    showEnd();
+  }
+
+  // ---------- dibujo ----------
+  const INK = '#1d2340';
+  function rr(c, x, y, w, h, r) { c.beginPath(); c.roundRect ? c.roundRect(x, y, w, h, r) : c.rect(x, y, w, h); }
+  function visibles() {
+    const T = G.M.tramos, ya = G.cam - 1.5, yb = G.cam + vistaH() + 1.5, out = [];
+    for (let i = desde(G.M, ya); i < T.length && T[i].y0 <= yb; i++) out.push(T[i]);
+    return out;
+  }
+  // la cara de roca de un lado: desde el borde de la pantalla hasta la cara
+  function caja(r) {
+    const xa = r.lado < 0 ? -8 : sx(r.x0), xb = r.lado < 0 ? sx(r.x1) : W + 8;
+    return [xa, sy(r.y1), xb - xa, (r.y1 - r.y0) * S];
+  }
+  function pintarRoca(r, z, now) {
+    let [x, y, w, h] = caja(r);
+    const cara = r.lado < 0 ? x + w : x;
+    let base = z.roca, oscuro = z.roca2;
+    if (r.tipo === 'fragil') { base = mezclar(z.roca, '#f2d29b', 0.6); oscuro = mezclar(z.roca2, '#c99a62', 0.6); }
+    // la pared frágil tiembla cuando está por romperse
+    let dx = 0;
+    if (r.tipo === 'fragil' && r.dano > 0) {
+      const k = r.dano / G.D.fragil;
+      if (k > 0.45 && !reduceMotion) dx = Math.sin(now / 18 + r.id) * S * 0.035 * k;
+    }
+    ctx.save(); ctx.translate(dx, 0);
+    // la roca se oscurece hacia adentro: da volumen
+    const gr = ctx.createLinearGradient(cara, 0, cara + r.lado * S * 4.5, 0);
+    gr.addColorStop(0, base); gr.addColorStop(1, mezclar(oscuro, '#1d2340', 0.25));
+    ctx.fillStyle = gr; ctx.fillRect(x, y, w, h + 0.5);
+    if (r.tipo === 'pinches') {
+      // franja de peligro detrás de los pinches
+      const gp = ctx.createLinearGradient(cara, 0, cara + r.lado * S * 1.1, 0);
+      gp.addColorStop(0, 'rgba(255,93,125,.55)'); gp.addColorStop(1, 'rgba(255,93,125,0)');
+      ctx.fillStyle = gp; ctx.fillRect(x, y, w, h);
+    }
+    // piedras de la pared (siempre las mismas para cada pedazo)
+    ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    ctx.fillStyle = oscuro;
+    const n = Math.ceil((r.y1 - r.y0) * 1.6);
+    for (let i = 0; i < n; i++) {
+      const a = hash(r.id * 31 + i), b = hash(r.id * 57 + i * 3), c = hash(r.id * 13 + i * 7);
+      const px = cara + r.lado * (0.35 + a * 2.4) * S, py = y + b * h;
+      ctx.beginPath(); ctx.ellipse(px, py, S * (0.2 + c * 0.22), S * (0.12 + c * 0.1), 0, 0, Math.PI * 2); ctx.fill();
+    }
+    if (r.tipo === 'fragil') {
+      // ladrillos y grietas que crecen
+      ctx.strokeStyle = 'rgba(29,35,64,.35)'; ctx.lineWidth = Math.max(1.5, S * 0.04);
+      for (let yy = r.y0 + 0.5; yy < r.y1; yy += 0.5) { const py = sy(yy); ctx.beginPath(); ctx.moveTo(cara, py); ctx.lineTo(cara + r.lado * S * 1.2, py); ctx.stroke(); }
+      const k = Math.min(1, r.dano / G.D.fragil);
+      if (k > 0) {
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, S * 0.06);
+        const grietas = 1 + Math.floor(k * 4);
+        for (let g = 0; g < grietas; g++) {
+          const gy = r.y0 + (0.2 + hash(r.id * 7 + g) * 0.6) * (r.y1 - r.y0);
+          ctx.beginPath(); ctx.moveTo(cara, sy(gy));
+          for (let s = 1; s <= 3; s++) ctx.lineTo(cara + r.lado * S * 0.28 * s * (0.6 + k), sy(gy + (hash(r.id + g * 11 + s) - 0.5) * 0.7));
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.restore();
+    // brillo del borde
+    ctx.fillStyle = z.borde; ctx.globalAlpha = 0.55;
+    ctx.fillRect(r.lado < 0 ? cara - S * 0.14 : cara, y, S * 0.14, h);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+  function pintarVacio(r, z, now) {
+    const [x, y, w, h] = caja(r);
+    const cara = r.lado < 0 ? x + w : x;
+    const g = ctx.createLinearGradient(cara, 0, cara + r.lado * S * 2.4, 0);
+    g.addColorStop(0, mezclar(z.fondo2, '#000000', 0.35)); g.addColorStop(1, '#06050c');
+    ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+    // el viento que chupa para adentro
+    ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.lineWidth = Math.max(1.5, S * 0.035);
+    for (let i = 0; i < 4; i++) {
+      const f = ((now / 900 + hash(r.id + i)) % 1), py = y + h * (0.15 + 0.7 * hash(r.id * 3 + i));
+      const px = cara + r.lado * f * S * 2.2;
+      ctx.globalAlpha = 0.9 * Math.sin(f * Math.PI);
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + r.lado * S * 0.5, py); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+  function pintarPinches(r) {
+    const cara = sx(r.lado < 0 ? r.x1 : r.x0), d = -r.lado, largo = S * 0.32;
+    ctx.fillStyle = '#eef2fb'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(1.5, S * 0.045); ctx.lineJoin = 'round';
+    const n = Math.max(1, Math.round((r.y1 - r.y0) / 0.42)), paso_ = (r.y1 - r.y0) / n;
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const y0 = sy(r.y0 + i * paso_ + 0.03), y1 = sy(r.y0 + (i + 1) * paso_ - 0.03);
+      ctx.moveTo(cara, y0); ctx.lineTo(cara + d * largo, (y0 + y1) / 2); ctx.lineTo(cara, y1);
+    }
+    ctx.fill(); ctx.stroke();
+  }
+  function pintarSaliente(r, z) {
+    const x = sx(r.x0), y = sy(r.y1), w = (r.x1 - r.x0) * S, h = (r.y1 - r.y0) * S;
+    ctx.fillStyle = mezclar(z.borde, z.roca, 0.35); ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, S * 0.06);
+    rr(ctx, x, y, w, h, Math.min(h / 2, S * 0.1)); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fillRect(x + S * 0.08, y + S * 0.05, w - S * 0.16, Math.max(2, h * 0.22));
+  }
+  // el contorno de cada pared: la cara y los escalones entre un pedazo y el siguiente
+  function contorno(lista, lado) {
+    ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2.5, S * 0.07); ctx.lineCap = 'round';
+    const borde = lado < 0 ? -8 : W + 8;
+    let ant = null;
+    ctx.beginPath();
+    for (const r of lista) {
+      const cara = sx(lado < 0 ? r.x1 : r.x0), hueco = r.tipo === 'hueco';
+      if (ant) {
+        const caraAnt = sx(lado < 0 ? ant.x1 : ant.x0), huecoAnt = ant.tipo === 'hueco', y = sy(r.y0);
+        if (hueco !== huecoAnt) { ctx.moveTo(hueco ? caraAnt : cara, y); ctx.lineTo(borde, y); }
+        if (!hueco && !huecoAnt && Math.abs(cara - caraAnt) > 0.5) { ctx.moveTo(caraAnt, y); ctx.lineTo(cara, y); }
+        else if (hueco !== huecoAnt && Math.abs(cara - caraAnt) > 0.5) { ctx.moveTo(caraAnt, y); ctx.lineTo(cara, y); }
+      }
+      if (!hueco) { ctx.moveTo(cara, sy(r.y0)); ctx.lineTo(cara, sy(r.y1)); }
+      ant = r;
+    }
+    ctx.stroke();
+  }
+  function dibujarJugador(now) {
+    const p = G.p;
+    if (p.oculto) return;
+    let cx = sx(p.x), cy = sy(p.y), s = S * 0.98;
+    let alpha = 1, escala = 1;
+    if (p.vacio) {
+      // se lo traga el hueco: sigue un poco para adentro y se achica
+      const k = Math.min(1, p.vacio.t / 0.6);
+      cx = sx(p.vacio.x + p.vacio.dir * k * 1.4); cy = sy(p.vacio.y - k * k * 1.2);
+      escala = 1 - k; alpha = 1 - k * 0.6;
+      if (k >= 1) return;
+    }
+    const k = G.carga;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    // temblor de la carga al máximo
+    if (k && (k.c >= 1 || k.rosca) && !reduceMotion) { cx += (Math.random() - 0.5) * S * (k.rosca ? 0.09 : 0.04); cy += (Math.random() - 0.5) * S * 0.03; }
+    let ax = cx, ay = cy, fx = 1, fy = 1;
+    if (p.estado === 'pegado') {
+      const c = k ? k.c : 0, a = p.aplastar;
+      const contra = k && (p.lado === k.dir || (p.lado === 0 && alLado(G.M, p, false, k.dir)));
+      if (p.lado && !contra) { ax = cx + p.lado * s / 2; fx = 1 - 0.3 * c - 0.28 * a; fy = 1 + 0.14 * c + 0.12 * a; }
+      else if (p.lado) { ax = cx + p.lado * s / 2; ay = cy + s / 2; fy = 1 - 0.26 * c; fx = 1 - 0.18 * a + 0.12 * c; }
+      else { ay = cy + s / 2; fy = 1 - 0.3 * c - 0.3 * a; fx = 1 + 0.16 * c + 0.2 * a; }
+    }
+    ctx.translate(ax, ay);
+    if (p.estado === 'vuelo' && p.estirar > 0) {
+      const ang = Math.atan2(-p.vy, p.vx), e = p.estirar * Math.min(1, Math.hypot(p.vx, p.vy) / 18) * 0.3;
+      ctx.rotate(ang); ctx.scale(1 + e, 1 - e * 0.7); ctx.rotate(-ang);
+    }
+    ctx.scale(fx * escala, fy * escala);
+    ctx.translate(-ax, -ay);
+    const mirar = p.estado === 'vuelo' ? Math.sign(p.vx) || p.mirar : k ? k.dir : p.mirar;
+    if (CC) CC.dibujarCubo(ctx, cx, cy + s / 2, s, { t: now, mirar });
+    else { ctx.fillStyle = '#ffcc29'; ctx.strokeStyle = INK; ctx.lineWidth = 3; rr(ctx, cx - s / 2, cy - s / 2, s, s, s * 0.2); ctx.fill(); ctx.stroke(); }
+    ctx.restore();
+    // el aro de la carga
+    if (k && !G.demo) {
+      const R = S * 0.82, lw = Math.max(4, S * 0.13), a0 = -Math.PI / 2;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(29,35,64,.5)'; ctx.lineWidth = lw + 4;
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+      const max = k.c >= 1 && !k.rosca;
+      ctx.strokeStyle = k.rosca ? '#ff5d7d' : max ? (Math.floor(now / 90) % 2 ? '#fffaf0' : '#ffcc29') : '#ffcc29';
+      ctx.lineWidth = lw;
+      if (k.c > 0.005) { ctx.beginPath(); ctx.arc(cx, cy, R, a0, a0 + Math.PI * 2 * Math.min(1, k.c)); ctx.stroke(); }
+      if (k.rosca || max) {
+        texto(k.rosca ? '¡Se pasó!' : 'MÁX', cx, cy - R - S * 0.45, Math.round(Math.max(14, S * 0.42)), k.rosca ? '#ff5d7d' : '#fffaf0');
+      }
+    }
+  }
+  function dibujarGuia() {
+    const g = G.guia;
+    if (!g || !G.carga) return;
+    const pts = g.pts, n = pts.length / 2, hasta = G.D.guia >= 1 ? n : Math.max(2, Math.round(n * G.D.guia));
+    for (let i = 1; i < hasta; i++) {
+      const f = i / n;
+      ctx.globalAlpha = (G.D.guia >= 1 ? 0.95 - f * 0.45 : 0.9 * (1 - i / hasta));
+      ctx.fillStyle = '#fffaf0'; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(sx(pts[i * 2]), sy(pts[i * 2 + 1]), Math.max(3, S * 0.085), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    if (G.D.guia < 1) return;
+    // dónde caés: un cubito fantasma (verde si te agarrás, rojo si no)
+    const r = g.r, bien = r.tipo === 'pegar', x = sx(r.x), y = sy(r.y), s = S * 0.9;
+    ctx.save();
+    ctx.setLineDash([S * 0.14, S * 0.1]); ctx.lineWidth = Math.max(2.5, S * 0.07);
+    ctx.strokeStyle = bien ? '#7dffb9' : '#ff5d7d';
+    rr(ctx, x - s / 2, y - s / 2, s, s, s * 0.2); ctx.stroke();
+    ctx.setLineDash([]);
+    if (!bien) {
+      ctx.beginPath(); ctx.moveTo(x - s * 0.22, y - s * 0.22); ctx.lineTo(x + s * 0.22, y + s * 0.22);
+      ctx.moveTo(x + s * 0.22, y - s * 0.22); ctx.lineTo(x - s * 0.22, y + s * 0.22); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function texto(t, x, y, tam, color = '#fffaf0') {
+    ctx.save();
+    ctx.font = `400 ${tam}px "Lilita One", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(4, tam * 0.16); ctx.strokeStyle = INK; ctx.strokeText(t, x, y);
+    ctx.fillStyle = color; ctx.fillText(t, x, y); ctx.restore();
+  }
+  let hudCache = '';
+  function draw(now) {
+    ctx.clearRect(0, 0, W, H);
+    if (!G) return;
+    const vh = vistaH(), zc = zonaEn(Math.max(0, G.cam + vh * 0.5));
+    // fondo: la pared de atrás, con vetas que se mueven más lento (da profundidad)
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, zc.fondo); g.addColorStop(1, zc.fondo2);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    if (shake) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+    const par = G.cam * 0.55;
+    ctx.fillStyle = 'rgba(0,0,0,.12)';
+    for (let i = Math.floor(par / 2.2) - 1; i < Math.floor(par / 2.2) + vh / 2.2 + 2; i++) {
+      const y = BASE - (i * 2.2 - par) * S, a = hash(i * 17), b = hash(i * 29);
+      ctx.beginPath(); ctx.ellipse(W / 2 + (a - 0.5) * 5 * S, y, S * (0.5 + b * 1.1), S * (0.16 + a * 0.12), 0, 0, Math.PI * 2); ctx.fill();
+    }
+    if (zonaIdx(G.cam) >= 5 || zonaIdx(G.cam + vh) >= 5) {
+      // estrellitas en el espacio
+      ctx.fillStyle = 'rgba(255,255,255,.7)';
+      for (let i = 0; i < 40; i++) { const x = hash(i * 7) * W, y = ((hash(i * 11) * H + G.cam * S * 0.2) % H); ctx.fillRect(x, y, 2, 2); }
+    }
+    // marcas de altura cada 10 m
+    ctx.font = `400 ${Math.round(S * 0.5)}px "Lilita One", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (let m = Math.max(10, Math.ceil(G.cam / 10) * 10); m < G.cam + vh + 1; m += 10) {
+      const y = sy(m);
+      ctx.fillStyle = 'rgba(255,255,255,.2)'; ctx.fillText(`${m} m`, W / 2, y);
+      ctx.fillRect(W / 2 - S * 1.6, y - 1, S * 0.8, 2); ctx.fillRect(W / 2 + S * 0.8, y - 1, S * 0.8, 2);
+    }
+    // tu récord
+    if (G.record && G.record > G.cam - 1 && G.record < G.cam + vh + 1) {
+      const y = sy(G.record);
+      ctx.save(); ctx.setLineDash([S * 0.3, S * 0.2]); ctx.strokeStyle = 'rgba(255,250,240,.75)'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); ctx.restore();
+      texto(G.max >= G.record ? '🏁 ¡Récord!' : '🏁 Récord', W / 2, y - S * 0.42, Math.round(Math.max(13, S * 0.36)));
+    }
+    // el pasadizo
+    const vis = visibles(), L = [], R = [], sal = [];
+    for (const t of vis) { L.push(...t.L); R.push(...t.R); sal.push(...t.sal); }
+    for (const r of [...L, ...R]) {
+      const z = zonaEn((r.y0 + r.y1) / 2);
+      if (r.tipo === 'hueco') pintarVacio(r, z, now); else pintarRoca(r, z, now);
+    }
+    for (const r of sal) {
+      if (r.piso) {
+        const z = zonaEn(0), y = sy(0);
+        ctx.fillStyle = z.roca; ctx.fillRect(-8, y, W + 16, H - y + 8);
+        ctx.fillStyle = z.borde; ctx.globalAlpha = 0.55; ctx.fillRect(-8, y, W + 16, S * 0.14); ctx.globalAlpha = 1;
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2.5, S * 0.07);
+        ctx.beginPath(); ctx.moveTo(sx(vis[0].xl), y); ctx.lineTo(sx(vis[0].xr), y); ctx.stroke();
+      } else pintarSaliente(r, zonaEn(r.y0));
+    }
+    contorno(L, -1); contorno(R, 1);
+    for (const r of [...L, ...R]) if (r.tipo === 'pinches') pintarPinches(r);
+    dibujarGuia();
+    dibujarJugador(now);
+    for (const q of particles) {
+      ctx.globalAlpha = Math.min(1, 1.4 * (1 - q.age / q.life)); ctx.fillStyle = q.c;
+      const s = q.s * S * (q.polvo ? 1 + q.age / q.life : 1);
+      if (q.polvo) { ctx.beginPath(); ctx.arc(sx(q.x), sy(q.y), s / 2, 0, Math.PI * 2); ctx.fill(); }
+      else ctx.fillRect(sx(q.x) - s / 2, sy(q.y) - s / 2, s, s);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    // carteles
+    if (!G.demo && state === 'play') {
+      if (!G.empezo) {
+        const t = Math.round(Math.max(15, Math.min(22, S * 0.46)));
+        texto('Mantené ◀ o ▶ y soltá para saltar', W / 2, sy(4.6), t);
+      }
+      if (banner && now - banner.t < 1600) {
+        const k = (now - banner.t) / 1600;
+        ctx.globalAlpha = k < 0.8 ? 1 : (1 - k) / 0.2;
+        texto(banner.text, W / 2, BASE * 0.3, Math.round(Math.min(40, S * 1.1)));
+        ctx.globalAlpha = 1;
+      }
+      for (const f of floats) {
+        const k = (now - f.t) / 1100;
+        ctx.globalAlpha = 1 - k; texto(f.text, sx(f.x), sy(f.y) - k * 40, Math.round(S * 0.7), '#ffcc29'); ctx.globalAlpha = 1;
+      }
+    }
+    pintarHud();
+  }
+  function pintarHud() {
+    if (!G || G.demo || state !== 'play') return;
+    const m = Math.floor(G.max), k = `${m}|${G.zona}`;
+    if (k === hudCache) return;
+    hudCache = k;
+    $('hScore').innerHTML = `${m} <small>m</small>`;
+    $('hZona').textContent = ZONAS[G.zona].nombre;
+    $('hSub').textContent = `zona ${G.zona + 1}`;
+  }
+  // los botones se llenan con la carga
+  let botonesCache = '';
+  function pintarBotones() {
+    const k = G && !G.demo && state === 'play' ? G.carga : null;
+    const key = k ? `${k.dir}|${k.c.toFixed(2)}|${k.rosca}` : '';
+    if (key === botonesCache) return;
+    botonesCache = key;
+    for (const [id, dir] of [['bL', -1], ['bR', 1]]) {
+      const b = $(id), mio = k && k.dir === dir;
+      b.style.setProperty('--c', mio ? Math.min(1, k.c).toFixed(3) : 0);
+      b.classList.toggle('max', !!(mio && k.c >= 1 && !k.rosca));
+      b.classList.toggle('rosca', !!(mio && k.rosca));
+    }
+  }
+
+  // ---------- pantallas ----------
+  let sel = null;
+  const dif = () => (!DIA && sel ? sel.valor() : 'normal');
+  if (CC) {
+    sel = CC.selectorDif($('difs'), { juego: 'pasadizo', notas: NOTAS, alCambiar: () => renderMenu() });
+    CC.selectorDif($('difs2'), { juego: 'pasadizo', compacto: true, alCambiar: () => renderMenu() });
+    if (DIA) DIA.menu($('difs'), []);
+    CC.leyendaTeclas($('leyenda'), { jugar: 'cargar y saltar', extra: [['R', 'reiniciar']] });
+  } else { $('difs').hidden = true; $('difs2').hidden = true; $('eDifL').hidden = true; }
+  function renderMenu() {
+    const best = CC ? CC.perfil().mejores['pasadizo:' + dif()] : rec[dif()];
+    $('mBest').textContent = best ? `${best} m` : '—';
+    $('btnRank').hidden = !CC;
+    $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+  }
+  let marca = null;
+  function ponerMarca(on) {
+    if (marca) { marca.quitar(); marca = null; }
+    if (on && CC && CC.sombra && G && !G.demo) marca = CC.sombra.marca('pasadizo', G.diff);
+  }
+  function soltarTeclas() {
+    teclas.l = teclas.r = false;
+    for (const b of document.querySelectorAll('.pad button')) b.classList.remove('on');
+    if (G && !G.demo) cancelarCarga();
+  }
+  function start() {
+    if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); }
+    state = 'play';
+    $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false;
+    $('pad').classList.remove('off');
+    resize();
+    newRun(false, dif());
+    $('hDif').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + G.D.name;
+    soltarTeclas(); hudCache = ''; botonesCache = 'x'; pintarBotones();
+    ponerMarca(true);
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  }
+  function cortar() { if (state === 'play' && G && !G.demo && !G.done && G.max >= 1) return settle(); return null; }
+  function restart() {
+    const r = cortar();
+    start();
+    if (r && r.xp) banner = { text: `+${r.xp} XP`, t: performance.now() };
+  }
+  function showMenu() {
+    cortar(); ponerMarca(false); cortarTono();
+    state = 'menu';
+    resize();
+    newRun(true);
+    renderMenu();
+    $('menu').hidden = false; $('end').hidden = true; $('hud').hidden = true;
+    $('pad').classList.add('off');
+    soltarTeclas();
+  }
+  function showEnd() {
+    state = 'end';
+    $('end').hidden = false; $('hud').hidden = true;
+    $('pad').classList.add('off');
+    soltarTeclas();
+    setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
+  }
+  const volver = () => { cortar(); if (CC) CC.volver(); else location.href = 'index.html'; };
+  const verRanking = t => CC?.verRanking({ juego: 'pasadizo', tabla: t });
+  $('btnPlay').addEventListener('click', start);
+  $('btnAgain').addEventListener('click', start);
+  $('btnBack').addEventListener('click', volver);
+  $('btnHome').addEventListener('click', volver);
+  $('btnMenu').addEventListener('click', showMenu);
+  $('btnRank').addEventListener('click', () => verRanking(dif()));
+  $('btnRank2').addEventListener('click', () => verRanking(G ? G.diff : dif()));
+  $('btnQuit').addEventListener('click', showMenu);
+  $('btnRestart').addEventListener('pointerdown', e => { e.preventDefault(); restart(); });
+  $('btnMute').addEventListener('click', () => { muted = !muted; rec.muted = muted; saveRec(); renderMenu(); if (!muted) beep(660, 0.08); else cortarTono(); });
+
+  // ---------- entrada: se mantienen apretados ----------
+  // apretar empieza a cargar (si estás agarrado; si estás en el aire, carga apenas te agarrás) y soltar salta.
+  // Si el navegador corta el toque (pointercancel), la carga se cancela sin saltar.
+  function apretar(dir, on, cancelar) {
+    const k = dir < 0 ? 'l' : 'r';
+    if (on) { if (teclas[k]) return; teclas[k] = true; ultimaDir = dir; }
+    else {
+      if (!teclas[k]) return;
+      teclas[k] = false;
+      if (G && !G.demo && state === 'play' && G.carga && G.carga.dir === dir) { if (cancelar) cancelarCarga(); else saltar(); }
+    }
+    $(dir < 0 ? 'bL' : 'bR').classList.toggle('on', teclas[k]);
+  }
+  for (const [id, dir] of [['bL', -1], ['bR', 1]]) {
+    const b = $(id);
+    b.addEventListener('pointerdown', e => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (x) {} apretar(dir, true); });
+    b.addEventListener('pointerup', () => apretar(dir, false));
+    b.addEventListener('pointercancel', () => apretar(dir, false, true));
+    b.addEventListener('lostpointercapture', () => apretar(dir, false));
+    b.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  const TECLA = { ArrowLeft: -1, ArrowRight: 1, a: -1, A: -1, d: 1, D: 1 };
+  addEventListener('keydown', e => {
+    if (document.getElementById('cc-rank')) return;   // la ventana del ranking maneja su teclado
+    const k = e.key;
+    if (state === 'play') {
+      if (TECLA[k]) { e.preventDefault(); if (!e.repeat) apretar(TECLA[k], true); return; }
+      if (k === 'Escape') showMenu();
+      else if ((k === 'r' || k === 'R') && !e.repeat) restart();
+    } else if (state === 'menu') {
+      if (k === 'ArrowUp' || k === 'ArrowDown') { e.preventDefault(); if (sel && !DIA) sel.siguiente(k === 'ArrowUp' ? -1 : 1); }
+      else if (k === 'Enter' && document.activeElement === document.body) start();
+      else if (k === 'Escape') volver();
+    } else if (state === 'end') {
+      if ((k === 'r' || k === 'R') && !e.repeat) start();
+      else if (k === 'Escape') showMenu();
+      else if ((k === 'Enter' || k === ' ') && document.activeElement === document.body) { e.preventDefault(); start(); }
+    }
+  });
+  addEventListener('keyup', e => { if (TECLA[e.key]) apretar(TECLA[e.key], false); });
+  addEventListener('blur', soltarTeclas);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) soltarTeclas(); });
+
+  // ---------- arranque ----------
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    update(now, dt); draw(now);
+    requestAnimationFrame(frame);
+  }
+  resize();
+  showMenu();
+  requestAnimationFrame(frame);
+  if (CC && CC.pedirApodo) setTimeout(() => CC.pedirApodo(), 600);
+})();
+</script>
+
+<script>(function(){var el=document.getElementById('cargando');if(!el)return;
+function fuera(){if(!el)return;var e=el;el=null;try{if(typeof window.alSalirCarga==='function'&&window.alSalirCarga(e))return}catch(x){}
+e.classList.add('fuera');setTimeout(function(){e.remove()},400)}
+var l=document.querySelector('link[data-fuentes]'),esperas=[];
+if(l)esperas.push(new Promise(function(r){if(l.sheet)r();l.addEventListener('load',r);l.addEventListener('error',r)}).then(function(){return document.fonts&&document.fonts.ready}));
+Promise.race([Promise.all(esperas),new Promise(function(r){setTimeout(r,2500)})]).then(function(){setTimeout(fuera,60)});})();</script>
+</body>
+</html>

@@ -20,6 +20,8 @@
 //   // r → { xp, base, nivel, subio, record, anterior, logros: [nombres], dif }
 //
 //   CC.verRanking({ juego: 'lluvia', tabla: 'normal' });  // ventana con el ranking online
+//   CC.verPerfil({ huella, apodo, skin });               // tarjeta con el perfil de alguien (sin nada: el tuyo)
+//   // El tiempo jugado se mide solo; si el juego sabe cuánto duró la partida, CC.partida({ ..., ms }).
 //   CC.volver();                                          // vuelve a la pantalla de juegos
 //   CC.vibrar(15);                                        // vibración corta en el celu, si se puede
 (() => {
@@ -160,6 +162,12 @@
   const Tlit = (es, vars) => T(es).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
   // El diccionario de este archivo (al final de la sección, antes de los datos que lo usan).
   textos({
+    // desafío del día en cada juego
+    ' · jugaste {n} de {m} desafíos de hoy: los otros te esperan en el inicio': ' · you played {n} of {m} daily challenges: the rest are waiting on the home screen',
+    ' · ¡jugaste los {m} desafíos de hoy! Mañana hay otros (en {t})': ' · you played all {m} daily challenges! New ones tomorrow (in {t})',
+    'Ya usaste los {n} intentos de hoy en {j}': 'You used all {n} of today\'s tries in {j}',
+    ' (tu mejor: <strong>{v}</strong>)': ' (your best: <strong>{v}</strong>)',
+    '. Mañana hay otro (en {t}).': '. A new one tomorrow (in {t}).',
     // pantalla de carga (la arma build.mjs) y el botón de volver que se vuelve casita
     'Cargando…': 'Loading…', 'Juegos': 'Games', 'Volver a los juegos': 'Back to games',
     // dificultades
@@ -632,7 +640,9 @@
     { id: 'paleta', nombre: 'Paleta', archivo: 'paleta.html', color: '#2ec27e', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'esqui', nombre: 'Esquí', archivo: 'esqui.html', color: '#5b8cff', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
     { id: 'pulseada', nombre: 'Pulseada', archivo: 'pulseada.html', color: '#f5b84a', nuevo: true, tablas: tablasDif('mayor', 'num', 'rivales') },
+    { id: 'guardia', nombre: 'Guardia', archivo: 'guardia.html', color: '#e2525f', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'esgrima', nombre: 'Esgrima', archivo: 'esgrima.html', color: '#e0566e', nuevo: true, tablas: tablasDif('mayor', 'num', 'rivales') },
+    { id: 'pasadizo', nombre: 'Pasadizo', archivo: 'pasadizo.html', color: '#d0609c', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
   ];
   const juego = id => JUEGOS.find(j => j.id === id);
   const tablaDe = (j, t) => (juego(j) || { tablas: [] }).tablas.find(x => x.id === t);
@@ -660,7 +670,9 @@
     paleta: [4, 10, 18, 30],
     esqui: [250, 1000, 2500, 5000],
     pulseada: [2, 5, 9, 14],
+    guardia: [500, 2000, 5000, 10000],
     esgrima: [1, 3, 6, 10],
+    pasadizo: [25, 80, 200, 400],
   };
   const NOMBRES_TIER = ['Primeros pasos', 'Le agarraste la mano', 'Crack', 'Leyenda'];
   const TIERS = ['bronce', 'plata', 'oro', 'diamante'];
@@ -723,10 +735,14 @@
     // Pulseada: alternando con dos dedos un promedio hace 6 a 8 toques por segundo; 10 sostenidos es de muy buenos.
     { id: 'paleta-rally', juego: 'paleta', nombre: 'Peloteo eterno', desc: 'Hacé un rally de 30 golpes en la Paleta.', medalla: 'plata',
       prueba: p => !!p.marcas['paleta-rally'] },
+    { id: 'guardia-combo', juego: 'guardia', nombre: 'Muralla', desc: 'Hacé un combo de 50 golpes sin errar en Guardia.', medalla: 'plata',
+      prueba: p => !!p.marcas['guardia-combo'] },
     { id: 'pulseada-tps10', juego: 'pulseada', nombre: 'Diez por segundo', desc: 'Sostené 10 toques por segundo en la Pulseada.', medalla: 'oro',
       prueba: p => !!p.marcas['tps10'] },
     { id: 'esgrima-racha', juego: 'esgrima', nombre: 'Muñeca de acero', desc: 'Hacé 10 paradas perfectas seguidas en Esgrima.', medalla: 'oro',
       prueba: p => !!p.marcas['esgrima-racha'] },
+    { id: 'pasadizo-ciego', juego: 'pasadizo', nombre: 'A ojo', desc: 'Llegá a 100 m en Maestro, sin arco guía, en el Pasadizo.', medalla: 'oro',
+      prueba: p => !!p.marcas['pasadizo-ciego'] },
     { id: 'escalador-x', juego: 'escalador', nombre: 'Escalera del infierno', desc: 'Sprint 100 en Extremo en menos de 15 s.', medalla: 'oro',
       prueba: p => mejorTabla(p, 'escalador', 'sprint-x') < 15000 },
     { id: 'escalador-lava', juego: 'escalador', nombre: 'Pies calientes', desc: 'Escapá de la lava por 150 escalones.', medalla: 'bronce',
@@ -788,6 +804,7 @@
       records: obj(p.records),
       mejores: obj(p.mejores),
       partidas: obj(p.partidas),
+      tiempo: obj(p.tiempo),   // segundos jugados en cada juego (ver «tiempo jugado»)
       total: +p.total || 0,
       logros: obj(p.logros),
       marcas: obj(p.marcas),
@@ -811,7 +828,7 @@
       recibidasVistas: Array.isArray(p.recibidasVistas) ? p.recibidasVistas.filter(c => typeof c === 'string').slice(-100) : [],
       amigosServidor: p.amigosServidor === true,
       pendientes: Array.isArray(p.pendientes) ? p.pendientes.slice(-40) : [],
-      // desafío del día: { fecha, intentos, mejor, racha, ultimo (último día jugado), mejorRacha, premio (día del premio de XP) }
+      // desafío del día: { fecha, juegos: { [juego]: { intentos, mejor, premio } }, racha, ultimo (último día jugado), mejorRacha }
       diario: obj(p.diario),
       // temporadas: { [n]: { xp, cobrado } } · boost: partidas que quedan con doble XP · misiones: progreso del día y la semana
       temporadas: obj(p.temporadas),
@@ -890,7 +907,7 @@
     datos = leer(); // otro juego pudo haberlo cambiado
     return {
       xp: datos.xp, ...nivelDe(datos.xp), skin: skin(), efecto: efecto(), records: { ...datos.records },
-      mejores: { ...datos.mejores }, partidas: { ...datos.partidas }, total: datos.total,
+      mejores: { ...datos.mejores }, partidas: { ...datos.partidas }, tiempo: { ...datos.tiempo }, total: datos.total,
       logros: { ...datos.logros }, extremo: { ...datos.extremo }, maestro: { ...datos.maestro }, marcas: { ...datos.marcas },
       codigos: [...datos.codigos], apodo: datos.apodo, id: datos.id, titulo: titulo(), marco: marco(),
       codigoAmigo: datos.codigoAmigo, amigos: datos.amigos.map(a => ({ ...a })),
@@ -1015,6 +1032,42 @@
     return Math.round(min + (max - min) * Math.pow(f, 1.3));
   }
 
+  // ---------- tiempo jugado ----------
+  // Sin tocar los juegos: un reloj suma un segundo por cada segundo con la pestaña a la vista en que estás jugando (tocaste
+  // una tecla o la pantalla hace menos de 5 s, o tenés una apretada). Así no cuentan los menús quietos, las pausas ni la
+  // pestaña oculta. partida() se lleva lo acumulado desde la partida anterior. Si un juego sabe cuánto duró la partida,
+  // puede pasar `ms` a CC.partida (gana sobre el reloj), y CC.empezar() pone el reloj en cero al arrancar una.
+  const reloj = { s: 0, toque: -1e9, apretados: new Set() };
+  {
+    const toque = () => { reloj.toque = performance.now(); };
+    addEventListener('keydown', e => { toque(); reloj.apretados.add('k' + e.code); }, true);
+    addEventListener('keyup', e => reloj.apretados.delete('k' + e.code), true);
+    addEventListener('pointerdown', e => { toque(); reloj.apretados.add('p' + e.pointerId); }, true);
+    addEventListener('pointermove', e => { if (e.buttons || e.pointerType === 'touch') toque(); }, { capture: true, passive: true });
+    for (const ev of ['pointerup', 'pointercancel']) addEventListener(ev, e => reloj.apretados.delete('p' + e.pointerId), true);
+    addEventListener('blur', () => reloj.apretados.clear());
+    document.addEventListener('visibilitychange', () => { if (document.hidden) { reloj.apretados.clear(); reloj.toque = -1e9; } });
+    setInterval(() => {
+      if (document.hidden) return;
+      if (reloj.apretados.size || performance.now() - reloj.toque < 5000) reloj.s = Math.min(reloj.s + 1, 7200);
+    }, 1000);
+  }
+  const empezar = () => { reloj.s = 0; };
+  // Segundos de esta partida (como mucho una hora, por si algo raro quedó contando).
+  function tiempoDePartida(o) {
+    const s = +o.ms > 0 ? +o.ms / 1000 : reloj.s;
+    reloj.s = 0;
+    return Math.max(0, Math.min(3600, Math.round(s)));
+  }
+  // "3 h 20 min" / "45 min" / "menos de 1 min"
+  function horasTexto(seg) {
+    const min = Math.floor((+seg || 0) / 60);
+    if (min < 1) return seg > 0 ? 'menos de 1 min' : '0 min';
+    if (min < 60) return min + ' min';
+    const h = Math.floor(min / 60), m = min % 60;
+    return h + ' h' + (m && h < 10 ? ' ' + m + ' min' : '');
+  }
+
   // Fin de partida. Ver el comentario de arriba.
   function partida(o) {
     datos = leer();
@@ -1032,6 +1085,7 @@
       if (datos.apodo) encolar(o.juego, o.tabla, valor);
     }
     datos.partidas[o.juego] = (datos.partidas[o.juego] || 0) + 1;
+    datos.tiempo[o.juego] = (+datos.tiempo[o.juego] || 0) + tiempoDePartida(o);
     datos.total++;
     if (dif && DURAS.includes(dif.id)) datos.extremo[o.juego] = 1;
     if (dif && dif.id === 'maestro') datos.maestro[o.juego] = 1;
@@ -1078,17 +1132,18 @@
   }
 
   // ---------- desafío del día ----------
-  // Un nivel por día, igual para todo el mundo: el juego rota cada día, se juega en Normal y con la misma semilla, así
-  // los niveles salen idénticos para todos. 3 intentos, cuenta el mejor, y tiene su propio ranking (tabla `d20261104`
-  // del juego del día). Jugar días seguidos arma la racha 🔥. El día cambia a las 00:00 UTC: es el mismo en todos lados.
-  // Los juegos lo abren con ?diario=1: `diarioDe(juego)` da la semilla, cuenta el intento y dibuja el cartel.
+  // Cada juego tiene su desafío, todos los días: se juega en Normal y con la semilla de la fecha y el juego, así los
+  // niveles salen idénticos para todo el mundo. 3 intentos por juego, cuenta el mejor, y cada uno tiene su ranking del
+  // día (tabla `d20261104` de ese juego). Jugar al menos un desafío por día arma la racha 🔥. El día cambia a las 00:00
+  // UTC: es el mismo en todos lados. Los juegos lo abren con ?diario=1: `diarioDe(juego)` da la semilla, cuenta el
+  // intento y dibuja el cartel. Todos los juegos de JUEGOS tienen que llamar a diarioDe (el inicio les pone el botón).
   const DIARIO_INTENTOS = 3;
-  const DIARIO_ORDEN = ['escalador', 'lluvia', 'paleta', 'esqui', 'voley', 'ritmo', 'pulseada', 'esgrima'];
-  const DIARIO_TABLA = { escalador: 'time' };   // la tabla normal que se juega ese día (si no está acá, 'normal')
+  const DIARIO_VIEJO = ['escalador', 'lluvia', 'paleta', 'esqui', 'voley', 'ritmo', 'pulseada'];   // la rotación de antes (un juego por día)
+  const DIARIO_TABLA = { escalador: 'time' };   // la tabla normal que se juega en el desafío (si no está acá, 'normal')
   const DIA_MS = 864e5;
   const fechaDia = n => new Date(n * DIA_MS).toISOString().slice(0, 10);
   const fechaLinda = f => new Date(f + 'T12:00:00Z').toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', timeZone: 'UTC' });
-  // Generador con semilla (mulberry32, el mismo de los duelos) y la semilla de cada día sacada de la fecha (FNV-1a).
+  // Generador con semilla (mulberry32, el mismo de los duelos) y la semilla de cada desafío sacada de la fecha y el juego (FNV-1a).
   function azar(semilla) {
     let a = semilla >>> 0;
     return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -1103,46 +1158,76 @@
     try { const f = new URLSearchParams(location.search).get('dia'); if (f && /^\d{4}-\d{2}-\d{2}$/.test(f)) return Date.parse(f + 'T12:00:00Z'); } catch (e) {}
     return Date.now();
   }
-  function diario(ahora = ahoraDiario()) {
-    const n = Math.floor(ahora / DIA_MS), fecha = fechaDia(n), jid = DIARIO_ORDEN[n % DIARIO_ORDEN.length], j = juego(jid);
-    const d = leer().diario, hoy = d.fecha === fecha && (!d.juego || d.juego === jid), intentos = hoy ? Math.max(0, +d.intentos || 0) : 0;
-    const tabla = DIARIO_TABLA[jid] || 'normal', mejorHoy = hoy && d.mejor != null ? +d.mejor : null;
+  // Lo jugado en la fecha f, por juego: { [juego]: { intentos, mejor, premio } }. datos.diario es
+  // { fecha, juegos, racha, ultimo (último día jugado), mejorRacha }; el formato de antes (un solo juego por día, con
+  // juego/intentos/mejor/premio sueltos) se lee igual. Con crear, d queda en el formato nuevo y en la fecha f.
+  function diaDe(d, f, crear) {
+    let js = d.fecha === f && d.juegos && typeof d.juegos === 'object' && !Array.isArray(d.juegos) ? d.juegos : null;
+    if (!js) {
+      js = {};
+      if (d.fecha === f && (+d.intentos || d.mejor != null)) {
+        const jid = d.juego || DIARIO_VIEJO[Math.floor(Date.parse(f + 'T12:00:00Z') / DIA_MS) % DIARIO_VIEJO.length];
+        js[jid] = { intentos: Math.max(0, +d.intentos || 0), mejor: d.mejor != null ? +d.mejor : null, premio: d.premio === f };
+      }
+    }
+    if (crear) {
+      for (const k of ['juego', 'intentos', 'mejor', 'premio']) delete d[k];
+      d.fecha = f; d.juegos = js;
+    }
+    return js;
+  }
+  function infoDiario(jid, n, d) {
+    const j = juego(jid);
+    if (!j) return null;
+    const fecha = fechaDia(n), g = diaDe(d, fecha)[jid] || {}, intentos = Math.min(DIARIO_INTENTOS, Math.max(0, +g.intentos || 0));
+    const tabla = DIARIO_TABLA[jid] || 'normal', mejor = g.mejor != null ? +g.mejor : null, quedan = DIARIO_INTENTOS - intentos;
     return {
       fecha, fechaLinda: fechaLinda(fecha), juego: jid, nombre: j.nombre, color: j.color, archivo: j.archivo + '?diario=1',
-      tabla, tablaRanking: 'd' + fecha.replace(/-/g, ''), semilla: semillaDe('twofingers:' + fecha),
-      intentos, quedan: Math.max(0, DIARIO_INTENTOS - intentos), maxIntentos: DIARIO_INTENTOS,
-      mejor: mejorHoy, texto: mejorHoy != null ? formato(mejorHoy, tablaDe(jid, tabla)) : null,
+      tabla, tablaRanking: 'd' + fecha.replace(/-/g, ''), semilla: semillaDe('twofingers:' + fecha + ':' + jid),
+      intentos, quedan, maxIntentos: DIARIO_INTENTOS, jugado: intentos > 0, hecho: !quedan,
+      mejor, texto: mejor != null ? formato(mejor, tablaDe(jid, tabla)) : null,
       racha: d.ultimo === fecha || d.ultimo === fechaDia(n - 1) ? +d.racha || 0 : 0, jugadoHoy: d.ultimo === fecha,
       mejorRacha: +d.mejorRacha || 0, quedanMs: (n + 1) * DIA_MS - Date.now(),
     };
   }
-  // "5 h" / "40 min": cuánto falta para el próximo desafío
+  // diario(juego): el desafío de hoy de ese juego. diario(): el de todos los juegos juntos (para el inicio), con
+  // `juegos` (la lista), `jugados` (con al menos un intento), `hechos` (sin intentos), la racha y cuánto falta.
+  function diario(jid, ahora = ahoraDiario()) {
+    const n = Math.floor(ahora / DIA_MS), d = leer().diario;
+    if (jid) return infoDiario(jid, n, d);
+    const juegos = JUEGOS.map(j => infoDiario(j.id, n, d)), r = juegos[0], fecha = fechaDia(n);
+    return {
+      fecha, fechaLinda: fechaLinda(fecha), juegos, total: juegos.length, maxIntentos: DIARIO_INTENTOS,
+      jugados: juegos.filter(x => x.jugado).length, hechos: juegos.filter(x => x.hecho).length,
+      racha: r.racha, jugadoHoy: r.jugadoHoy, mejorRacha: r.mejorRacha, quedanMs: r.quedanMs,
+    };
+  }
+  // "5 h" / "40 min": cuánto falta para los próximos desafíos
   function faltaTexto(ms) {
     const min = Math.max(1, Math.ceil(ms / 60000));
     return min >= 60 ? Math.floor(min / 60) + ' h' : min + ' min';
   }
-  // Fin de una partida del desafío (lo llama partida): guarda la mejor de hoy, la manda al ranking del día y da el
-  // premio de XP la primera vez de cada día (más grande con la racha).
+  // Fin de una partida del desafío (lo llama partida): guarda la mejor de hoy de ese juego, la manda a su ranking del
+  // día y da el premio de XP la primera vez de cada juego cada día (un poco más con la racha).
   function anotarDiario(o, valor) {
     const f = o.diario.fecha, d = datos.diario;
-    if (!f || d.fecha !== f || (d.juego && d.juego !== o.juego)) return null;   // el intento era de otro día
-    const nueva = isFinite(valor) && valor > 0 && (d.mejor == null || valor > d.mejor);
-    if (nueva) { d.mejor = valor; if (datos.apodo) encolar(o.juego, o.diario.tablaRanking, valor); }
+    if (!f || d.fecha !== f) return null;   // el intento era de otro día
+    const g = diaDe(d, f, true)[o.juego];
+    if (!g || !g.intentos) return null;
+    const nueva = isFinite(valor) && valor > 0 && (g.mejor == null || valor > g.mejor);
+    if (nueva) { g.mejor = valor; if (datos.apodo) encolar(o.juego, o.diario.tablaRanking, valor); }
     let premio = 0;
-    if (d.premio !== f) { d.premio = f; premio = 25 + 5 * Math.min(6, Math.max(0, (+d.racha || 1) - 1)); }
-    return { nueva, mejor: d.mejor ?? null, texto: d.mejor != null ? formato(d.mejor, tablaDe(o.juego, o.diario.tabla)) : '—',
-      intentos: +d.intentos || 0, quedan: Math.max(0, DIARIO_INTENTOS - (+d.intentos || 0)), racha: +d.racha || 1, premio };
+    if (!g.premio) { g.premio = true; premio = 15 + 2 * Math.min(5, Math.max(0, (+d.racha || 1) - 1)); }
+    const jugados = Object.values(d.juegos).filter(x => x && +x.intentos > 0).length;
+    return { nueva, mejor: g.mejor ?? null, texto: g.mejor != null ? formato(g.mejor, tablaDe(o.juego, o.diario.tabla)) : '—',
+      intentos: +g.intentos || 0, quedan: Math.max(0, DIARIO_INTENTOS - (+g.intentos || 0)), racha: +d.racha || 1, premio,
+      jugados, total: JUEGOS.length };
   }
   function diarioDe(jid) {
     let pide = false;
     try { pide = new URLSearchParams(location.search).has('diario'); } catch (e) {}
-    if (!pide) return null;
-    const info = diario();
-    if (info.juego !== jid) {   // link viejo: hoy toca otro juego, se juega normal
-      try { history.replaceState(null, '', location.pathname); } catch (e) {}
-      setTimeout(() => avisar(T('El desafío de hoy es en <b>{j}</b>. Esta partida es normal.', { j: info.nombre }), 4200), 800);
-      return null;
-    }
+    if (!pide || !juego(jid)) return null;
+    const info = diario(jid);
     estilos();
     const carteles = [];
     function cartel(fin) {
@@ -1155,7 +1240,7 @@
       return el;
     }
     function pintar(r) {
-      const i = diario();
+      const i = diario(jid);
       for (const el of carteles) {
         const fin = el.classList.contains('fin');
         let t;
@@ -1163,13 +1248,14 @@
           t = T('Intento {n} de {m} · tu mejor de hoy: <strong>{v}</strong>', { n: r.intentos, m: DIARIO_INTENTOS, v: r.texto }) +
             (r.nueva && r.intentos > 1 ? T(' (¡mejoraste!)') : '');
           if (r.premio) t += T(' · <strong>+{n} XP</strong> por jugarlo', { n: r.premio });
-          if (!r.quedan) t += T(' · mañana hay otro (en {t})', { t: faltaTexto(i.quedanMs) });
+          if (!r.quedan) t += r.jugados < r.total ? T(' · jugaste {n} de {m} desafíos de hoy: los otros te esperan en el inicio', { n: r.jugados, m: r.total })
+            : T(' · ¡jugaste los {m} desafíos de hoy! Mañana hay otros (en {t})', { m: r.total, t: faltaTexto(i.quedanMs) });
         } else {
           const base = '{f} · Normal · el mismo nivel para todos · ';
-          t = !i.quedan ? T('Ya usaste los {n} intentos de hoy. Mañana hay otro (en {t}).', { n: DIARIO_INTENTOS, t: faltaTexto(i.quedanMs) })
-            : T(base + (i.quedan === DIARIO_INTENTOS ? '{n} intentos' : i.quedan === 1 ? 'te queda 1 intento' : 'te quedan {n} intentos'),
-              { f: i.fechaLinda, n: i.quedan });
-          if (i.texto) t += T(' · tu mejor: <strong>{v}</strong>', { v: i.texto });
+          t = i.quedan ? T(base + (i.quedan === DIARIO_INTENTOS ? '{n} intentos' : i.quedan === 1 ? 'te queda 1 intento' : 'te quedan {n} intentos'),
+              { f: i.fechaLinda, n: i.quedan }) + (i.texto ? T(' · tu mejor: <strong>{v}</strong>', { v: i.texto }) : '')
+            : T('Ya usaste los {n} intentos de hoy en {j}', { n: DIARIO_INTENTOS, j: i.nombre }) + (i.texto ? T(' (tu mejor: <strong>{v}</strong>)', { v: i.texto }) : '')
+              + T('. Mañana hay otro (en {t}).', { t: faltaTexto(i.quedanMs) });
         }
         el.querySelector('.txt').innerHTML = t;
         const racha = fin && r ? r.racha : i.racha;
@@ -1189,21 +1275,20 @@
         datos = leer();
         const n = Math.floor(ahoraDiario() / DIA_MS);
         if (fechaDia(n) !== info.fecha) return false;
-        let d = datos.diario;
-        if (d.fecha !== info.fecha || (d.juego && d.juego !== jid)) d = datos.diario = { ...d, fecha: info.fecha, juego: jid, intentos: 0, mejor: null };
-        if ((+d.intentos || 0) >= DIARIO_INTENTOS) return false;
+        const d = datos.diario, js = diaDe(d, info.fecha, true), g = js[jid] = js[jid] || { intentos: 0, mejor: null };
+        if ((+g.intentos || 0) >= DIARIO_INTENTOS) return false;
         if (d.ultimo !== info.fecha) {
           d.racha = d.ultimo === fechaDia(n - 1) ? (+d.racha || 0) + 1 : 1;
           d.ultimo = info.fecha; d.mejorRacha = Math.max(+d.mejorRacha || 0, d.racha);
         }
-        d.intentos = (+d.intentos || 0) + 1;
+        g.intentos = (+g.intentos || 0) + 1;
         guardar();
         pintar();
         return true;
       },
       // Sin intentos: se sigue jugando el mismo juego, pero normal.
       normal() { location.replace(location.pathname); },
-      quedan: () => diario().quedan,
+      quedan: () => diario(jid).quedan,
       // En el menú: el cartel en lugar del selector de dificultad (y de los modos, si hay). Con alJugar, el cartel trae
       // su propio botón Jugar (para menús donde se juega tocando un modo).
       menu(el, ocultar = [], alJugar) {
@@ -1224,7 +1309,7 @@
         if (btn && !(btn.previousElementSibling && btn.previousElementSibling.classList.contains('cc-dia'))) btn.parentNode.insertBefore(cartel(true), btn);
         for (const x of ocultar) if (x) x.hidden = true;
         pintar(r && r.diario);
-        const q = diario().quedan;
+        const q = diario(jid).quedan;
         textoBoton(btn, q ? `↻ ${T('Intento {n} de {m}', { n: DIARIO_INTENTOS - q + 1, m: DIARIO_INTENTOS })} ` : `▸ ${T('Seguir en modo normal')} `);
       },
     };
@@ -1468,7 +1553,7 @@
     // solo amigos: vos y los que agregaste
     const filtro = o.amigos ? `&huella=in.(${[mia, ...leer().amigos.map(a => a.huella)].filter(Boolean).join(',')})` : '';
     const filas = await api(`ranking?tabla=eq.${t}${filtro}&select=apodo,valor,skin,huella,titulo&order=valor.${orden},creado.asc&limit=${n}`);
-    const lista = filas.map((f, k) => ({ puesto: k + 1, apodo: f.apodo, valor: +f.valor, skin: f.skin, titulo: f.titulo || '', yo: !!mia && f.huella === mia }));
+    const lista = filas.map((f, k) => ({ puesto: k + 1, apodo: f.apodo, valor: +f.valor, skin: f.skin, titulo: f.titulo || '', huella: f.huella, yo: !!mia && f.huella === mia }));
     let yo = lista.find(f => f.yo) || null;
     const mio = o.mio !== undefined ? o.mio : leer().mejores[jid + ':' + tid];
     if (!yo && !o.amigos && mio != null && leer().apodo) {
@@ -1478,7 +1563,7 @@
           method: 'HEAD', headers: { apikey: RANKING.clave, Prefer: 'count=exact' },
         });
         const total = +(r.headers.get('content-range') || '').split('/')[1];
-        if (isFinite(total)) yo = { puesto: total + 1, apodo: leer().apodo, valor: mio, skin: skin().id, titulo: titulo().nombre, yo: true, afuera: true };
+        if (isFinite(total)) yo = { puesto: total + 1, apodo: leer().apodo, valor: mio, skin: skin().id, titulo: titulo().nombre, huella: mia, yo: true, afuera: true };
       } catch (e) {}
     }
     return { lista, yo };
@@ -1544,7 +1629,7 @@
   // pisa nada. Lo que es de cada dispositivo (id, clave, amigos, cola del ranking, lo ya visto) no se sube.
   const NUBE_KEY = 'cubo-nube';   // lo último que se subió, para no subir dos veces lo mismo
   const DE_LA_NUBE = ['xp', 'skin', 'efecto', 'titulo', 'marco', 'eleccion', 'records', 'mejores', 'partidas', 'total', 'logros',
-    'marcas', 'extremo', 'maestro', 'codigos', 'diario', 'temporadas', 'boostG', 'boostU', 'misiones'];
+    'marcas', 'extremo', 'maestro', 'codigos', 'diario', 'temporadas', 'boostG', 'boostU', 'misiones', 'tiempo'];
   const progreso = p => { const o = {}; for (const k of DE_LA_NUBE) o[k] = p[k]; return o; };
   const objDe = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
   const maxObj = (a, b) => { const o = { ...a }; for (const [k, v] of Object.entries(objDe(b))) o[k] = Math.max(+o[k] || 0, +v || 0); return o; };
@@ -1554,6 +1639,7 @@
     o.xp = Math.max(a.xp, +b.xp || 0);
     o.total = Math.max(a.total, +b.total || 0);
     o.partidas = maxObj(a.partidas, b.partidas);
+    o.tiempo = maxObj(a.tiempo, b.tiempo);
     o.boostG = Math.max(a.boostG, Math.floor(+b.boostG || 0)); o.boostU = Math.max(a.boostU, Math.floor(+b.boostU || 0));
     o.boost = Math.max(0, o.boostG - o.boostU);
     // logros: la fecha más vieja de cada uno; marcas y "jugado en Extremo/Maestro": la unión
@@ -1578,17 +1664,26 @@
       const x = o.temporadas[n] || {}, y = objDe(t);
       o.temporadas[n] = { ...x, xp: Math.max(+x.xp || 0, +y.xp || 0), cobrado: Math.max(+x.cobrado || 0, +y.cobrado || 0) };
     }
-    // desafío del día: la mejor racha, la racha del último día jugado y, si es el mismo día, lo mejor de los dos
-    const da = a.diario, db = objDe(b.diario), d = { ...da };
+    // desafío del día: la mejor racha, la racha del último día jugado y, si es el mismo día, lo mejor de los dos en
+    // cada juego (los dos lados pasan antes al formato por juego, por si alguno es de antes)
+    const da = { ...a.diario }, db = { ...objDe(b.diario) }, d = { ...da };
     d.mejorRacha = Math.max(+da.mejorRacha || 0, +db.mejorRacha || 0);
     if (String(db.ultimo || '') > String(da.ultimo || '')) { d.ultimo = db.ultimo; d.racha = +db.racha || 0; }
     else if (db.ultimo && db.ultimo === da.ultimo) d.racha = Math.max(+da.racha || 0, +db.racha || 0);
-    if (String(db.fecha || '') > String(da.fecha || '')) { d.fecha = db.fecha; d.juego = db.juego; d.intentos = +db.intentos || 0; d.mejor = db.mejor ?? null; }
-    else if (db.fecha && db.fecha === da.fecha) {
-      d.intentos = Math.max(+da.intentos || 0, +db.intentos || 0);
-      if (db.mejor != null && (da.mejor == null || +db.mejor > +da.mejor)) d.mejor = +db.mejor;
+    const ja = da.fecha ? diaDe(da, da.fecha) : {}, jb = db.fecha ? diaDe(db, db.fecha) : {};
+    for (const k of ['juego', 'intentos', 'mejor', 'premio']) delete d[k];
+    if (String(db.fecha || '') > String(da.fecha || '')) { d.fecha = db.fecha; d.juegos = { ...jb }; }
+    else {
+      d.juegos = { ...ja };
+      if (db.fecha && db.fecha === da.fecha) for (const [jid, y] of Object.entries(jb)) {
+        const x = d.juegos[jid] || {};
+        d.juegos[jid] = {
+          intentos: Math.max(+x.intentos || 0, +y.intentos || 0),
+          mejor: x.mejor == null ? (y.mejor ?? null) : y.mejor == null ? x.mejor : Math.max(+x.mejor, +y.mejor),
+          premio: !!(x.premio || y.premio),
+        };
+      }
     }
-    if (String(db.premio || '') > String(da.premio || '')) d.premio = db.premio;
     o.diario = d;
     // misiones: si son del mismo día (o semana), el progreso más alto de cada una y las cumplidas de los dos lados
     const ma = a.misiones, mb = objDe(b.misiones), m = { ...ma };
@@ -2100,7 +2195,7 @@
     const conModos = modos.length > 1;
     const nombreModo = m => (j.tablas.find(t => modoDe(t) === m && t.dif === 'normal') || j.tablas.find(t => modoDe(t) === m)).nombre.replace(/ (Extremo|Maestro)$/, '');
     // o.diario: el ranking del desafío de hoy (una sola tabla, sin modos ni dificultades)
-    const dia = o.diario ? diario() : null;
+    const dia = o.diario ? diario(j.id) : null;
     if (dia) tid = dia.tabla;
     const previo = document.activeElement;
     const box = document.createElement('div');
@@ -2174,7 +2269,7 @@
     async function cargar() {
       pintarSegs();
       for (const b of segQuien.querySelectorAll('button')) b.setAttribute('aria-pressed', String((b.dataset.q === 'amigos') === soloAmigos));
-      const tb = tablaDe(j.id, tid), mio = dia ? diario().mejor : leer().mejores[j.id + ':' + tid];
+      const tb = tablaDe(j.id, tid), mio = dia ? diario(j.id).mejor : leer().mejores[j.id + ':' + tid];
       const tuyo = dia ? (mio != null ? T('Tu mejor de hoy: <strong>{v}</strong>', { v: formato(mio, tb) }) : T('Todavía no lo jugaste hoy.'))
         : T('Tu mejor marca: <strong>{v}</strong>', { v: formato(mio, tb) });
       if (!rankingActivo()) { msg(`${T('El ranking online se está preparando.')}<br>${tuyo}`); return; }
@@ -2202,6 +2297,13 @@
           if (f.titulo) { const tt = document.createElement('small'); tt.className = 'tt'; tt.textContent = T(f.titulo); nm.appendChild(tt); }
           const c = li.querySelector('canvas').getContext('2d'); c.scale(2, 2);
           dibujarCubo(c, 13, 28, 18, { skin: sk || SKINS[0], t: 0, efecto: false });
+          // tocando la fila se abre su perfil
+          if (f.huella) {
+            li.classList.add('ver'); li.tabIndex = 0; li.setAttribute('role', 'button'); li.title = 'Ver perfil';
+            const ver = () => verPerfil({ huella: f.huella, apodo: f.apodo, skin: f.skin, titulo: f.titulo, yo: f.yo }, { padre: cerrar });
+            li.addEventListener('click', ver);
+            li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ver(); } });
+          }
           ol.appendChild(li);
           return li;
         };
@@ -2211,7 +2313,9 @@
       } catch (e) { if (n === pedido) msg(`${T('No se pudo cargar el ranking. Probá de nuevo en un rato.')}<br>${tuyo}`); }
     }
     function cerrar() { box.remove(); removeEventListener('keydown', tecla, true); if (previo && previo.focus) previo.focus(); if (o.alCerrar) o.alCerrar(); }
-    function tecla(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); } else if (e.target.tagName !== 'INPUT') e.stopPropagation(); }
+    function tecla(e) {
+      if (document.getElementById('cc-perfil')) return;   // la tarjeta de perfil abierta encima maneja sus teclas
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); } else if (e.target.tagName !== 'INPUT') e.stopPropagation(); }
     addEventListener('keydown', tecla, true);
     $('.x').addEventListener('click', cerrar);
     box.addEventListener('click', e => { if (e.target === box) cerrar(); });
@@ -2239,6 +2343,338 @@
     });
     cargar();
     $('.x').focus();
+    return cerrar;
+  }
+
+  // ---------- perfil de otros jugadores ----------
+  // Tocando a alguien en el ranking o en tus amigos se abre su tarjeta: personaje, nivel, horas jugadas, juegos más
+  // jugados, mejores marcas (con su puesto en el ranking), logros, racha y temporada. Lo de los demás sale de su progreso
+  // en la nube con perfil_publico (supabase.sql, «Parte: perfil público»), que devuelve solo lo público; lo tuyo sale de
+  // este dispositivo, así tu tarjeta anda también sin internet.
+  async function perfilPublico(h) {
+    const r = await api('rpc/perfil_publico', { method: 'POST', body: JSON.stringify({ p_huella: String(h || '') }) });
+    return r && typeof r === 'object' && !Array.isArray(r) ? r : null;
+  }
+  // Lo que muestra la tarjeta, a partir de un perfil con la forma del guardado (p) y lo que se sabe aparte (x):
+  // x = { conPerfil, apodo, skin, tituloTexto, codigo, creado, marcas: { 'juego:tabla': { v, puesto } } }
+  function armarVista(p, x = {}) {
+    p = objDe(p);
+    const q = { xp: Math.max(0, +p.xp || 0), logros: objDe(p.logros), temporadas: objDe(p.temporadas),
+      codigos: Array.isArray(p.codigos) ? p.codigos.filter(c => typeof c === 'string') : [] };
+    const con = !!x.conPerfil;
+    // solo lo que de verdad tiene desbloqueado (por si el perfil viene raro)
+    const de = (lista, id) => { const it = lista.find(k => k.id === id); return con && it && libre(it, q) ? it : null; };
+    const libresM = MARCOS.filter(m => libre(m, q));
+    const partidas = objDe(p.partidas), tiempo = objDe(p.tiempo), mejores = objDe(p.mejores), marcas = objDe(x.marcas);
+    const juegos = JUEGOS.map(j => ({ j, n: Math.max(0, Math.floor(+partidas[j.id] || 0)), s: Math.max(0, +tiempo[j.id] || 0) }))
+      .filter(g => g.n || g.s).sort((a, b) => b.n - a.n || b.s - a.s);
+    // mejor marca de cada juego, en la dificultad más alta que jugó (la de su perfil o la del ranking, la mejor de las dos)
+    const marcasJ = [];
+    for (const j of JUEGOS) {
+      let el = null;
+      for (const tb of j.tablas) {
+        const k = j.id + ':' + tb.id, srv = objDe(marcas[k]);
+        let v = isFinite(+mejores[k]) && +mejores[k] > 0 ? +mejores[k] : null;
+        if (srv.v != null && isFinite(+srv.v) && (v == null || mejor(tb, +srv.v, v))) v = +srv.v;
+        if (v == null) continue;
+        const nd = DIFS.findIndex(d => d.id === tb.dif);
+        if (!el || nd > el.nd) el = { j, tb, v, nd, puesto: srv.v != null && +srv.v === v ? Math.max(1, Math.floor(+srv.puesto || 0)) || null : null };
+      }
+      if (el) marcasJ.push(el);
+    }
+    const logros = LOGROS.filter(l => q.logros[l.id]);
+    const d = objDe(p.diario), n = Math.floor(ahoraDiario() / DIA_MS);
+    const T = temporadaDe(), xpT = Math.max(0, +objDe(q.temporadas[T.n]).xp || 0);
+    const fechas = [x.creado ? Date.parse(x.creado) : NaN, ...Object.values(q.logros).map(Number)].filter(v => isFinite(v) && v > 1.5e12);
+    return {
+      con, apodo: x.apodo || '', codigo: x.codigo || '', xp: q.xp, ...nivelDe(q.xp),
+      skin: de(SKINS, p.skin) || SKINS.find(s => s.id === x.skin) || SKINS[0],
+      efecto: de(EFECTOS, p.efecto) || EFECTOS[0],
+      marco: con ? de(MARCOS, p.marco) || libresM[libresM.length - 1] || null : null,
+      titulo: (de(TITULOS, p.titulo) || {}).nombre || x.tituloTexto || '',
+      total: Math.max(+p.total || 0, juegos.reduce((a, g) => a + g.n, 0)), segundos: juegos.reduce((a, g) => a + g.s, 0),
+      juegos, marcas: marcasJ, logros, diamantes: logros.filter(l => l.medalla === 'diamante'),
+      legendarias: [...SKINS.map(it => ({ tipo: 'skin', it })), ...EFECTOS.map(it => ({ tipo: 'efecto', it }))].filter(i => i.it.legendaria && libre(i.it, q)),
+      racha: d.ultimo === fechaDia(n) || d.ultimo === fechaDia(n - 1) ? Math.max(0, +d.racha || 0) : 0, mejorRacha: Math.max(0, +d.mejorRacha || 0),
+      temporada: T, nivelT: Math.min(TEMP_NIVELES, Math.floor(xpT / TEMP_XP)),
+      desde: fechas.length ? Math.min(...fechas) : null,
+    };
+  }
+  function estilosPerfil() {
+    if (document.getElementById('cc-estilos-perfil')) return;
+    const st = document.createElement('style');
+    st.id = 'cc-estilos-perfil';
+    st.textContent = `
+#cc-rank li.ver{cursor:pointer;transition:background .12s}
+#cc-rank li.ver:hover{background:rgba(255,204,41,.28)}
+#cc-rank li.ver.yo:hover{background:#ffd84f}
+#cc-rank li.ver:focus-visible{outline:3px solid #ff5d7d;outline-offset:-2px}
+#cc-perfil{position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:center;background:rgba(29,35,64,.55);box-sizing:border-box;
+  padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px));font-family:"Rubik",system-ui,sans-serif;color:${INK}}
+@media (min-width:600px) and (min-height:560px){#cc-perfil{align-items:center}}
+#cc-perfil *{box-sizing:border-box}
+#cc-perfil [hidden]{display:none!important}
+#cc-perfil .cc-pf{zoom:var(--ui,1);position:relative;width:100%;max-width:460px;max-height:min(780px,calc((100dvh - 24px) / var(--ui,1)));display:flex;flex-direction:column;
+  background:${CREMA};border:3px solid ${INK};border-radius:22px;box-shadow:0 6px 0 ${INK};overflow:hidden;animation:cc-sube .2s ease-out}
+#cc-perfil header{display:flex;align-items:center;gap:12px;padding:14px 62px 14px 14px;background:var(--cc-pf,#e9f6ff);border-bottom:3px solid ${INK}}
+#cc-perfil header canvas{flex:none;width:104px;height:111px;border-radius:16px;background:rgba(255,255,255,.6);border:2.5px solid ${INK}}
+#cc-perfil .pf-quien{flex:1;min-width:0}
+#cc-perfil h2{margin:0;font:400 26px/1.05 "Lilita One","Trebuchet MS",sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cc-perfil .pf-tt{display:block;margin-top:2px;font-size:13px;font-weight:700;opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cc-perfil .pf-tt:empty{display:none}
+#cc-perfil .pf-nv{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:8px}
+#cc-perfil .pf-nv b{font:400 18px/1 "Lilita One","Trebuchet MS",sans-serif}
+#cc-perfil .pf-nv span{font-size:11.5px;font-weight:700;opacity:.7;white-space:nowrap}
+#cc-perfil .pf-barra{height:10px;margin-top:4px;border:2px solid ${INK};border-radius:99px;background:#fff;overflow:hidden}
+#cc-perfil .pf-barra i{display:block;height:100%;width:0;background:#ffcc29;border-right:2px solid ${INK}}
+#cc-perfil .pf-xpt{display:block;margin-top:4px;font-size:11.5px;font-weight:700;opacity:.7}
+#cc-perfil .pf-x{position:absolute;top:12px;right:12px;appearance:none;width:44px;height:44px;border-radius:12px;border:2.5px solid ${INK};background:#fff;
+  box-shadow:0 3px 0 ${INK};font:700 20px/1 system-ui;color:${INK};cursor:pointer}
+#cc-perfil .pf-x:hover{background:#fff4c7}
+#cc-perfil .pf-x:active{transform:translateY(2px);box-shadow:0 1px 0 ${INK}}
+#cc-perfil .pf-cuerpo{flex:1;min-height:0;overflow-y:auto;padding:12px 14px 14px;display:flex;flex-direction:column;gap:14px}
+#cc-perfil .pf-nota{margin:0;padding:10px 12px;border-radius:14px;background:#fff3c4;border:2px dashed rgba(29,35,64,.35);font-size:13px;font-weight:600;line-height:1.4}
+#cc-perfil .pf-nota:empty{display:none}
+#cc-perfil .pf-chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media (max-width:330px){#cc-perfil .pf-chips{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#cc-perfil .pf-chip{min-width:0;padding:8px 6px 7px;border-radius:14px;background:#fff;border:2.5px solid ${INK};text-align:center}
+#cc-perfil .pf-chip .pf-ico{display:block;font-size:17px;line-height:1.1}
+#cc-perfil .pf-chip b{display:block;margin-top:2px;font:400 17px/1.1 "Lilita One","Trebuchet MS",sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cc-perfil .pf-chip small{display:block;margin-top:1px;font-size:10.5px;font-weight:700;opacity:.65;line-height:1.2}
+#cc-perfil h4{margin:0 0 6px;font:400 17px/1 "Lilita One","Trebuchet MS",sans-serif}
+#cc-perfil h4 small{font:700 11.5px "Rubik",system-ui,sans-serif;opacity:.6;margin-left:4px}
+#cc-perfil .pf-fav{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;background:var(--c);border:2.5px solid ${INK};box-shadow:0 3px 0 ${INK}}
+#cc-perfil .pf-fav .pf-tag{flex:none;font-size:22px}
+#cc-perfil .pf-fav div{min-width:0}
+#cc-perfil .pf-fav small{display:block;font-size:11.5px;font-weight:800;opacity:.75;text-transform:uppercase;letter-spacing:.04em}
+#cc-perfil .pf-fav b{display:block;font:400 22px/1.05 "Lilita One","Trebuchet MS",sans-serif}
+#cc-perfil .pf-fav span{display:block;font-size:12.5px;font-weight:700}
+#cc-perfil .pf-jg{display:grid;grid-template-columns:minmax(0,max-content) minmax(40px,1fr) auto auto;align-items:center;gap:4px 8px;padding:5px 0;font-size:13px;font-weight:700}
+#cc-perfil .pf-jg .pf-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cc-perfil .pf-jg .pf-br{height:12px;border-radius:99px;background:#ece8dc;overflow:hidden;border:2px solid ${INK}}
+#cc-perfil .pf-jg .pf-br i{display:block;height:100%;border-right:2px solid ${INK}}
+#cc-perfil .pf-jg .pf-nn{font-variant-numeric:tabular-nums;text-align:right;min-width:2.2em}
+#cc-perfil .pf-jg .pf-hs{font-size:11.5px;opacity:.65;text-align:right;min-width:4.6em;white-space:nowrap}
+#cc-perfil .pf-mk{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:12px;background:#fff;border:2px solid rgba(29,35,64,.18)}
+#cc-perfil .pf-mk + .pf-mk{margin-top:6px}
+#cc-perfil .pf-mk .pf-pt{flex:none;width:10px;height:10px;border-radius:50%;border:2px solid ${INK}}
+#cc-perfil .pf-mk .pf-nm{flex:1;min-width:0}
+#cc-perfil .pf-mk .pf-nm b{display:block;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cc-perfil .pf-mk .pf-nm small{display:flex;align-items:center;gap:3px;font-size:11px;font-weight:700;opacity:.7;white-space:nowrap;overflow:hidden}
+#cc-perfil .pf-mk .pf-nm small .cc-ico{flex:none}
+#cc-perfil .pf-mk .pf-v{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+#cc-perfil .pf-mk .pf-pu{flex:none;min-width:38px;padding:3px 6px;border-radius:99px;background:#ece8dc;font:400 13px/1 "Lilita One","Trebuchet MS",sans-serif;text-align:center}
+#cc-perfil .pf-mk .pf-pu.pf-m1{background:#ffcc29;box-shadow:inset 0 0 0 2px ${INK}}
+#cc-perfil .pf-mk .pf-pu.pf-m2{background:#d7deea;box-shadow:inset 0 0 0 2px ${INK}}
+#cc-perfil .pf-mk .pf-pu.pf-m3{background:#e9b48a;box-shadow:inset 0 0 0 2px ${INK}}
+#cc-perfil .pf-meds{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+#cc-perfil .pf-meds .pf-cuenta{font:400 22px/1 "Lilita One","Trebuchet MS",sans-serif;margin-right:auto}
+#cc-perfil .pf-meds .pf-cuenta small{font:700 12px "Rubik",system-ui,sans-serif;opacity:.6}
+#cc-perfil .pf-med{display:flex;align-items:center;gap:5px;font-weight:800;font-size:14px}
+#cc-perfil .pf-med i{width:16px;height:16px;border-radius:50%;border:2px solid ${INK}}
+#cc-perfil .pf-dias{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+#cc-perfil .pf-dias span{padding:4px 9px;border-radius:99px;background:#dff8ff;border:2px solid ${INK};font-size:12px;font-weight:800}
+#cc-perfil .pf-legs{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;margin-top:10px}
+#cc-perfil .pf-leg{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:12px;background:#1d2340;color:#fff}
+#cc-perfil .pf-leg canvas{width:48px;height:52px}
+#cc-perfil .pf-leg small{font-size:10.5px;font-weight:800;text-align:center;line-height:1.15}
+#cc-perfil .pf-vacio{margin:0;font-size:13px;font-weight:600;opacity:.7}
+#cc-perfil .pf-acciones{display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px 14px;border-top:2px dashed rgba(29,35,64,.22)}
+#cc-perfil .pf-acciones:empty{display:none}
+#cc-perfil .pf-acciones button{appearance:none;flex:1 1 0;min-width:0;min-height:48px;padding:0 12px;border-radius:14px;border:2.5px solid ${INK};background:#fff;color:${INK};
+  font:400 19px "Lilita One","Trebuchet MS",sans-serif;box-shadow:0 3px 0 ${INK};cursor:pointer;white-space:nowrap}
+#cc-perfil .pf-acciones button.pf-pri{background:#ffcc29}
+#cc-perfil .pf-acciones button:active{transform:translateY(2px);box-shadow:0 1px 0 ${INK}}
+#cc-perfil .pf-acciones button:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none}
+#cc-perfil .pf-acciones .pf-msg{flex:1 1 100%;margin:0;font-size:12.5px;font-weight:700;opacity:.8}
+#cc-perfil .pf-acciones .pf-msg:empty{display:none}
+#cc-perfil button:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
+@media (max-width:400px){#cc-perfil header{gap:10px;padding:12px 58px 12px 12px}#cc-perfil header canvas{width:84px;height:90px}#cc-perfil h2{font-size:22px}
+  #cc-perfil .pf-cuerpo{padding-inline:12px}#cc-perfil .pf-acciones{padding-inline:12px}}
+`;
+    document.head.appendChild(st);
+  }
+  // Abre la tarjeta. a = { huella, apodo, skin, titulo, yo } (sin huella, o con yo: true, la tuya).
+  // o.padre: función que cierra la ventana de abajo (el ranking), para cuando se va a retar o al versus.
+  function verPerfil(a = {}, o = {}) {
+    estilos(); estilosPerfil();
+    const viejo = document.getElementById('cc-perfil');
+    if (viejo && viejo._cerrar) viejo._cerrar(true);
+    const yo = !!a.yo || !a.huella;
+    const previo = document.activeElement;
+    const box = document.createElement('div');
+    box.id = 'cc-perfil';
+    box.innerHTML = `<div class="cc-pf" role="dialog" aria-modal="true" aria-labelledby="cc-pf-ap">
+      <header><canvas width="224" height="240" aria-hidden="true"></canvas><div class="pf-quien"><h2 id="cc-pf-ap"></h2><small class="pf-tt"></small>
+        <div class="pf-nv"><b class="pf-lv"></b><span class="pf-xpn"></span></div><div class="pf-barra"><i></i></div><small class="pf-xpt"></small></div>
+        <button class="pf-x" type="button" aria-label="Cerrar">✕</button></header>
+      <div class="pf-cuerpo"></div><div class="pf-acciones"></div></div>`;
+    document.body.appendChild(box);
+    const $ = s => box.querySelector(s), cuerpo = $('.pf-cuerpo'), acciones = $('.pf-acciones');
+    const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const yoD = () => { const d = leer(); return { conPerfil: true, apodo: d.apodo || 'Vos', codigo: d.codigoAmigo }; };
+    let vista = yo ? armarVista(leer(), yoD()) : armarVista({}, { apodo: a.apodo, skin: a.skin, tituloTexto: a.titulo });
+    let nota = '', codigo = a.codigo || '', vivo = true, raf = 0;
+    if (yo && !leer().apodo) nota = 'Poné un apodo en cualquier ranking para que tus amigos puedan ver tu perfil.';
+
+    function pintar() {
+      const v = vista;
+      $('h2').replaceChildren(); const ap = document.createElement('span'); ap.textContent = v.apodo || '—'; ap.className = claseNombre(v.skin); $('h2').appendChild(ap);
+      if (yo && leer().apodo) $('h2').append(' (vos)');
+      $('.pf-tt').textContent = v.titulo;
+      const conNivel = v.con;
+      $('.pf-nv').hidden = $('.pf-barra').hidden = $('.pf-xpt').hidden = !conNivel;
+      $('.pf-lv').textContent = 'Nivel ' + v.nivel;
+      $('.pf-xpn').textContent = `${v.enNivel.toLocaleString('es-AR')} / ${v.paraSiguiente.toLocaleString('es-AR')} XP`;
+      $('.pf-barra i').style.width = Math.round(100 * v.enNivel / v.paraSiguiente) + '%';
+      $('.pf-xpt').textContent = `${v.xp.toLocaleString('es-AR')} XP en total`;
+      const fav = v.juegos[0];
+      $('.cc-pf').style.setProperty('--cc-pf', fav ? `color-mix(in srgb, ${fav.j.color} 30%, #fffaf0)` : '#e9f6ff');
+
+      const h = [];
+      h.push(`<p class="pf-nota" role="status"></p>`);
+      if (v.con) {
+        const desde = v.desde ? new Date(v.desde).toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }).replace('.', '') : '—';
+        const chip = (ico, valor, txt) => `<div class="pf-chip"><span class="pf-ico" aria-hidden="true">${ico}</span><b>${valor}</b><small>${txt}</small></div>`;
+        h.push(`<div class="pf-chips">${chip('⏱️', horasTexto(v.segundos), 'jugadas')}${chip('🎮', v.total.toLocaleString('es-AR'), v.total === 1 ? 'partida' : 'partidas')}
+          ${chip('🏅', `${v.logros.length}/${LOGROS.length}`, 'logros')}${chip('🔥', v.racha, `racha del día · mejor ${v.mejorRacha}`)}
+          ${chip('⭐', `Nv ${v.nivelT}`, `temporada ${v.temporada.nombre}`)}${chip('📅', desde, 'juega desde')}</div>`);
+        if (fav) {
+          h.push(`<div class="pf-fav" style="--c:color-mix(in srgb, ${fav.j.color} 45%, #fff)"><span class="pf-tag" aria-hidden="true">⭐</span><div><small>${yo ? 'Tu favorito' : 'Su favorito'}</small>
+            <b>${fav.j.nombre}</b><span>${fav.n.toLocaleString('es-AR')} ${fav.n === 1 ? 'partida' : 'partidas'}${fav.s ? ' · ' + horasTexto(fav.s) : ''}</span></div></div>`);
+          const max = Math.max(1, ...v.juegos.map(g => g.n));
+          h.push(`<section><h4>Más jugados <small>partidas · tiempo</small></h4>${v.juegos.map(g =>
+            `<div class="pf-jg"><span class="pf-nm">${g.j.nombre}</span><span class="pf-br"><i style="width:${Math.max(4, Math.round(100 * g.n / max))}%;background:${g.j.color}"></i></span>
+            <span class="pf-nn">${g.n.toLocaleString('es-AR')}</span><span class="pf-hs">${g.s ? horasTexto(g.s) : '—'}</span></div>`).join('')}
+            ${v.total && !v.segundos ? `<p class="pf-vacio">El tiempo jugado se empezó a contar hace poco.</p>` : ''}</section>`);
+        } else h.push(`<p class="pf-vacio">${yo ? 'Todavía no jugaste ninguna partida.' : 'Todavía no jugó ninguna partida.'}</p>`);
+      }
+      if (v.marcas.length) {
+        h.push(`<section><h4>Mejores marcas <small>en la dificultad más alta${v.marcas.some(m => m.puesto) ? ' · puesto' : ''}</small></h4>${v.marcas.map(m => {
+          const pu = m.puesto ? `<span class="pf-pu${m.puesto <= 3 ? ' pf-m' + m.puesto : ''}" title="Puesto en el ranking">#${m.puesto.toLocaleString('es-AR')}</span>` : '';
+          return `<div class="pf-mk"><i class="pf-pt" style="background:${m.j.color}"></i><span class="pf-nm"><b>${m.j.nombre}</b><small>${iconoDif(m.tb.dif, 14)}${m.tb.nombre}</small></span>
+            <span class="pf-v">${formato(m.v, m.tb)}</span>${pu}</div>`;
+        }).join('')}</section>`);
+      }
+      if (v.con) {
+        const cuenta = m => v.logros.filter(l => l.medalla === m).length;
+        h.push(`<section><h4>Logros</h4><div class="pf-meds"><span class="pf-cuenta">${v.logros.length} <small>de ${LOGROS.length}</small></span>${Object.entries(MEDALLAS).map(([k, m]) =>
+          `<span class="pf-med" title="${m.nombre}"><i style="background:${m.color}"></i>${cuenta(k)}</span>`).join('')}</div>
+          ${v.diamantes.length ? `<div class="pf-dias">${v.diamantes.map(l => `<span title="${l.desc.replace(/"/g, '&quot;')}">💎 ${l.nombre}</span>`).join('')}</div>` : ''}
+          ${v.legendarias.length ? `<div class="pf-legs">${v.legendarias.map((x, k) => `<div class="pf-leg"><canvas width="96" height="104" data-k="${k}"></canvas><small>${x.it.nombre}</small></div>`).join('')}</div>` : ''}</section>`);
+      }
+      cuerpo.innerHTML = h.join('');
+      cuerpo.querySelector('.pf-nota').textContent = nota;
+      for (const cv of cuerpo.querySelectorAll('.pf-legs canvas')) {
+        const x = v.legendarias[+cv.dataset.k], c = cv.getContext('2d'); c.scale(2, 2);
+        if (x.tipo === 'skin') dibujarCubo(c, 24, 46, 24, { skin: x.it, t: 900, efecto: false });
+        else dibujarCubo(c, 24, 44, 20, { skin: SKINS[0], t: 900, efecto: x.it.id, marco: false });
+      }
+      pintarAcciones();
+    }
+
+    // botones: retar y versus si es tu amigo; si no, agregarlo
+    function pintarAcciones(msg = '') {
+      acciones.replaceChildren();
+      if (yo) return;
+      const d = leer(), es = x => x.huella === a.huella;
+      const amigo = d.amigos.find(es), pidio = d.recibidas.find(es), mande = d.enviadas.find(es);
+      const boton = (texto, clase, fn) => {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = texto; if (clase) b.className = 'pf-' + clase;
+        if (fn) b.addEventListener('click', () => fn(b)); else b.disabled = true;
+        acciones.appendChild(b); return b;
+      };
+      if (amigo) {
+        boton('⚔️ Retar', 'pri', () => {
+          cerrarTodo();
+          if (window.CuboDuelo) window.CuboDuelo.elegirJuego(amigo);
+          else avisar('<div><b>Sin conexión</b><span>Para retar a un amigo hace falta internet.</span></div>');
+        });
+        boton('📊 Versus', '', () => {
+          const fn = o.versus || window.CuboComun.alVersus;
+          cerrarTodo();
+          if (fn) fn(amigo); else location.href = 'index.html#versus=' + encodeURIComponent(amigo.huella);
+        });
+      } else if (pidio) {
+        boton('✓ Aceptar solicitud', 'pri', async b => {
+          b.disabled = true;
+          const r = await responderSolicitud(pidio.codigo, true);
+          pintarAcciones(!r.ok ? r.msg : r.estado === 'amigos' ? `¡${vista.apodo} ya es tu amigo!` : 'Esa solicitud ya no está.');
+        });
+      } else if (mande) boton('Solicitud enviada', '', null);
+      else if (codigo) {
+        boton('➕ Agregar amigo', 'pri', async b => {
+          b.disabled = true; b.textContent = 'Mandando…';
+          const r = await agregarAmigo(codigo);
+          pintarAcciones(!r.ok ? r.msg : r.estado === 'amigos' ? `¡${vista.apodo} ya es tu amigo!` : `Le mandaste una solicitud a ${vista.apodo}. Cuando la acepte, aparece en tus amigos.`);
+        });
+      }
+      if (msg) { const p = document.createElement('p'); p.className = 'pf-msg'; p.setAttribute('role', 'status'); p.textContent = msg; acciones.appendChild(p); }
+    }
+
+    // el personaje grande, con su efecto y su brillo, moviéndose
+    const ctx = $('header canvas').getContext('2d');
+    function cuadro(now) {
+      if (!vivo) return;
+      if (!document.hidden) {
+        ctx.setTransform(2, 0, 0, 2, 0, 0); ctx.clearRect(0, 0, 112, 120);
+        const t = quieto ? 900 : now;
+        dibujarCubo(ctx, 56, 104 - (quieto ? 0 : (Math.sin(now / 420) + 1) * 3), 50,
+          { skin: vista.skin, efecto: vista.efecto.id, marco: vista.marco ? vista.marco.id : false, t, mirar: quieto ? 0 : Math.sin(now / 900) });
+      }
+      raf = requestAnimationFrame(cuadro);
+    }
+
+    function cerrar(sinFoco) {
+      if (!vivo) return;
+      vivo = false; cancelAnimationFrame(raf);
+      box.remove(); removeEventListener('keydown', tecla, true); removeEventListener('cubo-amigos', alCambiarAmigos);
+      if (!sinFoco && previo && previo.focus && document.contains(previo)) previo.focus();
+      if (o.alCerrar) o.alCerrar();
+    }
+    function cerrarTodo() { cerrar(true); if (o.padre) o.padre(); }
+    box._cerrar = cerrar;
+    function tecla(e) {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); }
+      else if (e.target.tagName !== 'INPUT') e.stopPropagation();   // que el juego de abajo no se mueva
+    }
+    const alCambiarAmigos = () => { if (vivo) pintarAcciones(); };
+    addEventListener('keydown', tecla, true);
+    addEventListener('cubo-amigos', alCambiarAmigos);
+    $('.pf-x').addEventListener('click', () => cerrar());
+    box.addEventListener('click', e => { if (e.target === box) cerrar(); });
+
+    // lo del servidor: el perfil público de los demás; en el tuyo, solo tus puestos en el ranking
+    const ponerNota = t => { nota = t; const el = cuerpo.querySelector('.pf-nota'); if (el) el.textContent = t; };
+    if (!yo) {
+      if (!rankingActivo() || navigator.onLine === false) nota = 'Sin conexión. Para ver el perfil de otros jugadores hace falta internet.';
+      else nota = 'Cargando el perfil…';
+    }
+    pintar();
+    requestAnimationFrame(cuadro);
+    $('.pf-x').focus();
+    (async () => {
+      if (!rankingActivo() || navigator.onLine === false) return;
+      try {
+        const h = yo ? (leer().apodo ? await huella() : '') : a.huella;
+        if (!h) return;
+        const r = await perfilPublico(h);
+        if (!vivo) return;
+        if (yo) {
+          if (r) { vista = armarVista(leer(), { ...yoD(), marcas: r.marcas, creado: r.creado }); pintar(); }
+          return;
+        }
+        if (!r) { ponerNota(`No encontramos el perfil de ${a.apodo || 'este jugador'}.`); return; }
+        codigo = r.codigo || codigo;
+        nota = r.perfil ? '' : `${r.apodo} todavía no subió su progreso: se va a ver cuando vuelva a jugar.`;
+        vista = armarVista(r.perfil || {}, { conPerfil: !!r.perfil, apodo: r.apodo, skin: r.skin, tituloTexto: r.titulo, codigo: r.codigo, creado: r.creado, marcas: r.marcas });
+        pintar();
+      } catch (e) {
+        if (!vivo || yo) return;
+        ponerNota(e.message === 'ranking 404' ? 'Los perfiles de otros jugadores todavía no están disponibles: falta actualizar el servidor. Probá de nuevo en unos días.'
+          : 'No se pudo cargar el perfil. Probá de nuevo en un rato.');
+      }
+    })();
     return cerrar;
   }
 
@@ -5481,6 +5917,7 @@ html.cc-quieto .cc-guia-dedo{animation:none;opacity:1;transform:translate(-50%,0
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
     avisar, vibrar, volver, dibujarCubo, morir, sombra, pedirApodo, diario, diarioDe, azar, faltaTexto,
     temporada, misiones, eventoXP, TEMP_XP, sincronizarNube, menosMovimiento, frenar, frenado, guia, T, Tsin: Tlit, textos, idioma, IDIOMAS, ponerIdioma, LOCALE, traducirNodo,
+    verPerfil, perfilPublico, horasTexto, empezar,
   };
   // Duelos 1v1 (cubo-duelo.js): usa la misma conexión a Supabase y escucha las invitaciones en todas las páginas.
   window.CuboComun.RANKING = RANKING;

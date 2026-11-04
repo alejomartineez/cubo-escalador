@@ -9,6 +9,8 @@
   if (!CC || !CC.RANKING || window.CuboDuelo) return;
   // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js)
   if (CC.textos) CC.textos({
+    'Partido cara a cara, cada uno de su lado de la red. A 11.': 'Face-to-face match, each on your side of the net. First to 11.',
+    'Cada uno con su paleta, cara a cara. Gana el primero que llega a 7.': 'Each with your own paddle, face to face. First to 7 wins.',
     // juegos 1v1
     'Pulseada': 'Arm Wrestling',
     'Escalador': 'Climber',
@@ -88,7 +90,8 @@
   const JUEGOS = [
     { id: 'pulseada', nombre: T('Pulseada'), desc: T('Pulseada de verdad: tu fuerza contra la suya. Al mejor de 3.'), pagina: 'pulseada.html' },
     { id: 'escalador', nombre: T('Escalador'), desc: T('Carrera al escalón 100 con la misma escalera.'), pagina: 'escalador.html' },
-    { id: 'voley', nombre: T('Vóley'), desc: T('Los dos contra el mismo rival: gana el que hace más puntos.'), pagina: 'voley.html' },
+    { id: 'voley', nombre: T('Vóley'), desc: T('Partido cara a cara, cada uno de su lado de la red. A 11.'), pagina: 'voley.html' },
+    { id: 'paleta', nombre: T('Paleta'), desc: T('Cada uno con su paleta, cara a cara. Gana el primero que llega a 7.'), pagina: 'paleta.html' },
   ];
   const juegoDe = id => JUEGOS.find(j => j.id === id);
   const skinDe = id => CC.SKINS.find(s => s.id === id) || CC.SKINS[0];
