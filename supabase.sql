@@ -719,3 +719,28 @@ grant execute on function public.bajar_perfil(uuid) to anon, authenticated;
 
 -- Al juntar dos jugadores (vincular_jugador), el perfil del que se borra se va con él (on delete cascade): el dispositivo
 -- todavía lo tiene y lo junta con el tuyo la próxima vez que sincroniza.
+
+-- ---------- Parte: duelos de Paleta ----------
+-- Ahora también se puede retar a Paleta (cara a cara, cada uno con su paleta, a 7 puntos).
+create or replace function public.retar(p_jugador uuid, p_codigo text, p_juego text, p_dif text)
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  v_para uuid;
+  v_reto public.retos%rowtype;
+begin
+  if not exists (select 1 from public.jugadores where id = p_jugador) then return json_build_object('error', 'sin-apodo'); end if;
+  if coalesce(p_juego, '') not in ('pulseada', 'escalador', 'voley', 'paleta') or coalesce(p_dif, '') !~ '^[a-z]{3,10}$' then return json_build_object('error', 'invalido'); end if;
+  v_para := public.id_de_codigo(p_codigo);
+  if v_para is null or v_para = p_jugador then return json_build_object('error', 'no-existe'); end if;
+  if not public.son_amigos(p_jugador, v_para) then return json_build_object('error', 'no-amigos'); end if;
+  -- para que nadie llene la tabla: como mucho 8 retos por minuto
+  if (select count(*) from public.retos where de = p_jugador and creado > now() - interval '1 minute') >= 8 then
+    return json_build_object('error', 'muchos');
+  end if;
+  delete from public.retos where vence < now() - interval '1 day';
+  update public.retos set estado = 'cancelado' where de = p_jugador and para = v_para and estado = 'pendiente';
+  insert into public.retos (de, para, juego, dif, sala)
+    values (p_jugador, v_para, p_juego, p_dif, replace(gen_random_uuid()::text, '-', ''))
+  returning * into v_reto;
+  return json_build_object('id', v_reto.id, 'sala', v_reto.sala, 'vence', v_reto.vence, 'huella', public.huella_de(v_para));
+end $$;
