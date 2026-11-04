@@ -719,3 +719,42 @@ grant execute on function public.bajar_perfil(uuid) to anon, authenticated;
 
 -- Al juntar dos jugadores (vincular_jugador), el perfil del que se borra se va con él (on delete cascade): el dispositivo
 -- todavía lo tiene y lo junta con el tuyo la próxima vez que sincroniza.
+
+-- ---------- Parte: perfil público ----------
+-- La tarjeta de perfil (CC.verPerfil en cubo-comun.js): tocando a alguien en el ranking o en tus amigos se ve su perfil.
+-- Se busca por huella (la que ya muestra el ranking) y devuelve solo lo público: apodo, personaje, título, código de amigo
+-- (para mandarle una solicitud; igual tiene que aceptarla), desde cuándo juega, lo público de su progreso en la nube
+-- (nivel, XP, personaje, efecto, brillo, partidas y tiempo por juego, mejores marcas, logros, racha, temporadas) y sus marcas
+-- del ranking con el puesto en cada tabla. Nunca el id, la clave ni los amigos. null si no hay nadie con esa huella.
+-- `perfil` es null si todavía no subió su progreso (entonces la tarjeta muestra solo lo del ranking).
+create index if not exists jugadores_huella on public.jugadores (public.huella_de(id));
+
+create or replace function public.perfil_publico(p_huella text)
+returns json language plpgsql stable security definer set search_path = public as $$
+declare
+  v_j public.jugadores%rowtype;
+  v_d jsonb;
+begin
+  if coalesce(p_huella, '') !~ '^[0-9a-f]{12}$' then return null; end if;
+  select * into v_j from public.jugadores where public.huella_de(id) = p_huella limit 1;
+  if not found then return null; end if;
+  select datos into v_d from public.perfiles where jugador = v_j.id;
+  return json_build_object(
+    'apodo', v_j.apodo, 'skin', v_j.skin, 'titulo', v_j.titulo, 'codigo', v_j.codigo, 'creado', v_j.creado,
+    'perfil', case when v_d is null then null else jsonb_build_object(
+      'xp', v_d->'xp', 'skin', v_d->'skin', 'efecto', v_d->'efecto', 'titulo', v_d->'titulo', 'marco', v_d->'marco',
+      'partidas', v_d->'partidas', 'tiempo', v_d->'tiempo', 'total', v_d->'total', 'mejores', v_d->'mejores',
+      'logros', v_d->'logros', 'extremo', v_d->'extremo', 'maestro', v_d->'maestro', 'codigos', v_d->'codigos',
+      'temporadas', v_d->'temporadas',
+      'diario', jsonb_build_object('racha', v_d->'diario'->'racha', 'mejorRacha', v_d->'diario'->'mejorRacha', 'ultimo', v_d->'diario'->'ultimo'))
+    end,
+    -- sus marcas en el ranking (sin las del desafío del día) y en qué puesto está en cada tabla
+    'marcas', (select coalesce(json_object_agg(p.tabla, json_build_object('v', p.valor, 'puesto', 1 + (
+                 select count(*) from public.puntajes q
+                 where q.tabla = p.tabla
+                   and case when coalesce(l.orden, 'mayor') = 'menor' then q.valor < p.valor else q.valor > p.valor end))), '{}'::json)
+               from public.puntajes p left join public.limites l on l.tabla = p.tabla
+               where p.jugador = v_j.id and split_part(p.tabla, ':', 2) !~ '^d[0-9]{8}$'));
+end $$;
+revoke all on function public.perfil_publico(text) from public;
+grant execute on function public.perfil_publico(text) to anon, authenticated;

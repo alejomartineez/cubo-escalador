@@ -434,6 +434,9 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 .amigos { display: grid; gap: 8px; }
 .amigo { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: #fff; border: 2.5px solid var(--ink); }
 .amigo canvas { width: 36px; height: 40px; flex: none; }
+.amigo.ver canvas, .amigo.ver .nm { cursor: pointer; }
+.amigo.ver .nm:hover .ap { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 2px; }
+.amigo.ver .nm:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 .amigo .nm { flex: 1; min-width: 0; font-weight: 800; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .amigo .nm small { display: block; font-size: 11px; font-weight: 700; color: var(--muted); }
 .amigo .vs { height: 40px; padding: 0 12px; border-radius: 12px; border: 2.5px solid var(--ink); background: #ff5d7d; color: #fff; box-shadow: 0 3px 0 var(--ink); font-family: var(--display); font-size: 16px; cursor: pointer; }
@@ -652,6 +655,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
           <div class="sub" id="bigLvl"></div>
           <div class="bar"><i id="bigBar" style="width:0%"></i></div>
           <div class="sub" id="bigNext"></div>
+          <button class="mini" type="button" id="miPerfilBtn" style="margin-top:8px;height:34px;padding:0 12px">👤 Ver mi perfil</button>
         </div>
       </div>
       <div class="seg tres" role="group" aria-label="Qué cambiar">
@@ -1288,6 +1292,8 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   });
   $('me').addEventListener('click', () => { abrirPersonaje(); marcarTab('personaje'); });
   $('apodoBtn').addEventListener('click', () => CC.verRanking({ juego: JUEGOS[actual].id, alCerrar: pintarPersonaje }));
+  $('miPerfilBtn').hidden = !CC.verPerfil;
+  $('miPerfilBtn').addEventListener('click', () => CC.verPerfil());
 
   // camino de nivel: qué da cada nivel
   const TIPO = { skin: 'Personaje', efecto: 'Efecto', titulo: 'Título', marco: 'Brillo' };
@@ -1555,6 +1561,13 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     ap.textContent = a.apodo; ap.className = 'ap ' + CC.claseNombre(sk);
     el.querySelector('small').textContent = sub;
     const c = el.querySelector('canvas').getContext('2d'); c.scale(2, 2); CC.dibujarCubo(c, 18, 37, 22, { skin: sk, t: 900, efecto: false });
+    // tocando su personaje o su nombre se abre su perfil
+    if (CC.verPerfil && a.huella) {
+      const nm = el.querySelector('.nm'), ver = () => CC.verPerfil(a);
+      el.classList.add('ver'); nm.tabIndex = 0; nm.setAttribute('role', 'button'); nm.title = 'Ver perfil';
+      el.querySelector('canvas').addEventListener('click', ver); nm.addEventListener('click', ver);
+      nm.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ver(); } });
+    }
     return el;
   }
   function boton(el, clase, texto, accion) {
@@ -1639,7 +1652,8 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     if (r.ok) { $('amigoCodigo').value = ''; $('amigoCodigo').blur(); pintarAmigos(); }
   });
 
-  // versus: tus mejores marcas contra las de un amigo
+  // versus: tus mejores marcas contra las de un amigo (también lo abre la tarjeta de perfil)
+  CC.alVersus = a => abrirVersus(a);
   async function abrirVersus(a) {
     const p = CC.perfil(), box = $('vsBox');
     $('tVs').textContent = 'Versus';
@@ -1908,6 +1922,13 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   const porHash = JUEGOS.findIndex(g => '#' + g.id === location.hash);
   if (porHash >= 0) inicio = porHash;
   if (location.hash === '#amigos') { history.replaceState(null, '', location.pathname); setTimeout(abrirAmigos, 50); }   // al volver de un duelo
+  // «Versus» en la tarjeta de perfil de un amigo, tocada adentro de un juego: index.html#versus=<su huella>
+  const vsHash = location.hash.match(/^#versus=([0-9a-f]{12})$/);
+  if (vsHash) {
+    history.replaceState(null, '', location.pathname);
+    const a = CC.perfil().amigos.find(x => x.huella === vsHash[1]);
+    if (a) setTimeout(() => abrirVersus(a), 50);
+  }
   pintarPerfil(); avatar(0);
   requestAnimationFrame(() => { todo(); ir(Math.min(Math.max(0, inicio), JUEGOS.length - 1), false); setTimeout(() => { listo = true; }, 400); });
   requestAnimationFrame(frame);

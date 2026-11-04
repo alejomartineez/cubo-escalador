@@ -20,6 +20,8 @@
 //   // r → { xp, base, nivel, subio, record, anterior, logros: [nombres], dif }
 //
 //   CC.verRanking({ juego: 'lluvia', tabla: 'normal' });  // ventana con el ranking online
+//   CC.verPerfil({ huella, apodo, skin });               // tarjeta con el perfil de alguien (sin nada: el tuyo)
+//   // El tiempo jugado se mide solo; si el juego sabe cuánto duró la partida, CC.partida({ ..., ms }).
 //   CC.volver();                                          // vuelve a la pantalla de juegos
 //   CC.vibrar(15);                                        // vibración corta en el celu, si se puede
 (() => {
@@ -441,6 +443,7 @@
       records: obj(p.records),
       mejores: obj(p.mejores),
       partidas: obj(p.partidas),
+      tiempo: obj(p.tiempo),   // segundos jugados en cada juego (ver «tiempo jugado»)
       total: +p.total || 0,
       logros: obj(p.logros),
       marcas: obj(p.marcas),
@@ -543,7 +546,7 @@
     datos = leer(); // otro juego pudo haberlo cambiado
     return {
       xp: datos.xp, ...nivelDe(datos.xp), skin: skin(), efecto: efecto(), records: { ...datos.records },
-      mejores: { ...datos.mejores }, partidas: { ...datos.partidas }, total: datos.total,
+      mejores: { ...datos.mejores }, partidas: { ...datos.partidas }, tiempo: { ...datos.tiempo }, total: datos.total,
       logros: { ...datos.logros }, extremo: { ...datos.extremo }, maestro: { ...datos.maestro }, marcas: { ...datos.marcas },
       codigos: [...datos.codigos], apodo: datos.apodo, id: datos.id, titulo: titulo(), marco: marco(),
       codigoAmigo: datos.codigoAmigo, amigos: datos.amigos.map(a => ({ ...a })),
@@ -668,6 +671,42 @@
     return Math.round(min + (max - min) * Math.pow(f, 1.3));
   }
 
+  // ---------- tiempo jugado ----------
+  // Sin tocar los juegos: un reloj suma un segundo por cada segundo con la pestaña a la vista en que estás jugando (tocaste
+  // una tecla o la pantalla hace menos de 5 s, o tenés una apretada). Así no cuentan los menús quietos, las pausas ni la
+  // pestaña oculta. partida() se lleva lo acumulado desde la partida anterior. Si un juego sabe cuánto duró la partida,
+  // puede pasar `ms` a CC.partida (gana sobre el reloj), y CC.empezar() pone el reloj en cero al arrancar una.
+  const reloj = { s: 0, toque: -1e9, apretados: new Set() };
+  {
+    const toque = () => { reloj.toque = performance.now(); };
+    addEventListener('keydown', e => { toque(); reloj.apretados.add('k' + e.code); }, true);
+    addEventListener('keyup', e => reloj.apretados.delete('k' + e.code), true);
+    addEventListener('pointerdown', e => { toque(); reloj.apretados.add('p' + e.pointerId); }, true);
+    addEventListener('pointermove', e => { if (e.buttons || e.pointerType === 'touch') toque(); }, { capture: true, passive: true });
+    for (const ev of ['pointerup', 'pointercancel']) addEventListener(ev, e => reloj.apretados.delete('p' + e.pointerId), true);
+    addEventListener('blur', () => reloj.apretados.clear());
+    document.addEventListener('visibilitychange', () => { if (document.hidden) { reloj.apretados.clear(); reloj.toque = -1e9; } });
+    setInterval(() => {
+      if (document.hidden) return;
+      if (reloj.apretados.size || performance.now() - reloj.toque < 5000) reloj.s = Math.min(reloj.s + 1, 7200);
+    }, 1000);
+  }
+  const empezar = () => { reloj.s = 0; };
+  // Segundos de esta partida (como mucho una hora, por si algo raro quedó contando).
+  function tiempoDePartida(o) {
+    const s = +o.ms > 0 ? +o.ms / 1000 : reloj.s;
+    reloj.s = 0;
+    return Math.max(0, Math.min(3600, Math.round(s)));
+  }
+  // "3 h 20 min" / "45 min" / "menos de 1 min"
+  function horasTexto(seg) {
+    const min = Math.floor((+seg || 0) / 60);
+    if (min < 1) return seg > 0 ? 'menos de 1 min' : '0 min';
+    if (min < 60) return min + ' min';
+    const h = Math.floor(min / 60), m = min % 60;
+    return h + ' h' + (m && h < 10 ? ' ' + m + ' min' : '');
+  }
+
   // Fin de partida. Ver el comentario de arriba.
   function partida(o) {
     datos = leer();
@@ -685,6 +724,7 @@
       if (datos.apodo) encolar(o.juego, o.tabla, valor);
     }
     datos.partidas[o.juego] = (datos.partidas[o.juego] || 0) + 1;
+    datos.tiempo[o.juego] = (+datos.tiempo[o.juego] || 0) + tiempoDePartida(o);
     datos.total++;
     if (dif && DURAS.includes(dif.id)) datos.extremo[o.juego] = 1;
     if (dif && dif.id === 'maestro') datos.maestro[o.juego] = 1;
@@ -1119,7 +1159,7 @@
     // solo amigos: vos y los que agregaste
     const filtro = o.amigos ? `&huella=in.(${[mia, ...leer().amigos.map(a => a.huella)].filter(Boolean).join(',')})` : '';
     const filas = await api(`ranking?tabla=eq.${t}${filtro}&select=apodo,valor,skin,huella,titulo&order=valor.${orden},creado.asc&limit=${n}`);
-    const lista = filas.map((f, k) => ({ puesto: k + 1, apodo: f.apodo, valor: +f.valor, skin: f.skin, titulo: f.titulo || '', yo: !!mia && f.huella === mia }));
+    const lista = filas.map((f, k) => ({ puesto: k + 1, apodo: f.apodo, valor: +f.valor, skin: f.skin, titulo: f.titulo || '', huella: f.huella, yo: !!mia && f.huella === mia }));
     let yo = lista.find(f => f.yo) || null;
     const mio = o.mio !== undefined ? o.mio : leer().mejores[jid + ':' + tid];
     if (!yo && !o.amigos && mio != null && leer().apodo) {
@@ -1129,7 +1169,7 @@
           method: 'HEAD', headers: { apikey: RANKING.clave, Prefer: 'count=exact' },
         });
         const total = +(r.headers.get('content-range') || '').split('/')[1];
-        if (isFinite(total)) yo = { puesto: total + 1, apodo: leer().apodo, valor: mio, skin: skin().id, titulo: titulo().nombre, yo: true, afuera: true };
+        if (isFinite(total)) yo = { puesto: total + 1, apodo: leer().apodo, valor: mio, skin: skin().id, titulo: titulo().nombre, huella: mia, yo: true, afuera: true };
       } catch (e) {}
     }
     return { lista, yo };
@@ -1195,7 +1235,7 @@
   // pisa nada. Lo que es de cada dispositivo (id, clave, amigos, cola del ranking, lo ya visto) no se sube.
   const NUBE_KEY = 'cubo-nube';   // lo último que se subió, para no subir dos veces lo mismo
   const DE_LA_NUBE = ['xp', 'skin', 'efecto', 'titulo', 'marco', 'eleccion', 'records', 'mejores', 'partidas', 'total', 'logros',
-    'marcas', 'extremo', 'maestro', 'codigos', 'diario', 'temporadas', 'boostG', 'boostU', 'misiones'];
+    'marcas', 'extremo', 'maestro', 'codigos', 'diario', 'temporadas', 'boostG', 'boostU', 'misiones', 'tiempo'];
   const progreso = p => { const o = {}; for (const k of DE_LA_NUBE) o[k] = p[k]; return o; };
   const objDe = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
   const maxObj = (a, b) => { const o = { ...a }; for (const [k, v] of Object.entries(objDe(b))) o[k] = Math.max(+o[k] || 0, +v || 0); return o; };
@@ -1205,6 +1245,7 @@
     o.xp = Math.max(a.xp, +b.xp || 0);
     o.total = Math.max(a.total, +b.total || 0);
     o.partidas = maxObj(a.partidas, b.partidas);
+    o.tiempo = maxObj(a.tiempo, b.tiempo);
     o.boostG = Math.max(a.boostG, Math.floor(+b.boostG || 0)); o.boostU = Math.max(a.boostU, Math.floor(+b.boostU || 0));
     o.boost = Math.max(0, o.boostG - o.boostU);
     // logros: la fecha más vieja de cada uno; marcas y "jugado en Extremo/Maestro": la unión
@@ -1847,6 +1888,13 @@
           if (f.titulo) { const tt = document.createElement('small'); tt.className = 'tt'; tt.textContent = f.titulo; nm.appendChild(tt); }
           const c = li.querySelector('canvas').getContext('2d'); c.scale(2, 2);
           dibujarCubo(c, 13, 28, 18, { skin: sk || SKINS[0], t: 0, efecto: false });
+          // tocando la fila se abre su perfil
+          if (f.huella) {
+            li.classList.add('ver'); li.tabIndex = 0; li.setAttribute('role', 'button'); li.title = 'Ver perfil';
+            const ver = () => verPerfil({ huella: f.huella, apodo: f.apodo, skin: f.skin, titulo: f.titulo, yo: f.yo }, { padre: cerrar });
+            li.addEventListener('click', ver);
+            li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ver(); } });
+          }
           ol.appendChild(li);
           return li;
         };
@@ -1856,7 +1904,9 @@
       } catch (e) { if (n === pedido) msg(`No se pudo cargar el ranking. Probá de nuevo en un rato.<br>${tuyo}`); }
     }
     function cerrar() { box.remove(); removeEventListener('keydown', tecla, true); if (previo && previo.focus) previo.focus(); if (o.alCerrar) o.alCerrar(); }
-    function tecla(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); } else if (e.target.tagName !== 'INPUT') e.stopPropagation(); }
+    function tecla(e) {
+      if (document.getElementById('cc-perfil')) return;   // la tarjeta de perfil abierta encima maneja sus teclas
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); } else if (e.target.tagName !== 'INPUT') e.stopPropagation(); }
     addEventListener('keydown', tecla, true);
     $('.x').addEventListener('click', cerrar);
     box.addEventListener('click', e => { if (e.target === box) cerrar(); });
@@ -1884,6 +1934,338 @@
     });
     cargar();
     $('.x').focus();
+    return cerrar;
+  }
+
+  // ---------- perfil de otros jugadores ----------
+  // Tocando a alguien en el ranking o en tus amigos se abre su tarjeta: personaje, nivel, horas jugadas, juegos más
+  // jugados, mejores marcas (con su puesto en el ranking), logros, racha y temporada. Lo de los demás sale de su progreso
+  // en la nube con perfil_publico (supabase.sql, «Parte: perfil público»), que devuelve solo lo público; lo tuyo sale de
+  // este dispositivo, así tu tarjeta anda también sin internet.
+  async function perfilPublico(h) {
+    const r = await api('rpc/perfil_publico', { method: 'POST', body: JSON.stringify({ p_huella: String(h || '') }) });
+    return r && typeof r === 'object' && !Array.isArray(r) ? r : null;
+  }
+  // Lo que muestra la tarjeta, a partir de un perfil con la forma del guardado (p) y lo que se sabe aparte (x):
+  // x = { conPerfil, apodo, skin, tituloTexto, codigo, creado, marcas: { 'juego:tabla': { v, puesto } } }
+  function armarVista(p, x = {}) {
+    p = objDe(p);
+    const q = { xp: Math.max(0, +p.xp || 0), logros: objDe(p.logros), temporadas: objDe(p.temporadas),
+      codigos: Array.isArray(p.codigos) ? p.codigos.filter(c => typeof c === 'string') : [] };
+    const con = !!x.conPerfil;
+    // solo lo que de verdad tiene desbloqueado (por si el perfil viene raro)
+    const de = (lista, id) => { const it = lista.find(k => k.id === id); return con && it && libre(it, q) ? it : null; };
+    const libresM = MARCOS.filter(m => libre(m, q));
+    const partidas = objDe(p.partidas), tiempo = objDe(p.tiempo), mejores = objDe(p.mejores), marcas = objDe(x.marcas);
+    const juegos = JUEGOS.map(j => ({ j, n: Math.max(0, Math.floor(+partidas[j.id] || 0)), s: Math.max(0, +tiempo[j.id] || 0) }))
+      .filter(g => g.n || g.s).sort((a, b) => b.n - a.n || b.s - a.s);
+    // mejor marca de cada juego, en la dificultad más alta que jugó (la de su perfil o la del ranking, la mejor de las dos)
+    const marcasJ = [];
+    for (const j of JUEGOS) {
+      let el = null;
+      for (const tb of j.tablas) {
+        const k = j.id + ':' + tb.id, srv = objDe(marcas[k]);
+        let v = isFinite(+mejores[k]) && +mejores[k] > 0 ? +mejores[k] : null;
+        if (srv.v != null && isFinite(+srv.v) && (v == null || mejor(tb, +srv.v, v))) v = +srv.v;
+        if (v == null) continue;
+        const nd = DIFS.findIndex(d => d.id === tb.dif);
+        if (!el || nd > el.nd) el = { j, tb, v, nd, puesto: srv.v != null && +srv.v === v ? Math.max(1, Math.floor(+srv.puesto || 0)) || null : null };
+      }
+      if (el) marcasJ.push(el);
+    }
+    const logros = LOGROS.filter(l => q.logros[l.id]);
+    const d = objDe(p.diario), n = Math.floor(ahoraDiario() / DIA_MS);
+    const T = temporadaDe(), xpT = Math.max(0, +objDe(q.temporadas[T.n]).xp || 0);
+    const fechas = [x.creado ? Date.parse(x.creado) : NaN, ...Object.values(q.logros).map(Number)].filter(v => isFinite(v) && v > 1.5e12);
+    return {
+      con, apodo: x.apodo || '', codigo: x.codigo || '', xp: q.xp, ...nivelDe(q.xp),
+      skin: de(SKINS, p.skin) || SKINS.find(s => s.id === x.skin) || SKINS[0],
+      efecto: de(EFECTOS, p.efecto) || EFECTOS[0],
+      marco: con ? de(MARCOS, p.marco) || libresM[libresM.length - 1] || null : null,
+      titulo: (de(TITULOS, p.titulo) || {}).nombre || x.tituloTexto || '',
+      total: Math.max(+p.total || 0, juegos.reduce((a, g) => a + g.n, 0)), segundos: juegos.reduce((a, g) => a + g.s, 0),
+      juegos, marcas: marcasJ, logros, diamantes: logros.filter(l => l.medalla === 'diamante'),
+      legendarias: [...SKINS.map(it => ({ tipo: 'skin', it })), ...EFECTOS.map(it => ({ tipo: 'efecto', it }))].filter(i => i.it.legendaria && libre(i.it, q)),
+      racha: d.ultimo === fechaDia(n) || d.ultimo === fechaDia(n - 1) ? Math.max(0, +d.racha || 0) : 0, mejorRacha: Math.max(0, +d.mejorRacha || 0),
+      temporada: T, nivelT: Math.min(TEMP_NIVELES, Math.floor(xpT / TEMP_XP)),
+      desde: fechas.length ? Math.min(...fechas) : null,
+    };
+  }
+  function estilosPerfil() {
+    if (document.getElementById('cc-estilos-perfil')) return;
+    const st = document.createElement('style');
+    st.id = 'cc-estilos-perfil';
+    st.textContent = `
+#cc-rank li.ver{cursor:pointer;transition:background .12s}
+#cc-rank li.ver:hover{background:rgba(255,204,41,.28)}
+#cc-rank li.ver.yo:hover{background:#ffd84f}
+#cc-rank li.ver:focus-visible{outline:3px solid #ff5d7d;outline-offset:-2px}
+#cc-perfil{position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:center;background:rgba(29,35,64,.55);box-sizing:border-box;
+  padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px));font-family:"Rubik",system-ui,sans-serif;color:${INK}}
+@media (min-width:600px) and (min-height:560px){#cc-perfil{align-items:center}}
+#cc-perfil *{box-sizing:border-box}
+#cc-perfil [hidden]{display:none!important}
+#cc-perfil .cc-pf{zoom:var(--ui,1);position:relative;width:100%;max-width:460px;max-height:min(780px,calc((100dvh - 24px) / var(--ui,1)));display:flex;flex-direction:column;
+  background:${CREMA};border:3px solid ${INK};border-radius:22px;box-shadow:0 6px 0 ${INK};overflow:hidden;animation:cc-sube .2s ease-out}
+#cc-perfil header{display:flex;align-items:center;gap:12px;padding:14px 62px 14px 14px;background:var(--cc-pf,#e9f6ff);border-bottom:3px solid ${INK}}
+#cc-perfil header canvas{flex:none;width:104px;height:111px;border-radius:16px;background:rgba(255,255,255,.6);border:2.5px solid ${INK}}
+#cc-perfil .pf-quien{flex:1;min-width:0}
+#cc-perfil h2{margin:0;font:400 26px/1.05 "Lilita One","Trebuchet MS",sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cc-perfil .pf-tt{display:block;margin-top:2px;font-size:13px;font-weight:700;opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cc-perfil .pf-tt:empty{display:none}
+#cc-perfil .pf-nv{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:8px}
+#cc-perfil .pf-nv b{font:400 18px/1 "Lilita One","Trebuchet MS",sans-serif}
+#cc-perfil .pf-nv span{font-size:11.5px;font-weight:700;opacity:.7;white-space:nowrap}
+#cc-perfil .pf-barra{height:10px;margin-top:4px;border:2px solid ${INK};border-radius:99px;background:#fff;overflow:hidden}
+#cc-perfil .pf-barra i{display:block;height:100%;width:0;background:#ffcc29;border-right:2px solid ${INK}}
+#cc-perfil .pf-xpt{display:block;margin-top:4px;font-size:11.5px;font-weight:700;opacity:.7}
+#cc-perfil .pf-x{position:absolute;top:12px;right:12px;appearance:none;width:44px;height:44px;border-radius:12px;border:2.5px solid ${INK};background:#fff;
+  box-shadow:0 3px 0 ${INK};font:700 20px/1 system-ui;color:${INK};cursor:pointer}
+#cc-perfil .pf-x:hover{background:#fff4c7}
+#cc-perfil .pf-x:active{transform:translateY(2px);box-shadow:0 1px 0 ${INK}}
+#cc-perfil .pf-cuerpo{flex:1;min-height:0;overflow-y:auto;padding:12px 14px 14px;display:flex;flex-direction:column;gap:14px}
+#cc-perfil .pf-nota{margin:0;padding:10px 12px;border-radius:14px;background:#fff3c4;border:2px dashed rgba(29,35,64,.35);font-size:13px;font-weight:600;line-height:1.4}
+#cc-perfil .pf-nota:empty{display:none}
+#cc-perfil .pf-chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media (max-width:330px){#cc-perfil .pf-chips{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#cc-perfil .pf-chip{min-width:0;padding:8px 6px 7px;border-radius:14px;background:#fff;border:2.5px solid ${INK};text-align:center}
+#cc-perfil .pf-chip .pf-ico{display:block;font-size:17px;line-height:1.1}
+#cc-perfil .pf-chip b{display:block;margin-top:2px;font:400 17px/1.1 "Lilita One","Trebuchet MS",sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cc-perfil .pf-chip small{display:block;margin-top:1px;font-size:10.5px;font-weight:700;opacity:.65;line-height:1.2}
+#cc-perfil h4{margin:0 0 6px;font:400 17px/1 "Lilita One","Trebuchet MS",sans-serif}
+#cc-perfil h4 small{font:700 11.5px "Rubik",system-ui,sans-serif;opacity:.6;margin-left:4px}
+#cc-perfil .pf-fav{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;background:var(--c);border:2.5px solid ${INK};box-shadow:0 3px 0 ${INK}}
+#cc-perfil .pf-fav .pf-tag{flex:none;font-size:22px}
+#cc-perfil .pf-fav div{min-width:0}
+#cc-perfil .pf-fav small{display:block;font-size:11.5px;font-weight:800;opacity:.75;text-transform:uppercase;letter-spacing:.04em}
+#cc-perfil .pf-fav b{display:block;font:400 22px/1.05 "Lilita One","Trebuchet MS",sans-serif}
+#cc-perfil .pf-fav span{display:block;font-size:12.5px;font-weight:700}
+#cc-perfil .pf-jg{display:grid;grid-template-columns:minmax(0,max-content) minmax(40px,1fr) auto auto;align-items:center;gap:4px 8px;padding:5px 0;font-size:13px;font-weight:700}
+#cc-perfil .pf-jg .pf-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cc-perfil .pf-jg .pf-br{height:12px;border-radius:99px;background:#ece8dc;overflow:hidden;border:2px solid ${INK}}
+#cc-perfil .pf-jg .pf-br i{display:block;height:100%;border-right:2px solid ${INK}}
+#cc-perfil .pf-jg .pf-nn{font-variant-numeric:tabular-nums;text-align:right;min-width:2.2em}
+#cc-perfil .pf-jg .pf-hs{font-size:11.5px;opacity:.65;text-align:right;min-width:4.6em;white-space:nowrap}
+#cc-perfil .pf-mk{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:12px;background:#fff;border:2px solid rgba(29,35,64,.18)}
+#cc-perfil .pf-mk + .pf-mk{margin-top:6px}
+#cc-perfil .pf-mk .pf-pt{flex:none;width:10px;height:10px;border-radius:50%;border:2px solid ${INK}}
+#cc-perfil .pf-mk .pf-nm{flex:1;min-width:0}
+#cc-perfil .pf-mk .pf-nm b{display:block;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cc-perfil .pf-mk .pf-nm small{display:flex;align-items:center;gap:3px;font-size:11px;font-weight:700;opacity:.7;white-space:nowrap;overflow:hidden}
+#cc-perfil .pf-mk .pf-nm small .cc-ico{flex:none}
+#cc-perfil .pf-mk .pf-v{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+#cc-perfil .pf-mk .pf-pu{flex:none;min-width:38px;padding:3px 6px;border-radius:99px;background:#ece8dc;font:400 13px/1 "Lilita One","Trebuchet MS",sans-serif;text-align:center}
+#cc-perfil .pf-mk .pf-pu.pf-m1{background:#ffcc29;box-shadow:inset 0 0 0 2px ${INK}}
+#cc-perfil .pf-mk .pf-pu.pf-m2{background:#d7deea;box-shadow:inset 0 0 0 2px ${INK}}
+#cc-perfil .pf-mk .pf-pu.pf-m3{background:#e9b48a;box-shadow:inset 0 0 0 2px ${INK}}
+#cc-perfil .pf-meds{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+#cc-perfil .pf-meds .pf-cuenta{font:400 22px/1 "Lilita One","Trebuchet MS",sans-serif;margin-right:auto}
+#cc-perfil .pf-meds .pf-cuenta small{font:700 12px "Rubik",system-ui,sans-serif;opacity:.6}
+#cc-perfil .pf-med{display:flex;align-items:center;gap:5px;font-weight:800;font-size:14px}
+#cc-perfil .pf-med i{width:16px;height:16px;border-radius:50%;border:2px solid ${INK}}
+#cc-perfil .pf-dias{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+#cc-perfil .pf-dias span{padding:4px 9px;border-radius:99px;background:#dff8ff;border:2px solid ${INK};font-size:12px;font-weight:800}
+#cc-perfil .pf-legs{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;margin-top:10px}
+#cc-perfil .pf-leg{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:12px;background:#1d2340;color:#fff}
+#cc-perfil .pf-leg canvas{width:48px;height:52px}
+#cc-perfil .pf-leg small{font-size:10.5px;font-weight:800;text-align:center;line-height:1.15}
+#cc-perfil .pf-vacio{margin:0;font-size:13px;font-weight:600;opacity:.7}
+#cc-perfil .pf-acciones{display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px 14px;border-top:2px dashed rgba(29,35,64,.22)}
+#cc-perfil .pf-acciones:empty{display:none}
+#cc-perfil .pf-acciones button{appearance:none;flex:1 1 0;min-width:0;min-height:48px;padding:0 12px;border-radius:14px;border:2.5px solid ${INK};background:#fff;color:${INK};
+  font:400 19px "Lilita One","Trebuchet MS",sans-serif;box-shadow:0 3px 0 ${INK};cursor:pointer;white-space:nowrap}
+#cc-perfil .pf-acciones button.pf-pri{background:#ffcc29}
+#cc-perfil .pf-acciones button:active{transform:translateY(2px);box-shadow:0 1px 0 ${INK}}
+#cc-perfil .pf-acciones button:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none}
+#cc-perfil .pf-acciones .pf-msg{flex:1 1 100%;margin:0;font-size:12.5px;font-weight:700;opacity:.8}
+#cc-perfil .pf-acciones .pf-msg:empty{display:none}
+#cc-perfil button:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
+@media (max-width:400px){#cc-perfil header{gap:10px;padding:12px 58px 12px 12px}#cc-perfil header canvas{width:84px;height:90px}#cc-perfil h2{font-size:22px}
+  #cc-perfil .pf-cuerpo{padding-inline:12px}#cc-perfil .pf-acciones{padding-inline:12px}}
+`;
+    document.head.appendChild(st);
+  }
+  // Abre la tarjeta. a = { huella, apodo, skin, titulo, yo } (sin huella, o con yo: true, la tuya).
+  // o.padre: función que cierra la ventana de abajo (el ranking), para cuando se va a retar o al versus.
+  function verPerfil(a = {}, o = {}) {
+    estilos(); estilosPerfil();
+    const viejo = document.getElementById('cc-perfil');
+    if (viejo && viejo._cerrar) viejo._cerrar(true);
+    const yo = !!a.yo || !a.huella;
+    const previo = document.activeElement;
+    const box = document.createElement('div');
+    box.id = 'cc-perfil';
+    box.innerHTML = `<div class="cc-pf" role="dialog" aria-modal="true" aria-labelledby="cc-pf-ap">
+      <header><canvas width="224" height="240" aria-hidden="true"></canvas><div class="pf-quien"><h2 id="cc-pf-ap"></h2><small class="pf-tt"></small>
+        <div class="pf-nv"><b class="pf-lv"></b><span class="pf-xpn"></span></div><div class="pf-barra"><i></i></div><small class="pf-xpt"></small></div>
+        <button class="pf-x" type="button" aria-label="Cerrar">✕</button></header>
+      <div class="pf-cuerpo"></div><div class="pf-acciones"></div></div>`;
+    document.body.appendChild(box);
+    const $ = s => box.querySelector(s), cuerpo = $('.pf-cuerpo'), acciones = $('.pf-acciones');
+    const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const yoD = () => { const d = leer(); return { conPerfil: true, apodo: d.apodo || 'Vos', codigo: d.codigoAmigo }; };
+    let vista = yo ? armarVista(leer(), yoD()) : armarVista({}, { apodo: a.apodo, skin: a.skin, tituloTexto: a.titulo });
+    let nota = '', codigo = a.codigo || '', vivo = true, raf = 0;
+    if (yo && !leer().apodo) nota = 'Poné un apodo en cualquier ranking para que tus amigos puedan ver tu perfil.';
+
+    function pintar() {
+      const v = vista;
+      $('h2').replaceChildren(); const ap = document.createElement('span'); ap.textContent = v.apodo || '—'; ap.className = claseNombre(v.skin); $('h2').appendChild(ap);
+      if (yo && leer().apodo) $('h2').append(' (vos)');
+      $('.pf-tt').textContent = v.titulo;
+      const conNivel = v.con;
+      $('.pf-nv').hidden = $('.pf-barra').hidden = $('.pf-xpt').hidden = !conNivel;
+      $('.pf-lv').textContent = 'Nivel ' + v.nivel;
+      $('.pf-xpn').textContent = `${v.enNivel.toLocaleString('es-AR')} / ${v.paraSiguiente.toLocaleString('es-AR')} XP`;
+      $('.pf-barra i').style.width = Math.round(100 * v.enNivel / v.paraSiguiente) + '%';
+      $('.pf-xpt').textContent = `${v.xp.toLocaleString('es-AR')} XP en total`;
+      const fav = v.juegos[0];
+      $('.cc-pf').style.setProperty('--cc-pf', fav ? `color-mix(in srgb, ${fav.j.color} 30%, #fffaf0)` : '#e9f6ff');
+
+      const h = [];
+      h.push(`<p class="pf-nota" role="status"></p>`);
+      if (v.con) {
+        const desde = v.desde ? new Date(v.desde).toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }).replace('.', '') : '—';
+        const chip = (ico, valor, txt) => `<div class="pf-chip"><span class="pf-ico" aria-hidden="true">${ico}</span><b>${valor}</b><small>${txt}</small></div>`;
+        h.push(`<div class="pf-chips">${chip('⏱️', horasTexto(v.segundos), 'jugadas')}${chip('🎮', v.total.toLocaleString('es-AR'), v.total === 1 ? 'partida' : 'partidas')}
+          ${chip('🏅', `${v.logros.length}/${LOGROS.length}`, 'logros')}${chip('🔥', v.racha, `racha del día · mejor ${v.mejorRacha}`)}
+          ${chip('⭐', `Nv ${v.nivelT}`, `temporada ${v.temporada.nombre}`)}${chip('📅', desde, 'juega desde')}</div>`);
+        if (fav) {
+          h.push(`<div class="pf-fav" style="--c:color-mix(in srgb, ${fav.j.color} 45%, #fff)"><span class="pf-tag" aria-hidden="true">⭐</span><div><small>${yo ? 'Tu favorito' : 'Su favorito'}</small>
+            <b>${fav.j.nombre}</b><span>${fav.n.toLocaleString('es-AR')} ${fav.n === 1 ? 'partida' : 'partidas'}${fav.s ? ' · ' + horasTexto(fav.s) : ''}</span></div></div>`);
+          const max = Math.max(1, ...v.juegos.map(g => g.n));
+          h.push(`<section><h4>Más jugados <small>partidas · tiempo</small></h4>${v.juegos.map(g =>
+            `<div class="pf-jg"><span class="pf-nm">${g.j.nombre}</span><span class="pf-br"><i style="width:${Math.max(4, Math.round(100 * g.n / max))}%;background:${g.j.color}"></i></span>
+            <span class="pf-nn">${g.n.toLocaleString('es-AR')}</span><span class="pf-hs">${g.s ? horasTexto(g.s) : '—'}</span></div>`).join('')}
+            ${v.total && !v.segundos ? `<p class="pf-vacio">El tiempo jugado se empezó a contar hace poco.</p>` : ''}</section>`);
+        } else h.push(`<p class="pf-vacio">${yo ? 'Todavía no jugaste ninguna partida.' : 'Todavía no jugó ninguna partida.'}</p>`);
+      }
+      if (v.marcas.length) {
+        h.push(`<section><h4>Mejores marcas <small>en la dificultad más alta${v.marcas.some(m => m.puesto) ? ' · puesto' : ''}</small></h4>${v.marcas.map(m => {
+          const pu = m.puesto ? `<span class="pf-pu${m.puesto <= 3 ? ' pf-m' + m.puesto : ''}" title="Puesto en el ranking">#${m.puesto.toLocaleString('es-AR')}</span>` : '';
+          return `<div class="pf-mk"><i class="pf-pt" style="background:${m.j.color}"></i><span class="pf-nm"><b>${m.j.nombre}</b><small>${iconoDif(m.tb.dif, 14)}${m.tb.nombre}</small></span>
+            <span class="pf-v">${formato(m.v, m.tb)}</span>${pu}</div>`;
+        }).join('')}</section>`);
+      }
+      if (v.con) {
+        const cuenta = m => v.logros.filter(l => l.medalla === m).length;
+        h.push(`<section><h4>Logros</h4><div class="pf-meds"><span class="pf-cuenta">${v.logros.length} <small>de ${LOGROS.length}</small></span>${Object.entries(MEDALLAS).map(([k, m]) =>
+          `<span class="pf-med" title="${m.nombre}"><i style="background:${m.color}"></i>${cuenta(k)}</span>`).join('')}</div>
+          ${v.diamantes.length ? `<div class="pf-dias">${v.diamantes.map(l => `<span title="${l.desc.replace(/"/g, '&quot;')}">💎 ${l.nombre}</span>`).join('')}</div>` : ''}
+          ${v.legendarias.length ? `<div class="pf-legs">${v.legendarias.map((x, k) => `<div class="pf-leg"><canvas width="96" height="104" data-k="${k}"></canvas><small>${x.it.nombre}</small></div>`).join('')}</div>` : ''}</section>`);
+      }
+      cuerpo.innerHTML = h.join('');
+      cuerpo.querySelector('.pf-nota').textContent = nota;
+      for (const cv of cuerpo.querySelectorAll('.pf-legs canvas')) {
+        const x = v.legendarias[+cv.dataset.k], c = cv.getContext('2d'); c.scale(2, 2);
+        if (x.tipo === 'skin') dibujarCubo(c, 24, 46, 24, { skin: x.it, t: 900, efecto: false });
+        else dibujarCubo(c, 24, 44, 20, { skin: SKINS[0], t: 900, efecto: x.it.id, marco: false });
+      }
+      pintarAcciones();
+    }
+
+    // botones: retar y versus si es tu amigo; si no, agregarlo
+    function pintarAcciones(msg = '') {
+      acciones.replaceChildren();
+      if (yo) return;
+      const d = leer(), es = x => x.huella === a.huella;
+      const amigo = d.amigos.find(es), pidio = d.recibidas.find(es), mande = d.enviadas.find(es);
+      const boton = (texto, clase, fn) => {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = texto; if (clase) b.className = 'pf-' + clase;
+        if (fn) b.addEventListener('click', () => fn(b)); else b.disabled = true;
+        acciones.appendChild(b); return b;
+      };
+      if (amigo) {
+        boton('⚔️ Retar', 'pri', () => {
+          cerrarTodo();
+          if (window.CuboDuelo) window.CuboDuelo.elegirJuego(amigo);
+          else avisar('<div><b>Sin conexión</b><span>Para retar a un amigo hace falta internet.</span></div>');
+        });
+        boton('📊 Versus', '', () => {
+          const fn = o.versus || window.CuboComun.alVersus;
+          cerrarTodo();
+          if (fn) fn(amigo); else location.href = 'index.html#versus=' + encodeURIComponent(amigo.huella);
+        });
+      } else if (pidio) {
+        boton('✓ Aceptar solicitud', 'pri', async b => {
+          b.disabled = true;
+          const r = await responderSolicitud(pidio.codigo, true);
+          pintarAcciones(!r.ok ? r.msg : r.estado === 'amigos' ? `¡${vista.apodo} ya es tu amigo!` : 'Esa solicitud ya no está.');
+        });
+      } else if (mande) boton('Solicitud enviada', '', null);
+      else if (codigo) {
+        boton('➕ Agregar amigo', 'pri', async b => {
+          b.disabled = true; b.textContent = 'Mandando…';
+          const r = await agregarAmigo(codigo);
+          pintarAcciones(!r.ok ? r.msg : r.estado === 'amigos' ? `¡${vista.apodo} ya es tu amigo!` : `Le mandaste una solicitud a ${vista.apodo}. Cuando la acepte, aparece en tus amigos.`);
+        });
+      }
+      if (msg) { const p = document.createElement('p'); p.className = 'pf-msg'; p.setAttribute('role', 'status'); p.textContent = msg; acciones.appendChild(p); }
+    }
+
+    // el personaje grande, con su efecto y su brillo, moviéndose
+    const ctx = $('header canvas').getContext('2d');
+    function cuadro(now) {
+      if (!vivo) return;
+      if (!document.hidden) {
+        ctx.setTransform(2, 0, 0, 2, 0, 0); ctx.clearRect(0, 0, 112, 120);
+        const t = quieto ? 900 : now;
+        dibujarCubo(ctx, 56, 104 - (quieto ? 0 : (Math.sin(now / 420) + 1) * 3), 50,
+          { skin: vista.skin, efecto: vista.efecto.id, marco: vista.marco ? vista.marco.id : false, t, mirar: quieto ? 0 : Math.sin(now / 900) });
+      }
+      raf = requestAnimationFrame(cuadro);
+    }
+
+    function cerrar(sinFoco) {
+      if (!vivo) return;
+      vivo = false; cancelAnimationFrame(raf);
+      box.remove(); removeEventListener('keydown', tecla, true); removeEventListener('cubo-amigos', alCambiarAmigos);
+      if (!sinFoco && previo && previo.focus && document.contains(previo)) previo.focus();
+      if (o.alCerrar) o.alCerrar();
+    }
+    function cerrarTodo() { cerrar(true); if (o.padre) o.padre(); }
+    box._cerrar = cerrar;
+    function tecla(e) {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); }
+      else if (e.target.tagName !== 'INPUT') e.stopPropagation();   // que el juego de abajo no se mueva
+    }
+    const alCambiarAmigos = () => { if (vivo) pintarAcciones(); };
+    addEventListener('keydown', tecla, true);
+    addEventListener('cubo-amigos', alCambiarAmigos);
+    $('.pf-x').addEventListener('click', () => cerrar());
+    box.addEventListener('click', e => { if (e.target === box) cerrar(); });
+
+    // lo del servidor: el perfil público de los demás; en el tuyo, solo tus puestos en el ranking
+    const ponerNota = t => { nota = t; const el = cuerpo.querySelector('.pf-nota'); if (el) el.textContent = t; };
+    if (!yo) {
+      if (!rankingActivo() || navigator.onLine === false) nota = 'Sin conexión. Para ver el perfil de otros jugadores hace falta internet.';
+      else nota = 'Cargando el perfil…';
+    }
+    pintar();
+    requestAnimationFrame(cuadro);
+    $('.pf-x').focus();
+    (async () => {
+      if (!rankingActivo() || navigator.onLine === false) return;
+      try {
+        const h = yo ? (leer().apodo ? await huella() : '') : a.huella;
+        if (!h) return;
+        const r = await perfilPublico(h);
+        if (!vivo) return;
+        if (yo) {
+          if (r) { vista = armarVista(leer(), { ...yoD(), marcas: r.marcas, creado: r.creado }); pintar(); }
+          return;
+        }
+        if (!r) { ponerNota(`No encontramos el perfil de ${a.apodo || 'este jugador'}.`); return; }
+        codigo = r.codigo || codigo;
+        nota = r.perfil ? '' : `${r.apodo} todavía no subió su progreso: se va a ver cuando vuelva a jugar.`;
+        vista = armarVista(r.perfil || {}, { conPerfil: !!r.perfil, apodo: r.apodo, skin: r.skin, tituloTexto: r.titulo, codigo: r.codigo, creado: r.creado, marcas: r.marcas });
+        pintar();
+      } catch (e) {
+        if (!vivo || yo) return;
+        ponerNota(e.message === 'ranking 404' ? 'Los perfiles de otros jugadores todavía no están disponibles: falta actualizar el servidor. Probá de nuevo en unos días.'
+          : 'No se pudo cargar el perfil. Probá de nuevo en un rato.');
+      }
+    })();
     return cerrar;
   }
 
@@ -5008,6 +5390,7 @@
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
     avisar, vibrar, volver, dibujarCubo, morir, sombra, pedirApodo, diario, diarioDe, azar, faltaTexto,
     temporada, misiones, eventoXP, TEMP_XP, sincronizarNube,
+    verPerfil, perfilPublico, horasTexto, empezar,
   };
   // Duelos 1v1 (cubo-duelo.js): usa la misma conexión a Supabase y escucha las invitaciones en todas las páginas.
   window.CuboComun.RANKING = RANKING;
