@@ -1,0 +1,1095 @@
+<title>Guardia</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Rubik:wght@400;600;800&display=swap">
+<style>
+/* Layout: el piso cruza la pantalla y tu cubo está en el medio; los enemigos llegan por los dos costados.
+   HUD arriba, dos botones gigantes abajo (uno para pegar a cada lado). */
+:root {
+  --sky: #e2525f;
+  --ink: #1d2340;
+  --paper: #fffaf0;
+  --cube: #ffcc29;
+  --accent: #ff5d7d;
+  --good: #1fbf8a;
+  --muted: #5b6382;
+  --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body {
+  background: var(--sky); color: var(--ink); font-family: var(--body); overflow: hidden;
+  user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; touch-action: none;
+}
+#cv { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.hud {
+  position: fixed; top: 0; left: 0; right: 0;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 12px;
+  pointer-events: none; zoom: var(--ui, 1);
+}
+.stat { display: flex; flex-direction: column; line-height: 1; min-width: 0; }
+.stat.mid { align-items: center; }
+.big {
+  font-family: var(--display); font-size: clamp(34px, 7vw, 52px); color: var(--paper); font-variant-numeric: tabular-nums;
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink);
+}
+.lbl {
+  font-weight: 800; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--paper); margin-top: 6px;
+  text-shadow: 1px 0 0 var(--ink), -1px 0 0 var(--ink), 0 1px 0 var(--ink), 0 -1px 0 var(--ink), 0 2px 0 var(--ink);
+  white-space: nowrap;
+}
+.vidas { font-size: clamp(22px, 5vw, 30px); letter-spacing: 2px; line-height: 1; filter: drop-shadow(0 2px 0 var(--ink)); }
+.right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  font-weight: 800; font-size: 13px; padding: 5px 10px; border-radius: 999px;
+  background: var(--paper); border: 2px solid var(--ink); font-variant-numeric: tabular-nums;
+}
+.chip svg { flex: none; color: var(--ink); }
+.hbtns { display: flex; gap: 8px; }
+.smallbtn {
+  pointer-events: auto; font: 800 13px var(--body); color: var(--ink); white-space: nowrap;
+  background: var(--paper); border: 2px solid var(--ink); border-radius: 999px;
+  padding: 5px 12px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; min-height: 40px; min-width: 44px;
+}
+.smallbtn.icon { font-size: 17px; line-height: 1; }
+.smallbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+
+.pad {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 560px; margin: 0 auto;
+  zoom: var(--ui, 1);
+}
+.pad.off { visibility: hidden; }
+.pad button {
+  height: clamp(70px, 12vh, 110px); border-radius: 22px; background: var(--paper); color: var(--ink);
+  border: 3px solid var(--ink); box-shadow: 0 7px 0 var(--ink);
+  display: flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; touch-action: none;
+  font: 400 clamp(19px, 5.4vw, 26px) var(--display); transition: transform .05s, box-shadow .05s;
+}
+.pad button svg { width: 36px; height: 36px; flex: none; }
+.pad button.on { transform: translateY(5px); box-shadow: 0 2px 0 var(--ink); background: var(--cube); }
+
+.overlay {
+  position: fixed; inset: 0; display: flex; overflow-y: auto; touch-action: pan-y;
+  padding-top: max(24px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: rgba(29, 35, 64, .28);
+}
+.card {
+  width: min(420px, 100%); margin: auto; background: var(--paper);
+  border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink);
+  padding: 20px; display: flex; flex-direction: column; gap: 14px; zoom: var(--ui, 1);
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo {
+  width: 48px; height: 48px; flex: none; border-radius: 10px; background: var(--cube);
+  border: 3px solid var(--ink); position: relative; transform: rotate(-6deg);
+}
+.logo::before, .logo::after { content: ""; position: absolute; top: 13px; width: 8px; height: 11px; border-radius: 4px; background: var(--ink); }
+.logo::before { left: 11px; } .logo::after { right: 11px; }
+h1, h2 { font-family: var(--display); font-weight: 400; margin: 0; line-height: 1; text-wrap: balance; }
+h1 { font-size: clamp(32px, 9vw, 42px); }
+h2 { font-size: 34px; }
+.intro { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.45; }
+.intro b { color: var(--ink); }
+.back { align-self: flex-start; }
+.go { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: stretch; }
+.best[hidden] { display: none; }
+.best {
+  display: flex; flex-direction: column; justify-content: center; padding: 6px 14px;
+  border: 3px solid var(--ink); border-radius: 14px; background: #fff;
+  font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.best b { font-family: var(--display); font-weight: 400; font-size: 24px; letter-spacing: 0; color: var(--ink); text-transform: none; font-variant-numeric: tabular-nums; line-height: 1.1; }
+kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-width: 3px; border-radius: 6px; padding: 0 5px; color: var(--ink); background: #fff; }
+
+.result { text-align: center; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.result .num { font-family: var(--display); font-size: 64px; line-height: 1; font-variant-numeric: tabular-nums; }
+.result .sub { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lbl-dif { margin: 0 0 -6px; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: center; }
+.xp {
+  font-family: var(--display); font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums;
+  background: var(--cube); border: 2px solid var(--ink); border-radius: 999px; padding: 5px 14px; margin-top: 4px;
+}
+.badge {
+  font-weight: 800; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+  background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
+}
+.logros { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 2px; }
+.logro { font-weight: 800; font-size: 13px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 4px 10px; }
+.logro::before { content: "★ "; color: #e0a000; }
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; }
+.btn {
+  font: 800 16px var(--body); color: var(--ink); padding: 14px 10px; cursor: pointer;
+  background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn.small { padding: 10px; font-size: 15px; }
+.btn.big { font: 400 26px var(--display); padding: 12px 10px; }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+@media (max-width: 380px) { .card { padding: 16px; gap: 12px; } }
+@media (pointer: coarse) { .kbd-only { display: none; } }
+@media (pointer: fine) { .card { gap: 12px; } }
+@media (prefers-reduced-motion: reduce) { .pad button, .btn { transition: none; } }
+/* jerarquía de botones: un solo protagonista por pantalla (igual que los otros juegos) */
+.card .btn.primary { background: var(--cube); border: 3px solid var(--ink); box-shadow: 0 6px 0 var(--ink); font-family: var(--display); font-weight: 400; font-size: 24px; letter-spacing: .01em; }
+.card .btn.primary:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
+.card .btn:not(.primary) { background: #fff; border-width: 2px; box-shadow: 0 2px 0 var(--ink); font-family: var(--body); font-weight: 800; font-size: 15px; }
+.card .btn:not(.primary):active { transform: translateY(2px); box-shadow: none; }
+.card .ter { background: transparent !important; border: 2px solid var(--ink) !important; box-shadow: 0 2px 0 var(--ink) !important; color: var(--ink);
+  font: 800 14px var(--body) !important; padding: 8px 14px !important; min-height: 44px; }
+.card .ter:active { transform: translateY(2px); box-shadow: 0 0 0 var(--ink) !important; }
+</style>
+
+<canvas id="cv"></canvas>
+
+<div class="hud" id="hud" hidden>
+  <div class="stat"><span class="big" id="hScore">0</span><span class="lbl">puntos</span></div>
+  <div class="stat mid"><span class="vidas" id="hVidas">❤️❤️❤️</span><span class="lbl" id="hOla">oleada 1</span></div>
+  <div class="right">
+    <div class="hbtns">
+      <button class="smallbtn" id="btnQuit" type="button" title="Volver al menú (Esc)">← Menú</button>
+      <button class="smallbtn icon" id="btnRestart" type="button" aria-label="Reiniciar (R)" title="Reiniciar (R)">↻</button>
+    </div>
+    <span class="chip" id="hDif">Normal</span>
+  </div>
+</div>
+
+<div class="pad off" id="pad">
+  <button id="bL" type="button" aria-label="Golpe a la izquierda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 7 12l8 8"/></svg>Izquierda</button>
+  <button id="bR" type="button" aria-label="Golpe a la derecha">Derecha<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4 8 8-8 8"/></svg></button>
+</div>
+
+<div class="overlay" id="menu">
+  <div class="card">
+    <button class="ter smallbtn back" id="btnBack" type="button">← Juegos</button>
+    <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Guardia</h1></div>
+    <p class="intro" data-t>Llegan por los dos lados. Pegale con <b>◀</b> o <b>▶</b> al que pisa la franja amarilla. Si pegás antes de tiempo o al aire, te mareás.</p>
+    <div id="difs"></div>
+    <div class="go">
+      <span class="best">Récord<b id="mBest">—</b></span>
+      <button class="btn primary big" id="btnPlay" type="button">Jugar</button>
+    </div>
+    <div class="row">
+      <button class="btn small" id="btnRank" type="button">🏆 Ranking</button>
+      <button class="ter btn small" id="btnMute" type="button">Sonido: sí</button>
+    </div>
+    <div id="leyenda"></div>
+  </div>
+</div>
+
+<div class="overlay" id="end" hidden>
+  <div class="card">
+    <div class="result">
+      <h2 id="eTitle">¡Cayó la guardia!</h2>
+      <span class="num" id="eNum">0</span>
+      <span class="sub" id="eSub"></span>
+      <span class="badge" id="eBadge" hidden>Nuevo récord</span>
+      <span class="sub" id="eSub2"></span>
+      <span class="xp" id="eXP" hidden>+0 XP</span>
+      <div class="logros" id="eLogros" hidden></div>
+    </div>
+    <button class="btn primary big" id="btnAgain" type="button">↻ Otra vez <kbd class="kbd-only">R</kbd></button>
+    <p class="lbl-dif" id="eDifL">Dificultad</p>
+    <div id="difs2"></div>
+    <div class="row">
+      <button class="btn small" id="btnRank2" type="button">🏆 Ranking</button>
+      <button class="ter btn small" id="btnMenu" type="button">☰ Menú</button>
+      <button class="ter btn small" id="btnHome" type="button">⌂ Juegos</button>
+    </div>
+  </div>
+</div>
+
+<script src="cubo-comun.js"></script>
+<script>
+(() => {
+  'use strict';
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  // Textos en inglés (la clave es el texto en español). Si cubo-comun.js todavía no tiene idioma, queda en español.
+  if (CC && CC.textos) CC.textos({
+    'Guardia': 'Guard',
+    'Llegan por los dos lados. Pegale con <b>◀</b> o <b>▶</b> al que pisa la franja amarilla. Si pegás antes de tiempo o al aire, te mareás.':
+      'They come from both sides. Hit <b>◀</b> or <b>▶</b> when one steps on the yellow strip. Swing too early or at nothing and you get dizzy.',
+    'puntos': 'points', 'oleada {n}': 'wave {n}', 'Oleada {n}': 'Wave {n}', 'Golpe a la izquierda': 'Hit left', 'Golpe a la derecha': 'Hit right',
+    'Izquierda': 'Left', 'Derecha': 'Right', 'Récord': 'Best', 'Jugar': 'Play', 'Sonido: sí': 'Sound: on', 'Sonido: no': 'Sound: off',
+    '¡Cayó la guardia!': 'Guard down!', '¡Buena guardia!': 'Nice guarding!', '¡Imparable!': 'Unstoppable!', 'Nuevo récord': 'New best', 'Primer récord': 'First best',
+    'Dificultad': 'Difficulty', 'golpear': 'hit', 'reiniciar': 'restart',
+    'Enemigos comunes: pegales cuando pisan la franja.': 'Regular enemies: hit them when they step on the strip.',
+    'Rápidos: llegan antes de lo que pensás.': 'Fast ones: they get there sooner than you think.',
+    'Con casco: necesitan dos golpes.': 'Helmets: they take two hits.',
+    'Saltarines: amagan y cambian de lado.': 'Jumpers: they fake and switch sides.',
+    '¡Jefe! Pegale cuando baja el escudo.': 'Boss! Hit it when the shield is down.',
+    '¡Jefe!': 'Boss!', '¡Al aire!': 'Whiff!', '¡Muy pronto!': 'Too early!', '¡Bloqueó!': 'Blocked!', '¡Auch!': 'Ouch!',
+    '¡Última vida!': 'Last life!', '¡Te quedan {n}!': '{n} left!', 'Combo perdido': 'Combo lost', 'combo': 'combo', '¡Jefe abatido!': 'Boss down!',
+    '{n} pts · {d}': '{n} pts · {d}', 'puntos · {d} · llegaste a la oleada {n}': 'points · {d} · you reached wave {n}',
+    'Derrotaste a {n} · combo máximo {c}': 'You beat {n} · best combo {c}', ' · récord: {r}': ' · best: {r}',
+    'Pocos enemigos y lentos, 5 vidas.': 'Few, slow enemies and 5 lives.',
+    '3 vidas. Cada oleada llegan más rápido.': '3 lives. Every wave they come faster.',
+    'Más rápidos y la franja más corta.': 'Faster, and a shorter strip.',
+    'Llegan de a muchos y 2 vidas. XP ×3.': 'Lots at once and 2 lives. XP ×3.',
+    'Una sola vida y vienen volando. XP ×4.': 'One life and they fly in. XP ×4.',
+  });
+  const T = (s, v) => (CC && CC.T ? CC.T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s);
+  // desafío del día (?diario=1): en Normal, 3 intentos y los enemigos salen con la semilla del día (iguales para todos)
+  const DIA = CC && CC.diarioDe ? CC.diarioDe('guardia') : null;
+  let azar = Math.random;
+
+  // ---------- reglas ----------
+  // Todo se mide en "L": la distancia del centro (donde estás vos) al borde del campo. Los enemigos nacen en SPAWN y
+  // caminan hacia el centro. Cuando su frente pisa la franja (entre CONTACTO y el alcance) los podés golpear; si llega a
+  // CONTACTO, te pega. Un golpe que no encuentra a nadie en la franja de ese lado te deja mareado un rato.
+  const SPAWN = 1.12, CUBO = 0.25, CONTACTO = CUBO / 2 + 0.01;
+  // vel: velocidad base (L/s) · alcance: hasta dónde llega tu golpe · gap: tiempo mínimo entre dos llegadas
+  // cada: segundos entre enemigos · torpe: cuánto quedás mareado si errás
+  const DIFS = {
+    facil:   { name: 'Fácil',   vel: 0.34, alcance: 0.44, gap: 0.55, cada: 1.45, torpe: 0.30, vidas: 5 },
+    normal:  { name: 'Normal',  vel: 0.42, alcance: 0.40, gap: 0.42, cada: 1.20, torpe: 0.36, vidas: 3 },
+    dificil: { name: 'Difícil', vel: 0.48, alcance: 0.38, gap: 0.37, cada: 1.08, torpe: 0.38, vidas: 3 },
+    extremo: { name: 'Extremo', vel: 0.54, alcance: 0.37, gap: 0.33, cada: 0.98, torpe: 0.40, vidas: 2 },
+    maestro: { name: 'Maestro', vel: 0.60, alcance: 0.36, gap: 0.30, cada: 0.9, torpe: 0.42, vidas: 1 },
+  };
+  const NOTAS = {
+    facil: 'Pocos enemigos y lentos, 5 vidas.',
+    normal: '3 vidas. Cada oleada llegan más rápido.',
+    dificil: 'Más rápidos y la franja más corta.',
+    extremo: 'Llegan de a muchos y 2 vidas. XP ×3.',
+    maestro: 'Una sola vida y vienen volando. XP ×4.',
+  };
+  // tipos de enemigo: aparecen de a poco (desde la oleada `desde`)
+  const TIPOS = {
+    comun:  { pts: 10, hp: 1, vel: 1,    tam: 0.19, color: '#ff5d5d', desde: 1, intro: 'Enemigos comunes: pegales cuando pisan la franja.' },
+    rapido: { pts: 15, hp: 1, vel: 1.6,  tam: 0.16, color: '#ffb02e', desde: 2, intro: 'Rápidos: llegan antes de lo que pensás.' },
+    duro:   { pts: 25, hp: 2, vel: 0.85, tam: 0.21, color: '#5b8cff', desde: 3, intro: 'Con casco: necesitan dos golpes.' },
+    finta:  { pts: 20, hp: 1, vel: 1.05, tam: 0.18, color: '#a66bff', desde: 4, intro: 'Saltarines: amagan y cambian de lado.' },
+    jefe:   { pts: 150, hp: 8, vel: 0.5, tam: 0.36, color: '#4a3a78', intro: '¡Jefe! Pegale cuando baja el escudo.' },
+  };
+  const JEFE_CADA = 3;                       // un jefe al final de cada 3 oleadas
+  const AMAGUE = 0.34, SALTO = 0.5, HOP = 0.3, ATERRIZA = 0.6;   // el saltarín: se frena, salta por arriba tuyo y cae del otro lado
+  const ESCUDO_CICLO = 1.7, ESCUDO_ARRIBA = 0.62, ESCUDO_AVISO = 0.25;
+  const velOla = w => Math.min(2, 1 + 0.07 * (w - 1));
+  const cadaOla = (D, w) => D.cada * Math.max(0.42, 1 - 0.055 * (w - 1));
+  const gapOla = (D, w) => D.gap * Math.max(0.72, 1 - 0.03 * (w - 1));
+  const cuantosOla = w => Math.min(18, 6 + 2 * w);
+  const multDe = c => (c >= 100 ? 5 : c >= 50 ? 4 : c >= 25 ? 3 : c >= 10 ? 2 : 1);
+  const XP_MALO = 150, XP_EXPERTO = 6000;
+
+  // ---------- récords y sonido ----------
+  const REC_KEY = 'cubo-guardia-records';
+  let rec = {};
+  try { rec = JSON.parse(localStorage.getItem(REC_KEY)) || {}; } catch (e) { rec = {}; }
+  const saveRec = () => { try { localStorage.setItem(REC_KEY, JSON.stringify(rec)); } catch (e) {} };
+  let actx = null, muted = !!rec.muted, ruidoBuf = null;
+  function audio() {
+    if (muted) return null;
+    try {
+      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      return actx;
+    } catch (e) { return null; }
+  }
+  function beep(freq, dur, type = 'triangle', vol = 0.07, slide = 0, delay = 0) {
+    const a = audio(); if (!a) return;
+    try {
+      const t = a.currentTime + delay, o = a.createOscillator(), g = a.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, t);
+      if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, t + dur);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+    } catch (e) {}
+  }
+  // ruido filtrado: el "chas" de los golpes y el "fiu" de pegarle al aire
+  function ruido(dur, vol, freq, tipo = 'bandpass', q = 1.2) {
+    const a = audio(); if (!a) return;
+    try {
+      if (!ruidoBuf) {
+        ruidoBuf = a.createBuffer(1, Math.floor(a.sampleRate * 0.5), a.sampleRate);
+        const d = ruidoBuf.getChannelData(0);
+        for (let k = 0; k < d.length; k++) d[k] = Math.random() * 2 - 1;
+      }
+      const t = a.currentTime, s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+      s.buffer = ruidoBuf; f.type = tipo; f.frequency.value = freq; f.Q.value = q;
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      s.connect(f).connect(g).connect(a.destination); s.start(t); s.stop(t + dur + 0.02);
+    } catch (e) {}
+  }
+  const sfxGolpe = c => { ruido(0.09, 0.32, 1100 + Math.min(c, 40) * 25); beep(170 + Math.min(c, 30) * 9, 0.09, 'square', 0.05, 0.55); };
+  const sfxKO = () => { beep(95, 0.2, 'sine', 0.16, 0.45); ruido(0.14, 0.22, 500, 'lowpass', 0.7); };
+  const sfxCasco = () => { beep(1500, 0.08, 'square', 0.035); beep(1100, 0.14, 'triangle', 0.05, 0.8); ruido(0.06, 0.15, 3000); };
+  const sfxAire = () => { ruido(0.16, 0.1, 2400, 'highpass', 0.6); beep(150, 0.14, 'sawtooth', 0.03, 0.7); };
+  const sfxBloqueo = () => { beep(1300, 0.05, 'square', 0.04); beep(700, 0.12, 'triangle', 0.06, 0.8); };
+  const sfxAuch = () => { beep(240, 0.32, 'sawtooth', 0.07, 0.4); beep(120, 0.25, 'square', 0.04, 0.6); ruido(0.2, 0.2, 300, 'lowpass'); };
+  const sfxCombo = n => [0, 4, 7, 12].forEach((s, i) => beep(523 * Math.pow(2, (s + Math.min(n, 4) * 2) / 12), 0.1, 'square', 0.04, 0, i * 0.06));
+  const sfxOleada = () => { beep(392, 0.1, 'square', 0.045); beep(587, 0.16, 'square', 0.045, 0, 0.1); };
+  const sfxJefe = () => { beep(70, 0.7, 'sawtooth', 0.08, 0.7); beep(105, 0.5, 'square', 0.035, 0.8, 0.15); };
+  const sfxTic = () => beep(880, 0.05, 'triangle', 0.05);
+
+  // ---------- canvas y campo ----------
+  let W = 0, H = 0, L = 160, CX = 0, GY = 0, ARRIBA = 0, ABAJO = 0;
+  function resize() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = innerWidth; H = innerHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // el campo va entre el HUD y los botones; el piso, un poco más abajo de la mitad
+    const enJuego = state === 'play';
+    const arriba = enJuego ? $('hud').getBoundingClientRect().bottom + 8 : 16;
+    const abajo = enJuego ? $('pad').getBoundingClientRect().top - 10 : H - 16;
+    const alto = Math.max(160, abajo - arriba);
+    L = Math.max(110, Math.min(W / 2 - 12, 430, alto * 0.95));
+    // en el menú, con la pantalla parada, el piso va más abajo así el demo se ve debajo del cartel
+    CX = W / 2; GY = arriba + alto * (enJuego ? 0.66 : H > W ? 0.86 : 0.7); ARRIBA = arriba; ABAJO = arriba + alto;
+  }
+  addEventListener('resize', resize);
+  const px = x => CX + x * L, py = y => GY - y * L;
+
+  // ---------- estado ----------
+  let state = 'menu';   // menu | play | end
+  let G = null, shake = 0;
+  let idSig = 1;
+
+  function newRun(demo, d = 'normal') {
+    const D = DIFS[d];
+    G = {
+      demo, diff: d, D, t: 0,
+      fase: 'cuenta', faseT: demo ? 0.4 : 1.6, oleada: 0, quedan: 0, jefe: null,
+      enemigos: [], voladores: [], particulas: [], floats: [], banner: null, aviso: null,
+      proxSpawn: 0, proxMinion: 0, ultLlegada: -9, pend: null, vistos: {},
+      score: 0, vidas: D.vidas, combo: 0, mejorCombo: 0, kills: 0,
+      torpe: 0, invul: 0, parar: 0, ataque: null, retro: null, dano: -9, comboT: -9, mirar: 1,
+      done: false, settled: false, r: null,
+    };
+  }
+  const ahora = () => performance.now();
+  const alcance = () => G.D.alcance;
+  const frente = e => e.d - e.tam / 2;
+  const vivo = e => e.est !== 'muerto';
+
+  // el próximo enemigo de la oleada (todo sale de azar(), así el desafío del día es igual para todos)
+  // generador con semilla (mulberry32): los enemigos que llegan mientras está el jefe usan uno aparte, así cuánto
+  // tardás en voltear al jefe no cambia las oleadas que siguen
+  function semillado(a) {
+    a >>>= 0;
+    return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  function elegirTipo(w, soloFaciles, r0) {
+    const pesos = [['comun', 10], ['rapido', w >= 2 ? 3 + w * 0.6 : 0]];
+    if (!soloFaciles) pesos.push(['duro', w >= 3 ? 2 + w * 0.45 : 0], ['finta', w >= 4 ? 2 + w * 0.5 : 0]);
+    // el primero de un tipo nuevo sale enseguida, para que lo conozcas solo
+    for (const [k] of pesos) if (TIPOS[k].desde === w && !G.vistos[k] && w > 1) return k;
+    let tot = 0; for (const [, p] of pesos) tot += p;
+    let r = r0() * tot;
+    for (const [k, p] of pesos) { r -= p; if (r <= 0) return k; }
+    return 'comun';
+  }
+  function specNueva(lado, soloFaciles, r = azar) {
+    const w = G.oleada, tipo = elegirTipo(w, soloFaciles, r), tp = TIPOS[tipo];
+    const s = { tipo, lado: lado || (r() < 0.5 ? -1 : 1), vel: G.D.vel * tp.vel * velOla(w) * (0.92 + r() * 0.16) };
+    if (tipo === 'finta') { s.fintaD = 0.62 + r() * 0.12; s.real = w < 6 || r() < 0.62; }
+    return s;
+  }
+  // cuánto tarda en pisar la franja (para que nunca lleguen dos juntos)
+  function viaje(s) {
+    const tam = TIPOS[s.tipo].tam, hasta = alcance() + tam / 2;
+    if (s.tipo !== 'finta') return (SPAWN - hasta) / s.vel;
+    const resto = s.real ? (ATERRIZA - hasta) : (s.fintaD - hasta);
+    return (SPAWN - s.fintaD) / s.vel + AMAGUE + (s.real ? SALTO : HOP) + Math.max(0, resto) / (s.vel * 1.25);
+  }
+  function crear(s) {
+    const tp = TIPOS[s.tipo];
+    const e = { id: idSig++, tipo: s.tipo, lado: s.lado, d: SPAWN, vel: s.vel, hp: tp.hp, hpMax: tp.hp, tam: tp.tam,
+      est: 'corre', estT: 0, y: 0, fintaD: s.fintaD, real: s.real, fintado: false, golpeT: -9, fase: Math.random() * 6, ciclo: 0 };
+    if (s.tipo === 'jefe') { e.hp = e.hpMax = tp.hp + 2 * Math.floor((G.oleada - 1) / JEFE_CADA); e.vel = G.D.vel * tp.vel * Math.min(1.5, velOla(G.oleada)); }
+    G.enemigos.push(e);
+    if (!G.vistos[s.tipo]) {
+      G.vistos[s.tipo] = 1;
+      if (!G.demo && (s.tipo !== 'comun' || G.oleada === 1)) G.aviso = { text: T(tp.intro), t: ahora() };
+    }
+    return e;
+  }
+  // intenta largar un enemigo: si llegaría pegado al anterior, devuelve cuántos segundos hay que esperar
+  function intentar(s) {
+    const v = viaje(s), llegada = G.t + v, gap = gapOla(G.D, G.oleada);
+    if (llegada < G.ultLlegada + gap) return G.ultLlegada + gap - llegada + 0.01;
+    crear(s); G.ultLlegada = llegada;
+    return 0;
+  }
+  function empezarOleada() {
+    G.oleada++; G.quedan = cuantosOla(G.oleada); G.fase = 'oleada';
+    G.proxSpawn = G.t + 0.3; G.pend = null;
+    if (!G.demo) { G.banner = { text: T('Oleada {n}', { n: G.oleada }), t: ahora() }; sfxOleada(); hudCache = ''; }
+  }
+  function llegaJefe() {
+    G.fase = 'jefe';
+    G.jefe = crear({ tipo: 'jefe', lado: azar() < 0.5 ? -1 : 1, vel: 0 });
+    G.azarJefe = semillado(Math.floor(azar() * 4294967296));
+    G.proxMinion = G.t + 2.2;
+    if (!G.demo) { G.banner = { text: T('¡Jefe!'), t: ahora() }; sfxJefe(); CC?.vibrar(30); shake = reduceMotion ? 0 : 6; }
+  }
+
+  // ---------- golpes ----------
+  function golpear(lado) {
+    if (!G || G.done || G.fase === 'cuenta') return;
+    if (G.torpe > 0) return;   // mareado: no te sale nada
+    G.mirar = lado;
+    G.ataque = { lado, t: ahora() };
+    const al = alcance();
+    let blanco = null;
+    for (const e of G.enemigos) {
+      if (e.lado !== lado || e.est === 'salta' || e.est === 'muerto') continue;
+      if (frente(e) <= al && (!blanco || e.d < blanco.d)) blanco = e;
+    }
+    if (!blanco) {
+      // ¿había alguno cerca pero todavía afuera? "muy pronto"; si no, al aire
+      const cerca = G.enemigos.some(e => e.lado === lado && e.est !== 'muerto' && e.est !== 'salta' && frente(e) <= al + 0.22);
+      return errar(lado, cerca ? '¡Muy pronto!' : '¡Al aire!');
+    }
+    if (blanco.tipo === 'jefe' && escudoArriba(blanco)) return errar(lado, '¡Bloqueó!', true);
+    pegar(blanco);
+  }
+  function escudoArriba(e) { return (e.ciclo % ESCUDO_CICLO) > ESCUDO_CICLO - ESCUDO_ARRIBA; }
+  function escudoAviso(e) { const c = e.ciclo % ESCUDO_CICLO; return c > ESCUDO_CICLO - ESCUDO_ARRIBA - ESCUDO_AVISO && !escudoArriba(e); }
+  function errar(lado, texto, bloqueo) {
+    G.torpe = G.D.torpe; G.retro = { lado: -lado, t: ahora() };
+    if (G.demo) return;
+    if (G.combo >= 5) floatTexto(T('Combo perdido'), 0, 0.62, '#ff9db0');
+    G.combo = 0;
+    floatTexto(T(texto), lado * 0.2, 0.42, '#fffaf0');
+    if (bloqueo) { sfxBloqueo(); chispas(lado * (CONTACTO + 0.15), 0.14, '#dfe6f5', 8, 0.8); } else sfxAire();
+    CC?.vibrar(18);
+  }
+  function pegar(e) {
+    const tp = TIPOS[e.tipo], lado = e.lado, xi = lado * frente(e), yi = e.tam * 0.55;
+    e.hp--; e.golpeT = ahora();
+    G.combo++; G.mejorCombo = Math.max(G.mejorCombo, G.combo); G.comboT = ahora();
+    const mult = multDe(G.combo);
+    if (!G.demo && [10, 25, 50, 100].includes(G.combo)) {
+      G.banner = { text: `${T('combo')} ×${mult}!`, t: ahora(), grande: true }; sfxCombo(mult); CC?.vibrar(25);
+    }
+    if (e.hp <= 0) {
+      // ¡afuera! sale volando para su lado, girando
+      const pts = tp.pts * mult;
+      G.kills++;
+      e.est = 'muerto';
+      G.voladores.push({ kind: 'enemigo', e, x: lado * e.d, y: 0, vx: lado * (1.5 + Math.random() * 0.9) * (e.tipo === 'jefe' ? 0.6 : 1),
+        vy: (1.6 + Math.random() * 0.8) * (e.tipo === 'jefe' ? 0.7 : 1), rot: 0, vr: lado * (8 + Math.random() * 6), age: 0 });
+      chispas(xi, yi, '#ffcc29', e.tipo === 'jefe' ? 30 : 14, e.tipo === 'jefe' ? 1.6 : 1.1);
+      chispas(xi, yi, '#ffffff', 8, 0.8);
+      G.parar = e.tipo === 'jefe' ? 0.2 : 0.075;
+      if (!G.demo) {
+        G.score += pts; floatTexto('+' + pts, lado * (e.d + 0.05), e.tam + 0.2, mult > 1 ? '#ffcc29' : '#fffaf0');
+        sfxGolpe(G.combo); sfxKO(); CC?.vibrar(e.tipo === 'jefe' ? 60 : 14);
+        if (e.tipo === 'jefe') { G.banner = { text: T('¡Jefe abatido!'), t: ahora() }; }
+        if (marca) marca.ver(G.score);
+        hudCache = '';
+      }
+      shake = reduceMotion ? 0 : (e.tipo === 'jefe' ? 14 : 5);
+      if (e === G.jefe) G.jefe = null;
+    } else {
+      // aguanta: retrocede y queda aturdido un ratito
+      e.d += e.tipo === 'jefe' ? 0.07 : 0.3;
+      e.est = 'aturdido'; e.estT = e.tipo === 'jefe' ? 0.12 : 0.38;
+      chispas(xi, yi, '#ffffff', 9, 0.9);
+      G.parar = 0.05;
+      if (e.tipo === 'duro' && e.hp === 1) {
+        G.voladores.push({ kind: 'casco', e, x: lado * frente(e), y: e.tam * 0.95, vx: lado * 0.6, vy: 1.9, rot: 0, vr: lado * 10, age: 0 });
+        if (!G.demo) sfxCasco();
+      }
+      if (!G.demo) {
+        if (e.tipo === 'jefe') { G.score += 5 * mult; floatTexto('+' + 5 * mult, lado * (e.d - 0.05), e.tam + 0.15, '#fffaf0'); hudCache = ''; if (marca) marca.ver(G.score); }
+        sfxGolpe(G.combo); CC?.vibrar(10);
+      }
+      shake = reduceMotion ? 0 : 3;
+    }
+  }
+  // un enemigo te alcanzó
+  function meDio(e) {
+    if (e.tipo === 'jefe') { e.d = 0.78; e.est = 'aturdido'; e.estT = 0.5; }
+    else {
+      e.est = 'muerto';
+      chispas(e.lado * CONTACTO, 0.12, TIPOS[e.tipo].color, 12, 1);
+      G.voladores.push({ kind: 'puf', x: e.lado * CONTACTO, y: 0.08, age: 0, e });
+    }
+    if (G.demo || G.invul > 0) return;
+    G.vidas--; G.invul = 0.7; G.dano = ahora();
+    if (G.combo >= 5) floatTexto(T('Combo perdido'), 0, 0.62, '#ff9db0');
+    G.combo = 0;
+    floatTexto(T('¡Auch!'), e.lado * 0.15, 0.4, '#ff9db0');
+    sfxAuch(); CC?.vibrar(45);
+    shake = reduceMotion ? 0 : 12;
+    hudCache = '';
+    if (G.vidas <= 0) {
+      G.done = true;
+      G.banner = null;
+      setTimeout(() => { if (state === 'play' && G && G.done) CC?.morir(); }, 120);
+      setTimeout(terminar, 900);
+    } else G.banner = { text: G.vidas === 1 ? T('¡Última vida!') : T('¡Te quedan {n}!', { n: G.vidas }), t: ahora() };
+  }
+
+  // ---------- actualizar ----------
+  function update(now, dt) {
+    if (!G) return;
+    if (!(state === 'play' || G.demo)) return;
+    // freno de golpe: todo se congela un instante
+    if (G.parar > 0) { G.parar -= dt; return; }
+    G.t += dt;
+    G.torpe = Math.max(0, G.torpe - dt);
+    G.invul = Math.max(0, G.invul - dt);
+    if (G.done) { moverEfectos(dt); return; }
+
+    if (G.fase === 'cuenta') {
+      const antes = Math.ceil(G.faseT / 0.5);
+      G.faseT -= dt;
+      if (!G.demo && Math.ceil(G.faseT / 0.5) !== antes && G.faseT > 0) sfxTic();
+      if (G.faseT <= 0) empezarOleada();
+    } else if (G.fase === 'pausa') {
+      G.faseT -= dt;
+      if (G.faseT <= 0) empezarOleada();
+    } else if (G.fase === 'oleada') {
+      if (G.quedan > 0 && G.t >= G.proxSpawn) {
+        if (!G.pend) G.pend = specNueva();
+        const espera = intentar(G.pend);
+        if (espera) G.proxSpawn = G.t + espera;
+        else { G.pend = null; G.quedan--; G.proxSpawn = G.t + cadaOla(G.D, G.oleada) * (0.7 + azar() * 0.6); }
+      }
+      if (G.quedan <= 0 && !G.enemigos.some(vivo)) {
+        if (G.oleada % JEFE_CADA === 0) llegaJefe();
+        else { G.fase = 'pausa'; G.faseT = G.demo ? 0.6 : 1.3; }
+      }
+    } else if (G.fase === 'jefe') {
+      // mientras está el jefe, del otro lado siguen llegando enemigos chicos
+      if (G.jefe && G.t >= G.proxMinion) {
+        if (!G.pend) G.pend = specNueva(-G.jefe.lado, true, G.azarJefe);
+        const espera = intentar(G.pend);
+        if (espera) G.proxMinion = G.t + espera;
+        else { G.pend = null; G.proxMinion = G.t + cadaOla(G.D, G.oleada) * (1.4 + G.azarJefe() * 0.8); }
+      }
+      if (!G.jefe && !G.enemigos.some(vivo)) { G.fase = 'pausa'; G.faseT = G.demo ? 0.8 : 1.6; G.pend = null; }
+    }
+
+    moverEnemigos(dt);
+    if (G.demo) demoIA();
+    moverEfectos(dt);
+  }
+  function moverEnemigos(dt) {
+    for (const e of G.enemigos) {
+      if (e.est === 'muerto') continue;
+      e.fase += dt * (e.tipo === 'rapido' ? 16 : 10);
+      if (e.tipo === 'jefe') e.ciclo += dt;
+      if (e.est === 'aturdido') { e.estT -= dt; if (e.estT <= 0) e.est = 'corre'; continue; }
+      if (e.est === 'amaga') {
+        e.estT -= dt;
+        if (e.estT <= 0) { e.est = 'salta'; e.estT = e.real ? SALTO : HOP; e.d0 = e.d; }
+        continue;
+      }
+      if (e.est === 'salta') {
+        e.estT -= dt;
+        const dur = e.real ? SALTO : HOP, k = 1 - Math.max(0, e.estT) / dur;
+        if (e.real) {
+          // de su lado, por arriba tuyo, al otro lado: x va de +d0 a -ATERRIZA (en coordenadas de su lado)
+          const x = e.d0 + (-ATERRIZA - e.d0) * k;
+          e.xs = x; e.y = Math.sin(k * Math.PI) * 0.62;
+        } else e.y = Math.sin(k * Math.PI) * 0.16;
+        if (e.estT <= 0) {
+          if (e.real) { e.lado = -e.lado; e.d = ATERRIZA; e.xs = null; }
+          e.y = 0; e.est = 'corre'; e.fintado = true; e.vel *= 1.25;
+        }
+        continue;
+      }
+      // el jefe se planta mientras levanta el escudo (no te puede pisar mientras no le podés pegar)
+      if (e.tipo === 'jefe' && (escudoArriba(e) || escudoAviso(e))) continue;
+      // corre hacia vos
+      e.d -= e.vel * dt;
+      if (e.tipo === 'finta' && !e.fintado && e.d <= e.fintaD) { e.est = 'amaga'; e.estT = AMAGUE; continue; }
+      if (frente(e) <= CONTACTO) meDio(e);
+    }
+    // no se pasan por arriba: el de atrás espera al de adelante
+    for (const lado of [-1, 1]) {
+      const fila = G.enemigos.filter(e => e.lado === lado && e.est !== 'muerto' && e.est !== 'salta').sort((a, b) => a.d - b.d);
+      for (let k = 1; k < fila.length; k++) {
+        const min = fila[k - 1].d + (fila[k - 1].tam + fila[k].tam) / 2 + 0.02;
+        if (fila[k].d < min) fila[k].d = min;
+      }
+    }
+    G.enemigos = G.enemigos.filter(vivo);
+  }
+  function moverEfectos(dt) {
+    for (const v of G.voladores) {
+      v.age += dt;
+      if (v.kind === 'puf') continue;
+      v.x += v.vx * dt; v.y += v.vy * dt; v.vy -= 5 * dt; v.rot += v.vr * dt;
+    }
+    G.voladores = G.voladores.filter(v => v.age < (v.kind === 'puf' ? 0.35 : 1.6));
+    for (const p of G.particulas) { p.age += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy -= 4 * dt; }
+    G.particulas = G.particulas.filter(p => p.age < p.life);
+    const t = ahora();
+    G.floats = G.floats.filter(f => t - f.t < 900);
+    shake = Math.max(0, shake - dt * 40);
+  }
+  // en el menú se juega solo: le pega al que pisa la franja, con un poquito de demora
+  function demoIA() {
+    if (G.torpe > 0) return;
+    for (const lado of [-1, 1]) {
+      let b = null;
+      for (const e of G.enemigos) if (e.lado === lado && e.est !== 'salta' && frente(e) <= alcance() - 0.07 && (!b || e.d < b.d)) b = e;
+      if (b && !(b.tipo === 'jefe' && (escudoArriba(b) || escudoAviso(b)))) { golpear(lado); return; }
+    }
+  }
+  function chispas(x, y, color, n, power) {
+    for (let k = 0; k < n; k++) {
+      const a = Math.random() * Math.PI * 2, sp = (0.4 + Math.random() * 1.1) * power;
+      G.particulas.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp + 0.3, life: 0.25 + Math.random() * 0.3, age: 0, s: 0.016 + Math.random() * 0.018, c: color });
+    }
+  }
+  function floatTexto(text, x, y, c) { G.floats.push({ text, x, y, c, t: ahora() }); }
+
+  // ---------- fin de partida ----------
+  function settle() {
+    if (!G || G.settled || G.demo) return G && G.r;
+    G.settled = true;
+    const v = G.score;
+    if (v > (rec[G.diff] || 0)) { rec[G.diff] = v; saveRec(); }
+    if (!CC) return null;
+    G.r = CC.partida({ juego: 'guardia', tabla: G.diff, valor: v, texto: T('{n} pts · {d}', { n: v, d: G.D.name }),
+      xp: CC.xpEscala(v, XP_MALO, XP_EXPERTO), marcas: G.mejorCombo >= 50 ? ['guardia-combo'] : [], diario: DIA || undefined });
+    return G.r;
+  }
+  function terminar() {
+    if (!G || state !== 'play') return;
+    ponerMarca(false);
+    const r = settle();
+    $('eTitle').textContent = G.score >= 3000 ? T('¡Imparable!') : G.score >= 800 ? T('¡Buena guardia!') : T('¡Cayó la guardia!');
+    $('eNum').textContent = G.score.toLocaleString(LOCALE);
+    $('eSub').textContent = T('puntos · {d} · llegaste a la oleada {n}', { d: G.D.name, n: Math.max(1, G.oleada) });
+    $('eSub2').textContent = T('Derrotaste a {n} · combo máximo {c}', { n: G.kills, c: G.mejorCombo }) +
+      (r && !r.record && r.textoAnterior ? T(' · récord: {r}', { r: r.textoAnterior }) : '');
+    $('eBadge').hidden = !(r && r.record);
+    if (r) $('eBadge').textContent = r.primera ? T('Primer récord') : T('Nuevo récord');
+    $('eXP').hidden = !r; if (r) $('eXP').textContent = `+${r.xp} XP`;
+    const lg = (r && r.logros) || [];
+    $('eLogros').hidden = !lg.length;
+    $('eLogros').replaceChildren(...lg.map(n => Object.assign(document.createElement('span'), { className: 'logro', textContent: n })));
+    if (DIA) DIA.fin(r, $('btnAgain'), [$('difs2'), $('eDifL')]);
+    $('btnRank2').hidden = !CC;
+    showEnd();
+  }
+  const LOCALE = (CC && CC.LOCALE) || 'es-AR';
+
+  // ---------- dibujo ----------
+  const INK = '#1d2340', PAPER = '#fffaf0';
+  function rr(c, x, y, w, h, r) { c.beginPath(); c.roundRect ? c.roundRect(x, y, w, h, r) : c.rect(x, y, w, h); }
+  function fondo(now) {
+    const g = ctx.createLinearGradient(0, 0, 0, GY);
+    g.addColorStop(0, '#5b3f8c'); g.addColorStop(0.6, '#e2647a'); g.addColorStop(1, '#ffb27a');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, GY + 2);
+    // sol bajo y colinas a lo lejos
+    ctx.fillStyle = 'rgba(255,230,160,.85)';
+    ctx.beginPath(); ctx.arc(CX + L * 0.55, GY - L * 0.32, L * 0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.12)';
+    for (let k = 0; k < 14; k++) {
+      const sx = ((k * 211) % 1000) / 1000 * W, sy = ((k * 97) % 400) / 400 * (GY * 0.5);
+      ctx.fillRect(sx, sy, 2, 2);
+    }
+    const colina = (alto, col, paso, desf) => {
+      ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, GY);
+      for (let x = 0; x <= W + paso; x += paso) ctx.lineTo(x, GY - alto * (0.6 + 0.4 * Math.sin(x / paso * 1.7 + desf)));
+      ctx.lineTo(W, GY); ctx.closePath(); ctx.fill();
+    };
+    colina(L * 0.42, '#8f4c86', Math.max(60, L * 0.5), 0.3);
+    colina(L * 0.22, '#6b3a73', Math.max(40, L * 0.33), 2.1);
+    // el piso: una muralla de piedra
+    const g2 = ctx.createLinearGradient(0, GY, 0, H);
+    g2.addColorStop(0, '#c98d63'); g2.addColorStop(1, '#8a5a45');
+    ctx.fillStyle = g2; ctx.fillRect(0, GY, W, H - GY);
+    ctx.strokeStyle = 'rgba(29,35,64,.22)'; ctx.lineWidth = 2;
+    const bh = Math.max(16, L * 0.1), bw = bh * 2.2;
+    for (let fila = 0, y = GY + bh; y < H; fila++, y += bh) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      for (let x = (fila % 2 ? bw / 2 : 0) + (CX % bw); x < W; x += bw) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + bh); ctx.stroke(); }
+    }
+    ctx.fillStyle = '#e6ab7c'; ctx.fillRect(0, GY, W, Math.max(5, L * 0.03));
+    ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, GY); ctx.lineTo(W, GY); ctx.stroke();
+  }
+  // la franja de tu alcance, marcada en el piso de cada lado (se prende si hay alguien adentro)
+  function franjas(now) {
+    const al = alcance(), h = Math.max(7, L * 0.045);
+    for (const lado of [-1, 1]) {
+      const hay = G.enemigos.some(e => e.lado === lado && e.est !== 'salta' && e.est !== 'muerto' && frente(e) <= al);
+      const x0 = px(lado * CONTACTO), x1 = px(lado * al), xa = Math.min(x0, x1), w = Math.abs(x1 - x0);
+      ctx.fillStyle = hay ? 'rgba(255,204,41,.95)' : 'rgba(255,204,41,.45)';
+      rr(ctx, xa, GY - 1, w, h, 3); ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = hay ? INK : 'rgba(29,35,64,.4)'; ctx.stroke();
+      // el borde de tu alcance: una rayita que sube
+      ctx.fillStyle = hay ? '#ffcc29' : 'rgba(255,250,240,.7)'; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+      const bx = px(lado * al), bt = Math.max(14, L * 0.09);
+      rr(ctx, bx - 2.5, GY - bt, 5, bt + h - 1, 2); ctx.fill(); ctx.stroke();
+      if (hay && !reduceMotion) {
+        ctx.globalAlpha = 0.12 + 0.12 * Math.sin(now / 60);
+        ctx.fillStyle = '#fff'; rr(ctx, xa, GY - 1, w, h, 3); ctx.fill(); ctx.globalAlpha = 1;
+      }
+    }
+  }
+  // enemigos: bloques con cara de malos, cada tipo con lo suyo
+  function dibujarEnemigo(e, x, y, rot, now, muerto) {
+    const tp = TIPOS[e.tipo], s = e.tam * L, mira = -Math.sign(x - CX) || -e.lado;
+    const salto = e.est === 'salta' || e.y > 0;
+    const pasito = e.est === 'corre' && !muerto ? Math.sin(e.fase) : 0;
+    const golpe = Math.max(0, 1 - (now - e.golpeT) / 120);
+    ctx.save();
+    ctx.translate(x, y);
+    // el que sale volando gira desde el centro de su cuerpo (y viene con y en ese centro)
+    if (muerto) { ctx.rotate(rot); ctx.translate(0, s * 0.5); }
+    // sombra en el piso
+    if (!muerto) { ctx.fillStyle = 'rgba(29,35,64,.25)'; ctx.beginPath(); ctx.ellipse(0, GY - y + 2, s * 0.45, s * 0.1, 0, 0, Math.PI * 2); ctx.fill(); }
+    // aplastadito cuando amaga o lo golpean
+    let sx = 1, sy = 1;
+    if (e.est === 'amaga') { const k = Math.min(1, (AMAGUE - e.estT) / AMAGUE); sx = 1 + 0.18 * k; sy = 1 - 0.2 * k; }
+    if (golpe) { sx += 0.15 * golpe; sy -= 0.15 * golpe; }
+    if (e.tipo === 'rapido' && e.est === 'corre') ctx.rotate(mira * 0.18);
+    ctx.scale(sx, sy);
+    // patitas
+    ctx.fillStyle = INK;
+    if (!salto) {
+      ctx.beginPath(); ctx.ellipse(-s * 0.22, -s * 0.05 - Math.max(0, pasito) * s * 0.1, s * 0.13, s * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(s * 0.22, -s * 0.05 - Math.max(0, -pasito) * s * 0.1, s * 0.13, s * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    // cuerpo
+    const bob = Math.abs(pasito) * s * 0.05, top = -s * 1.05 - bob;
+    ctx.fillStyle = golpe > 0.5 ? '#ffffff' : tp.color; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, s * 0.08);
+    rr(ctx, -s / 2, top, s, s * 0.95, s * 0.24); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.3)'; rr(ctx, -s * 0.36, top + s * 0.08, s * 0.72, s * 0.14, s * 0.07); ctx.fill();
+    // cara
+    const ey = top + s * 0.42, ex = mira * s * 0.1;
+    if (muerto) {
+      ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, s * 0.07); ctx.lineCap = 'round';
+      for (const k of [-1, 1]) {
+        const cx = ex + k * s * 0.17;
+        ctx.beginPath(); ctx.moveTo(cx - s * 0.07, ey - s * 0.07); ctx.lineTo(cx + s * 0.07, ey + s * 0.07);
+        ctx.moveTo(cx + s * 0.07, ey - s * 0.07); ctx.lineTo(cx - s * 0.07, ey + s * 0.07); ctx.stroke();
+      }
+      ctx.lineCap = 'butt';
+    } else {
+      if (e.tipo === 'finta') { ctx.fillStyle = INK; rr(ctx, -s * 0.5, ey - s * 0.13, s, s * 0.26, s * 0.06); ctx.fill(); }
+      for (const k of [-1, 1]) {
+        const cx = ex + k * s * 0.17;
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(cx, ey, s * 0.1, s * 0.11, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(cx + mira * s * 0.04, ey + s * 0.02, s * 0.05, 0, Math.PI * 2); ctx.fill();
+        // cejas de enojado (bajan hacia el centro de la cara)
+        ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, s * 0.06);
+        ctx.beginPath(); ctx.moveTo(cx - s * 0.1, ey - s * 0.2 + (k < 0 ? 0 : 0.07) * s); ctx.lineTo(cx + s * 0.1, ey - s * 0.2 + (k < 0 ? 0.07 : 0) * s); ctx.stroke();
+      }
+      ctx.fillStyle = INK; rr(ctx, ex - s * 0.12, ey + s * 0.2, s * 0.24, s * 0.06, s * 0.03); ctx.fill();
+    }
+    // casco (los duros, mientras tienen 2 vidas)
+    if (e.tipo === 'duro' && e.hp >= 2 && !muerto) {
+      ctx.fillStyle = '#c9d3e3'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, s * 0.07);
+      ctx.beginPath(); ctx.ellipse(0, top + s * 0.12, s * 0.56, s * 0.4, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+      rr(ctx, -s * 0.6, top + s * 0.06, s * 1.2, s * 0.12, s * 0.05); ctx.fill(); ctx.stroke();
+    }
+    // jefe: cuernos, corona de pinches y escudo
+    if (e.tipo === 'jefe') {
+      ctx.fillStyle = PAPER; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, s * 0.05);
+      for (const k of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(k * s * 0.32, top + s * 0.04); ctx.lineTo(k * s * 0.5, top - s * 0.3); ctx.lineTo(k * s * 0.14, top + s * 0.02); ctx.closePath(); ctx.fill(); ctx.stroke();
+      }
+      if (!muerto) {
+        const arriba = escudoArriba(e), aviso = escudoAviso(e);
+        if (arriba || aviso) {
+          const k = arriba ? 1 : 0.35 + 0.25 * Math.sin(now / 40);
+          ctx.globalAlpha = k;
+          ctx.fillStyle = '#dfe6f5'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(3, s * 0.06);
+          rr(ctx, mira * s * 0.42 - s * 0.14, top - s * 0.02, s * 0.28, s * 1.02, s * 0.1); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#ff5d7d'; ctx.beginPath(); ctx.arc(mira * s * 0.42, top + s * 0.48, s * 0.07, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+    // estrellitas de aturdido
+    if (e.est === 'aturdido' && !muerto) {
+      ctx.fillStyle = '#ffcc29';
+      for (let k = 0; k < 3; k++) {
+        const a = now / 140 + k * 2.1;
+        ctx.beginPath(); ctx.arc(Math.cos(a) * s * 0.35, top - s * 0.12 + Math.sin(a) * s * 0.08, Math.max(2, s * 0.05), 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    // el saltarín avisa antes de saltar
+    if (e.est === 'amaga' && !muerto) {
+      ctx.scale(1 / sx, 1 / sy);
+      ctx.font = `400 ${Math.round(s * 0.7)}px "Lilita One", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.strokeText('!', 0, top - s * 0.35); ctx.fillStyle = '#ffcc29'; ctx.fillText('!', 0, top - s * 0.35);
+    }
+    ctx.restore();
+    // barra de vida del jefe
+    if (e.tipo === 'jefe' && !muerto) {
+      const bw = s * 1.1, bh = Math.max(6, s * 0.09), bx = x - bw / 2, by = y - s * 1.45;
+      ctx.fillStyle = INK; rr(ctx, bx - 2, by - 2, bw + 4, bh + 4, bh); ctx.fill();
+      ctx.fillStyle = '#ff5d7d'; rr(ctx, bx, by, bw * e.hp / e.hpMax, bh, bh / 2); ctx.fill();
+    }
+  }
+  function dibujarCasco(x, y, rot, s) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+    ctx.fillStyle = '#c9d3e3'; ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, s * 0.07);
+    ctx.beginPath(); ctx.ellipse(0, 0, s * 0.56, s * 0.4, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+  let hudCache = '';
+  function draw(now) {
+    ctx.clearRect(0, 0, W, H);
+    if (!G) return;
+    ctx.save();
+    if (shake) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+    fondo(now);
+    franjas(now);
+    // enemigos (los que saltan van por arriba de todo)
+    for (const e of G.enemigos) {
+      if (e.est === 'salta') continue;
+      const aparece = Math.min(1, Math.max(0, (SPAWN - e.d) / 0.08 + 0.2));
+      ctx.globalAlpha = aparece;
+      dibujarEnemigo(e, px(e.lado * e.d), py(e.y), 0, now, false);
+      ctx.globalAlpha = 1;
+    }
+    // tu cubo: se tira para el lado que pegás y retrocede si errás
+    const t = now, sz = CUBO * L;
+    let ox = 0;
+    if (G.ataque) { const k = (t - G.ataque.t) / 140; if (k < 1) ox += G.ataque.lado * Math.sin(k * Math.PI) * sz * 0.35; }
+    if (G.retro) { const k = (t - G.retro.t) / 260; if (k < 1) ox += G.retro.lado * Math.sin(k * Math.PI) * sz * 0.25; }
+    const titila = G.invul > 0 && Math.floor(t / 70) % 2 === 0;
+    if (!titila) {
+      ctx.fillStyle = 'rgba(29,35,64,.25)'; ctx.beginPath(); ctx.ellipse(CX + ox, GY + 2, sz * 0.5, sz * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+      if (CC) CC.dibujarCubo(ctx, CX + ox, GY, sz, { t, mirar: G.mirar, mareado: G.torpe > 0 });
+      else { ctx.fillStyle = '#ffcc29'; ctx.strokeStyle = INK; ctx.lineWidth = 3; rr(ctx, CX + ox - sz / 2, GY - sz, sz, sz, sz * 0.2); ctx.fill(); ctx.stroke(); }
+    }
+    // el golpe: una media luna blanca del lado que pegaste
+    if (G.ataque) {
+      const k = (t - G.ataque.t) / 150;
+      if (k < 1) {
+        const lado = G.ataque.lado, r = sz * 0.95, cx = CX + lado * sz * 0.35, cy = GY - sz * 0.5;
+        ctx.save(); ctx.globalAlpha = 1 - k;
+        ctx.strokeStyle = '#fffaf0'; ctx.lineWidth = Math.max(4, sz * 0.16) * (1 - k * 0.5); ctx.lineCap = 'round';
+        const a0 = lado > 0 ? -1.1 : Math.PI + 1.1, a1 = lado > 0 ? 1.1 : Math.PI - 1.1;
+        ctx.beginPath(); ctx.arc(cx, cy, r * (0.8 + k * 0.4), Math.min(a0, a1), Math.max(a0, a1), lado < 0); ctx.stroke();
+        ctx.restore();
+      }
+    }
+    // los que saltan por arriba tuyo
+    for (const e of G.enemigos) {
+      if (e.est !== 'salta') continue;
+      const x = e.xs != null ? e.lado * e.xs : e.lado * e.d;
+      dibujarEnemigo(e, px(x), py(e.y), 0, now, false);
+    }
+    // los que salen volando
+    for (const v of G.voladores) {
+      if (v.kind === 'enemigo') { ctx.globalAlpha = Math.max(0, 1 - v.age / 1.6); dibujarEnemigo(v.e, px(v.x), py(v.y) - v.e.tam * L * 0.5, v.rot, now, true); }
+      else if (v.kind === 'casco') dibujarCasco(px(v.x), py(v.y), v.rot, v.e.tam * L);
+      else if (v.kind === 'puf') {
+        const k = v.age / 0.35; ctx.globalAlpha = 1 - k; ctx.fillStyle = '#fff'; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+        for (let i = 0; i < 5; i++) { const a = i * 1.26; ctx.beginPath(); ctx.arc(px(v.x) + Math.cos(a) * k * L * 0.12, py(v.y) + Math.sin(a) * k * L * 0.08, L * 0.035 * (1 - k * 0.5), 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      }
+      ctx.globalAlpha = 1;
+    }
+    // chispas
+    for (const p of G.particulas) {
+      ctx.globalAlpha = Math.max(0, 1 - p.age / p.life); ctx.fillStyle = p.c;
+      const s = p.s * L; ctx.fillRect(px(p.x) - s / 2, py(p.y) - s / 2, s, s);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // te pegaron: borde rojo
+    const dk = (now - G.dano) / 450;
+    if (dk < 1) {
+      const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.75);
+      vg.addColorStop(0, 'rgba(255,40,70,0)'); vg.addColorStop(1, `rgba(255,40,70,${0.55 * (1 - dk)})`);
+      ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    }
+
+    // textos: cuenta, combo, carteles y puntos que flotan
+    const texto = (s, x, y, tam, col = PAPER) => {
+      ctx.font = `400 ${tam}px "Lilita One", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(4, tam * 0.16); ctx.strokeStyle = INK; ctx.strokeText(s, x, y);
+      ctx.fillStyle = col; ctx.fillText(s, x, y);
+    };
+    if (!G.demo && state === 'play') {
+      if (G.fase === 'cuenta' && G.faseT > 0) {
+        const n = Math.ceil(G.faseT / 0.5);
+        texto(n > 3 ? '3' : String(n), CX, GY - sz * 2.2, Math.round(Math.min(110, L * 0.45)));
+      }
+      // combo grande arriba de tu cubo
+      if (G.combo >= 2) {
+        const pop = Math.max(0, 1 - (now - G.comboT) / 160), mult = multDe(G.combo);
+        const tam = Math.round(Math.min(96, L * 0.36) * (1 + 0.22 * pop) * (1 + Math.min(0.3, (mult - 1) * 0.08)));
+        const cy = Math.max(ARRIBA + tam * 0.7, GY - sz - L * 0.55);
+        const col = mult >= 4 ? '#ff9df0' : mult >= 3 ? '#7fe3ff' : mult >= 2 ? '#ffcc29' : PAPER;
+        texto(String(G.combo), CX, cy, tam, col);
+        texto(mult > 1 ? `${T('combo')} ×${mult}` : T('combo'), CX, cy + tam * 0.62, Math.round(tam * 0.3), col);
+      }
+      // los carteles van abajo, sobre la muralla (arriba está el combo)
+      const piso = Math.max(60, ABAJO - GY), tb = Math.round(Math.min(40, L * 0.17, piso * 0.24));
+      const yb = GY + Math.max(tb * 0.9, piso * 0.3);
+      if (G.banner && now - G.banner.t < 1400) {
+        const k = (now - G.banner.t) / 1400, a = k < 0.1 ? k / 0.1 : k > 0.8 ? (1 - k) / 0.2 : 1;
+        ctx.globalAlpha = a; texto(G.banner.text, CX, yb, tb, G.banner.grande ? '#ffcc29' : PAPER); ctx.globalAlpha = 1;
+      }
+      if (G.aviso && now - G.aviso.t < 2600) {
+        const k = (now - G.aviso.t) / 2600, a = k > 0.85 ? (1 - k) / 0.15 : 1;
+        ctx.globalAlpha = a;
+        const tam = Math.round(Math.min(18, Math.max(13, L * 0.075)));
+        ctx.font = `800 ${tam}px Rubik, sans-serif`;
+        const w = Math.min(W - 32, ctx.measureText(G.aviso.text).width + 24), ya = yb + tb * 0.7 + 8;
+        ctx.fillStyle = PAPER; ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+        rr(ctx, CX - w / 2, ya, w, tam + 16, 12); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(G.aviso.text, CX, ya + (tam + 16) / 2, W - 44);
+        ctx.globalAlpha = 1;
+      }
+      for (const f of G.floats) {
+        const k = (now - f.t) / 900;
+        ctx.globalAlpha = 1 - k; texto(f.text, px(f.x), py(f.y) - k * 30, Math.round(Math.min(30, L * 0.12)), f.c); ctx.globalAlpha = 1;
+      }
+    }
+    pintarHud();
+  }
+  function pintarHud() {
+    if (!G || G.demo || state !== 'play') return;
+    const k = `${G.score}|${G.vidas}|${G.oleada}`;
+    if (k === hudCache) return;
+    hudCache = k;
+    $('hScore').textContent = G.score.toLocaleString(LOCALE);
+    $('hVidas').textContent = G.vidas > 0 ? '❤️'.repeat(Math.min(5, G.vidas)) : '💔';
+    $('hOla').textContent = T('oleada {n}', { n: Math.max(1, G.oleada) });
+  }
+
+  // ---------- pantallas ----------
+  let sel = null;
+  const dif = () => (!DIA && sel ? sel.valor() : 'normal');
+  if (CC) {
+    sel = CC.selectorDif($('difs'), { juego: 'guardia', notas: NOTAS, alCambiar: () => renderMenu() });
+    CC.selectorDif($('difs2'), { juego: 'guardia', compacto: true, alCambiar: () => renderMenu() });
+    if (DIA) DIA.menu($('difs'));
+    CC.leyendaTeclas($('leyenda'), { jugar: T('golpear'), extra: [['R', T('reiniciar')]] });
+  } else { $('difs').hidden = true; $('difs2').hidden = true; $('eDifL').hidden = true; }
+  function renderMenu() {
+    const best = CC ? CC.perfil().mejores['guardia:' + dif()] : rec[dif()];
+    $('mBest').textContent = best ? Number(best).toLocaleString(LOCALE) : '—';
+    $('btnRank').hidden = !CC;
+    $('btnMute').textContent = muted ? T('Sonido: no') : T('Sonido: sí');
+  }
+  let marca = null;
+  function ponerMarca(on) {
+    if (marca) { marca.quitar(); marca = null; }
+    if (on && CC && CC.sombra && G && !G.demo) marca = CC.sombra.marca('guardia', G.diff);
+  }
+  function soltar() { for (const b of document.querySelectorAll('.pad button')) b.classList.remove('on'); }
+  function start() {
+    if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); }
+    newRun(false, dif());
+    state = 'play';
+    $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false;
+    $('pad').classList.remove('off');
+    $('hDif').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + G.D.name;
+    soltar(); hudCache = '';
+    ponerMarca(true);
+    resize();
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  }
+  function cortar() { if (state === 'play' && G && !G.demo && !G.done && G.score > 0) return settle(); return null; }
+  function restart() {
+    const r = cortar();
+    start();
+    if (r && r.xp && G) G.banner = { text: `+${r.xp} XP`, t: ahora() };
+  }
+  function showMenu() {
+    cortar(); ponerMarca(false);
+    state = 'menu';
+    azar = Math.random;
+    newRun(true);
+    renderMenu();
+    $('menu').hidden = false; $('end').hidden = true; $('hud').hidden = true;
+    $('pad').classList.add('off');
+    soltar(); resize();
+  }
+  function showEnd() {
+    state = 'end';
+    $('end').hidden = false; $('hud').hidden = true;
+    $('pad').classList.add('off');
+    soltar();
+    setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
+  }
+  const volver = () => { cortar(); if (CC) CC.volver(); else location.href = 'index.html'; };
+  const verRanking = t => CC?.verRanking({ juego: 'guardia', tabla: t });
+  $('btnPlay').addEventListener('click', start);
+  $('btnAgain').addEventListener('click', start);
+  $('btnBack').addEventListener('click', volver);
+  $('btnHome').addEventListener('click', volver);
+  $('btnMenu').addEventListener('click', showMenu);
+  $('btnRank').addEventListener('click', () => verRanking(dif()));
+  $('btnRank2').addEventListener('click', () => verRanking(G ? G.diff : dif()));
+  $('btnQuit').addEventListener('click', showMenu);
+  $('btnRestart').addEventListener('pointerdown', e => { e.preventDefault(); restart(); });
+  $('btnMute').addEventListener('click', () => { muted = !muted; rec.muted = muted; saveRec(); renderMenu(); if (!muted) beep(660, 0.08); });
+
+  // ---------- entrada: cada toque es un golpe ----------
+  function boton(btn, lado) {
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      btn.classList.add('on'); setTimeout(() => btn.classList.remove('on'), 110);
+      if (state === 'play') golpear(lado);
+    });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  boton($('bL'), -1); boton($('bR'), 1);
+  const LADO = { ArrowLeft: -1, ArrowRight: 1, a: -1, A: -1, d: 1, D: 1 };
+  addEventListener('keydown', e => {
+    if (document.getElementById('cc-rank')) return;   // la ventana del ranking maneja su teclado
+    const k = e.key;
+    if (state === 'play') {
+      if (LADO[k]) {
+        e.preventDefault();
+        if (e.repeat) return;   // dejar apretado no pega de nuevo
+        const b = LADO[k] < 0 ? $('bL') : $('bR');
+        b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 110);
+        golpear(LADO[k]);
+        return;
+      }
+      if (k === 'Escape') showMenu();
+      else if ((k === 'r' || k === 'R') && !e.repeat) restart();
+    } else if (state === 'menu') {
+      if (k === 'ArrowUp' || k === 'ArrowDown') { e.preventDefault(); if (sel && !DIA) sel.siguiente(k === 'ArrowUp' ? -1 : 1); }
+      else if (k === 'Enter' && document.activeElement === document.body) start();
+      else if (k === 'Escape') volver();
+    } else if (state === 'end') {
+      if ((k === 'r' || k === 'R') && !e.repeat) start();
+      else if (k === 'Escape') showMenu();
+      else if ((k === 'Enter' || k === ' ') && document.activeElement === document.body) { e.preventDefault(); start(); }
+    }
+  });
+
+  // ---------- arranque ----------
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    update(now, dt); draw(now);
+    requestAnimationFrame(frame);
+  }
+  showMenu();
+  requestAnimationFrame(frame);
+  if (CC && CC.pedirApodo) setTimeout(() => CC.pedirApodo(), 600);
+})();
+</script>

@@ -969,8 +969,43 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       c.moveTo(cx + d * s * 0.14, cy); c.lineTo(cx - d * s * 0.08, cy - s * 0.13); c.lineTo(cx - d * s * 0.08, cy + s * 0.13); c.closePath(); c.fill();
     }
   }
+  function ilGuardia(c, w, h, t) {
+    sky(c, w, h, '#e2647a', '#ffc49a');
+    // el piso de piedra con la franja de alcance a cada lado, y los enemigos que llegan y salen volando
+    const piso = h * 0.8, s = Math.min(w / 7, h / 4.2), al = s * 1.55, ct = s * 0.55;
+    c.fillStyle = '#c98d63'; c.fillRect(0, piso, w, h - piso);
+    c.strokeStyle = INK; c.lineWidth = 3; c.beginPath(); c.moveTo(0, piso); c.lineTo(w, piso); c.stroke();
+    const P = 1100, k = Math.floor(t / P), f = (t % P) / P, lado = k % 2 ? 1 : -1;
+    for (const l of [-1, 1]) {
+      c.fillStyle = l === lado && f > 0.55 && f < 0.7 ? '#ffcc29' : 'rgba(255,204,41,.5)';
+      rr(c, w / 2 + Math.min(l * ct, l * al), piso - 1, al - ct, Math.max(5, s * 0.12), 3); c.fill();
+    }
+    const malo = (x, y, sz, col, rot, mira) => {
+      c.save(); c.translate(x, y); c.rotate(rot);
+      c.fillStyle = col; c.strokeStyle = INK; c.lineWidth = 3; rr(c, -sz / 2, -sz, sz, sz * 0.95, sz * 0.24); c.fill(); c.stroke();
+      for (const e of [-1, 1]) {
+        const ex = mira * sz * 0.1 + e * sz * 0.17;
+        c.fillStyle = '#fff'; c.beginPath(); c.arc(ex, -sz * 0.6, sz * 0.1, 0, Math.PI * 2); c.fill();
+        c.fillStyle = INK; c.beginPath(); c.arc(ex + mira * sz * 0.04, -sz * 0.58, sz * 0.05, 0, Math.PI * 2); c.fill();
+      }
+      c.restore();
+    };
+    // el que llega por el lado de este golpe: camina hasta la franja y sale volando
+    const llegada = 0.62, x0 = w / 2 + lado * w * 0.55, x1 = w / 2 + lado * (al - s * 0.05);
+    if (f < llegada) malo(x0 + (x1 - x0) * (f / llegada), piso, s * 0.75, '#ff5d5d', 0, -lado);
+    else { const g = (f - llegada) / (1 - llegada); malo(x1 + lado * g * w * 0.4, piso - Math.sin(g * Math.PI * 0.8) * h * 0.5, s * 0.75, '#ff5d5d', lado * g * 7, -lado); }
+    // otro, del otro lado, que todavía viene
+    malo(w / 2 - lado * (w * 0.62 - f * w * 0.18), piso, s * 0.62, '#ffb02e', 0, lado);
+    // el golpe: media luna blanca
+    const pega = f >= llegada && f < llegada + 0.14;
+    if (pega) {
+      c.strokeStyle = PAPER; c.lineWidth = 5; c.lineCap = 'round';
+      c.beginPath(); c.arc(w / 2 + lado * s * 0.3, piso - s * 0.5, s * 0.85, lado > 0 ? -1 : Math.PI - 1, lado > 0 ? 1 : Math.PI + 1); c.stroke(); c.lineCap = 'butt';
+    }
+    CC.dibujarCubo(c, w / 2 + (pega ? lado * s * 0.15 : 0), piso, s, { mirar: lado, t });
+  }
 
-  const DIBUJOS = { escalador: ilEscalador, lluvia: ilLluvia, ritmo: ilRitmo, voley: ilVoley, paleta: ilPaleta, esqui: ilEsqui, pulseada: ilPulseada };
+  const DIBUJOS = { escalador: ilEscalador, lluvia: ilLluvia, ritmo: ilRitmo, voley: ilVoley, paleta: ilPaleta, esqui: ilEsqui, pulseada: ilPulseada, guardia: ilGuardia };
   const DESC = {
     escalador: 'Tocá el lado donde está el próximo escalón. Si errás, te mareás. Sprint 100, 30 segundos, Libre y el nuevo modo Lava: subí antes de que te alcance.',
     lluvia: 'Movete entre carriles y esquivá los bloques que caen cada vez más rápido.',
@@ -979,6 +1014,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     paleta: 'Mové tu paleta con ◀ ▶ y devolvé la pelota. Pegale con la punta para cruzarla. Contra la máquina o de a dos en el mismo celu.',
     esqui: 'Mantené ◀ o ▶ para doblar y pasá entre las banderas. Cada vez más rápido.',
     pulseada: 'Alterná ◀ ▶ lo más rápido que puedas para ganarle la fuerza al rival. ¿Cuántos toques por segundo hacés?',
+    guardia: 'Llegan por los dos lados: pegales con ◀ o ▶ justo cuando pisan tu alcance. Si errás, te mareás. Combos, oleadas y jefes.',
   };
   const JUEGOS = CC.JUEGOS.map(j => ({ ...j, dibujo: DIBUJOS[j.id], desc: DESC[j.id] }));
 
@@ -1774,7 +1810,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   ];
   // dónde guarda cada juego su "Sonido: sí/no" (Opciones lo cambia en todos)
   const SONIDO_KEYS = ['cubo-escalador-records', 'cubo-lluvia-records', 'cubo-ritmo-records', 'cubo-voley', 'cubo-paleta-records',
-    'cubo-esqui', 'cubo-pulseada-records'];
+    'cubo-esqui', 'cubo-pulseada-records', 'cubo-guardia-records'];
   const portada = $('portada'), ptCv = $('ptCubo');
   const sesion = (k, v) => { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch (e) {} return null; };
   let aterrizo = Infinity, saltito = -1e9;   // cuándo cayó el cubo en la portada y cuándo lo tocaron

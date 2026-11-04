@@ -17,6 +17,7 @@ La pantalla principal muestra un juego por slide. Todos los juegos suman XP al m
 | Paleta | Paleta y pelota en una mesa vertical: movés tu paleta con `←` `→` y le pegás con la punta para cruzarla. Contra la máquina (3 vidas, cada 3 puntos llega un rival mejor) o **de a dos en el mismo dispositivo** (cada uno con sus botones, el de arriba dados vuelta; en la compu, flechas y A/D), a 7 puntos. |
 | Esquí | Slalom entre banderas, cada vez más rápido. |
 | Pulseada | Alterná lo más rápido que puedas para ganarle al rival. |
+| Guardia | Defendé el centro: los enemigos llegan corriendo por los dos lados y les pegás con `←` o `→` justo cuando pisan la franja amarilla de tu alcance. Pegar antes de tiempo o al aire te marea un rato. Aparecen de a poco: comunes, rápidos, con casco (dos golpes), saltarines que amagan y cambian de lado, y un jefe con escudo cada 3 oleadas. Los golpes seguidos arman el combo (×2 a ×5). El logro Muralla es un combo de 50. |
 
 Controles: `←` `→` o `A` `D` en la compu, `R` reinicia; botones grandes y ↻ en el celu. Todos los juegos tienen Fácil, Normal, Difícil, Extremo y Maestro.
 

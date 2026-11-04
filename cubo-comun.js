@@ -298,6 +298,7 @@
     { id: 'paleta', nombre: 'Paleta', archivo: 'paleta.html', color: '#2ec27e', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'esqui', nombre: 'Esquí', archivo: 'esqui.html', color: '#5b8cff', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
     { id: 'pulseada', nombre: 'Pulseada', archivo: 'pulseada.html', color: '#f5b84a', nuevo: true, tablas: tablasDif('mayor', 'num', 'rivales') },
+    { id: 'guardia', nombre: 'Guardia', archivo: 'guardia.html', color: '#e2525f', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
   ];
   const juego = id => JUEGOS.find(j => j.id === id);
   const tablaDe = (j, t) => (juego(j) || { tablas: [] }).tablas.find(x => x.id === t);
@@ -325,6 +326,7 @@
     paleta: [4, 10, 18, 30],
     esqui: [250, 1000, 2500, 5000],
     pulseada: [2, 5, 9, 14],
+    guardia: [500, 2000, 5000, 10000],
   };
   const NOMBRES_TIER = ['Primeros pasos', 'Le agarraste la mano', 'Crack', 'Leyenda'];
   const TIERS = ['bronce', 'plata', 'oro', 'diamante'];
@@ -387,6 +389,8 @@
     // Pulseada: alternando con dos dedos un promedio hace 6 a 8 toques por segundo; 10 sostenidos es de muy buenos.
     { id: 'paleta-rally', juego: 'paleta', nombre: 'Peloteo eterno', desc: 'Hacé un rally de 30 golpes en la Paleta.', medalla: 'plata',
       prueba: p => !!p.marcas['paleta-rally'] },
+    { id: 'guardia-combo', juego: 'guardia', nombre: 'Muralla', desc: 'Hacé un combo de 50 golpes sin errar en Guardia.', medalla: 'plata',
+      prueba: p => !!p.marcas['guardia-combo'] },
     { id: 'pulseada-tps10', juego: 'pulseada', nombre: 'Diez por segundo', desc: 'Sostené 10 toques por segundo en la Pulseada.', medalla: 'oro',
       prueba: p => !!p.marcas['tps10'] },
     { id: 'escalador-x', juego: 'escalador', nombre: 'Escalera del infierno', desc: 'Sprint 100 en Extremo en menos de 15 s.', medalla: 'oro',
@@ -736,7 +740,7 @@
   // del juego del día). Jugar días seguidos arma la racha 🔥. El día cambia a las 00:00 UTC: es el mismo en todos lados.
   // Los juegos lo abren con ?diario=1: `diarioDe(juego)` da la semilla, cuenta el intento y dibuja el cartel.
   const DIARIO_INTENTOS = 3;
-  const DIARIO_ORDEN = ['escalador', 'lluvia', 'paleta', 'esqui', 'voley', 'ritmo', 'pulseada'];
+  const DIARIO_ORDEN = ['escalador', 'lluvia', 'paleta', 'esqui', 'voley', 'ritmo', 'pulseada', 'guardia'];
   const DIARIO_TABLA = { escalador: 'time' };   // la tabla normal que se juega ese día (si no está acá, 'normal')
   const DIA_MS = 864e5;
   const fechaDia = n => new Date(n * DIA_MS).toISOString().slice(0, 10);
