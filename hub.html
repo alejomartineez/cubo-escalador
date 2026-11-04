@@ -38,11 +38,33 @@ button { font: inherit; color: var(--ink); }
 .diario small { font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .diario .d-racha { flex: none; font: 400 17px/1 var(--display); padding: 6px 8px; border-radius: 12px; background: #fff; border: 2.5px solid var(--ink); }
 .diario .d-racha[hidden] { display: none; }
-.diario .icon-btn { width: 44px; height: 44px; border-radius: 12px; box-shadow: 0 3px 0 var(--ink); }
-.diario .icon-btn svg { width: 22px; height: 22px; }
 .diario .play { height: 44px; padding: 0 14px 0 12px; font-size: 19px; box-shadow: 0 3px 0 var(--ink); }
 .diario .play[disabled] { background: #e6e2d6; color: var(--muted); cursor: default; box-shadow: none; transform: none; }
-@media (max-width: 400px) { .diario .icon-btn { display: none; } .diario b { font-size: 16px; } }
+/* 7 rayitas: una por juego, llena si ya lo jugaste hoy */
+.diario .d-pips { display: flex; gap: 3px; margin-top: 1px; }
+.diario .d-pips i { flex: 1; max-width: 22px; height: 6px; border-radius: 99px; background: #fff; border: 1.5px solid var(--ink); }
+.diario .d-pips i.si { background: #ff9f1c; }
+.diario .d-pips i.ok { background: #1f9e6a; }
+@media (max-width: 400px) {
+  .diario { gap: 8px; }
+  .diario b { font-size: 16px; }
+  .diario .d-emo, .diario .play span { display: none; }
+  .diario .play { width: 44px; padding: 0; justify-content: center; }
+}
+/* el desafío de cada juego, en su slide */
+.drow { display: flex; gap: 8px; }
+.dchip, .dchip-rk {
+  height: 44px; display: flex; align-items: center; cursor: pointer;
+  border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
+}
+.dchip { flex: 1; min-width: 0; gap: 8px; padding: 0 12px; background: #fff3c4; font: 400 18px var(--display); text-align: left; }
+.dchip span { flex: none; white-space: nowrap; }
+.dchip small { flex: 1; min-width: 0; text-align: right; font: 800 12px var(--body); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dchip.hecho { background: #e6f9ef; }
+.dchip.hecho small { color: #1f7a52; }
+.dchip-rk { flex: none; gap: 5px; padding: 0 10px; background: #fff; font-weight: 800; font-size: 13px; }
+.dchip-rk svg { width: 20px; height: 20px; }
+.dchip:active, .dchip-rk:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 
 /* ---------- arriba ---------- */
 .top {
@@ -612,10 +634,9 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     </div>
   </header>
 
-  <section class="diario" id="diario" aria-label="Desafío del día">
-    <span class="d-txt"><b id="dTit">📅 Desafío del día</b><small id="dSub"></small><small class="d-ev" id="dEv" hidden></small></span>
+  <section class="diario" id="diario" aria-label="Desafíos del día">
+    <span class="d-txt"><b id="dTit">📅 Desafíos de hoy</b><span class="d-pips" id="dPips" aria-hidden="true"></span><small id="dSub"></small><small class="d-ev" id="dEv" hidden></small></span>
     <span class="d-racha" id="dRacha" hidden></span>
-    <button class="icon-btn" type="button" id="dRank" aria-label="Ranking del desafío de hoy"></button>
     <button class="play" type="button" id="dJugar">Jugar</button>
   </section>
 
@@ -1003,8 +1024,12 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       <div class="info"><p>${g.desc}</p><div class="row">
         <span class="rec">Tu récord<b data-rec>—</b><small data-logros></small></span>
         <button class="icon-btn" type="button" data-rank aria-label="Ranking de ${g.nombre}">${ICO_RANK}</button>
-        <button class="play" type="button">${ICO_PLAY}Jugar</button></div></div>`;
+        <button class="play" type="button">${ICO_PLAY}Jugar</button></div>
+        <div class="drow"><button class="dchip" type="button" data-dia><span>📅 Desafío</span><small data-dia-s></small></button>
+          <button class="dchip-rk" type="button" data-dia-rank aria-label="Ranking del desafío de hoy en ${g.nombre}">${ICO_RANK}<span>Hoy</span></button></div></div>`;
     s.querySelector('.play').addEventListener('click', () => jugar(i));
+    s.querySelector('[data-dia]').addEventListener('click', () => { location.href = CC.diario(g.id).archivo; });
+    s.querySelector('[data-dia-rank]').addEventListener('click', () => CC.verRanking({ juego: g.id, diario: true }));
     s.querySelector('canvas').addEventListener('click', () => jugar(i));
     s.querySelector('[data-rank]').addEventListener('click', () => CC.verRanking({ juego: g.id }));
     for (const b of s.querySelectorAll('[data-ir]')) b.addEventListener('click', () => { combinacion(+b.dataset.ir); ir(actual + +b.dataset.ir); });
@@ -1022,27 +1047,39 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   }
 
   // ---------- desafío del día ----------
-  // Un juego por día, el mismo nivel para todos, 3 intentos y racha de días seguidos (CC.diario en cubo-comun.js).
-  $('dRank').innerHTML = ICO_RANK;
+  // Uno por juego, todos los días: el mismo nivel para todos, 3 intentos cada uno y racha de días seguidos (CC.diario en
+  // cubo-comun.js). Arriba, el progreso de hoy; en cada slide, el botón de su desafío y su ranking del día.
+  // El que sigue: el primero sin jugar hoy y, si ya jugaste todos, el primero con intentos.
+  const proximoDiario = h => h.juegos.find(x => !x.jugado) || h.juegos.find(x => x.quedan) || null;
   function pintarDiario() {
     if (!CC.diario) { $('diario').hidden = true; return; }
-    const d = CC.diario();
-    $('dTit').textContent = `📅 Desafío: ${d.nombre}`;
-    $('dSub').textContent = d.quedan
-      ? (d.intentos ? `Te ${d.quedan === 1 ? 'queda 1 intento' : `quedan ${d.quedan} intentos`}` + (d.texto ? ` · tu mejor: ${d.texto}` : '') : `El mismo nivel para todos · ${d.maxIntentos} intentos`)
-      : `Hecho${d.texto ? ` (${d.texto})` : ''} · el próximo en ${CC.faltaTexto(d.quedanMs)}`;
-    $('dRacha').hidden = !d.racha;
-    $('dRacha').textContent = `🔥 ${d.racha}`;
-    $('dRacha').title = `${d.racha} ${d.racha === 1 ? 'día' : 'días seguidos'} jugando el desafío`;
-    $('dJugar').innerHTML = d.quedan ? `${ICO_PLAY}Jugar` : '✓ Listo';
-    $('dJugar').disabled = !d.quedan;
-    $('diario').style.background = d.quedan ? '' : '#eef7e8';
+    const h = CC.diario(), sig = proximoDiario(h);
+    $('dTit').innerHTML = `<span class="d-emo">📅 </span>Desafíos de hoy: ${h.jugados} de ${h.total}`;
+    $('dPips').innerHTML = h.juegos.map(x => `<i class="${x.hecho ? 'ok' : x.jugado ? 'si' : ''}"></i>`).join('');
+    const falta = `nuevos en ${CC.faltaTexto(h.quedanMs)}`;
+    $('dSub').textContent = !sig ? `¡Los hiciste todos! · ${falta}`
+      : h.jugados ? `Sigue: ${sig.nombre} · ${falta}` : `Uno por juego · ${falta}`;
+    $('dRacha').hidden = !h.racha;
+    $('dRacha').textContent = `🔥 ${h.racha}`;
+    $('dRacha').title = `${h.racha} ${h.racha === 1 ? 'día' : 'días seguidos'} jugando desafíos`;
+    $('dJugar').innerHTML = sig ? `${ICO_PLAY}<span>Jugar</span>` : '✓<span> Listo</span>';
+    $('dJugar').disabled = !sig;
+    $('dJugar').setAttribute('aria-label', sig ? `Jugar el desafío de ${sig.nombre}` : 'Ya jugaste todos los desafíos de hoy');
+    $('diario').style.background = sig ? '' : '#eef7e8';
+    h.juegos.forEach((x, i) => {
+      const s = slides.children[i], b = s && s.querySelector('[data-dia]');
+      if (!b) return;
+      b.classList.toggle('hecho', x.hecho);
+      b.firstElementChild.textContent = x.hecho ? '✓ Desafío' : '📅 Desafío';
+      b.querySelector('[data-dia-s]').textContent = x.hecho ? `hecho · ${x.texto || '—'}`
+        : x.jugado ? `${x.quedan === 1 ? 'queda 1' : `quedan ${x.quedan}`}${x.texto ? ` · ${x.texto}` : ''}` : `${x.maxIntentos} intentos`;
+      b.setAttribute('aria-label', `Desafío de hoy en ${x.nombre}: ` + (x.hecho ? `hecho, tu mejor ${x.texto || '—'}` : `te quedan ${x.quedan} de ${x.maxIntentos} intentos`));
+    });
     const ev = CC.eventoXP && CC.eventoXP();
     $('dEv').hidden = !ev;
     if (ev) $('dEv').textContent = `⚡ ${ev.nombre}: ${ev.texto} · quedan ${CC.faltaTexto(ev.quedanMs)}`;
   }
-  $('dJugar').addEventListener('click', () => { const d = CC.diario(); if (d.quedan) location.href = d.archivo; });
-  $('dRank').addEventListener('click', () => CC.verRanking({ juego: CC.diario().juego, diario: true }));
+  $('dJugar').addEventListener('click', () => { const sig = proximoDiario(CC.diario()); if (sig) location.href = sig.archivo; });
   pintarDiario();
   setInterval(pintarDiario, 60000);
   addEventListener('pageshow', pintarDiario);
