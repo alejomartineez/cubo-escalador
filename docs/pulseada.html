@@ -431,6 +431,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // El que retó (host) hace la cuenta de la barra con su fuerza y la que le manda el otro, y avisa quién gana cada ronda.
   // El otro predice la barra con lo que tiene y la va corrigiendo con la del host. Al mejor de 3.
   const CD = window.CuboDuelo, DUELO = CD ? CD.partida() : null;
+  // desafío del día (?diario=1): Normal y 3 intentos (los rivales ya salen siempre iguales)
+  const DIA = !DUELO && CC && CC.diarioDe ? CC.diarioDe('pulseada') : null;
   const RONDAS = 2;   // rondas para ganar
   let sala = null, rivalDuelo = null;
   if (DUELO) {
@@ -639,7 +641,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       r = CC.partida({
         juego: 'pulseada', tabla: G.diff, valor: G.score,
         texto: `${G.score} ${rivales(G.score)} (${DIFS[G.diff].name})`,
-        xp: CC.xpEscala(G.score, 1, 14), marcas: G.best >= 10 ? ['tps10'] : [],
+        xp: CC.xpEscala(G.score, 1, 14), marcas: G.best >= 10 ? ['tps10'] : [], diario: DIA || undefined,
       });
     }
     return { r, tpsRec, best };
@@ -668,6 +670,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     state = 'end';
     $('end').hidden = false; $('pad').classList.add('off'); $('cartel').hidden = true; showTip(false);
     botonSombraFin();
+    if (DIA) DIA.fin(r, $('btnAgain'), [$('eDifBox'), $('btnSombraEnd')]);
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
   }
 
@@ -792,6 +795,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   })();
   if (CC) CC.selectorDif($('eDifs'), { juego: 'pulseada', compacto: true, alCambiar: renderMenu });
   else $('eDifBox').hidden = true;
+  if (DIA) DIA.menu($('difs'));
   if (CC && CC.leyendaTeclas) {
     CC.leyendaTeclas($('mTeclas'), { jugar: 'alternar' });
     CC.leyendaTeclas($('eTeclas'), { jugar: 'alternar', extra: [['R', 'otra vez']] });
@@ -804,17 +808,18 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('mTps').textContent = rec.bestTps ? fmt1(rec.bestTps) + '/s' : '—';
     $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
     const S = conSombra ? CC.sombra.cargar('pulseada', 'ritmo') : null;
-    $('btnSombra').hidden = !S;
+    $('btnSombra').hidden = !S || !!DIA;
     if (S) $('mSombra').textContent = fmt1(ritmoSombra(S)) + '/s';
   }
   function start(sombra) {
+    if (DIA) { if (!DIA.empezar()) return DIA.normal(); sombra = false; }
     const S = sombra === true && conSombra ? CC.sombra.cargar('pulseada', 'ritmo') : null;
     modoSombra = !!S;
     state = 'play';
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').classList.remove('off');
     resize();
-    newRun(sel.valor(), S);
-    const D = sel.valor();
+    const D = DIA ? 'normal' : sel.valor();
+    newRun(D, S);
     $('hDiff').innerHTML = S ? '👻 Sombra' : (CC ? CC.iconoDif(D, 16) : '') + DIFS[D].name;
     $('hDiff').classList.toggle('hot', D === 'extremo' || D === 'maestro');
     let seen = false;

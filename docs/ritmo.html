@@ -417,6 +417,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 (() => {
   'use strict';
   const CC = window.CuboComun; // perfil, XP y personaje compartidos; puede faltar y el juego anda igual
+  // desafío del día (?diario=1): Infinito en Normal, 3 intentos y la partitura sale de la semilla del día
+  const DIA = CC && CC.diarioDe ? CC.diarioDe('ritmo') : null;
+  let azar = Math.random;
   const cv = document.getElementById('cv');
   let ctx = cv.getContext('2d'); // drawDemo lo cambia un momento para dibujar en el canvas del menú
   const $ = id => document.getElementById(id);
@@ -657,7 +660,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       diff, D: DIFFS[diff], intro: rec.ayuda ? 1 : 3, // la primera vez hay dos compases más para leer la ayuda
       bars: [], notes: [], sb: 0, ss: 0, t0: actx.currentTime + 0.3, vis: 0, over: false,
       score: 0, combo: 0, maxCombo: 0, shownRaf: -1, life: 100, perfect: 0, good: 0, miss: 0, shownLevel: 0, shownBpm: 0,
-      lastLane: Math.random() < 0.5 ? -1 : 1, lastT: -9, run: 1, pi: 4, rhythm: null, lastDbl: -9,
+      lastLane: azar() < 0.5 ? -1 : 1, lastT: -9, run: 1, pi: 4, rhythm: null, lastDbl: -9,
       face: 1, hitP: -1e9, missP: -1e9, ghostP: { [-1]: -1e9, [1]: -1e9 },
       errs: [], // cuánto antes (-) o después (+) de cada nota tocaste, para el ajuste fino del final
     };
@@ -704,8 +707,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (!steps) {
       const [q, e, x] = bar.raf ? D.raf : [D.q, D.e, D.x];
       steps = [0];
-      for (let s = 2; s < 16; s += 2) if (Math.random() < (s % 4 === 0 ? q : e)) steps.push(s);
-      if (x) for (const s of steps.slice()) if (s % 4 === 0 && Math.random() < x) steps.push(s + 1);
+      for (let s = 2; s < 16; s += 2) if (azar() < (s % 4 === 0 ? q : e)) steps.push(s);
+      if (x) for (const s of steps.slice()) if (s % 4 === 0 && azar() < x) steps.push(s + 1);
       if (steps.length < 2) steps.push(8);
       steps.sort((a, b) => a - b);
       G.rhythm = steps;
@@ -715,10 +718,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const t = bar.t0 + s * bar.sd;
       // corcheas y semicorcheas siempre alternan de lado: solo se repite carril con una negra de aire
       const close = t - G.lastT < bar.sd * 3.5;
-      const stay = !close && G.run < 3 && Math.random() < D.stay; // como mucho 3 seguidas del mismo lado
+      const stay = !close && G.run < 3 && azar() < D.stay; // como mucho 3 seguidas del mismo lado
       const lane = stay ? G.lastLane : -G.lastLane;
       G.run = stay ? G.run + 1 : 1;
-      let pi = G.pi + lane * (Math.random() < 0.3 ? 2 : 1);
+      let pi = G.pi + lane * (azar() < 0.3 ? 2 : 1);
       if (pi < 0 || pi >= SCALE.length) pi = G.pi - lane;
       if (s % 4 === 0) {
         for (const d of [0, lane, -lane]) {
@@ -731,7 +734,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       G.notes.push({ t, b, lane, m: SCALE[pi], res: null, raf: bar.raf });
       // doble: solo en una negra con aire antes y después, y nunca en dos compases seguidos
       const airy = !close && !steps.some(x => x > s && x < s + 4);
-      if (s % 4 === 0 && airy && bar.i - G.lastDbl >= 2 && Math.random() < D.dbl) {
+      if (s % 4 === 0 && airy && bar.i - G.lastDbl >= 2 && azar() < D.dbl) {
         G.notes.push({ t, b, lane: -lane, m: SCALE[Math.max(0, pi - 2)], res: null, raf: bar.raf });
         G.lastDbl = bar.i;
       }
@@ -907,7 +910,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     let r = null;
     if (CC) {
       r = CC.partida({ juego: 'ritmo', tabla: d, valor: G.score, texto: `${fmt(G.score)} pts (${G.D.name})`,
-        xp: CC.xpEscala(G.score, XP_MALO, XP_EXPERTO) });
+        xp: CC.xpEscala(G.score, XP_MALO, XP_EXPERTO), diario: DIA || undefined });
+      G.rDia = r;
       isRec = r.record; prev = r.textoAnterior;
     }
     return { isRec, prev, r };
@@ -1001,6 +1005,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const sel = CC ? CC.selectorDif($('diffs'), { juego: 'ritmo', notas: NOTAS, alCambiar }) : null;
   if (sel) {
     diff = sel.valor();
+    if (DIA) { diff = 'normal'; modo = 'infinito'; DIA.menu($('diffs'), [$('segModo')]); }
     CC.selectorDif($('diffsEnd'), { juego: 'ritmo', compacto: true, alCambiar });
     $('eDif').hidden = false;
     if (CC.leyendaTeclas) {
@@ -1052,7 +1057,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   function renderModo() {
     const hay = CANCIONES.length > 0;
-    $('segModo').hidden = !hay;
+    $('segModo').hidden = !hay || !!DIA;
     if (!hay) modo = 'infinito';
     for (const b of $('segModo').children) b.setAttribute('aria-checked', String(b.dataset.m === modo));
     $('canciones').hidden = $('credito').hidden = modo !== 'cancion';
@@ -1100,6 +1105,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         () => { cargando = false; btns.forEach((b, i) => { b.innerHTML = antes[i]; b.disabled = false; }); alert('No se pudo cargar la canción. Revisá la conexión y probá de nuevo.'); });
       return;
     }
+    if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); diff = 'normal'; modo = 'infinito'; }
     $('start').hidden = true; $('pause').hidden = true; $('end').hidden = true; $('hud').hidden = false;
     layout();
     newRun();
@@ -1141,6 +1147,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function showEnd() {
     state = 'end';
     renderAgain();
+    if (DIA && G) DIA.fin(G.rDia, $('btnAgain'), [$('eDif')]);
     $('end').hidden = false;
     setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
   }

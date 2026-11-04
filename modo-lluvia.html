@@ -315,6 +315,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const $ = id => document.getElementById(id);
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  // desafío del día (?diario=1): Normal, 3 intentos y las filas salen de la semilla del día, iguales para todos
+  const DIA = CC && CC.diarioDe ? CC.diarioDe('lluvia') : null;
+  let azar = Math.random;
 
   const LANES = 4;
   const TWEEN = 70;        // ms del saltito visual (la lógica cambia de carril al instante)
@@ -409,7 +412,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let G = null, shake = 0, particles = [], floats = [], banner = null, rainT = 0;
 
   function newRun(demo, d = 'normal') {
-    const lane = Math.random() < 0.5 ? 1 : 2;
+    const lane = azar() < 0.5 ? 1 : 2;
     G = {
       demo, diff: d, t: 0, lane, rl: lane, fromL: lane, tw0: -1e9, arc: 0, face: 1, landT: -1e9,
       bonkT: -1e9, bonkDir: 0, ghosts: [], blocks: [], coins: [], rows: 0, safe: lane,
@@ -434,21 +437,21 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // durante un evento no hay filas de 3: el foco está en las monedas o en el ritmo
     const p3 = ev ? 0 : Math.max(0, Math.min(0.3, (t - 35) * 0.005)) + (D.p3Add || 0);
     const p2 = Math.min(0.55, 0.12 + t * 0.007);
-    const r = Math.random(), n = r < p3 ? 3 : r < p3 + p2 ? 2 : 1;
+    const r = azar(), n = r < p3 ? 3 : r < p3 + p2 ? 2 : 1;
     // carril libre garantizado, a no más de 2 del anterior para que siempre se pueda llegar (en Maestro, nunca el mismo)
     let safe;
-    do safe = Math.max(0, Math.min(LANES - 1, G.safe + Math.floor(Math.random() * 5) - 2));
+    do safe = Math.max(0, Math.min(LANES - 1, G.safe + Math.floor(azar() * 5) - 2));
     while (D.mover && safe === G.safe);
     G.safe = safe;
-    const others = [0, 1, 2, 3].filter(l => l !== safe).sort(() => Math.random() - 0.5);
+    const others = [0, 1, 2, 3].filter(l => l !== safe).sort(() => azar() - 0.5);
     const blocked = others.slice(0, n);
     const bf = blockS() / FLOOR, y0 = -bf - 0.03, x2 = ev === 'rafaga';
     const c = x2 ? GOLD : COLORS[G.rows % COLORS.length];
     G.rows++;
     for (const l of blocked) G.blocks.push({ lane: l, y: y0, c, x2 });
-    if (Math.random() < (ev === 'monedas' ? 1 : D.coinP)) {
+    if (azar() < (ev === 'monedas' ? 1 : D.coinP)) {
       const free = [0, 1, 2, 3].filter(l => !blocked.includes(l));
-      G.coins.push({ lane: free[Math.floor(Math.random() * free.length)], y: y0 + bf / 2, spin: Math.random() * 6 });
+      G.coins.push({ lane: free[Math.floor(azar() * free.length)], y: y0 + bf / 2, spin: azar() * 6 });
     }
   }
 
@@ -478,7 +481,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (local) { rec.byDiff[G.diff] = G.score; saveRec(); }
     if (!CC) return { xp: 0, record: local, logros: [], anterior: null };
     return CC.partida({ juego: 'lluvia', tabla: G.diff, valor: G.score, texto: `${fmtN(G.score)} pts (${D.name})`,
-      xp: CC.xpEscala(G.score, XP_MALO, XP_EXPERTO) });
+      xp: CC.xpEscala(G.score, XP_MALO, XP_EXPERTO), diario: DIA || undefined });
   }
 
   // golpe: con vidas de sobra (Fácil) el bloque se rompe y quedás un ratito invulnerable; si no, se terminó
@@ -521,6 +524,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const lg = $('eLogros');
     lg.replaceChildren(...r.logros.map(n => { const s = document.createElement('span'); s.className = 'logro'; s.textContent = n; return s; }));
     lg.hidden = !r.logros.length;
+    if (DIA) DIA.fin(r, $('btnAgain'), [$('diffs2'), $('eDifL')]);
     setTimeout(() => { if (G && G.done && state === 'play') showEnd(); }, 700);
   }
 
@@ -528,13 +532,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // selector de dificultad: el común de la librería; sin ella, uno igual hecho acá
   const selBox = $('diffs');
   let sel;
-  const diffNow = () => (sel && DIFFS[sel.valor()] ? sel.valor() : 'normal');
+  const diffNow = () => (!DIA && sel && DIFFS[sel.valor()] ? sel.valor() : 'normal');
   if (CC) {
     let guardada = null;
     try { guardada = localStorage.getItem('cubo-dif-lluvia'); } catch (e) {}
     sel = CC.selectorDif(selBox, { juego: 'lluvia', notas: NOTAS, valor: guardada ? undefined : rec.diff, alCambiar: () => renderMenu() });
     // en la pantalla de fin, el mismo selector en chico: la próxima partida usa lo que elijas ahí
     CC.selectorDif($('diffs2'), { juego: 'lluvia', compacto: true, alCambiar: () => renderMenu() });
+    if (DIA) DIA.menu(selBox);
     CC.leyendaTeclas($('leyenda'), { jugar: 'cambiar de carril' });
     CC.leyendaTeclas($('leyenda2'), { jugar: 'cambiar de carril', extra: [['R', 'otra vez']] });
   } else {
@@ -575,6 +580,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (on && CC && CC.sombra && G && !G.demo) marca = CC.sombra.marca('lluvia', G.diff);
   }
   function start() {
+    if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); }
     newRun(false, diffNow());
     ponerMarca(true);
     state = 'play';

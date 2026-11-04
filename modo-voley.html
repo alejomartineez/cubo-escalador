@@ -297,6 +297,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const $ = id => document.getElementById(id);
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  // desafío del día (?diario=1): Normal, 3 intentos y el rival juega con la semilla del día
+  const DIA = CC && CC.diarioDe ? CC.diarioDe('voley') : null;
+  let azar = Math.random;
   const INK = '#1d2340', TAU = Math.PI * 2;
 
   // ---------- la cancha, en metros de juego (y para arriba, 0 = arena) ----------
@@ -398,14 +401,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const clamp01 = t => clamp(t, 0, 1);
   const lerp = (a, b, t) => a + (b - a) * t;
-  const rand = (a, b) => a + Math.random() * (b - a);
+  const rand = (a, b) => a + azar() * (b - a);
   const hash = n => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
 
   // ---------- estado ----------
   let state = 'menu';       // menu | play | end
   let G = null, shake = 0, particles = [], floats = [], banner = null;
   let sel = null;
-  const dif = () => (sel ? sel.valor() : 'normal');
+  const dif = () => (!DIA && sel ? sel.valor() : 'normal');
 
   function newRun(demo, d = 'normal') {
     G = {
@@ -483,8 +486,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const c = G.contact.x, mn = side === 'r' ? R_MIN : P_MIN, mx = side === 'r' ? R_MAX : P_MAX;
     const cur = side === 'r' ? G.rx : G.px;
     if (!miss) return clamp(c + err, mn, mx);
-    const gap = REACH + 0.2 + Math.random() * 0.35;
-    let s = Math.sign(cur - c) || (Math.random() < 0.5 ? -1 : 1);
+    const gap = REACH + 0.2 + azar() * 0.35;
+    let s = Math.sign(cur - c) || (azar() < 0.5 ? -1 : 1);
     let t = clamp(c + s * gap, mn, mx);
     if (Math.abs(t - c) < REACH + 0.1) t = clamp(c - s * gap, mn, mx);
     return t;
@@ -502,7 +505,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const smash = Math.abs(G.pv) > 0.5;
       // borde = más lejos y más chata; centro = globito corto; moviéndote = remate rápido
       let depth = smash ? 0.55 + 0.45 * au : 0.2 + 0.75 * au;
-      depth = clamp01(depth + (Math.random() - 0.5) * 0.08);
+      depth = clamp01(depth + (azar() - 0.5) * 0.08);
       const apex = smash ? NET_H + ARC_SMASH : NET_H + ARC_LOB + ARC_LOB_EXTRA * (1 - au);
       launch(b, NET + 0.55 + depth * (CW / 2 - 1), apex);
       b.fast = smash;
@@ -516,8 +519,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       // ¿llega el rival? depende de su destreza, de qué tan bueno fue el tiro y de cuánto viene durando el rally
       const quality = smash ? 1.35 + 0.6 * au : 0.55 + 0.6 * au;
       const q = Math.min(0.8, G.qBase * quality * (1 + 0.12 * (G.rally - 1)));
-      G.rMiss = G.contact.x > NET && Math.random() < q;
-      G.rTarget = planReturn('r', G.rMiss, (Math.random() - 0.5) * 0.5);
+      G.rMiss = G.contact.x > NET && azar() < q;
+      G.rTarget = planReturn('r', G.rMiss, (azar() - 0.5) * 0.5);
       G.rWait = G.time + G.rdelay;
     } else {
       G.rHitT = now;
@@ -526,10 +529,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       let tx, apex, smash = false;
       if (serve) { tx = rand(1.2, 3.8); apex = NET_H + ARC_SERVE; }
       else {
-        smash = Math.random() < 0.05 + G.D.rem * s;
-        const aim = Math.random() < 0.25 + 0.7 * s;
+        smash = azar() < 0.05 + G.D.rem * s;
+        const aim = azar() < 0.25 + 0.7 * s;
         tx = aim ? (G.px < NET / 2 ? rand(3.3, 4.4) : rand(0.55, 1.6)) : rand(0.6, 4.4);
-        apex = smash ? NET_H + ARC_SMASH : NET_H + ARC_LOB - 0.2 + Math.random() * ARC_LOB_EXTRA * (1 - 0.5 * s);
+        apex = smash ? NET_H + ARC_SMASH : NET_H + ARC_LOB - 0.2 + azar() * ARC_LOB_EXTRA * (1 - 0.5 * s);
       }
       launch(b, tx, apex);
       b.fast = smash;
@@ -537,7 +540,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       burst(b.x, b.y, smash ? '#ff7a59' : '#fffaf0', smash ? 10 : 5, smash ? 1 : 0.6);
       recalc();
       // en la demo, el cubo del jugador también juega solo
-      G.pMiss = G.demo && Math.random() < 0.14;
+      G.pMiss = G.demo && azar() < 0.14;
       if (G.demo) { G.pTarget = planReturn('p', G.pMiss, rand(-0.7, 0.7)); G.pWait = G.time + 0.12; }
     }
   }
@@ -572,7 +575,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     b.vx = 0; b.vy = 0; b.g = G.D.g * velBase() * velBase(); b.fast = false; b.trail = []; b.last = null; b.lastT = -9;
     // pelota de oro: a partir de unos puntos, de vez en cuando (y seguro si hace mucho que no sale)
     G.saques++;
-    G.oro = !G.demo && G.score >= ORO_DESDE && (G.sinOro >= ORO_SEGURO || (G.sinOro >= 2 && Math.random() < ORO_PROB));
+    G.oro = !G.demo && G.score >= ORO_DESDE && (G.sinOro >= ORO_SEGURO || (G.sinOro >= 2 && azar() < ORO_PROB));
     G.sinOro = G.oro ? 0 : G.sinOro + 1;
     b.held = server; b.heldT = server === 'r' ? 0.75 : 0.6;
     if (server === 'p') { b.x = G.px; b.y = SIDE + 3; }
@@ -589,7 +592,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (!CC) return null;
     return CC.partida({
       juego: 'voley', tabla: d, valor: v, texto: `${fmtN(v)} pts (${DIFF_NAMES[d]})`,
-      xp: CC.xpEscala(v, 3, 22), marcas: [],
+      xp: CC.xpEscala(v, 3, 22), marcas: [], diario: DIA || undefined,
     });
   }
   function finish() {
@@ -611,6 +614,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('eLogros').innerHTML = '';
     for (const n of lg) { const s = document.createElement('span'); s.textContent = '★ ' + n; $('eLogros').appendChild(s); }
     showEnd();
+    if (DIA) DIA.fin(r, $('btnAgain'), [$('difsFin').parentNode]);
   }
 
   // ---------- pantallas ----------
@@ -622,6 +626,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   // en el fin, si elegiste otra dificultad, el botón principal lo dice
   function renderAgain() {
+    if (DIA) return;
     const d = dif(), otra = G && !G.demo && state === 'end' && d !== G.diff;
     $('againT').textContent = otra ? `▶ Jugar en ${DIFF_NAMES[d]}` : '↻ Otra vez';
   }
@@ -638,6 +643,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   let tipOn = false, tipT = 0;
   function start() {
+    if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); }
     newRun(false, dif());
     state = 'play';
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').classList.remove('off');
@@ -760,6 +766,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   if (CC) {
     sel = CC.selectorDif($('difs'), { juego: 'voley', notas: NOTAS, alCambiar: () => { renderMenu(); if (state === 'menu') newRun(true, dif()); } });
     CC.selectorDif($('difsFin'), { juego: 'voley', compacto: true, alCambiar: () => renderMenu() });
+    if (DIA) DIA.menu($('difs'));
     CC.leyendaTeclas($('mTeclas'), { jugar: 'moverte', extra: [['R', 'reiniciar']] });
     CC.leyendaTeclas($('eTeclas'), { jugar: 'moverte', extra: [['R', 'otra vez']] });
   } else { $('difs').hidden = true; $('difBox').hidden = true; }

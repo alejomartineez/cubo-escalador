@@ -366,6 +366,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // Duelo 1v1 contra un amigo (cubo-duelo.js): Sprint 100 en Normal con la misma escalera para los dos.
   const CD = window.CuboDuelo, DUELO = CD ? CD.partida() : null;
   let sala = null, azar = Math.random;
+  // Desafío del día (?diario=1): 30 segundos en Normal, 3 intentos, la misma escalera para todos.
+  const DIA = !DUELO && CC && CC.diarioDe ? CC.diarioDe('escalador') : null;
 
   // ---------- récords ----------
   const REC_KEY = 'cubo-escalador-records';
@@ -488,7 +490,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function cerrar(valor, marcas) {
     if (!CC || G.demo || !(valor > 0)) return null;
     try {
-      return CC.partida({ juego: 'escalador', tabla: tabla(G.mode, G.dif), valor, xp: xpDe(G.mode, valor), marcas,
+      return CC.partida({ juego: 'escalador', tabla: tabla(G.mode, G.dif), valor, xp: xpDe(G.mode, valor), marcas, diario: DIA || undefined,
         texto: G.mode === 'sprint' ? fmtS(valor) + ' s (Sprint 100)' : G.mode === 'time' ? valor + ' esc. en 30 s'
           : G.mode === 'lava' ? valor + ' esc. escapando de la lava' : valor + ' esc. en Libre' });
     } catch (e) { return null; }
@@ -519,6 +521,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (!isRec && anterior) sub += ` · récord ${G.mode === 'sprint' ? fmtS(anterior) + ' s' : anterior}`;
     sub += finSombra(valor);
     pintarFin(title, num, sub, isRec, r);
+    if (DIA) DIA.fin(r, $('btnAgain'), [$('difs2').parentNode, $('btnModes')]);
     if (G.duelo) { sala.enviar('fin', { ms: valor }); G.duelo.mio = valor; finDuelo(); return; }
     setTimeout(() => { if (G && G.done && state === 'play') showEnd(); }, 450);
   }
@@ -718,7 +721,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     start(lastMode);
   }
   function start(mode) {
-    lastMode = mode; rec.last = mode; saveRec();
+    if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); mode = 'time'; dif = 'normal'; }
+    lastMode = mode; if (!DIA) { rec.last = mode; saveRec(); }
     newRun(mode, false);
     prepararSombra();
     state = 'play';
@@ -798,6 +802,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     sel = CC.selectorDif($('difs'), { juego: 'escalador', difs: DIFS3, notas: NOTAS, alCambiar: cambioDif });
     CC.selectorDif($('difs2'), { juego: 'escalador', difs: DIFS3, compacto: true, alCambiar: cambioDif });
     dif = sel.valor();
+    if (DIA) { dif = 'normal'; DIA.menu($('difs'), [$('difs').previousElementSibling, $('modes').previousElementSibling, $('modes')], () => start('time')); }
     CC.leyendaTeclas($('keys'), { jugar: 'subir', elegir: 'dificultad <kbd>1</kbd>–<kbd>4</kbd> modo' });
     CC.leyendaTeclas($('keys2'), { jugar: 'subir', extra: [['R', 'otra vez']] });
     // récords de antes de que existiera el perfil común: pasan al perfil y al ranking, y destraban logros

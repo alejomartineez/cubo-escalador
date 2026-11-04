@@ -419,6 +419,8 @@
       recibidasVistas: Array.isArray(p.recibidasVistas) ? p.recibidasVistas.filter(c => typeof c === 'string').slice(-100) : [],
       amigosServidor: p.amigosServidor === true,
       pendientes: Array.isArray(p.pendientes) ? p.pendientes.slice(-40) : [],
+      // desafío del día: { fecha, intentos, mejor, racha, ultimo (último día jugado), mejorRacha, premio (día del premio de XP) }
+      diario: obj(p.diario),
     };
   }
   let datos = leer();
@@ -627,15 +629,17 @@
     const base = Math.max(0, Math.round(+o.xp || 0));
     let xp = Math.round(base * (dif ? dif.xp : 1));
     if (record && anterior != null) xp = Math.round(xp * 1.25);
+    const dia = o.diario ? anotarDiario(o, valor) : null;
+    if (dia) xp += dia.premio;
     guardar();
     const r = sumarSolo(xp);
     const logros = revisarLogros();
-    if (record) subirPendientes();
+    if (record || (dia && dia.nueva)) subirPendientes();
     return {
       xp: r.ganada + logros.reduce((a, l) => a + MEDALLAS[l.medalla].xp, 0), base, nivel: perfil().nivel, subio: perfil().nivel > nivelAntes,
       record, primera: record && anterior == null, anterior: anterior ?? null,
       logros: logros.map(l => l.nombre), dif: dif ? dif.id : null,
-      texto: formato(valor, tb), textoAnterior: anterior != null ? formato(anterior, tb) : null,
+      texto: formato(valor, tb), textoAnterior: anterior != null ? formato(anterior, tb) : null, diario: dia,
     };
   }
 
@@ -649,6 +653,158 @@
     if (datos.apodo) encolar(jid, tid, valor);
     guardar();
     return true;
+  }
+
+  // ---------- desafío del día ----------
+  // Un nivel por día, igual para todo el mundo: el juego rota cada día, se juega en Normal y con la misma semilla, así
+  // los niveles salen idénticos para todos. 3 intentos, cuenta el mejor, y tiene su propio ranking (tabla `d20261104`
+  // del juego del día). Jugar días seguidos arma la racha 🔥. El día cambia a las 00:00 UTC: es el mismo en todos lados.
+  // Los juegos lo abren con ?diario=1: `diarioDe(juego)` da la semilla, cuenta el intento y dibuja el cartel.
+  const DIARIO_INTENTOS = 3;
+  const DIARIO_ORDEN = ['escalador', 'lluvia', 'esqui', 'voley', 'ritmo', 'pulseada'];
+  const DIARIO_TABLA = { escalador: 'time' };   // la tabla normal que se juega ese día (si no está acá, 'normal')
+  const DIA_MS = 864e5;
+  const fechaDia = n => new Date(n * DIA_MS).toISOString().slice(0, 10);
+  const fechaLinda = f => new Date(f + 'T12:00:00Z').toLocaleDateString('es-AR', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+  // Generador con semilla (mulberry32, el mismo de los duelos) y la semilla de cada día sacada de la fecha (FNV-1a).
+  function azar(semilla) {
+    let a = semilla >>> 0;
+    return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  function semillaDe(texto) {
+    let h = 0x811c9dc5;
+    for (const c of texto) { h ^= c.charCodeAt(0); h = Math.imul(h, 0x01000193); }
+    return h >>> 0;
+  }
+  // Para probar otro día: ?dia=2026-11-05 en la URL hace de cuenta que hoy es esa fecha (también para la racha).
+  function ahoraDiario() {
+    try { const f = new URLSearchParams(location.search).get('dia'); if (f && /^\d{4}-\d{2}-\d{2}$/.test(f)) return Date.parse(f + 'T12:00:00Z'); } catch (e) {}
+    return Date.now();
+  }
+  function diario(ahora = ahoraDiario()) {
+    const n = Math.floor(ahora / DIA_MS), fecha = fechaDia(n), jid = DIARIO_ORDEN[n % DIARIO_ORDEN.length], j = juego(jid);
+    const d = leer().diario, hoy = d.fecha === fecha, intentos = hoy ? Math.max(0, +d.intentos || 0) : 0;
+    const tabla = DIARIO_TABLA[jid] || 'normal', mejorHoy = hoy && d.mejor != null ? +d.mejor : null;
+    return {
+      fecha, fechaLinda: fechaLinda(fecha), juego: jid, nombre: j.nombre, color: j.color, archivo: j.archivo + '?diario=1',
+      tabla, tablaRanking: 'd' + fecha.replace(/-/g, ''), semilla: semillaDe('twofingers:' + fecha),
+      intentos, quedan: Math.max(0, DIARIO_INTENTOS - intentos), maxIntentos: DIARIO_INTENTOS,
+      mejor: mejorHoy, texto: mejorHoy != null ? formato(mejorHoy, tablaDe(jid, tabla)) : null,
+      racha: d.ultimo === fecha || d.ultimo === fechaDia(n - 1) ? +d.racha || 0 : 0, jugadoHoy: d.ultimo === fecha,
+      mejorRacha: +d.mejorRacha || 0, quedanMs: (n + 1) * DIA_MS - Date.now(),
+    };
+  }
+  // "5 h" / "40 min": cuánto falta para el próximo desafío
+  function faltaTexto(ms) {
+    const min = Math.max(1, Math.ceil(ms / 60000));
+    return min >= 60 ? Math.floor(min / 60) + ' h' : min + ' min';
+  }
+  // Fin de una partida del desafío (lo llama partida): guarda la mejor de hoy, la manda al ranking del día y da el
+  // premio de XP la primera vez de cada día (más grande con la racha).
+  function anotarDiario(o, valor) {
+    const f = o.diario.fecha, d = datos.diario;
+    if (!f || d.fecha !== f) return null;   // el intento era de otro día
+    const nueva = isFinite(valor) && valor > 0 && (d.mejor == null || valor > d.mejor);
+    if (nueva) { d.mejor = valor; if (datos.apodo) encolar(o.juego, o.diario.tablaRanking, valor); }
+    let premio = 0;
+    if (d.premio !== f) { d.premio = f; premio = 25 + 5 * Math.min(6, Math.max(0, (+d.racha || 1) - 1)); }
+    return { nueva, mejor: d.mejor ?? null, texto: d.mejor != null ? formato(d.mejor, tablaDe(o.juego, o.diario.tabla)) : '—',
+      intentos: +d.intentos || 0, quedan: Math.max(0, DIARIO_INTENTOS - (+d.intentos || 0)), racha: +d.racha || 1, premio };
+  }
+  function diarioDe(jid) {
+    let pide = false;
+    try { pide = new URLSearchParams(location.search).has('diario'); } catch (e) {}
+    if (!pide) return null;
+    const info = diario();
+    if (info.juego !== jid) {   // link viejo: hoy toca otro juego, se juega normal
+      try { history.replaceState(null, '', location.pathname); } catch (e) {}
+      setTimeout(() => avisar(`El desafío de hoy es en <b>${info.nombre}</b>. Esta partida es normal.`, 4200), 800);
+      return null;
+    }
+    estilos();
+    const carteles = [];
+    function cartel(fin) {
+      const el = document.createElement('div');
+      el.className = 'cc-dia' + (fin ? ' fin' : '');
+      el.innerHTML = '<b>📅 Desafío del día</b><span class="txt"></span><span class="racha"></span>' +
+        '<button class="cc-dia-rk" type="button">🏆 Ranking del día</button>';
+      el.querySelector('button').addEventListener('click', () => verRanking({ juego: jid, diario: true }));
+      carteles.push(el);
+      return el;
+    }
+    function pintar(r) {
+      const i = diario();
+      for (const el of carteles) {
+        const fin = el.classList.contains('fin');
+        let t;
+        if (fin && r) {
+          t = `Intento ${r.intentos} de ${DIARIO_INTENTOS} · tu mejor de hoy: <strong>${r.texto}</strong>` + (r.nueva && r.intentos > 1 ? ' (¡mejoraste!)' : '');
+          if (r.premio) t += ` · <strong>+${r.premio} XP</strong> por jugarlo`;
+          if (!r.quedan) t += ` · mañana hay otro (en ${faltaTexto(i.quedanMs)})`;
+        } else {
+          const quedan = i.quedan === DIARIO_INTENTOS ? `${DIARIO_INTENTOS} intentos`
+            : i.quedan === 1 ? 'te queda 1 intento' : `te quedan ${i.quedan} intentos`;
+          t = i.quedan ? `${i.fechaLinda} · Normal · el mismo nivel para todos · ${quedan}`
+            : `Ya usaste los ${DIARIO_INTENTOS} intentos de hoy. Mañana hay otro (en ${faltaTexto(i.quedanMs)}).`;
+          if (i.texto) t += ` · tu mejor: <strong>${i.texto}</strong>`;
+        }
+        el.querySelector('.txt').innerHTML = t;
+        const racha = fin && r ? r.racha : i.racha;
+        el.querySelector('.racha').textContent = racha > 0 ? `🔥 ${racha} ${racha === 1 ? 'día' : 'días seguidos'}` : '';
+      }
+    }
+    // el texto del botón "Otra vez" (cada juego lo arma distinto)
+    function textoBoton(btn, t) {
+      const n = btn && (btn.querySelector('#againT') || [...btn.childNodes].find(x => x.nodeType === 3 && x.textContent.trim()));
+      if (n) n.textContent = t;
+    }
+    return {
+      ...info,
+      azar: () => azar(info.semilla),
+      // Al empezar cada partida: cuenta el intento (y la racha). false = no quedan intentos o ya cambió el día.
+      empezar() {
+        datos = leer();
+        const n = Math.floor(ahoraDiario() / DIA_MS);
+        if (fechaDia(n) !== info.fecha) return false;
+        let d = datos.diario;
+        if (d.fecha !== info.fecha) d = datos.diario = { ...d, fecha: info.fecha, intentos: 0, mejor: null };
+        if ((+d.intentos || 0) >= DIARIO_INTENTOS) return false;
+        if (d.ultimo !== info.fecha) {
+          d.racha = d.ultimo === fechaDia(n - 1) ? (+d.racha || 0) + 1 : 1;
+          d.ultimo = info.fecha; d.mejorRacha = Math.max(+d.mejorRacha || 0, d.racha);
+        }
+        d.intentos = (+d.intentos || 0) + 1;
+        guardar();
+        pintar();
+        return true;
+      },
+      // Sin intentos: se sigue jugando el mismo juego, pero normal.
+      normal() { location.replace(location.pathname); },
+      quedan: () => diario().quedan,
+      // En el menú: el cartel en lugar del selector de dificultad (y de los modos, si hay). Con alJugar, el cartel trae
+      // su propio botón Jugar (para menús donde se juega tocando un modo).
+      menu(el, ocultar = [], alJugar) {
+        if (!el) return;
+        const c = cartel(false);
+        if (alJugar) {
+          const j = document.createElement('button');
+          j.type = 'button'; j.className = 'cc-dia-jugar'; j.textContent = '▶ Jugar el desafío';
+          j.addEventListener('click', alJugar);
+          c.appendChild(j);
+        }
+        el.parentNode.insertBefore(c, el);
+        for (const x of [el, ...ocultar]) if (x) x.hidden = true;
+        pintar();
+      },
+      // En la pantalla de fin: el cartel arriba del botón "Otra vez", con el resultado de partida() (r.diario).
+      fin(r, btn, ocultar = []) {
+        if (btn && !(btn.previousElementSibling && btn.previousElementSibling.classList.contains('cc-dia'))) btn.parentNode.insertBefore(cartel(true), btn);
+        for (const x of ocultar) if (x) x.hidden = true;
+        pintar(r && r.diario);
+        const q = diario().quedan;
+        textoBoton(btn, q ? `↻ Intento ${DIARIO_INTENTOS - q + 1} de ${DIARIO_INTENTOS} ` : '▸ Seguir en modo normal ');
+      },
+    };
   }
 
   // ---------- ranking online ----------
@@ -724,7 +880,7 @@
     const filas = await api(`ranking?tabla=eq.${t}${filtro}&select=apodo,valor,skin,huella,titulo&order=valor.${orden},creado.asc&limit=${n}`);
     const lista = filas.map((f, k) => ({ puesto: k + 1, apodo: f.apodo, valor: +f.valor, skin: f.skin, titulo: f.titulo || '', yo: !!mia && f.huella === mia }));
     let yo = lista.find(f => f.yo) || null;
-    const mio = leer().mejores[jid + ':' + tid];
+    const mio = o.mio !== undefined ? o.mio : leer().mejores[jid + ':' + tid];
     if (!yo && !o.amigos && mio != null && leer().apodo) {
       try {
         const op = orden === 'asc' ? 'lt' : 'gt';
@@ -1029,6 +1185,17 @@
 #cc-rank .cc-ap .botones .link{margin:0;font-size:12px}
 #cc-rank .cc-ap .botones .no{margin-left:auto}
 #cc-rank button:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
+/* desafío del día: el cartel del menú y de la pantalla de fin */
+.cc-dia{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:0 0 12px;padding:10px 12px;text-align:left;
+  background:#fff3c4;color:${INK};border:2.5px solid ${INK};border-radius:16px;box-shadow:0 3px 0 ${INK};font:600 13px/1.35 "Rubik",system-ui,sans-serif}
+.cc-dia b{flex:1 1 100%;font:400 19px/1.1 "Lilita One","Trebuchet MS",sans-serif}
+.cc-dia .txt{flex:1 1 100%}
+.cc-dia .racha{font-weight:800}
+.cc-dia .racha:empty{display:none}
+.cc-dia button{margin-left:auto;padding:6px 10px;border:2px solid ${INK};border-radius:11px;background:#fff;color:${INK};
+  font:800 12.5px "Rubik",system-ui,sans-serif;box-shadow:0 2px 0 ${INK};cursor:pointer}
+.cc-dia button:active{transform:translateY(2px);box-shadow:none}
+.cc-dia .cc-dia-jugar{flex:1 1 100%;margin:6px 0 0;padding:10px;background:#ffcc29;font:400 20px "Lilita One","Trebuchet MS",sans-serif;box-shadow:0 3px 0 ${INK}}
 /* nombres de quien usa una legendaria: con el color de su personaje */
 .cc-leg{font-weight:800}
 .cc-leg-fantasma{color:#3f6fd1;text-shadow:0 0 8px rgba(120,170,255,.75)}
@@ -1211,13 +1378,16 @@
     const modos = [...new Set(j.tablas.map(modoDe))];
     const conModos = modos.length > 1;
     const nombreModo = m => (j.tablas.find(t => modoDe(t) === m && t.dif === 'normal') || j.tablas.find(t => modoDe(t) === m)).nombre.replace(/ (Extremo|Maestro)$/, '');
+    // o.diario: el ranking del desafío de hoy (una sola tabla, sin modos ni dificultades)
+    const dia = o.diario ? diario() : null;
+    if (dia) tid = dia.tabla;
     const previo = document.activeElement;
     const box = document.createElement('div');
     box.id = 'cc-rank';
     box.innerHTML = `<div class="cc-rk" role="dialog" aria-modal="true" aria-labelledby="cc-rank-t">
-      <header><div><h2 id="cc-rank-t">Ranking</h2><small>${j.nombre}</small></div><button class="x" type="button" aria-label="Cerrar">✕</button></header>
+      <header><div><h2 id="cc-rank-t">${dia ? 'Desafío del día' : 'Ranking'}</h2><small>${dia ? j.nombre + ' · ' + dia.fechaLinda : j.nombre}</small></div><button class="x" type="button" aria-label="Cerrar">✕</button></header>
       <div class="seg quien" role="group" aria-label="Quiénes" hidden><button type="button" data-q="todos" aria-pressed="true">🌎 Todos</button><button type="button" data-q="amigos" aria-pressed="false">👥 Amigos</button></div>
-      ${conModos ? '<div class="seg modos" role="group" aria-label="Modo"></div>' : ''}<div class="seg difs" role="group" aria-label="Dificultad"></div>
+      ${conModos ? '<div class="seg modos" role="group" aria-label="Modo"></div>' : ''}<div class="seg difs" role="group" aria-label="Dificultad"${dia ? ' hidden' : ''}></div>
       <ol aria-live="polite"></ol>
       <div class="pie"><div class="yo-txt"></div>
         <form class="f-apodo"><input name="a" maxlength="14" autocomplete="nickname" placeholder="Tu apodo (3 a 14 letras)" aria-label="Tu apodo"><button type="submit">Guardar</button></form>
@@ -1264,7 +1434,8 @@
     pintarPie();
     function pintarSegs() {
       const tb = tablaDe(j.id, tid), modo = modoDe(tb);
-      if (segModos) {
+      if (segModos) segModos.hidden = !!dia;
+      if (segModos && !dia) {
         segModos.style.setProperty('--n', modos.length);
         segModos.innerHTML = modos.map(m => `<button type="button" data-m="${m}" aria-pressed="${m === modo}">${nombreModo(m)}</button>`).join('');
       }
@@ -1281,8 +1452,9 @@
     async function cargar() {
       pintarSegs();
       for (const b of segQuien.querySelectorAll('button')) b.setAttribute('aria-pressed', String((b.dataset.q === 'amigos') === soloAmigos));
-      const tb = tablaDe(j.id, tid), mio = leer().mejores[j.id + ':' + tid];
-      const tuyo = `Tu mejor marca: <strong>${formato(mio, tb)}</strong>`;
+      const tb = tablaDe(j.id, tid), mio = dia ? diario().mejor : leer().mejores[j.id + ':' + tid];
+      const tuyo = dia ? (mio != null ? `Tu mejor de hoy: <strong>${formato(mio, tb)}</strong>` : 'Todavía no lo jugaste hoy.')
+        : `Tu mejor marca: <strong>${formato(mio, tb)}</strong>`;
       if (!rankingActivo()) { msg(`El ranking online se está preparando.<br>${tuyo}`); return; }
       if (navigator.onLine === false) { msg(`Sin conexión. Tus récords se suben cuando vuelvas a tener internet.<br>${tuyo}`); return; }
       msg('Cargando…');
@@ -1290,9 +1462,10 @@
       try {
         await esperarSubida();
         if (n !== pedido) return;
-        const { lista, yo } = await top(j.id, tid, 50, { amigos: soloAmigos });
+        const { lista, yo } = await top(j.id, dia ? dia.tablaRanking : tid, 50, { amigos: soloAmigos, ...(dia ? { mio } : {}) });
         if (n !== pedido) return;
-        if (!lista.length) { msg(soloAmigos ? `Ni vos ni tus amigos jugaron este modo todavía.<br>${tuyo}` : `Todavía nadie jugó este modo. ¡Sé el primero!<br>${tuyo}`); return; }
+        const cosa = dia ? 'el desafío de hoy' : 'este modo';
+        if (!lista.length) { msg(soloAmigos ? `Ni vos ni tus amigos jugaron ${cosa} todavía.<br>${tuyo}` : `Todavía nadie jugó ${cosa}. ¡Sé el primero!<br>${tuyo}`); return; }
         ol.innerHTML = '';
         const fila = f => {
           const li = document.createElement('li'); if (f.yo) li.className = 'yo';
@@ -4364,7 +4537,7 @@
     xpPara, nivelDe, perfil, skin, efecto, elegirSkin, elegirEfecto, libre, nuevos, marcarVistos,
     sumarXP, xpEscala, partida, importarRecord, anotarRecord, revisarLogros, tieneLogro,
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
-    avisar, vibrar, volver, dibujarCubo, morir, sombra, pedirApodo,
+    avisar, vibrar, volver, dibujarCubo, morir, sombra, pedirApodo, diario, diarioDe, azar, faltaTexto,
   };
   // Duelos 1v1 (cubo-duelo.js): usa la misma conexión a Supabase y escucha las invitaciones en todas las páginas.
   window.CuboComun.RANKING = RANKING;

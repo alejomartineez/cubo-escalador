@@ -71,7 +71,23 @@ body {
   user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
 }
 button { font: inherit; color: var(--ink); }
-.app { height: 100%; height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
+.app { height: 100%; height: 100dvh; display: grid; grid-template-rows: auto auto 1fr auto; }
+
+/* ---------- desafío del día ---------- */
+.diario {
+  display: flex; align-items: center; gap: 10px; margin: 8px var(--gy) 0 var(--gx); padding: 8px 8px 8px 12px;
+  background: #fff3c4; border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 4px 0 var(--ink); min-width: 0;
+}
+.diario .d-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.diario b { font: 400 18px/1.05 var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.diario small { font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.diario .d-racha { flex: none; font: 400 17px/1 var(--display); padding: 6px 8px; border-radius: 12px; background: #fff; border: 2.5px solid var(--ink); }
+.diario .d-racha[hidden] { display: none; }
+.diario .icon-btn { width: 44px; height: 44px; border-radius: 12px; box-shadow: 0 3px 0 var(--ink); }
+.diario .icon-btn svg { width: 22px; height: 22px; }
+.diario .play { height: 44px; padding: 0 14px 0 12px; font-size: 19px; box-shadow: 0 3px 0 var(--ink); }
+.diario .play[disabled] { background: #e6e2d6; color: var(--muted); cursor: default; box-shadow: none; transform: none; }
+@media (max-width: 400px) { .diario .icon-btn { display: none; } .diario b { font-size: 16px; } }
 
 /* ---------- arriba ---------- */
 .top {
@@ -596,6 +612,13 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     </div>
   </header>
 
+  <section class="diario" id="diario" aria-label="Desafío del día">
+    <span class="d-txt"><b id="dTit">📅 Desafío del día</b><small id="dSub"></small></span>
+    <span class="d-racha" id="dRacha" hidden></span>
+    <button class="icon-btn" type="button" id="dRank" aria-label="Ranking del desafío de hoy"></button>
+    <button class="play" type="button" id="dJugar">Jugar</button>
+  </section>
+
   <main class="slides" id="slides" aria-label="Juegos"></main>
 
   <nav class="tabs" aria-label="Secciones">
@@ -989,6 +1012,30 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     b.addEventListener('click', () => abrirJuegos('todos'));
     p.insertBefore(b, p.lastElementChild);
   }
+
+  // ---------- desafío del día ----------
+  // Un juego por día, el mismo nivel para todos, 3 intentos y racha de días seguidos (CC.diario en cubo-comun.js).
+  $('dRank').innerHTML = ICO_RANK;
+  function pintarDiario() {
+    if (!CC.diario) { $('diario').hidden = true; return; }
+    const d = CC.diario();
+    $('dTit').textContent = `📅 Desafío: ${d.nombre}`;
+    $('dSub').textContent = d.quedan
+      ? (d.intentos ? `Te ${d.quedan === 1 ? 'queda 1 intento' : `quedan ${d.quedan} intentos`}` + (d.texto ? ` · tu mejor: ${d.texto}` : '') : `El mismo nivel para todos · ${d.maxIntentos} intentos`)
+      : `Hecho${d.texto ? ` (${d.texto})` : ''} · el próximo en ${CC.faltaTexto(d.quedanMs)}`;
+    $('dRacha').hidden = !d.racha;
+    $('dRacha').textContent = `🔥 ${d.racha}`;
+    $('dRacha').title = `${d.racha} ${d.racha === 1 ? 'día' : 'días seguidos'} jugando el desafío`;
+    $('dJugar').innerHTML = d.quedan ? `${ICO_PLAY}Jugar` : '✓ Listo';
+    $('dJugar').disabled = !d.quedan;
+    $('diario').style.background = d.quedan ? '' : '#eef7e8';
+  }
+  $('dJugar').addEventListener('click', () => { const d = CC.diario(); if (d.quedan) location.href = d.archivo; });
+  $('dRank').addEventListener('click', () => CC.verRanking({ juego: CC.diario().juego, diario: true }));
+  pintarDiario();
+  setInterval(pintarDiario, 60000);
+  addEventListener('pageshow', pintarDiario);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) pintarDiario(); });
 
   // ◀ ◀ ▶ ▶ ◀ ▶ ◀ ▶ con las flechas de arriba (o con el teclado), sin pausas largas.
   const SECRETO = [-1, -1, 1, 1, -1, 1, -1, 1];
