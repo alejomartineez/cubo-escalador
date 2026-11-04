@@ -783,3 +783,53 @@ begin
 end $$;
 revoke all on function public.perfil_publico(text) from public;
 grant execute on function public.perfil_publico(text) to anon, authenticated;
+
+-- ---------- Parte: maestrías y vitrina ----------
+-- Maestría: cada jugador tiene un nivel de maestría en cada juego (sube con lo que jugó a ese juego). Lo calcula
+-- cubo-comun.js y lo sube con su perfil (`maestria` dentro de perfiles.datos, { juego: nivel }); el ranking lo muestra al
+-- lado del apodo, así que la vista suma la columna `maestria` (la del juego de cada tabla; 0 si no subió su perfil o si
+-- viene algo raro). Va al final para que `create or replace view` no falle.
+-- Vitrina: los logros que cada uno eligió mostrar en su tarjeta de perfil (`vitrina` en perfiles.datos, una lista de ids):
+-- perfil_publico ahora también la devuelve.
+-- También devuelve marcas.curva2 (la XP ya está en la curva de niveles nueva, ver xpCurvaNueva en cubo-comun.js).
+create or replace view public.ranking as
+  select p.tabla, j.apodo, p.valor, j.skin, p.creado,
+         left(encode(sha256(convert_to(p.jugador::text, 'UTF8')), 'hex'), 12) as huella, j.titulo,
+         case when jsonb_typeof(pf.datos->'maestria'->split_part(p.tabla, ':', 1)) = 'number'
+              then least(50, greatest(0, floor((pf.datos->'maestria'->>split_part(p.tabla, ':', 1))::numeric)))::int
+              else 0 end as maestria
+  from public.puntajes p join public.jugadores j on j.id = p.jugador
+  left join public.perfiles pf on pf.jugador = p.jugador;
+grant select on public.ranking to anon, authenticated;
+
+create or replace function public.perfil_publico(p_huella text)
+returns json language plpgsql stable security definer set search_path = public as $$
+declare
+  v_j public.jugadores%rowtype;
+  v_d jsonb;
+begin
+  if coalesce(p_huella, '') !~ '^[0-9a-f]{12}$' then return null; end if;
+  select * into v_j from public.jugadores where public.huella_de(id) = p_huella limit 1;
+  if not found then return null; end if;
+  select datos into v_d from public.perfiles where jugador = v_j.id;
+  return json_build_object(
+    'apodo', v_j.apodo, 'skin', v_j.skin, 'titulo', v_j.titulo, 'codigo', v_j.codigo, 'creado', v_j.creado,
+    'perfil', case when v_d is null then null else jsonb_build_object(
+      'xp', v_d->'xp', 'skin', v_d->'skin', 'efecto', v_d->'efecto', 'titulo', v_d->'titulo', 'marco', v_d->'marco',
+      'partidas', v_d->'partidas', 'tiempo', v_d->'tiempo', 'total', v_d->'total', 'mejores', v_d->'mejores',
+      'logros', v_d->'logros', 'extremo', v_d->'extremo', 'maestro', v_d->'maestro', 'codigos', v_d->'codigos',
+      'temporadas', v_d->'temporadas', 'vitrina', v_d->'vitrina',
+      -- la marca de la curva de niveles nueva: sin ella la tarjeta pasaría a la curva nueva una XP que ya está pasada
+      'marcas', jsonb_build_object('curva2', v_d->'marcas'->'curva2'),
+      'diario', jsonb_build_object('racha', v_d->'diario'->'racha', 'mejorRacha', v_d->'diario'->'mejorRacha', 'ultimo', v_d->'diario'->'ultimo'))
+    end,
+    -- sus marcas en el ranking (sin las del desafío del día) y en qué puesto está en cada tabla
+    'marcas', (select coalesce(json_object_agg(p.tabla, json_build_object('v', p.valor, 'puesto', 1 + (
+                 select count(*) from public.puntajes q
+                 where q.tabla = p.tabla
+                   and case when coalesce(l.orden, 'mayor') = 'menor' then q.valor < p.valor else q.valor > p.valor end))), '{}'::json)
+               from public.puntajes p left join public.limites l on l.tabla = p.tabla
+               where p.jugador = v_j.id and split_part(p.tabla, ':', 2) !~ '^d[0-9]{8}$'));
+end $$;
+revoke all on function public.perfil_publico(text) from public;
+grant execute on function public.perfil_publico(text) to anon, authenticated;

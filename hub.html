@@ -734,12 +734,12 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       <button class="install" id="install" type="button" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M5 20h14"/></svg><span>Instalar</span>
       </button>
-      <button class="me" id="me" type="button" aria-label="Tu personaje: cambiar personaje y efecto">
+      <button class="me" id="me" type="button" aria-label="Tu perfil: nivel, récords y logros">
         <canvas id="avatar" width="80" height="88"></canvas>
         <span class="me-info">
-          <span class="me-lvl" id="meLvl">Nivel 1</span>
+          <span class="me-lvl" id="meLvl">Lvl 1</span>
           <span class="bar"><i id="meBar" style="width:0%"></i></span>
-          <span class="me-edit">Cambiar personaje</span>
+          <span class="me-edit">Ver mi perfil</span>
         </span>
         <span class="badge" id="meBadge" hidden>¡Nuevo!</span>
       </button>
@@ -812,7 +812,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
         <button type="submit">Canjear</button>
       </form>
       <p class="codigo-msg" id="codigoMsg" aria-live="polite"></p>
-      <p class="tip">Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 %, Extremo multiplica por 3 y Maestro por 4. Casi todo sale subiendo de nivel (en la pestaña Nivel ves qué da cada uno), algunas cosas con logros y las legendarias solo con secretos o códigos.</p>
+      <p class="tip">Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 %, Extremo multiplica por 2 y Maestro por 2,5. Sin puntos no hay XP. Casi todo sale subiendo de nivel (en la pestaña Nivel ves qué da cada uno), algunas cosas con logros y las legendarias solo con secretos o códigos.</p>
       <div class="apodo"><span style="flex:1;min-width:0">Apodo en el ranking<b id="apodoTxt" style="display:block">—</b></span><button class="mini" type="button" id="apodoBtn">Cambiar</button></div>
     </div>
   </div>
@@ -905,7 +905,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     <p class="pt-sub" id="ptSub">Juegos con solo dos flechas</p>
     <div class="pt-heroe">
       <canvas id="ptCubo" width="480" height="400" aria-label="Tu personaje"></canvas>
-      <span class="pt-nivel" id="ptNivel">Nivel 1</span>
+      <span class="pt-nivel" id="ptNivel">Lvl 1</span>
     </div>
     <div class="pt-botones">
       <button class="pt-jugar" id="ptJugar" type="button">
@@ -975,9 +975,9 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     'Volver al menú principal': 'Back to main menu',
     'Menú principal': 'Main menu',
     'Instalar': 'Install',
-    'Tu personaje: cambiar personaje y efecto': 'Your character: change character and effect',
+    'Tu perfil: nivel, récords y logros': 'Your profile: level, records and achievements',
     'Nivel {n}': 'Level {n}',
-    'Cambiar personaje': 'Change character',
+    'Ver mi perfil': 'View my profile',
     '¡Nuevo!': 'New!',
     'Nuevo': 'New',
     '1v1: jugar contra alguien': '1v1: play against someone',
@@ -1040,8 +1040,8 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     '¿Tenés un<br>código?': 'Got a<br>code?',
     'CÓDIGO': 'CODE',
     'Canjear': 'Redeem',
-    'Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 %, Extremo multiplica por 3 y Maestro por 4. Casi todo sale subiendo de nivel (en la pestaña Nivel ves qué da cada uno), algunas cosas con logros y las legendarias solo con secretos o códigos.':
-      'You earn XP in every game. The better you play, the more XP: a new best gives +25%, Extreme multiplies it by 3 and Master by 4. Almost everything unlocks by leveling up (the Pass tab shows what each level gives), some things with achievements, and legendaries only with secrets or codes.',
+    'Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 %, Extremo multiplica por 2 y Maestro por 2,5. Sin puntos no hay XP. Casi todo sale subiendo de nivel (en la pestaña Nivel ves qué da cada uno), algunas cosas con logros y las legendarias solo con secretos o códigos.':
+      'You earn XP in every game. The better you play, the more XP: a new best gives +25%, Extreme multiplies it by 2 and Master by 2.5. No points, no XP. Almost everything unlocks by leveling up (the Pass tab shows what each level gives), some things with achievements, and legendaries only with secrets or codes.',
     'Apodo en el ranking': 'Leaderboard nickname',
     'Cambiar': 'Change',
     'Temporada {n} · nivel {t}': 'Season {n} · level {t}',
@@ -1352,28 +1352,42 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     c.restore();
     CC.dibujarCubo(c, px, py + s * 0.1, s * 0.82, { mirar: Math.sign(Math.cos(t / 600)), t });
   }
+  // los mismos luchadores y la misma mesa que en el juego (CC.pulseada), con el reflector encima
   function ilPulseada(c, w, h, t) {
     sky(c, w, h, '#f5b84a', '#ffe9c2');
-    const s = Math.min(w / 7, h / 4.2), mesa = h * 0.74, emp = Math.sin(t / 380) * w * 0.07;
-    c.fillStyle = '#9a5b2e'; c.strokeStyle = INK; c.lineWidth = 3;
-    rr(c, w * 0.08, mesa, w * 0.84, s * 0.32, s * 0.08); c.fill(); c.stroke();
-    rr(c, w * 0.2, mesa + s * 0.3, s * 0.3, h, 3); c.fill(); c.stroke(); rr(c, w * 0.8 - s * 0.3, mesa + s * 0.3, s * 0.3, h, 3); c.fill(); c.stroke();
-    const mx = w / 2 + emp, my = mesa - s * 1.05;
-    c.lineCap = 'round';
-    for (const [x0, col] of [[w * 0.22, CC.skin().cuerpo], [w * 0.78, '#6be0b5']]) {
-      c.strokeStyle = INK; c.lineWidth = s * 0.34; c.beginPath(); c.moveTo(x0, mesa - s * 0.35); c.lineTo(mx, my); c.stroke();
-      c.strokeStyle = col; c.lineWidth = s * 0.22; c.beginPath(); c.moveTo(x0, mesa - s * 0.35); c.lineTo(mx, my); c.stroke();
+    const PU = CC.pulseada, menta = rival('menta'), yo = CC.skin().cuerpo;
+    const u = Math.min(w / 10, h / 5.4), cx = w / 2, yT = h - 1.62 * u, lw = Math.max(2, u * 0.09);
+    const g = c.createRadialGradient(cx, yT - 1.2 * u, u * 0.4, cx, yT - 1.2 * u, u * 5.5);
+    g.addColorStop(0, 'rgba(255,252,235,.6)'); g.addColorStop(1, 'rgba(255,252,235,0)');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    const piso = yT + 0.8 * u;
+    c.fillStyle = '#e8a148'; c.fillRect(0, piso, w, h - piso);
+    c.fillStyle = INK; c.fillRect(0, piso - 1, w, 2);
+    // la pulseada va y viene; el que empuja infla los músculos
+    const p = Math.sin(t / 380) * 0.55, th = p * 1.15, FL = 1.95 * u, pa = 0.12 * p, ox = PU.SEP * u;
+    const hx = cx + FL * Math.sin(th), hy = yT - 0.12 * u - FL * Math.cos(th);
+    const fA = 0.5 + 0.45 * Math.cos(t / 380), fB = 1 - fA;
+    const lados = [[cx - ox, 1, yo, fA], [cx + ox, -1, menta.cuerpo, fB]];
+    for (const [x, d, col, f] of lados) {
+      c.save(); c.translate(x, yT); c.rotate(pa);
+      PU.cuerpo(c, u, col, d, f, lw);
+      CC.dibujarCubo(c, 0, -PU.CUELLO * u, PU.CABEZA * u, d > 0 ? { mirar: 1, t } : { mirar: -1, t, skin: menta, efecto: false });
+      c.restore();
     }
-    c.fillStyle = PAPER; c.strokeStyle = INK; c.lineWidth = 3; c.beginPath(); c.arc(mx, my, s * 0.22, 0, Math.PI * 2); c.fill(); c.stroke();
-    c.lineCap = 'butt';
-    CC.dibujarCubo(c, w * 0.15, mesa, s, { mirar: 1, t });
-    CC.dibujarCubo(c, w * 0.85, mesa, s, { mirar: -1, t, skin: rival('menta'), efecto: false });
+    PU.mesa(c, cx, yT, u, lw);
+    for (const [x, d, col, f] of lados) { c.save(); c.translate(x, yT); c.rotate(pa); PU.brazoAfuera(c, u, col, d, f, lw); c.restore(); }
+    const hombro = (x, d) => ({ x: x + d * PU.HX * u * Math.cos(pa) - PU.HY * u * Math.sin(pa), y: yT + d * PU.HX * u * Math.sin(pa) + PU.HY * u * Math.cos(pa) });
+    PU.brazo(c, hombro(cx + ox, -1), { x: cx + 0.62 * u, y: yT - 0.1 * u }, { x: hx + 0.16 * u, y: hy }, u, menta.cuerpo, fB, lw);
+    PU.brazo(c, hombro(cx - ox, 1), { x: cx - 0.62 * u, y: yT - 0.1 * u }, { x: hx - 0.16 * u, y: hy }, u, yo, fA, lw);
+    PU.puno(c, hx + 0.2 * u, hy - 0.05 * u, u, menta.cuerpo, lw);
+    PU.puno(c, hx - 0.2 * u, hy + 0.05 * u, u, yo, lw);
     const lado = Math.floor(t / 130) % 2;
-    for (const [k, x] of [[0, w * 0.36], [1, w * 0.64]]) {
+    for (const [k, x] of [[0, cx - 1.1 * u], [1, cx + 1.1 * u]]) {
+      const bw = 0.62 * u, bh = 0.48 * u, y = yT - 3.3 * u;
       c.fillStyle = k === lado ? '#ffcc29' : PAPER; c.strokeStyle = INK; c.lineWidth = 2.5;
-      rr(c, x - s * 0.3, h * 0.08, s * 0.6, s * 0.48, s * 0.12); c.fill(); c.stroke();
-      c.fillStyle = INK; c.beginPath(); const d = k ? 1 : -1, cx = x, cy = h * 0.08 + s * 0.24;
-      c.moveTo(cx + d * s * 0.14, cy); c.lineTo(cx - d * s * 0.08, cy - s * 0.13); c.lineTo(cx - d * s * 0.08, cy + s * 0.13); c.closePath(); c.fill();
+      rr(c, x - bw / 2, y, bw, bh, bh * 0.25); c.fill(); c.stroke();
+      c.fillStyle = INK; c.beginPath(); const d = k ? 1 : -1, cy = y + bh / 2;
+      c.moveTo(x + d * bw * 0.22, cy); c.lineTo(x - d * bw * 0.14, cy - bh * 0.27); c.lineTo(x - d * bw * 0.14, cy + bh * 0.27); c.closePath(); c.fill();
     }
   }
   function ilGuardia(c, w, h, t) {
@@ -1684,10 +1698,10 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   }
   function pintarPerfil() {
     const p = CC.perfil();
-    $('meLvl').textContent = T('Nivel {n}', { n: p.nivel });
+    $('meLvl').textContent = 'Lvl ' + p.nivel;
     $('meBar').style.width = Math.round(100 * p.enNivel / p.paraSiguiente) + '%';
     const n = CC.nuevos().length;
-    $('meBadge').hidden = !n; $('tabBadge').hidden = !n; $('tabBadge').textContent = n;
+    $('tabBadge').hidden = !n; $('tabBadge').textContent = n;
     JUEGOS.forEach((g, i) => {
       const s = slides.children[i];
       s.querySelector('[data-rec]').textContent = mejorTexto(g, p);
@@ -1835,8 +1849,10 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       const libre = CC.libre(it), b = document.createElement('button'), req = it.temporada ? T('Temporada {n} · nivel {t}', { n: it.temporada, t: it.tier }) : T('Nivel {n}', { n: it.nivel });
       b.type = 'button'; b.className = 'item titulo' + (libre ? '' : ' lock');
       b.setAttribute('aria-pressed', String(p.titulo.id === it.id));
-      b.innerHTML = `<span></span>${libre ? '' : `<small>${req}</small>`}`;
-      b.querySelector('span').textContent = it.nombre;
+      // la rareza del título (común, raro, épico, legendario, mítico): con su color, y los más difíciles con brillo
+      const rz = CC.rarezaTitulo ? CC.rarezaTitulo(it) : '';
+      b.innerHTML = `<span></span>${rz ? `<small class="cc-rz cc-rz-${rz}">${T(CC.RAREZAS[rz].nombre)}</small>` : ''}${libre ? '' : `<small>${req}</small>`}`;
+      if (rz) CC.pintarTitulo(b.querySelector('span'), it); else b.querySelector('span').textContent = it.nombre;
       b.addEventListener('click', () => {
         if (!libre) { CC.avisar(`<div><b>${it.nombre}</b><span>${T('Se gana en: {req}.', { req })}</span></div>`, 2600); return; }
         if (CC.elegirTitulo(it.id)) { CC.vibrar(10); pintarPersonaje(); }
@@ -1859,7 +1875,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   function pintarPersonaje() {
     const p = CC.perfil();
     $('bigName').textContent = p.skin.nombre + (p.efecto.id !== 'ninguno' ? ' · ' + p.efecto.nombre : '');
-    $('bigLvl').textContent = T('Nivel {n} · {a} / {b} XP', { n: p.nivel, a: p.enNivel, b: p.paraSiguiente });
+    $('bigLvl').textContent = `Lvl ${p.nivel} · ${p.enNivel} / ${p.paraSiguiente} XP`;
     $('bigBar').style.width = Math.round(100 * p.enNivel / p.paraSiguiente) + '%';
     const todos = [...CC.SKINS, ...CC.EFECTOS].filter(i => !i.logro && !i.codigo && i.nivel > p.nivel).sort((a, b) => a.nivel - b.nivel);
     $('bigNext').textContent = todos.length ? T('En nivel {n} desbloqueás {cosas}.', { n: todos[0].nivel, cosas: todos.filter(i => i.nivel === todos[0].nivel).map(i => i.nombre).join(T(' y ')) }) : T('Ya desbloqueaste todo lo que da el nivel.');
@@ -1881,7 +1897,8 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     cosquilla = t;
     if (toques.length >= 10) { toques = []; CC.marcar('cosquillas'); pintarPersonaje(); pintarPerfil(); }
   });
-  $('me').addEventListener('click', () => { abrirPersonaje(); marcarTab('personaje'); });
+  // arriba: tu perfil; la pestaña Personaje de abajo es la que cambia personaje y efecto
+  $('me').addEventListener('click', () => { if (CC.verPerfil) CC.verPerfil(); else { abrirPersonaje(); marcarTab('personaje'); } });
   $('apodoBtn').addEventListener('click', () => CC.verRanking({ juego: JUEGOS[actual].id, alCerrar: pintarPersonaje }));
   $('miPerfilBtn').hidden = !CC.verPerfil;
   $('miPerfilBtn').addEventListener('click', () => CC.verPerfil());
@@ -2051,8 +2068,10 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     const p = CC.perfil(), box = $('logros');
     const total = CC.LOGROS.length, hechos = CC.LOGROS.filter(l => p.logros[l.id]);
     const cuenta = m => hechos.filter(l => l.medalla === m).length;
+    CC.estilos();
     box.innerHTML = `<div class="resumen"><b>${hechos.length} / ${total}</b><div class="medallas">${Object.entries(CC.MEDALLAS).map(([k, m]) =>
-      `<span class="med"><i style="background:${m.color}"></i>${cuenta(k)}</span>`).join('')}</div></div>
+      `<span class="med"><i style="background:${m.color}"></i>${cuenta(k)}</span>`).join('')}</div>${CC.verPerfil && hechos.length
+      ? `<button class="mini" type="button" id="vitrinaBtn" style="margin-left:auto">🏆 ${T('Vitrina')}</button>` : ''}</div>
       <p class="tip">${T('Bronce sale jugando, plata con práctica, oro es para muy buenos y diamante, para muy pocos. Cada logro da XP y algunos desbloquean personajes y efectos. Los secretos no dicen qué hay que hacer.')}</p>`;
     const grupos = [[T('General'), CC.LOGROS.filter(l => !l.juego && !l.oculto)], ...JUEGOS.map(g => [g.nombre, CC.LOGROS.filter(l => l.juego === g.id && !l.oculto)]),
       [T('Secretos'), CC.LOGROS.filter(l => l.oculto)]];
@@ -2073,12 +2092,16 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
         let prog = '';
         if (!ok && l.progreso) { try { const [a, b] = l.progreso(p); prog = `<div class="prog"><i style="width:${Math.min(100, Math.round(100 * a / b))}%"></i></div>`; } catch (e) {} }
         const el = document.createElement('div');
-        el.className = 'logro' + (ok ? '' : ' no');
-        el.innerHTML = `<span class="m" style="background:${m.color}">${ok ? '★' : '?'}</span><span class="t"><b>${l.nombre}</b><span>${l.desc}${premio.length ? ' ' + T('Premio: {lista}.', { lista: premio.join(', ') }) : ''}</span>${prog}</span><span class="xp">+${m.xp}</span>`;
+        // los que tenés, con el brillo de su rango (oro y diamante con destello, secretos violeta, legendarias en colores)
+        const rango = ok && CC.rangoLogro ? CC.rangoLogro(l) : '';
+        el.className = 'logro' + (ok ? '' : ' no') + (rango ? ' cc-lgr-' + rango : '');
+        el.innerHTML = `${rango ? CC.medallaLogro(l, 'm') : `<span class="m" style="background:${m.color}">${ok ? '★' : '?'}</span>`}<span class="t"><b>${l.nombre}</b><span>${l.desc}${premio.length ? ' ' + T('Premio: {lista}.', { lista: premio.join(', ') }) : ''}</span>${prog}</span><span class="xp">+${m.xp}</span>`;
         g.appendChild(el);
       }
       box.appendChild(g);
     }
+    // la vitrina (los logros que mostrás en tu perfil) se elige en tu tarjeta de perfil
+    if ($('vitrinaBtn')) $('vitrinaBtn').addEventListener('click', () => CC.verPerfil());
     abrir('sheetLogros');
   }
 
@@ -2434,7 +2457,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     portada.classList.remove('espera');
   }
   function mostrarPortada(vuelo) {
-    $('ptNivel').textContent = T('Nivel {n}', { n: CC.perfil().nivel });
+    $('ptNivel').textContent = 'Lvl ' + CC.perfil().nivel;
     portada.classList.remove('chau'); portada.classList.add('espera');
     portada.hidden = false;
     aterrizo = Infinity;

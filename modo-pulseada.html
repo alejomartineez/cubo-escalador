@@ -1342,6 +1342,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
     // piso de madera
     const yT = Y0 + YT * U, floorY = yT + 0.8 * U;
+    if (PU) {
+      const ph = state === 'play' && G ? G.phase : '';
+      arena(floorY, yT, now, ph === 'fight' ? 0.4 + 0.6 * zoomS : ph === 'won' ? 1 : 0.25, zoomS);
+    }
     ctx.fillStyle = '#e8a148'; ctx.fillRect(0, floorY, W, H - floorY);
     ctx.fillStyle = '#d98f37';
     for (let y = floorY + U * 0.7; y < H; y += U * 0.7) ctx.fillRect(0, y, W, 2);
@@ -1366,6 +1370,129 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
     const jit = reduceMotion ? 0 : tension * U * 0.035;
     const jx = () => (Math.random() - 0.5) * jit;
+    // fuerza de cada uno (0 a 1) para inflar los músculos; en el menú va y viene con la pulseada de muestra
+    let fP, fR;
+    if (state === 'menu' || !G) { fP = 0.5 + 0.45 * Math.cos(menuT * 0.9); fR = 1 - fP; }
+    else { fP = clamp((G.you - 2) / 9, 0, 1); fR = clamp((G.rv - 2) / 9, 0, 1); }
+    if (PU) escena(now, p, rival, pMood, rMood, slide, fall, fP, fR, yT, jx);
+    else escenaSimple(now, p, rival, pMood, rMood, slide, fall, yT, jx);
+
+    for (const q of particles) {
+      ctx.globalAlpha = 1 - q.age / q.life; ctx.fillStyle = q.c;
+      ctx.fillRect(q.x - q.s / 2, q.y - q.s / 2, q.s, q.s);
+    }
+    ctx.globalAlpha = 1;
+    textos(now);
+    ctx.restore();
+  }
+
+  // ---------- la escena con cuerpos (CC.pulseada): luchadores de cubo-cabeza y torso, en la mesa de competencia ----------
+  const PU = CC && CC.pulseada;
+  let zoomS = 0, capaC = null;
+  // capa aparte para la sombra: se dibuja entera y después se pega transparente (si no, se ven las uniones)
+  function capa() {
+    if (!capaC) capaC = document.createElement('canvas');
+    if (capaC.width !== cv.width || capaC.height !== cv.height) { capaC.width = cv.width; capaC.height = cv.height; }
+    const c = capaC.getContext('2d');
+    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, capaC.width, capaC.height);
+    c.setTransform(ctx.getTransform());
+    return c;
+  }
+  function pegarCapa(a) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = a; ctx.drawImage(capaC, 0, 0); ctx.restore(); }
+  function medallaPecho(c, lw) {
+    c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
+    c.strokeStyle = '#ff4f5e'; c.lineWidth = lw * 1.4;
+    c.beginPath(); c.moveTo(-0.32 * U, -2.02 * U); c.lineTo(0, -1.5 * U); c.lineTo(0.32 * U, -2.02 * U); c.stroke();
+    c.strokeStyle = INK; c.lineWidth = lw * 0.8; c.fillStyle = '#ffd84d';
+    c.beginPath(); c.arc(0, -1.36 * U, 0.17 * U, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.restore();
+  }
+  function escena(now, p, rival, pMood, rMood, slide, fall, fP, fR, yT, jx) {
+    // en el final (la barra cerca de una punta) la cámara se acerca un poco
+    const fin = state === 'play' && G && G.phase === 'fight' ? clamp((Math.abs(p) - 0.55) / 0.4, 0, 1) : 0;
+    zoomS += (fin - zoomS) * 0.08;
+    const z = reduceMotion ? 0 : zoomS * 0.1, fx = CX, fy = yT - 1.1 * U;
+    ctx.save(); ctx.translate(fx, fy); ctx.scale(1 + z, 1 + z); ctx.translate(-fx, -fy);
+
+    const hs = PU.CABEZA * U, cue = -PU.CUELLO * U, lw = Math.max(2.5, U * 0.08);
+    const px = CX - PU.SEP * U + jx(), rx = CX + PU.SEP * U + jx() + slide * (W * 0.6) + fall * U * 1.2;
+    const pa = 0.12 * clamp(p, -1, 1), ra = 0.12 * clamp(p, -1, 1) + fall * 0.5;
+    const pc = playerColor(), rc = rival.dos ? COLOR2 : rival.sombra ? playerColor() : rival.c;
+    const enMundo = (x0, a, dx, dy) => ({ x: x0 + dx * Math.cos(a) - dy * Math.sin(a), y: yT + dx * Math.sin(a) + dy * Math.cos(a) });
+    const sp = enMundo(px, pa, PU.HX * U, PU.HY * U), sr = enMundo(rx, ra, -PU.HX * U, PU.HY * U);
+    const sombra = !!rival.sombra, rivalHere = slide < 0.35 && fall < 0.5;
+    // dibuja lo del rival directo, o en la capa transparente si es tu sombra
+    const delRival = fn => { if (!sombra) return fn(ctx); fn(capa()); pegarCapa(0.5); };
+
+    // cuerpos y cabezas (detrás de la mesa)
+    delRival(c => {
+      c.save(); c.translate(rx, yT); c.rotate(ra);
+      PU.cuerpo(c, U, rc, -1, fR, lw);
+      if (rival.x.includes('medalla')) medallaPecho(c, lw);
+      if (rival.dos) CC.dibujarCubo(c, 0, cue, hs, { skin: cubo2(), mirar: -1, mareado: !!G && G.phase === 'won', t: now, efecto: false });
+      else drawRival(c, 0, cue, hs, rival, rMood, now, 0, true);
+      c.restore();
+    });
+    ctx.save(); ctx.translate(px, yT); ctx.rotate(pa);
+    PU.cuerpo(ctx, U, pc, 1, fP, lw);
+    CC.dibujarCubo(ctx, 0, cue, hs, { mirar: 1, mareado: pMood, t: now });
+    ctx.restore();
+
+    PU.mesa(ctx, CX, yT, U, lw);
+
+    // la otra mano en la manija
+    delRival(c => { c.save(); c.translate(rx, yT); c.rotate(ra); PU.brazoAfuera(c, U, rc, -1, fR, lw); c.restore(); });
+    ctx.save(); ctx.translate(px, yT); ctx.rotate(pa); PU.brazoAfuera(ctx, U, pc, 1, fP, lw); ctx.restore();
+
+    // brazos que pulsean: hombro → codo (en su almohadilla) → puños agarrados
+    const h = handPos(clamp(p, -1.05, 1.05));
+    const hx = h.x + jx(), hy = h.y + jx();
+    const eL = { x: CX - 0.62 * U, y: yT - 0.1 * U }, eR = { x: CX + 0.62 * U, y: yT - 0.1 * U };
+    const brazoR = c => PU.brazo(c, sr, eR, { x: hx + 0.16 * U, y: hy }, U, rc, fR, lw);
+    const punoR = c => PU.puno(c, hx + 0.2 * U, hy - 0.05 * U, U, rc, lw);
+    if (rivalHere && sombra) delRival(c => { brazoR(c); punoR(c); });
+    else if (rivalHere) brazoR(ctx);
+    PU.brazo(ctx, sp, eL, { x: hx - 0.16 * U, y: hy }, U, pc, fP, lw);
+    if (rivalHere && !sombra) punoR(ctx);
+    PU.puno(ctx, hx - 0.2 * U, hy + 0.05 * U, U, pc, lw);
+    ctx.restore();
+  }
+
+  // público y reflector: la arena de atrás. exc: cuánto salta la gente; luz: cuánto aprieta el reflector
+  function arena(floorY, yT, now, exc, luz) {
+    const cg = ctx.createRadialGradient(CX, yT - 1.2 * U, U * 0.5, CX, yT - 1.2 * U, U * 6.5);
+    cg.addColorStop(0, `rgba(255,252,235,${0.35 + 0.3 * luz})`); cg.addColorStop(1, 'rgba(255,252,235,0)');
+    ctx.fillStyle = cg; ctx.fillRect(0, 0, W, H);
+    // dos filas de cubos en la tribuna, en sombra, detrás de una valla
+    const hs = U * 0.62, gap = hs * 1.12;
+    for (const [fila, col, dy] of [[0, '#eab060', 1.15], [1, '#dc9446', 0.5]]) {
+      ctx.fillStyle = col;
+      const n = Math.ceil(W / gap) + 2, off = fila ? gap * 0.5 : 0;
+      for (let i = -1; i < n; i++) {
+        const x = i * gap + off, k = ((i * 7 + fila * 3) % 5 + 5) % 5;
+        const salto = reduceMotion ? 0 : Math.max(0, Math.sin(now / 1000 * (4 + k) + i * 1.3)) * U * 0.14 * exc;
+        const y = floorY - dy * U - hs - salto;
+        rr(ctx, x - hs / 2, y, hs, hs, hs * 0.26); ctx.fill();
+        rr(ctx, x - hs * 0.62, y + hs * 0.92, hs * 1.24, floorY - y, hs * 0.3); ctx.fill();
+        // algunos levantan los brazos cuando se pone bueno
+        if (exc > 0.55 && k < 2) { ctx.fillRect(x - hs * 0.72, y - hs * 0.5, hs * 0.18, hs * 1.2); ctx.fillRect(x + hs * 0.54, y - hs * 0.5, hs * 0.18, hs * 1.2); }
+        if (fila) {
+          ctx.fillStyle = 'rgba(29,35,64,.22)';
+          for (const sd of [-1, 1]) ctx.fillRect(x + sd * hs * 0.18 - hs * 0.05, y + hs * 0.32, hs * 0.1, hs * 0.18);
+          ctx.fillStyle = col;
+        }
+      }
+    }
+    ctx.fillStyle = '#c47a35'; ctx.fillRect(0, floorY - 0.42 * U, W, 0.42 * U);
+    ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(0, floorY - 0.36 * U, W, 0.06 * U);
+    ctx.fillStyle = INK; ctx.fillRect(0, floorY - 0.42 * U - 1, W, 2);
+    // el haz del reflector
+    ctx.fillStyle = `rgba(255,255,240,${0.1 + 0.12 * luz})`;
+    ctx.beginPath(); ctx.moveTo(CX - 0.7 * U, 0); ctx.lineTo(CX + 0.7 * U, 0); ctx.lineTo(CX + 4.8 * U, floorY); ctx.lineTo(CX - 4.8 * U, floorY); ctx.closePath(); ctx.fill();
+  }
+
+  // la escena de antes (cubos solos), por si no cargó cubo-comun.js
+  function escenaSimple(now, p, rival, pMood, rMood, slide, fall, yT, jx) {
     const s = 2.3 * U, pie = yT + 0.35 * U;
     const px = CX - 2.95 * U + jx(), rx = CX + 2.95 * U + jx() + slide * (W * 0.6) + fall * U * 1.2;
     const pa = 0.12 * clamp(p, -1, 1), ra = 0.12 * clamp(p, -1, 1) + fall * 0.5;
@@ -1402,14 +1529,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (rivalHere) fist(hx + 0.2 * U, hy - 0.05 * U, rc, lw);
     ctx.globalAlpha = 1;
     fist(hx - 0.2 * U, hy + 0.05 * U, pc, lw);
+  }
 
-    for (const q of particles) {
-      ctx.globalAlpha = 1 - q.age / q.life; ctx.fillStyle = q.c;
-      ctx.fillRect(q.x - q.s / 2, q.y - q.s / 2, q.s, q.s);
-    }
-    ctx.globalAlpha = 1;
-
-    // textos flotantes, cuenta regresiva y carteles
+  // textos flotantes, cuenta regresiva y carteles
+  function textos(now) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.lineJoin = 'round'; ctx.strokeStyle = INK;
     for (const f of floats) {
       const a = (now - f.t) / 750;
@@ -1440,7 +1563,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       ctx.strokeText(banner.text, CX, Y0 + 3.1 * U); ctx.fillText(banner.text, CX, Y0 + 3.1 * U);
       ctx.globalAlpha = 1;
     }
-    ctx.restore();
   }
 
   // barra de fuerza: tu color va llenando desde la izquierda; si llega al rival, ganaste
@@ -1526,9 +1648,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
 
   // cada rival es un cubo con su cara; mira a la izquierda (hacia vos)
-  function drawRival(c, x, pie, s, r, mood, now, ang = 0) {
+  // conCuerpo: es la cabeza de un luchador (la sombra va opaca porque la escena la pega transparente, y la medalla va en el pecho)
+  function drawRival(c, x, pie, s, r, mood, now, ang = 0, conCuerpo = false) {
     if (r.sombra && CC) {   // tu sombra: tu mismo cubo, transparente, mirando para tu lado
-      c.save(); c.globalAlpha = 0.5; c.translate(x, pie); c.rotate(ang);
+      c.save(); c.globalAlpha = conCuerpo ? 1 : 0.5; c.translate(x, pie); c.rotate(ang);
       CC.dibujarCubo(c, 0, 0, s, { skin: CC.skin(), efecto: false, mirar: -1, mareado: mood === 'ko', t: now });
       c.restore();
       return;
@@ -1651,7 +1774,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       c.fillStyle = '#ffd84d';
       c.beginPath(); c.moveTo(-s * 0.3, -s * 0.94); c.lineTo(-s * 0.3, -s * 1.22); c.lineTo(-s * 0.15, -s * 1.08); c.lineTo(0, -s * 1.28); c.lineTo(s * 0.15, -s * 1.08); c.lineTo(s * 0.3, -s * 1.22); c.lineTo(s * 0.3, -s * 0.94); c.closePath(); c.fill(); c.stroke();
     }
-    if (X.includes('medalla')) {
+    if (X.includes('medalla') && !conCuerpo) {
       c.strokeStyle = '#ff4f5e'; c.lineWidth = lw * 1.2;
       c.beginPath(); c.moveTo(-s * 0.18, -s * 0.2); c.lineTo(0, -s * 0.06); c.lineTo(s * 0.18, -s * 0.2); c.stroke();
       c.strokeStyle = INK; c.lineWidth = lw * 0.7; c.fillStyle = '#ffd84d';

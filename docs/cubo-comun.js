@@ -175,8 +175,8 @@
     'Más lento y con más margen. Ideal para aprender.': 'Slower and more forgiving. Great for learning.',
     'La experiencia de siempre.': 'The classic experience.',
     'Arranca rápido desde el primer segundo.': 'Fast from the very first second.',
-    'Para dedos de acero: todo al máximo y sin perdón. XP ×3.': 'For fingers of steel: everything maxed out, no mercy. XP ×3.',
-    'Más allá de Extremo. Casi nadie lo termina. XP ×4.': 'Beyond Extreme. Almost nobody beats it. XP ×4.',
+    'Para dedos de acero: todo al máximo y sin perdón. XP ×2.': 'For fingers of steel: everything maxed out, no mercy. XP ×2.',
+    'Más allá de Extremo. Casi nadie lo termina. XP ×2,5.': 'Beyond Extreme. Almost nobody beats it. XP ×2.5.',
     // leyenda de teclas
     'En el juego': 'In game', 'En el menú': 'In menu', 'moverte': 'move', 'reiniciar': 'restart', 'dificultad': 'difficulty',
     'jugar': 'play', 'salir': 'exit',
@@ -275,6 +275,17 @@
     'Maestro de todo': 'Master of All', 'Jugaste todos los juegos en Maestro.': 'You played every game on Master.',
     // avisos de nivel, logros y códigos
     'Nivel {n}': 'Level {n}', 'Desbloqueaste: {x}': 'Unlocked: {x}', 'Desbloqueaste {x}': 'Unlocked {x}', ' y ': ' and ',
+    // rarezas de los títulos, rangos de los logros, maestría y vitrina
+    'Común': 'Common', 'Raro': 'Rare', 'Épico': 'Epic', 'Legendario': 'Legendary', 'Mítico': 'Mythic',
+    'Título común': 'Common title', 'Título raro': 'Rare title', 'Título épico': 'Epic title', 'Título legendario': 'Legendary title',
+    'Título mítico': 'Mythic title', 'Secreto': 'Secret', 'Legendaria': 'Legendary',
+    'Maestría': 'Mastery', 'Maestría {n} en {j} · {r}': 'Mastery {n} in {j} · {r}', 'Aprendiz': 'Apprentice', 'Hábil': 'Skilled',
+    'Más jugados': 'Most played', 'maestría · partidas · tiempo': 'mastery · games · time',
+    'Vitrina': 'Showcase', 'Elegir': 'Choose', 'tus más difíciles · elegí cuáles mostrar': 'your hardest · choose which to show',
+    'sus más difíciles': 'their hardest', 'Cuando consigas logros, elegí hasta 3 para mostrar acá.': 'Once you earn achievements, pick up to 3 to show here.',
+    'Elegir logros para la vitrina': 'Choose achievements for the showcase', 'Elegí uno': 'Pick one',
+    'Marcá hasta {n} · {k} de {n}': 'Pick up to {n} · {k} of {n}', 'Logros para la vitrina': 'Achievements for the showcase',
+    'Ya elegiste {n}: sacá uno para poner otro.': "You've picked {n}: remove one to add another.",
     'Logro bronce': 'Bronze achievement', 'Logro plata': 'Silver achievement', 'Logro oro': 'Gold achievement',
     'Logro diamante': 'Diamond achievement',
     'Personaje legendario desbloqueado': 'Legendary character unlocked', 'Efecto legendario desbloqueado': 'Legendary effect unlocked',
@@ -374,10 +385,10 @@
   // ---------- dificultades ----------
   const DIFS = [
     { id: 'facil', nombre: 'Fácil', xp: 1 },
-    { id: 'normal', nombre: 'Normal', xp: 1.5 },
-    { id: 'dificil', nombre: 'Difícil', xp: 2 },
-    { id: 'extremo', nombre: 'Extremo', xp: 3 },
-    { id: 'maestro', nombre: 'Maestro', xp: 4 },
+    { id: 'normal', nombre: 'Normal', xp: 1.25 },
+    { id: 'dificil', nombre: 'Difícil', xp: 1.5 },
+    { id: 'extremo', nombre: 'Extremo', xp: 2 },
+    { id: 'maestro', nombre: 'Maestro', xp: 2.5 },
   ];
   const DURAS = ['extremo', 'maestro'];
   function iconoDif(id, tam = 22) {
@@ -787,8 +798,114 @@
   }
   const tieneLogro = (p, l) => (l.prueba ? l.prueba(p) : (() => { const [a, b] = l.progreso(p); return a >= b; })());
 
-  // XP para pasar del nivel n al n+1
-  const xpPara = n => 80 + 40 * (n - 1);
+  // ---------- rarezas, maestrías y vitrina ----------
+  // Rareza de cada título según lo difícil que es conseguirlo: los de nivel por el nivel que piden y los de temporada por
+  // el escalón del camino. Se ve con color y los más difíciles brillan (legendario) o cambian de color (mítico): en la
+  // tarjeta de perfil, en el ranking y en la hoja de Personaje del hub (clases .cc-r y .cc-r-<rareza>, en estilos()).
+  const RAREZAS = {
+    comun: { nombre: 'Común', color: '#9aa0b5' },
+    raro: { nombre: 'Raro', color: '#3f95ff' },
+    epico: { nombre: 'Épico', color: '#a066ff' },
+    legendario: { nombre: 'Legendario', color: '#ffbf1f' },
+    mitico: { nombre: 'Mítico', color: '#ff4f9a' },
+  };
+  function rarezaTitulo(t) {
+    if (!t) return 'comun';
+    if (t.temporada) return t.tier >= 30 ? 'legendario' : t.tier >= 18 ? 'epico' : t.tier >= 8 ? 'raro' : 'comun';
+    const n = t.nivel || 1;
+    return n >= 95 ? 'mitico' : n >= 75 ? 'legendario' : n >= 45 ? 'epico' : n >= 20 ? 'raro' : 'comun';
+  }
+  // El ranking y el servidor guardan el título como texto, en español: se busca el de ese nombre.
+  const tituloPorNombre = nombre => TITULOS.find(t => t.nombre === nombre) || null;
+  // Pone un título en un elemento, con el color de su rareza (t = el título, o su nombre en español).
+  function pintarTitulo(el, t) {
+    const it = typeof t === 'string' ? tituloPorNombre(t) : t, nombre = typeof t === 'string' ? t : t && t.nombre;
+    const r = rarezaTitulo(it);
+    el.textContent = nombre ? T(nombre) : '';
+    el.classList.remove(...Object.keys(RAREZAS).map(k => 'cc-r-' + k));
+    if (!nombre) return el;
+    el.classList.add('cc-r', 'cc-r-' + r);
+    el.title = T('Título ' + RAREZAS[r].nombre.toLowerCase());
+    return el;
+  }
+
+  // Rango de un logro, para que los difíciles se vean más: el de su medalla, salvo los secretos y los que dan una legendaria.
+  const RANGOS_LOGRO = ['bronce', 'plata', 'oro', 'diamante', 'secreto', 'legendaria'];
+  function rangoLogro(l) {
+    if (!l) return 'bronce';
+    if ([...SKINS, ...EFECTOS].some(i => i.legendaria && i.logro === l.id)) return 'legendaria';
+    return l.oculto ? 'secreto' : l.medalla;
+  }
+  const NOMBRE_RANGO = { bronce: 'Bronce', plata: 'Plata', oro: 'Oro', diamante: 'Diamante', secreto: 'Secreto', legendaria: 'Legendaria' };
+  const ICONO_RANGO = { bronce: '★', plata: '★', oro: '★', diamante: '◆', secreto: '✦', legendaria: '♛' };
+  // La medalla de un logro (HTML), con el color y el brillo de su rango. `clase`: la del lugar donde va (tamaño).
+  const medallaLogro = (l, clase = '') => {
+    const r = rangoLogro(l);
+    return `<span class="cc-med cc-med-${r}${clase ? ' ' + clase : ''}" style="background:${(MEDALLAS[l.medalla] || MEDALLAS.bronce).color}" aria-hidden="true">${ICONO_RANGO[r]}</span>`;
+  };
+  // Los logros que alguien muestra en su tarjeta de perfil (los que eligió, o si no eligió, sus 3 más difíciles).
+  const VITRINA_MAX = 3;
+  function vitrinaDe(p) {
+    const logros = p && p.logros && typeof p.logros === 'object' ? p.logros : {};
+    const tiene = l => !!logros[l.id];
+    const elegidos = (Array.isArray(p && p.vitrina) ? p.vitrina : []).map(id => LOGROS.find(l => l.id === id)).filter(l => l && tiene(l));
+    if (elegidos.length) return { logros: [...new Set(elegidos)].slice(0, VITRINA_MAX), elegida: true };
+    const hechos = LOGROS.filter(tiene).sort((a, b) => RANGOS_LOGRO.indexOf(rangoLogro(b)) - RANGOS_LOGRO.indexOf(rangoLogro(a)) || (+logros[a.id] || 0) - (+logros[b.id] || 0));
+    return { logros: hechos.slice(0, VITRINA_MAX), elegida: false };
+  }
+
+  // Maestría de cada juego: sube con lo que jugaste a ese juego (10 puntos por partida y 6 por minuto jugado) y un poco
+  // con sus logros (20, 40, 80 o 150 según la medalla). Del 1 al 50; para llegar al nivel n hacen falta 40·(n−1)^1,5
+  // puntos (el 10 unos 1.080, el 25 unos 4.700, el 50 unos 13.700). 0 si nunca lo jugaste.
+  // Se ve en el ranking de cada juego (al lado del apodo) y en la tarjeta de perfil. Para el ranking, la de cada juego se
+  // sube con el perfil a la nube (`maestria` en progreso()) y la vista `ranking` la lee de ahí (supabase.sql).
+  const MAESTRIA_MAX = 50;
+  const puntosMaestria = n => Math.round(40 * Math.pow(Math.max(0, n - 1), 1.5));
+  const PUNTOS_MEDALLA = { bronce: 20, plata: 40, oro: 80, diamante: 150 };
+  const RANGOS_MAESTRIA = [
+    { desde: 1, nombre: 'Aprendiz' }, { desde: 5, nombre: 'Hábil' }, { desde: 15, nombre: 'Experto' },
+    { desde: 30, nombre: 'Maestro' }, { desde: 45, nombre: 'Leyenda' },
+  ];
+  const rangoMaestria = n => Math.max(0, RANGOS_MAESTRIA.filter(r => n >= r.desde).length - 1);
+  function maestria(p, jid) {
+    const o = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+    p = o(p);
+    const partidas = Math.max(0, Math.floor(+o(p.partidas)[jid] || 0)), seg = Math.max(0, +o(p.tiempo)[jid] || 0), logros = o(p.logros);
+    const extra = LOGROS.reduce((a, l) => a + (l.juego === jid && logros[l.id] ? PUNTOS_MEDALLA[l.medalla] || 0 : 0), 0);
+    const puntos = partidas * 10 + Math.floor(seg / 60) * 6 + extra;
+    if (!partidas && !seg) return { nivel: 0, puntos: 0, desde: 0, hasta: puntosMaestria(2), rango: 0, max: false };
+    let n = 1;
+    while (n < MAESTRIA_MAX && puntos >= puntosMaestria(n + 1)) n++;
+    return { nivel: n, puntos, desde: puntosMaestria(n), hasta: puntosMaestria(Math.min(MAESTRIA_MAX, n + 1)), rango: rangoMaestria(n), max: n >= MAESTRIA_MAX };
+  }
+  const maestrias = p => Object.fromEntries(JUEGOS.map(j => [j.id, maestria(p, j.id).nivel]).filter(([, n]) => n > 0));
+  // La insignia de maestría (un <span>), para poner al lado de un apodo o de un juego.
+  function insigniaMaestria(n, jid) {
+    const el = document.createElement('span');
+    if (!(n > 0)) { el.hidden = true; return el; }
+    n = Math.min(MAESTRIA_MAX, Math.floor(n));
+    const r = rangoMaestria(n), j = juego(jid);
+    el.className = 'cc-ms cc-ms-' + r;
+    el.textContent = n;
+    el.title = T('Maestría {n} en {j} · {r}', { n, j: j ? j.nombre : '', r: RANGOS_MAESTRIA[r].nombre });
+    el.setAttribute('aria-label', el.title);
+    return el;
+  }
+
+  // XP para pasar del nivel n al n+1. La curva 2 (noviembre de 2026) es más dura que la primera (80 + 40·(n−1)): el nivel 2
+  // pide 100, el 10 unos 690, el 50 unos 4.500 y el 100 unos 11.900 (antes 440, 2.040 y 4.000).
+  const xpPara = n => 100 + 60 * (n - 1) + Math.round(0.6 * (n - 1) * (n - 1));
+  const xpParaViejo = n => 80 + 40 * (n - 1);
+  // Nadie baja de nivel con la curva nueva: la XP guardada con la curva vieja se pasa a la nueva conservando el nivel y lo
+  // que tenías hecho del siguiente (en proporción). La marca 'curva2' en `marcas` dice que ya está pasada; va en marcas
+  // porque las versiones viejas del juego la conservan y la nube la junta por unión (un campo nuevo lo perderían y la XP
+  // se volvería a pasar dos veces).
+  function xpCurvaNueva(xp) {
+    let n = 1, resto = Math.max(0, +xp || 0), total = 0;
+    while (resto >= xpParaViejo(n)) { resto -= xpParaViejo(n); total += xpPara(n); n++; }
+    return Math.round(total + resto / xpParaViejo(n) * xpPara(n));
+  }
+  const conCurva = p => (p && p.marcas && p.marcas.curva2 ? Math.max(0, +p.xp || 0) : xpCurvaNueva(p && p.xp));
 
   // ---------- perfil guardado ----------
   function leer() {
@@ -798,7 +915,7 @@
     const obj = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
     const gente = v => (Array.isArray(v) ? v.filter(a => a && typeof a.codigo === 'string' && typeof a.huella === 'string').slice(0, 100) : []);
     return {
-      xp: Math.max(0, +p.xp || 0),
+      xp: conCurva(p),
       skin: typeof p.skin === 'string' ? p.skin : 'clasico',
       efecto: typeof p.efecto === 'string' ? p.efecto : 'ninguno',
       records: obj(p.records),
@@ -807,7 +924,7 @@
       tiempo: obj(p.tiempo),   // segundos jugados en cada juego (ver «tiempo jugado»)
       total: +p.total || 0,
       logros: obj(p.logros),
-      marcas: obj(p.marcas),
+      marcas: { ...obj(p.marcas), curva2: 1 },
       extremo: obj(p.extremo),
       maestro: obj(p.maestro),
       codigos: Array.isArray(p.codigos) ? p.codigos.filter(c => typeof c === 'string') : [],
@@ -840,12 +957,16 @@
       })(),
       misiones: obj(p.misiones),
       eleccion: +p.eleccion || 0,   // cuándo elegiste personaje, efecto, título o brillo (gana el más nuevo al juntar perfiles)
+      // los logros que elegiste mostrar en tu tarjeta de perfil (ids, hasta VITRINA_MAX)
+      vitrina: Array.isArray(p.vitrina) ? [...new Set(p.vitrina.filter(s => typeof s === 'string'))].slice(0, VITRINA_MAX) : [],
     };
   }
   let datos = leer();
   // Cada vez que se guarda, el progreso se sube solo a la nube un rato después (ver «progreso en la nube» más abajo).
   const nube = { timer: 0, sincronizando: false, ya: false };
   const guardar = () => { try { localStorage.setItem(KEY, JSON.stringify(datos)); } catch (e) {} programarNube(); };
+  // si recién se pasó a la curva nueva, que quede guardado (y se suba) ya
+  try { const crudo = JSON.parse(localStorage.getItem(KEY)); if (crudo && !(crudo.marcas && crudo.marcas.curva2)) guardar(); } catch (e) {}
   if (!datos.id) {
     datos.id = crypto.randomUUID ? crypto.randomUUID()
       : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
@@ -891,6 +1012,13 @@
     if (!x || !libre(x)) return false;
     datos.marco = id; datos.eleccion = Date.now(); guardar();
     return true;
+  }
+  // Los logros para mostrar en tu tarjeta de perfil (solo los que tenés, hasta VITRINA_MAX; [] = los más difíciles solos).
+  function elegirVitrina(ids) {
+    datos = leer();
+    const ok = [...new Set((Array.isArray(ids) ? ids : []).filter(id => datos.logros[id] && LOGROS.some(l => l.id === id)))].slice(0, VITRINA_MAX);
+    datos.vitrina = ok; datos.eleccion = Date.now(); guardar();
+    return ok;
   }
   function titulo() {
     const x = TITULOS.find(k => k.id === datos.titulo);
@@ -1027,9 +1155,18 @@
 
   // XP según qué tan bien jugaste: `malo` da `min`, `experto` da `max` y por encima sigue subiendo un poco.
   // Sirve igual si gana el número más chico (por ejemplo un tiempo): pasá malo > experto.
+  // Por debajo de «malo» ya no da el mínimo fijo: baja en proporción hasta 0, así una partida sin puntos no da XP
+  // (antes daba 6 y, con Maestro, un evento y doble XP, hasta 96: más que el nivel 2 entero).
   function xpEscala(valor, malo, experto, min = 6, max = 60) {
-    const f = Math.max(0, Math.min(1.35, (valor - malo) / (experto - malo || 1)));
-    return Math.round(min + (max - min) * Math.pow(f, 1.3));
+    valor = +valor;
+    if (!(valor > 0)) return 0;
+    const f = (valor - malo) / (experto - malo || 1);
+    if (f < 0) {
+      // más alto es mejor (puntos): en proporción a lo que hiciste; más bajo es mejor (tiempos): cuanto más lento, menos
+      const k = experto > malo ? (malo > 0 ? valor / malo : 0) : malo / valor;
+      return Math.round(min * Math.max(0, Math.min(1, k)) ** 2);
+    }
+    return Math.round(min + (max - min) * Math.pow(Math.min(1.35, f), 1.3));
   }
 
   // ---------- tiempo jugado ----------
@@ -1099,10 +1236,11 @@
     const dia = o.diario ? anotarDiario(o, valor) : null;
     if (dia) xp += dia.premio;
     // eventos de XP (hora feliz, finde, arranque de temporada) y las partidas con doble XP que da la temporada
-    const ev = eventoXP();
-    if (ev && xp > 0) xp = Math.round(xp * ev.mult);
-    const boost = datos.boost > 0 && xp > 0;
-    if (boost) { xp *= 2; datos.boostU++; datos.boost--; }
+    // No se multiplican entre sí: cuenta el más alto. La partida de doble XP solo se gasta si gana a la del evento.
+    let ev = eventoXP();
+    const boost = datos.boost > 0 && xp > 0 && (!ev || ev.mult < 2);
+    if (boost) { xp *= 2; datos.boostU++; datos.boost--; ev = null; }
+    else if (ev && xp > 0) xp = Math.round(xp * ev.mult);
     if (ev || boost) avisar(`<b>⚡ ${[ev && `${ev.nombre}: ${ev.texto}`, boost && T('Doble XP (te quedan {n})', { n: datos.boost })].filter(Boolean).join(' · ')}</b>`, 2600);
     const cumplidas = avanzarMisiones({ partida: { juego: o.juego, dif: dif ? dif.id : null, record, valor, diario: !!dia } });
     guardar();
@@ -1544,7 +1682,8 @@
       return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 12);
     } catch (e) { return ''; }
   }
-  // Top de una tabla: [{ apodo, valor, skin, yo }] más tu puesto si no estás en la lista.
+  // Top de una tabla: [{ apodo, valor, skin, titulo, maestria, yo }] más tu puesto si no estás en la lista.
+  let rankingSinMaestria = false;
   async function top(jid, tid, n = 50, o = {}) {
     const tb = tablaDe(jid, tid);
     const orden = tb && tb.orden === 'menor' ? 'asc' : 'desc';
@@ -1552,8 +1691,17 @@
     const mia = await huella();
     // solo amigos: vos y los que agregaste
     const filtro = o.amigos ? `&huella=in.(${[mia, ...leer().amigos.map(a => a.huella)].filter(Boolean).join(',')})` : '';
-    const filas = await api(`ranking?tabla=eq.${t}${filtro}&select=apodo,valor,skin,huella,titulo&order=valor.${orden},creado.asc&limit=${n}`);
-    const lista = filas.map((f, k) => ({ puesto: k + 1, apodo: f.apodo, valor: +f.valor, skin: f.skin, titulo: f.titulo || '', huella: f.huella, yo: !!mia && f.huella === mia }));
+    // la maestría de cada uno viene en la vista desde «Parte: maestrías y vitrina» de supabase.sql; sin esa parte, la
+    // columna no existe (error 400) y se pide sin ella: solo se ve la tuya
+    const pedir = conM => api(`ranking?tabla=eq.${t}${filtro}&select=apodo,valor,skin,huella,titulo${conM ? ',maestria' : ''}&order=valor.${orden},creado.asc&limit=${n}`);
+    let filas;
+    if (rankingSinMaestria) filas = await pedir(false);
+    else try { filas = await pedir(true); } catch (e) { if (!/ 400$/.test(e.message)) throw e; rankingSinMaestria = true; filas = await pedir(false); }
+    const miMaestria = maestria(leer(), jid).nivel;
+    const lista = filas.map((f, k) => {
+      const yo = !!mia && f.huella === mia;
+      return { puesto: k + 1, apodo: f.apodo, valor: +f.valor, skin: f.skin, titulo: f.titulo || '', huella: f.huella, yo, maestria: yo ? miMaestria : Math.max(0, +f.maestria || 0) };
+    });
     let yo = lista.find(f => f.yo) || null;
     const mio = o.mio !== undefined ? o.mio : leer().mejores[jid + ':' + tid];
     if (!yo && !o.amigos && mio != null && leer().apodo) {
@@ -1563,7 +1711,7 @@
           method: 'HEAD', headers: { apikey: RANKING.clave, Prefer: 'count=exact' },
         });
         const total = +(r.headers.get('content-range') || '').split('/')[1];
-        if (isFinite(total)) yo = { puesto: total + 1, apodo: leer().apodo, valor: mio, skin: skin().id, titulo: titulo().nombre, huella: mia, yo: true, afuera: true };
+        if (isFinite(total)) yo = { puesto: total + 1, apodo: leer().apodo, valor: mio, skin: skin().id, titulo: titulo().nombre, huella: mia, yo: true, afuera: true, maestria: miMaestria };
       } catch (e) {}
     }
     return { lista, yo };
@@ -1629,14 +1777,15 @@
   // pisa nada. Lo que es de cada dispositivo (id, clave, amigos, cola del ranking, lo ya visto) no se sube.
   const NUBE_KEY = 'cubo-nube';   // lo último que se subió, para no subir dos veces lo mismo
   const DE_LA_NUBE = ['xp', 'skin', 'efecto', 'titulo', 'marco', 'eleccion', 'records', 'mejores', 'partidas', 'total', 'logros',
-    'marcas', 'extremo', 'maestro', 'codigos', 'diario', 'temporadas', 'boostG', 'boostU', 'misiones', 'tiempo'];
-  const progreso = p => { const o = {}; for (const k of DE_LA_NUBE) o[k] = p[k]; return o; };
+    'marcas', 'extremo', 'maestro', 'codigos', 'diario', 'temporadas', 'boostG', 'boostU', 'misiones', 'tiempo', 'vitrina'];
+  // `maestria` (el nivel de maestría de cada juego) no se guarda: sale de lo jugado y viaja para que el ranking la muestre
+  const progreso = p => { const o = {}; for (const k of DE_LA_NUBE) o[k] = p[k]; o.maestria = maestrias(p); return o; };
   const objDe = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
   const maxObj = (a, b) => { const o = { ...a }; for (const [k, v] of Object.entries(objDe(b))) o[k] = Math.max(+o[k] || 0, +v || 0); return o; };
   // Junta dos perfiles (a = este dispositivo, ya pasado por leer(); b = la nube) quedándose con lo mejor de cada lado.
   function mezclar(a, b) {
     const o = { ...a };
-    o.xp = Math.max(a.xp, +b.xp || 0);
+    o.xp = Math.max(a.xp, conCurva(b));   // b puede venir de una versión con la curva vieja
     o.total = Math.max(a.total, +b.total || 0);
     o.partidas = maxObj(a.partidas, b.partidas);
     o.tiempo = maxObj(a.tiempo, b.tiempo);
@@ -1700,8 +1849,9 @@
       else if (mb[clave] && mb[clave] === ma[clave]) m[prog] = juntarProg(ma[prog], mb[prog]);
     }
     o.misiones = m;
-    // personaje, efecto, título y brillo: los que elegiste más recientemente
+    // personaje, efecto, título, brillo y vitrina: los que elegiste más recientemente
     if ((+b.eleccion || 0) > a.eleccion) for (const k of ['skin', 'efecto', 'titulo', 'marco', 'eleccion']) if (typeof b[k] === typeof a[k]) o[k] = b[k];
+    if ((+b.eleccion || 0) > a.eleccion && Array.isArray(b.vitrina)) o.vitrina = b.vitrina.filter(s => typeof s === 'string').slice(0, VITRINA_MAX);
     return o;
   }
   function programarNube() {
@@ -1969,7 +2119,7 @@
 #cc-rank li .p.m2{background:#d7deea;border:2.5px solid ${INK}}
 #cc-rank li .p.m3{background:#e9b48a;border:2.5px solid ${INK}}
 #cc-rank li .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#cc-rank li .n .tt{display:block;font-size:10.5px;font-weight:700;opacity:.6;line-height:1.1;overflow:hidden;text-overflow:ellipsis}
+#cc-rank li .n .tt{display:block;padding:2px 0 3px;font-size:10.5px;font-weight:700;line-height:1.1;overflow:hidden;text-overflow:ellipsis}
 #cc-rank li .v{font-variant-numeric:tabular-nums;font-weight:800}
 #cc-rank li canvas{width:26px;height:30px;flex:none}
 #cc-rank li.msg{display:block;padding:26px 18px;text-align:center;font-weight:600;line-height:1.45}
@@ -2022,6 +2172,56 @@
 .cc-leg-geo{background:linear-gradient(180deg,#ffd21f,#ff8a1c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 3px rgba(95,245,255,.95))}
 .cc-leg-dev{background:linear-gradient(90deg,#00b4c8,#ff3bd4);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 5px rgba(95,245,255,.9))}
 @media (prefers-reduced-motion:reduce){.cc-leg-glitch,.cc-leg-holograma{animation:none}}
+/* rareza de los títulos (pintarTitulo): común gris, raro azul, épico violeta, legendario dorado con brillo, mítico arcoíris.
+   Con «Reducir movimiento» (clase cc-quieto) las animaciones se apagan solas y queda el color. */
+.cc-r{white-space:nowrap;opacity:1}
+.cc-r::before{content:"";display:inline-block;width:.58em;height:.58em;margin:0 .38em 0 .08em;vertical-align:.05em;transform:rotate(45deg);border:1.5px solid ${INK};border-radius:2px;background:var(--rz)}
+.cc-r-comun{--rz:#dfe1e9;color:#5f6580}
+.cc-r-raro{--rz:#3f95ff;color:#1b63c9}
+.cc-r-epico{--rz:#a066ff;color:#6c2bd3}
+.cc-r-legendario,.cc-r-mitico{display:inline-block;padding:.14em .62em .16em .5em;border:2px solid ${INK};border-radius:99px;color:${INK};line-height:1.1}
+.cc-r-legendario{--rz:#fff;background:linear-gradient(105deg,#ffbf1f 0 36%,#fff8d6 47%,#ffbf1f 58% 100%);background-size:300% 100%;
+  animation:cc-brillo 3s ease-in-out infinite;box-shadow:0 0 9px rgba(255,170,0,.6)}
+.cc-r-mitico{--rz:#fff;background:linear-gradient(90deg,#ff7ab5,#ffad5c,#ffe066,#6ee0a6,#6cbcff,#b993ff,#ff7ab5);background-size:300% 100%;
+  animation:cc-arco 5s linear infinite;box-shadow:0 0 11px rgba(255,79,154,.6)}
+.cc-r-mitico::after{content:"✦";margin-left:.32em;font-size:.9em}
+.cc-rz{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.cc-rz-comun{color:#6b7189}.cc-rz-raro{color:#1b63c9}.cc-rz-epico{color:#6c2bd3}.cc-rz-legendario{color:#a86f00}.cc-rz-mitico{color:#d1306f}
+.item.titulo .cc-r{white-space:normal}
+.item.titulo .cc-r-legendario,.item.titulo .cc-r-mitico{padding-inline:.6em}
+.item.titulo .cc-r-legendario::before,.item.titulo .cc-r-mitico::before{display:none}
+.item.titulo.lock .cc-r{opacity:.55;animation:none;box-shadow:none}
+@keyframes cc-brillo{0%{background-position:100% 0}55%,100%{background-position:0 0}}
+@keyframes cc-arco{to{background-position:150% 0}}
+/* maestría de un juego (insigniaMaestria): aprendiz, hábil, experto, maestro y leyenda */
+.cc-ms{display:inline-flex;align-items:center;justify-content:center;min-width:2.1em;height:1.5em;margin:0 0 0 .4em;padding:0 .4em 0 .3em;vertical-align:.1em;
+  border:2px solid ${INK};border-radius:.5em;background:var(--ms);color:${INK};font:400 11px/1 "Lilita One","Trebuchet MS",sans-serif;letter-spacing:.02em;white-space:nowrap}
+.cc-ms::before{content:"✦";font-size:.85em;margin-right:.18em;opacity:.7}
+.cc-ms-0{--ms:#f3d3b6}
+.cc-ms-1{--ms:#e1e8f3}
+.cc-ms-2{--ms:#ffcc29;box-shadow:0 0 6px rgba(255,190,30,.55)}
+.cc-ms-3{--ms:#8ff0ff;box-shadow:0 0 8px rgba(70,215,255,.75)}
+.cc-ms-4{background:linear-gradient(90deg,#ff7ab5,#ffad5c,#ffe066,#6ee0a6,#6cbcff,#b993ff,#ff7ab5);background-size:300% 100%;animation:cc-arco 5s linear infinite;box-shadow:0 0 9px rgba(255,79,154,.6)}
+/* logros según su rango (rangoLogro): la medalla (.cc-med) y la fila o tarjeta (.cc-lgr). Oro y diamante con un destello
+   que pasa, los secretos violeta y los que dan una legendaria con los colores corriendo. */
+.cc-med{position:relative;overflow:hidden}
+.cc-med-oro{box-shadow:0 0 0 3px rgba(255,204,41,.45),0 0 12px rgba(255,180,20,.7)}
+.cc-med-diamante{box-shadow:0 0 0 3px rgba(127,227,255,.5),0 0 14px rgba(60,210,255,.85)}
+.cc-med-oro::after,.cc-med-diamante::after,.cc-med-legendaria::after{content:"";position:absolute;inset:-30%;
+  background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.9) 50%,transparent 60%);transform:translateX(-130%);animation:cc-destello 3.4s ease-in-out infinite}
+.cc-med-diamante::after{animation-delay:.6s}
+.cc-med-secreto{background:#8f6bff!important;color:#fff!important;box-shadow:0 0 0 3px rgba(143,107,255,.4),0 0 14px rgba(143,107,255,.85)}
+.cc-med-legendaria{background:conic-gradient(#ff7ab5,#ffe066,#6ee0a6,#6cbcff,#b993ff,#ff7ab5)!important;color:${INK}!important;
+  box-shadow:0 0 0 3px rgba(255,122,181,.4),0 0 16px rgba(255,79,154,.75);animation:cc-tono 4s linear infinite}
+@keyframes cc-destello{0%,50%{transform:translateX(-130%)}100%{transform:translateX(130%)}}
+@keyframes cc-tono{to{filter:hue-rotate(360deg)}}
+.cc-lgr-oro{background:linear-gradient(100deg,#fff1bd,#fff 65%)!important}
+.cc-lgr-diamante{background:linear-gradient(100deg,#d6f8ff,#fff 65%)!important;box-shadow:0 0 0 2px rgba(127,227,255,.6)}
+.cc-lgr-secreto{background:linear-gradient(100deg,#e9ddff,#fff 65%)!important;box-shadow:0 0 0 2px rgba(143,107,255,.45)}
+.cc-lgr-legendaria{background:linear-gradient(100deg,#ffd9ec,#fff3c4 40%,#fff 75%)!important;box-shadow:0 0 0 2px rgba(255,122,181,.5),0 0 12px rgba(255,191,31,.45)}
+.cc-rango{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.cc-rango-bronce{color:#a8643a}.cc-rango-plata{color:#6c7891}.cc-rango-oro{color:#b07a00}.cc-rango-diamante{color:#0f8fb3}
+.cc-rango-secreto{color:#6c43e0}.cc-rango-legendaria{color:#d1306f}
 `;
     document.head.appendChild(st);
   }
@@ -2031,8 +2231,8 @@
     facil: 'Más lento y con más margen. Ideal para aprender.',
     normal: 'La experiencia de siempre.',
     dificil: 'Arranca rápido desde el primer segundo.',
-    extremo: 'Para dedos de acero: todo al máximo y sin perdón. XP ×3.',
-    maestro: 'Más allá de Extremo. Casi nadie lo termina. XP ×4.',
+    extremo: 'Para dedos de acero: todo al máximo y sin perdón. XP ×2.',
+    maestro: 'Más allá de Extremo. Casi nadie lo termina. XP ×2,5.',
   };
   // o.difs: subconjunto de ids (por ejemplo ['normal', 'extremo', 'maestro']). o.compacto: versión chica para la pantalla de fin.
   // Todos los selectores del mismo juego en la página comparten la elección.
@@ -2292,9 +2492,14 @@
           const ap = document.createElement('span'); ap.setAttribute('translate', 'no'); ap.textContent = f.apodo;
           if (sk && sk.legendaria) ap.className = claseNombre(sk);
           nm.appendChild(ap);
+          // su maestría en este juego, al lado del apodo
+          if (f.maestria > 0) nm.appendChild(insigniaMaestria(f.maestria, j.id));
           if (f.yo) nm.append(T(' (vos)'));
-          // el título llega del servidor en español
-          if (f.titulo) { const tt = document.createElement('small'); tt.className = 'tt'; tt.textContent = T(f.titulo); nm.appendChild(tt); }
+          // el título llega del servidor en español; se pinta con el color de su rareza
+          if (f.titulo) {
+            const tt = document.createElement('small'); tt.className = 'tt';
+            tt.appendChild(pintarTitulo(document.createElement('span'), f.titulo)); nm.appendChild(tt);
+          }
           const c = li.querySelector('canvas').getContext('2d'); c.scale(2, 2);
           dibujarCubo(c, 13, 28, 18, { skin: sk || SKINS[0], t: 0, efecto: false });
           // tocando la fila se abre su perfil
@@ -2359,14 +2564,14 @@
   // x = { conPerfil, apodo, skin, tituloTexto, codigo, creado, marcas: { 'juego:tabla': { v, puesto } } }
   function armarVista(p, x = {}) {
     p = objDe(p);
-    const q = { xp: Math.max(0, +p.xp || 0), logros: objDe(p.logros), temporadas: objDe(p.temporadas),
+    const q = { xp: conCurva(p), logros: objDe(p.logros), temporadas: objDe(p.temporadas),
       codigos: Array.isArray(p.codigos) ? p.codigos.filter(c => typeof c === 'string') : [] };
     const con = !!x.conPerfil;
     // solo lo que de verdad tiene desbloqueado (por si el perfil viene raro)
     const de = (lista, id) => { const it = lista.find(k => k.id === id); return con && it && libre(it, q) ? it : null; };
     const libresM = MARCOS.filter(m => libre(m, q));
     const partidas = objDe(p.partidas), tiempo = objDe(p.tiempo), mejores = objDe(p.mejores), marcas = objDe(x.marcas);
-    const juegos = JUEGOS.map(j => ({ j, n: Math.max(0, Math.floor(+partidas[j.id] || 0)), s: Math.max(0, +tiempo[j.id] || 0) }))
+    const juegos = JUEGOS.map(j => ({ j, n: Math.max(0, Math.floor(+partidas[j.id] || 0)), s: Math.max(0, +tiempo[j.id] || 0), m: maestria(p, j.id) }))
       .filter(g => g.n || g.s).sort((a, b) => b.n - a.n || b.s - a.s);
     // mejor marca de cada juego, en la dificultad más alta que jugó (la de su perfil o la del ranking, la mejor de las dos)
     const marcasJ = [];
@@ -2392,6 +2597,7 @@
       efecto: de(EFECTOS, p.efecto) || EFECTOS[0],
       marco: con ? de(MARCOS, p.marco) || libresM[libresM.length - 1] || null : null,
       titulo: (de(TITULOS, p.titulo) || {}).nombre || x.tituloTexto || '',
+      vitrina: con ? vitrinaDe({ logros: q.logros, vitrina: p.vitrina }) : { logros: [], elegida: false },
       total: Math.max(+p.total || 0, juegos.reduce((a, g) => a + g.n, 0)), segundos: juegos.reduce((a, g) => a + g.s, 0),
       juegos, marcas: marcasJ, logros, diamantes: logros.filter(l => l.medalla === 'diamante'),
       legendarias: [...SKINS.map(it => ({ tipo: 'skin', it })), ...EFECTOS.map(it => ({ tipo: 'efecto', it }))].filter(i => i.it.legendaria && libre(i.it, q)),
@@ -2420,7 +2626,7 @@
 #cc-perfil header canvas{flex:none;width:104px;height:111px;border-radius:16px;background:rgba(255,255,255,.6);border:2.5px solid ${INK}}
 #cc-perfil .pf-quien{flex:1;min-width:0}
 #cc-perfil h2{margin:0;font:400 26px/1.05 "Lilita One","Trebuchet MS",sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#cc-perfil .pf-tt{display:block;margin-top:2px;font-size:13px;font-weight:700;opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cc-perfil .pf-tt{display:block;margin-top:3px;padding:2px 0 3px 1px;font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #cc-perfil .pf-tt:empty{display:none}
 #cc-perfil .pf-nv{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:8px}
 #cc-perfil .pf-nv b{font:400 18px/1 "Lilita One","Trebuchet MS",sans-serif}
@@ -2479,6 +2685,40 @@
 #cc-perfil .pf-leg canvas{width:48px;height:52px}
 #cc-perfil .pf-leg small{font-size:10.5px;font-weight:800;text-align:center;line-height:1.15}
 #cc-perfil .pf-vacio{margin:0;font-size:13px;font-weight:600;opacity:.7}
+#cc-perfil h4 .pf-mini{float:right;appearance:none;margin-top:-4px;min-height:32px;padding:0 12px;border-radius:10px;border:2px solid ${INK};background:#fff;color:${INK};
+  font:800 12.5px "Rubik",system-ui,sans-serif;box-shadow:0 2px 0 ${INK};cursor:pointer}
+#cc-perfil h4 .pf-mini.pf-on{background:#ffcc29}
+#cc-perfil h4 .pf-mini:active{transform:translateY(2px);box-shadow:none}
+#cc-perfil .pf-vit{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;clear:both}
+#cc-perfil .pf-vl{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;padding:10px 6px 9px;border-radius:16px;background:#fff;
+  border:2.5px solid ${INK};box-shadow:0 3px 0 ${INK};text-align:center;color:${INK};font:inherit}
+#cc-perfil .pf-vl .cc-med{flex:none;width:46px;height:46px;border-radius:50%;border:3px solid ${INK};display:grid;place-items:center;font:400 22px/1 "Lilita One","Trebuchet MS",sans-serif;color:${INK}}
+#cc-perfil .pf-vl b{font-size:12.5px;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+#cc-perfil .pf-vl small{line-height:1}
+#cc-perfil .pf-vl.pf-vacia{appearance:none;justify-content:center;border-style:dashed;border-color:rgba(29,35,64,.4);box-shadow:none;background:transparent;cursor:pointer;opacity:.75}
+#cc-perfil .pf-vl.pf-vacia .cc-med{background:#ece8dc;border-style:dashed;border-color:rgba(29,35,64,.4)}
+#cc-perfil .pf-vl.pf-vacia:hover{opacity:1;background:#fff}
+#cc-perfil .pf-pick-t{margin:10px 0 6px;font-size:12px;font-weight:800;opacity:.7}
+#cc-perfil .pf-pick-t.pf-aviso{opacity:1;color:#c2253f}
+#cc-perfil .pf-pick{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;padding:2px 4px 4px 2px}
+#cc-perfil .pf-op{appearance:none;display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 10px;border-radius:14px;border:2px solid rgba(29,35,64,.2);
+  background:#fff;color:${INK};font:inherit;text-align:left;cursor:pointer}
+#cc-perfil .pf-op[aria-pressed="true"]{border-color:${INK};box-shadow:0 2px 0 ${INK}}
+#cc-perfil .pf-op[aria-disabled="true"]{opacity:.5}
+#cc-perfil .pf-op .cc-med{flex:none;width:32px;height:32px;border-radius:50%;border:2.5px solid ${INK};display:grid;place-items:center;font:400 15px/1 "Lilita One","Trebuchet MS",sans-serif;color:${INK}}
+#cc-perfil .pf-op .pf-opt{flex:1;min-width:0}
+#cc-perfil .pf-op .pf-opt b{display:block;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cc-perfil .pf-op i{flex:none;width:26px;height:26px;border-radius:8px;border:2px solid ${INK};background:#fff;display:grid;place-items:center;font:800 15px/1 system-ui;font-style:normal}
+#cc-perfil .pf-op[aria-pressed="true"] i{background:#ffcc29}
+#cc-perfil .pf-op:hover:not([aria-disabled="true"]){border-color:${INK}}
+#cc-perfil .pf-vl:focus-visible,#cc-perfil .pf-op:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
+#cc-perfil .pf-fav .pf-mae{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:12px;font-weight:800}
+#cc-perfil .pf-fav > div{flex:1}
+#cc-perfil .pf-fav .pf-mae .cc-ms{display:inline-flex;margin:0;font-size:12px}
+#cc-perfil .pf-fav .pf-mae em{font-style:normal;white-space:nowrap}
+#cc-perfil .pf-mbar{flex:1;min-width:30px;height:8px;border:2px solid ${INK};border-radius:99px;background:#fff;overflow:hidden}
+#cc-perfil .pf-mbar i{display:block;height:100%;background:${INK}}
+#cc-perfil .pf-jg .pf-nm .cc-ms{font-size:10.5px}
 #cc-perfil .pf-acciones{display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px 14px;border-top:2px dashed rgba(29,35,64,.22)}
 #cc-perfil .pf-acciones:empty{display:none}
 #cc-perfil .pf-acciones button{appearance:none;flex:1 1 0;min-width:0;min-height:48px;padding:0 12px;border-radius:14px;border:2.5px solid ${INK};background:#fff;color:${INK};
@@ -2511,9 +2751,61 @@
       <div class="pf-cuerpo"></div><div class="pf-acciones"></div></div>`;
     document.body.appendChild(box);
     const $ = s => box.querySelector(s), cuerpo = $('.pf-cuerpo'), acciones = $('.pf-acciones');
-    const quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const yoD = () => { const d = leer(); return { conPerfil: true, apodo: d.apodo || 'Vos', codigo: d.codigoAmigo }; };
+    const quieto = menosMovimiento;
+    // lo tuyo sale del dispositivo; extraYo es lo que llega del servidor (tus puestos en el ranking y desde cuándo jugás)
+    let extraYo = {}, eligiendo = false;
+    const yoD = () => { const d = leer(); return { conPerfil: true, apodo: d.apodo || 'Vos', codigo: d.codigoAmigo, ...extraYo }; };
     let vista = yo ? armarVista(leer(), yoD()) : armarVista({}, { apodo: a.apodo, skin: a.skin, tituloTexto: a.titulo });
+    const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const porRango = (x, y) => RANGOS_LOGRO.indexOf(rangoLogro(y)) - RANGOS_LOGRO.indexOf(rangoLogro(x));
+    // la vitrina: hasta 3 logros a la vista; en la tuya, «Elegir» abre la lista de los que tenés para marcar cuáles
+    function vitrinaHTML(v) {
+      const vt = v.vitrina, h = [];
+      if (!vt.logros.length && !yo) return '';
+      const tarjeta = l => { const r = rangoLogro(l);
+        return `<div class="pf-vl cc-lgr-${r}" title="${esc(l.desc)}">${medallaLogro(l)}<b>${esc(l.nombre)}</b><small class="cc-rango cc-rango-${r}">${T(NOMBRE_RANGO[r])}</small></div>`; };
+      const nota = !vt.logros.length ? '' : vt.elegida ? '' : T(yo ? 'tus más difíciles · elegí cuáles mostrar' : 'sus más difíciles');
+      h.push(`<section class="pf-vitrina"><h4>${T('Vitrina')}${nota ? ` <small>${nota}</small>` : ''}${yo && v.logros.length
+        ? `<button class="pf-mini${eligiendo ? ' pf-on' : ''}" type="button" data-vit aria-expanded="${eligiendo}">${eligiendo ? T('Listo') : T('Elegir')}</button>` : ''}</h4>`);
+      if (!v.logros.length) h.push(`<p class="pf-vacio">${T('Cuando consigas logros, elegí hasta 3 para mostrar acá.')}</p>`);
+      else {
+        const vacias = yo ? VITRINA_MAX - vt.logros.length : 0;
+        h.push(`<div class="pf-vit">${vt.logros.map(tarjeta).join('')}${`<button class="pf-vl pf-vacia" type="button" data-vit aria-label="${T('Elegir logros para la vitrina')}"><span class="cc-med">+</span><b>${T('Elegí uno')}</b></button>`.repeat(vacias)}</div>`);
+      }
+      if (yo && eligiendo && v.logros.length) {
+        const sel = vt.elegida ? vt.logros.map(l => l.id) : [];
+        h.push(`<p class="pf-pick-t" role="status">${T('Marcá hasta {n} · {k} de {n}', { n: VITRINA_MAX, k: sel.length })}</p><div class="pf-pick" role="group" aria-label="${T('Logros para la vitrina')}">${
+          [...v.logros].sort(porRango).map(l => {
+            const on = sel.includes(l.id), r = rangoLogro(l), lleno = !on && sel.length >= VITRINA_MAX;
+            return `<button type="button" class="pf-op${on ? ' cc-lgr-' + r : ''}" data-l="${esc(l.id)}" aria-pressed="${on}"${lleno ? ' aria-disabled="true"' : ''}>${medallaLogro(l)}<span class="pf-opt"><b>${esc(l.nombre)}</b><small class="cc-rango cc-rango-${r}">${T(NOMBRE_RANGO[r])}</small></span><i aria-hidden="true">${on ? '✓' : ''}</i></button>`;
+          }).join('')}</div>`);
+      }
+      h.push('</section>');
+      return h.join('');
+    }
+    function tocarVitrina(e) {
+      if (!yo) return;
+      const b = e.target.closest('[data-vit],[data-l]');
+      if (!b) return;
+      if (b.hasAttribute('data-vit')) { eligiendo = !eligiendo; repintar('[data-vit]'); return; }
+      if (b.getAttribute('aria-disabled') === 'true') {
+        const t = cuerpo.querySelector('.pf-pick-t');
+        if (t) { t.textContent = T('Ya elegiste {n}: sacá uno para poner otro.', { n: VITRINA_MAX }); t.classList.add('pf-aviso'); }
+        return;
+      }
+      const d = leer(), vt = vitrinaDe(d), sel = vt.elegida ? vt.logros.map(l => l.id) : [], id = b.dataset.l;
+      elegirVitrina(sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id]);
+      vibrar(8);
+      repintar(`[data-l="${CSS.escape(id)}"]`);
+    }
+    // vuelve a armar la tarjeta sin perder dónde estabas (scroll de la tarjeta y de la lista, y el foco)
+    function repintar(foco) {
+      const pick = cuerpo.querySelector('.pf-pick'), sc = cuerpo.scrollTop, sp = pick ? pick.scrollTop : 0;
+      vista = armarVista(leer(), yoD()); pintar();
+      cuerpo.scrollTop = sc;
+      const p2 = cuerpo.querySelector('.pf-pick'); if (p2) p2.scrollTop = sp;
+      const f = foco && cuerpo.querySelector(foco); if (f) f.focus({ preventScroll: true });
+    }
     let nota = '', codigo = a.codigo || '', vivo = true, raf = 0;
     if (yo && !leer().apodo) nota = 'Poné un apodo en cualquier ranking para que tus amigos puedan ver tu perfil.';
 
@@ -2521,10 +2813,11 @@
       const v = vista;
       $('h2').replaceChildren(); const ap = document.createElement('span'); ap.textContent = v.apodo || '—'; ap.className = claseNombre(v.skin); $('h2').appendChild(ap);
       if (yo && leer().apodo) $('h2').append(' (vos)');
-      $('.pf-tt').textContent = v.titulo;
+      // el título con el color (y el brillo) de su rareza
+      if (v.titulo) $('.pf-tt').replaceChildren(pintarTitulo(document.createElement('span'), v.titulo)); else $('.pf-tt').replaceChildren();
       const conNivel = v.con;
       $('.pf-nv').hidden = $('.pf-barra').hidden = $('.pf-xpt').hidden = !conNivel;
-      $('.pf-lv').textContent = 'Nivel ' + v.nivel;
+      $('.pf-lv').textContent = 'Lvl ' + v.nivel;
       $('.pf-xpn').textContent = `${v.enNivel.toLocaleString('es-AR')} / ${v.paraSiguiente.toLocaleString('es-AR')} XP`;
       $('.pf-barra i').style.width = Math.round(100 * v.enNivel / v.paraSiguiente) + '%';
       $('.pf-xpt').textContent = `${v.xp.toLocaleString('es-AR')} XP en total`;
@@ -2538,13 +2831,16 @@
         const chip = (ico, valor, txt) => `<div class="pf-chip"><span class="pf-ico" aria-hidden="true">${ico}</span><b>${valor}</b><small>${txt}</small></div>`;
         h.push(`<div class="pf-chips">${chip('⏱️', horasTexto(v.segundos), 'jugadas')}${chip('🎮', v.total.toLocaleString('es-AR'), v.total === 1 ? 'partida' : 'partidas')}
           ${chip('🏅', `${v.logros.length}/${LOGROS.length}`, 'logros')}${chip('🔥', v.racha, `racha del día · mejor ${v.mejorRacha}`)}
-          ${chip('⭐', `Nv ${v.nivelT}`, `temporada ${v.temporada.nombre}`)}${chip('📅', desde, 'juega desde')}</div>`);
+          ${chip('⭐', `Lvl ${v.nivelT}`, `temporada ${v.temporada.nombre}`)}${chip('📅', desde, 'juega desde')}</div>`);
+        h.push(vitrinaHTML(v));
         if (fav) {
+          const fm = fav.m, falta = fm.max ? 1 : (fm.puntos - fm.desde) / Math.max(1, fm.hasta - fm.desde);
           h.push(`<div class="pf-fav" style="--c:color-mix(in srgb, ${fav.j.color} 45%, #fff)"><span class="pf-tag" aria-hidden="true">⭐</span><div><small>${yo ? 'Tu favorito' : 'Su favorito'}</small>
-            <b>${fav.j.nombre}</b><span>${fav.n.toLocaleString('es-AR')} ${fav.n === 1 ? 'partida' : 'partidas'}${fav.s ? ' · ' + horasTexto(fav.s) : ''}</span></div></div>`);
+            <b>${fav.j.nombre}</b><span>${fav.n.toLocaleString('es-AR')} ${fav.n === 1 ? 'partida' : 'partidas'}${fav.s ? ' · ' + horasTexto(fav.s) : ''}</span>
+            ${fm.nivel ? `<span class="pf-mae">${insigniaMaestria(fm.nivel, fav.j.id).outerHTML}<em>${T('Maestría')} · ${T(RANGOS_MAESTRIA[fm.rango].nombre)}</em><i class="pf-mbar"><i style="width:${Math.round(100 * Math.min(1, Math.max(0, falta)))}%"></i></i></span>` : ''}</div></div>`);
           const max = Math.max(1, ...v.juegos.map(g => g.n));
-          h.push(`<section><h4>Más jugados <small>partidas · tiempo</small></h4>${v.juegos.map(g =>
-            `<div class="pf-jg"><span class="pf-nm">${g.j.nombre}</span><span class="pf-br"><i style="width:${Math.max(4, Math.round(100 * g.n / max))}%;background:${g.j.color}"></i></span>
+          h.push(`<section><h4>${T('Más jugados')} <small>${T('maestría · partidas · tiempo')}</small></h4>${v.juegos.map(g =>
+            `<div class="pf-jg"><span class="pf-nm">${g.j.nombre}${insigniaMaestria(g.m.nivel, g.j.id).outerHTML}</span><span class="pf-br"><i style="width:${Math.max(4, Math.round(100 * g.n / max))}%;background:${g.j.color}"></i></span>
             <span class="pf-nn">${g.n.toLocaleString('es-AR')}</span><span class="pf-hs">${g.s ? horasTexto(g.s) : '—'}</span></div>`).join('')}
             ${v.total && !v.segundos ? `<p class="pf-vacio">El tiempo jugado se empezó a contar hace poco.</p>` : ''}</section>`);
         } else h.push(`<p class="pf-vacio">${yo ? 'Todavía no jugaste ninguna partida.' : 'Todavía no jugó ninguna partida.'}</p>`);
@@ -2643,6 +2939,7 @@
     addEventListener('cubo-amigos', alCambiarAmigos);
     $('.pf-x').addEventListener('click', () => cerrar());
     box.addEventListener('click', e => { if (e.target === box) cerrar(); });
+    cuerpo.addEventListener('click', tocarVitrina);
 
     // lo del servidor: el perfil público de los demás; en el tuyo, solo tus puestos en el ranking
     const ponerNota = t => { nota = t; const el = cuerpo.querySelector('.pf-nota'); if (el) el.textContent = t; };
@@ -2661,7 +2958,7 @@
         const r = await perfilPublico(h);
         if (!vivo) return;
         if (yo) {
-          if (r) { vista = armarVista(leer(), { ...yoD(), marcas: r.marcas, creado: r.creado }); pintar(); }
+          if (r) { extraYo = { marcas: r.marcas, creado: r.creado }; repintar(); }
           return;
         }
         if (!r) { ponerNota(`No encontramos el perfil de ${a.apodo || 'este jugador'}.`); return; }
@@ -5293,6 +5590,170 @@
     },
   });
 
+  // ---------- Pulseada: luchadores con cuerpo y mesa de competencia (los usan el juego y la tarjeta del inicio) ----------
+  // Todo se mide en u. Cada luchador se dibuja con el origen en el medio de su cuerpo, a la altura de la tapa de la mesa;
+  // d = 1 mira a la derecha (el de la izquierda) y −1 a la izquierda. f (0 a 1) es cuánta fuerza hace: los músculos se
+  // inflan y se marcan las venas. La cabeza es el cubo de siempre (la dibuja cada uno, apoyada en −CUELLO), y el brazo que
+  // pulsea va aparte porque pasa por encima de la mesa: sale del hombro de adentro (d·HX, HY).
+  const pulseada = (() => {
+    const CUELLO = 1.92, CABEZA = 1.45, HX = 0.98, HY = -1.6, SEP = 2.95, SHORT = '#353d66';
+    const tinta = a => `rgba(29,35,64,${a})`;
+    // torso en V: cintura angosta (la tapa la mesa), pecho ancho, trapecios hasta el cuello
+    function rutaTorso(c, u, k) {
+      const P = (x, y) => [x * u, y * u];
+      c.beginPath();
+      c.moveTo(...P(-0.66, 0.42));
+      c.bezierCurveTo(...P(-0.7, -0.3), ...P(-1.02 * k, -0.78), ...P(-1.04 * k, -1.3));
+      c.quadraticCurveTo(...P(-1.1 * k, -1.8), ...P(-0.72, -1.9));
+      c.quadraticCurveTo(...P(-0.42, -1.96), ...P(-0.3, -2.1));
+      c.lineTo(...P(0.3, -2.1));
+      c.quadraticCurveTo(...P(0.42, -1.96), ...P(0.72, -1.9));
+      c.quadraticCurveTo(...P(1.1 * k, -1.8), ...P(1.04 * k, -1.3));
+      c.bezierCurveTo(...P(1.02 * k, -0.78), ...P(0.7, -0.3), ...P(0.66, 0.42));
+      c.closePath();
+    }
+    // piernas abiertas, zapatillas y short (abajo de la mesa)
+    function piernas(c, u, color, lw) {
+      c.strokeStyle = INK; c.lineWidth = lw;
+      for (const s of [-1, 1]) {
+        c.fillStyle = color;
+        c.beginPath(); c.moveTo(s * 0.1 * u, 0.7 * u); c.lineTo(s * 0.6 * u, 0.7 * u); c.lineTo(s * 0.66 * u, 1.48 * u); c.lineTo(s * 0.24 * u, 1.48 * u); c.closePath(); c.fill(); c.stroke();
+        c.fillStyle = INK; rr(c, s * 0.45 * u - 0.3 * u, 1.4 * u, 0.6 * u, 0.26 * u, 0.1 * u); c.fill();
+      }
+      c.fillStyle = SHORT;
+      c.beginPath(); c.moveTo(-0.7 * u, 0.25 * u); c.lineTo(0.7 * u, 0.25 * u); c.lineTo(0.76 * u, 0.98 * u); c.lineTo(0.06 * u, 0.98 * u);
+      c.lineTo(0, 0.8 * u); c.lineTo(-0.06 * u, 0.98 * u); c.lineTo(-0.76 * u, 0.98 * u); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.3)';
+      for (const s of [-1, 1]) c.fillRect(s * 0.62 * u - 0.04 * u, 0.4 * u, 0.08 * u, 0.5 * u);
+    }
+    function cuerpo(c, u, color, d, f, lw) {
+      c.save(); c.scale(d, 1); c.lineJoin = 'round'; c.lineCap = 'round';
+      piernas(c, u, color, lw);
+      const k = 1 + 0.05 * f;
+      rutaTorso(c, u, k); c.fillStyle = color; c.fill();
+      c.save(); c.clip();
+      // volumen: más oscuro a los costados
+      const g = c.createLinearGradient(-1.1 * u, 0, 1.1 * u, 0);
+      g.addColorStop(0, tinta(0.24)); g.addColorStop(0.3, tinta(0)); g.addColorStop(0.7, tinta(0)); g.addColorStop(1, tinta(0.14));
+      c.fillStyle = g; c.fillRect(-1.3 * u, -2.2 * u, 2.6 * u, 2.7 * u);
+      // pectorales (con brillo) y abdominales
+      c.strokeStyle = tinta(0.42); c.lineWidth = lw * 0.7;
+      for (const s of [-1, 1]) {
+        c.beginPath(); c.moveTo(s * 0.06 * u, -1.76 * u); c.quadraticCurveTo(s * 0.16 * u, -0.96 * u, s * 0.92 * u, -1.24 * u); c.stroke();
+        c.fillStyle = 'rgba(255,255,255,.3)'; c.beginPath(); c.ellipse(s * 0.46 * u, -1.6 * u, 0.24 * u, 0.08 * u, -s * 0.15, 0, Math.PI * 2); c.fill();
+      }
+      c.strokeStyle = tinta(0.3); c.lineWidth = lw * 0.55;
+      c.beginPath(); c.moveTo(0, -1.02 * u); c.lineTo(0, 0.3 * u);
+      for (const y of [-0.68, -0.32, 0.04]) for (const s of [-1, 1]) { c.moveTo(s * 0.08 * u, y * u); c.quadraticCurveTo(s * 0.28 * u, (y - 0.08) * u, s * 0.44 * u, y * u); }
+      c.stroke();
+      c.restore();
+      rutaTorso(c, u, k); c.strokeStyle = INK; c.lineWidth = lw; c.stroke();
+      c.restore();
+    }
+    // brazo hombro S → codo E → mano H: deltoides, bíceps (del lado de adentro del codo) y antebrazo de Popeye.
+    // Primero va todo el contorno y después todo el relleno, así las partes quedan pegadas en una sola silueta.
+    function brazo(c, S, E, H, u, color, f, lw, g = 1) {
+      const L1 = Math.hypot(E.x - S.x, E.y - S.y) || 1, ux = (E.x - S.x) / L1, uy = (E.y - S.y) / L1;
+      const L2 = Math.hypot(H.x - E.x, H.y - E.y) || 1, vx = (H.x - E.x) / L2, vy = (H.y - E.y) / L2;
+      let nx = -uy, ny = ux; const flip = nx * vx + ny * vy < 0; if (flip) { nx = -nx; ny = -ny; }
+      let mx = -vy, my = vx; if (mx * ux + my * uy < 0) { mx = -mx; my = -my; }
+      const wa = 0.54 * u * g, wf = 0.46 * u * g, del = (0.38 + 0.05 * f) * u * g;
+      const bo = (0.1 + 0.08 * f) * u * g;
+      const bic = { x: S.x + ux * L1 * 0.47 + nx * bo, y: S.y + uy * L1 * 0.47 + ny * bo, rx: L1 * 0.36, ry: (0.28 + 0.13 * f) * u * g, a: Math.atan2(uy, ux) };
+      const ant = { x: E.x + vx * L2 * 0.3 + mx * 0.07 * u * g, y: E.y + vy * L2 * 0.3 + my * 0.07 * u * g, rx: L2 * 0.3, ry: (0.27 + 0.06 * f) * u * g, a: Math.atan2(vy, vx) };
+      const formas = e => {
+        c.lineWidth = wa + e * 2; c.beginPath(); c.moveTo(S.x, S.y); c.lineTo(E.x, E.y); c.stroke();
+        c.lineWidth = wf + e * 2; c.beginPath(); c.moveTo(E.x, E.y); c.lineTo(H.x, H.y); c.stroke();
+        for (const o of [bic, ant]) { c.beginPath(); c.ellipse(o.x, o.y, o.rx + e, o.ry + e, o.a, 0, Math.PI * 2); c.fill(); }
+        c.beginPath(); c.arc(S.x, S.y, del + e, 0, Math.PI * 2); c.fill();
+      };
+      c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
+      c.strokeStyle = c.fillStyle = INK; formas(lw);
+      c.strokeStyle = c.fillStyle = color; formas(0);
+      // sombra del lado de afuera del brazo
+      c.lineCap = 'butt'; c.strokeStyle = tinta(0.16); c.lineWidth = wa * 0.3;
+      c.beginPath(); c.moveTo(S.x - nx * wa * 0.3, S.y - ny * wa * 0.3); c.lineTo(E.x - nx * wa * 0.3, E.y - ny * wa * 0.3); c.stroke();
+      c.lineCap = 'round';
+      // borde de abajo del bíceps y brillos
+      c.strokeStyle = tinta(0.38); c.lineWidth = lw * 0.6; c.beginPath();
+      if (flip) c.ellipse(bic.x, bic.y, bic.rx * 0.92, bic.ry * 0.92, bic.a, 0.55, Math.PI - 0.55);
+      else c.ellipse(bic.x, bic.y, bic.rx * 0.92, bic.ry * 0.92, bic.a, Math.PI + 0.55, Math.PI * 2 - 0.55);
+      c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.32)';
+      c.beginPath(); c.ellipse(bic.x + nx * bic.ry * 0.4, bic.y + ny * bic.ry * 0.4, bic.rx * 0.5, bic.ry * 0.24, bic.a, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(S.x - del * 0.3, S.y - del * 0.35, del * 0.3, 0, Math.PI * 2); c.fill();
+      // venas cuando aprieta fuerte
+      if (f > 0.45) {
+        c.strokeStyle = tinta((f - 0.45) / 0.55 * 0.45); c.lineWidth = Math.max(1, lw * 0.45); c.beginPath();
+        for (let i = 0; i <= 8; i++) {
+          const t = 0.2 + i / 8 * 0.62, w = (0.03 + Math.sin(i * 1.7) * 0.05) * u * g;
+          const x = E.x + vx * L2 * t + mx * w, y = E.y + vy * L2 * t + my * w;
+          i ? c.lineTo(x, y) : c.moveTo(x, y);
+        }
+        for (let i = 0; i <= 5; i++) {
+          const t = 0.3 + i / 5 * 0.4, w = (0.06 + Math.sin(i * 2.1) * 0.04) * u * g;
+          const x = S.x + ux * L1 * t + nx * w, y = S.y + uy * L1 * t + ny * w;
+          i ? c.lineTo(x, y) : c.moveTo(x, y);
+        }
+        c.stroke();
+      }
+      c.restore();
+    }
+    function puno(c, x, y, u, color, lw, g = 1) {
+      const r = 0.4 * u * g;
+      c.save(); c.fillStyle = color; c.strokeStyle = INK; c.lineWidth = lw; c.lineCap = 'round';
+      rr(c, x - r, y - r, 2 * r, 2 * r, r * 0.65); c.fill(); c.stroke();
+      c.lineWidth = Math.max(1.5, lw * 0.6); c.beginPath();
+      for (let k = -1; k <= 1; k++) { c.moveTo(x - r * 0.5, y + k * r * 0.45); c.lineTo(x + r * 0.5, y + k * r * 0.45); }
+      c.stroke(); c.restore();
+    }
+    // la otra mano agarra la manija de su lado de la mesa
+    function brazoAfuera(c, u, color, d, f, lw) {
+      c.save(); c.scale(d, 1);
+      const H = { x: -0.55 * u, y: -0.44 * u };
+      brazo(c, { x: -HX * u, y: HY * u }, { x: -1.38 * u, y: -0.78 * u }, H, u, color, f * 0.6, lw, 0.9);
+      puno(c, H.x, H.y, u, color, lw, 0.85);
+      c.restore();
+    }
+    function almohadilla(c, x, y, w, h, col, lw) {
+      c.fillStyle = tinta(0.45); rr(c, x - w / 2, y - h / 2 + h * 0.3, w, h, h * 0.45); c.fill();
+      c.fillStyle = col; rr(c, x - w / 2, y - h / 2, w, h, h * 0.45); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.45)'; rr(c, x - w * 0.34, y - h * 0.28, w * 0.68, h * 0.18, h * 0.09); c.fill();
+    }
+    // mesa de competencia: tapa acolchada vista un poco de arriba, almohadillas para los codos y para tumbar,
+    // manijas para la otra mano, frente con estrella y patas de metal
+    function mesa(c, cx, yT, u, lw) {
+      c.save(); c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = lw;
+      c.fillStyle = '#6f7891'; rr(c, cx - 2.3 * u, yT + 1.0 * u, 4.6 * u, 0.2 * u, 0.08 * u); c.fill(); c.stroke();
+      for (const s of [-1, 1]) {
+        const x = cx + s * 2.3 * u;
+        c.fillStyle = '#8d96a8';
+        c.beginPath(); c.moveTo(x - 0.2 * u, yT + 0.55 * u); c.lineTo(x + 0.2 * u, yT + 0.55 * u); c.lineTo(x + 0.3 * u, yT + 1.5 * u); c.lineTo(x - 0.3 * u, yT + 1.5 * u); c.closePath(); c.fill(); c.stroke();
+        c.fillStyle = 'rgba(255,255,255,.4)'; c.fillRect(x - 0.1 * u, yT + 0.66 * u, 0.06 * u, 0.74 * u);
+        c.fillStyle = '#4a5272'; rr(c, x - 0.5 * u, yT + 1.46 * u, 1.0 * u, 0.2 * u, 0.08 * u); c.fill(); c.stroke();
+      }
+      c.fillStyle = '#2a3158'; rr(c, cx - 3.85 * u, yT + 0.1 * u, 7.7 * u, 0.52 * u, 0.12 * u); c.fill(); c.stroke();
+      c.fillStyle = '#f5b84a'; c.fillRect(cx - 3.74 * u, yT + 0.44 * u, 7.48 * u, 0.07 * u);
+      c.fillStyle = '#ffcc29'; c.lineWidth = lw * 0.7; estrella(c, cx, yT + 0.36 * u, 0.2 * u, 5); c.fill(); c.stroke(); c.lineWidth = lw;
+      c.fillStyle = '#3a4573';
+      c.beginPath(); c.moveTo(cx - 3.45 * u, yT - 0.3 * u); c.lineTo(cx + 3.45 * u, yT - 0.3 * u); c.lineTo(cx + 3.9 * u, yT + 0.16 * u); c.lineTo(cx - 3.9 * u, yT + 0.16 * u); c.closePath(); c.fill(); c.stroke();
+      // costura y línea del medio
+      c.setLineDash([0.12 * u, 0.1 * u]); c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = Math.max(1, lw * 0.4);
+      c.beginPath(); c.moveTo(cx - 3.3 * u, yT - 0.22 * u); c.lineTo(cx + 3.3 * u, yT - 0.22 * u); c.lineTo(cx + 3.68 * u, yT + 0.08 * u); c.lineTo(cx - 3.68 * u, yT + 0.08 * u); c.closePath();
+      c.moveTo(cx, yT - 0.26 * u); c.lineTo(cx, yT + 0.12 * u); c.stroke();
+      c.setLineDash([]); c.strokeStyle = INK; c.lineWidth = lw;
+      for (const s of [-1, 1]) {
+        almohadilla(c, cx + s * 0.62 * u, yT - 0.08 * u, 0.95 * u, 0.28 * u, '#e9edf5', lw);
+        almohadilla(c, cx + s * 1.95 * u, yT - 0.1 * u, 0.8 * u, 0.3 * u, '#ff5d7d', lw);
+        const mx = cx + s * (SEP + 0.55) * u;
+        c.fillStyle = '#8d96a8'; c.beginPath(); c.ellipse(mx, yT - 0.04 * u, 0.2 * u, 0.07 * u, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+        c.fillStyle = '#c9d3e3'; rr(c, mx - 0.09 * u, yT - 0.64 * u, 0.18 * u, 0.6 * u, 0.08 * u); c.fill(); c.stroke();
+      }
+      c.restore();
+    }
+    return { CUELLO, CABEZA, HX, HY, SEP, cuerpo, brazo, brazoAfuera, puno, mesa };
+  })();
+
   // ---------- muertes propias de un personaje (por ahora, Geo: se parte en pedazos) ----------
   // dibujarCubo anota dónde quedó el cubo en cada canvas. Los juegos llaman a morir() cuando perdés:
   // si tu personaje tiene muerte propia, se rompe ahí mismo en una capa encima de la página
@@ -5915,9 +6376,11 @@ html.cc-quieto .cc-guia-dedo{animation:none;opacity:1;transform:translate(-50%,0
     xpPara, nivelDe, perfil, skin, efecto, elegirSkin, elegirEfecto, libre, nuevos, marcarVistos,
     sumarXP, xpEscala, partida, importarRecord, anotarRecord, revisarLogros, tieneLogro,
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
-    avisar, vibrar, volver, dibujarCubo, morir, sombra, pedirApodo, diario, diarioDe, azar, faltaTexto,
+    avisar, vibrar, volver, dibujarCubo, pulseada, morir, sombra, pedirApodo, diario, diarioDe, azar, faltaTexto,
     temporada, misiones, eventoXP, TEMP_XP, sincronizarNube, menosMovimiento, frenar, frenado, guia, T, Tsin: Tlit, textos, idioma, IDIOMAS, ponerIdioma, LOCALE, traducirNodo,
     verPerfil, perfilPublico, horasTexto, empezar,
+    RAREZAS, rarezaTitulo, pintarTitulo, rangoLogro, medallaLogro, NOMBRE_RANGO, maestria, maestrias, insigniaMaestria, RANGOS_MAESTRIA,
+    vitrinaDe, elegirVitrina, VITRINA_MAX,
   };
   // Duelos 1v1 (cubo-duelo.js): usa la misma conexión a Supabase y escucha las invitaciones en todas las páginas.
   window.CuboComun.RANKING = RANKING;
