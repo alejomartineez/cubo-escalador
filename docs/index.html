@@ -876,36 +876,27 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     c.beginPath(); c.arc(bx, by, s * 0.26, 0, Math.PI * 2); c.fill(); c.stroke();
     c.strokeStyle = '#ff7a59'; c.lineWidth = 2.5; c.beginPath(); c.arc(bx, by, s * 0.26, t / 200, t / 200 + 2); c.stroke();
   }
-  function ilZigzag(c, w, h, t) {
-    sky(c, w, h, '#ff8ec4', '#ffd3e8');
-    // túnel en zigzag que baja y la flecha que lo sigue, con su estela
-    const u = Math.min(w / 7, h / 5.5), py = h * 0.66, vel = t / 1000 * 2.2, L = 1.5, hw = 1.15;
-    const px = y => { const k = Math.floor(y / L), f = y / L - k; return (k % 2 ? 0.5 - f : -0.5 + f) * L; };
-    const X = x => w / 2 + x * u, Y = y => py - (y - vel) * u;
-    for (const lado of [-1, 1]) {
-      c.beginPath(); c.moveTo(lado < 0 ? 0 : w, h + 4);
-      for (let y = vel - h / u; y <= vel + h / u; y += 0.1) c.lineTo(X(px(y) + lado * hw), Y(y));
-      c.lineTo(lado < 0 ? 0 : w, -4); c.closePath(); c.fillStyle = '#7b3f9e'; c.fill();
-      c.beginPath();
-      for (let y = vel - h / u; y <= vel + h / u; y += 0.1) c.lineTo(X(px(y) + lado * hw), Y(y));
-      c.strokeStyle = INK; c.lineWidth = 3; c.stroke();
-    }
-    const col = CC.skin().cuerpo;
-    c.lineCap = 'round'; c.lineJoin = 'round';
-    for (const [lw, cc] of [[u * 0.3, INK], [u * 0.18, col]]) {
-      c.strokeStyle = cc; c.lineWidth = lw; c.beginPath();
-      for (let y = vel - 3; y <= vel; y += 0.1) c.lineTo(X(px(y)), Y(y));
-      c.stroke();
-    }
-    c.lineCap = 'butt';
-    const dir = Math.floor(vel / L) % 2 ? -1 : 1, s = u * 0.62;
-    c.save(); c.translate(X(px(vel)), py); c.rotate(Math.atan2(-1, dir));
-    c.beginPath(); c.moveTo(s * 0.62, 0); c.lineTo(-s * 0.48, -s * 0.5); c.lineTo(-s * 0.22, 0); c.lineTo(-s * 0.48, s * 0.5); c.closePath();
-    c.fillStyle = col; c.strokeStyle = INK; c.lineWidth = 3; c.lineJoin = 'round'; c.fill(); c.stroke();
-    c.rotate(-Math.atan2(-1, dir)); c.fillStyle = INK;
-    for (const side of [-1, 1]) { c.beginPath(); c.ellipse(side * s * 0.13 + dir * s * 0.05, -s * 0.02, s * 0.065, s * 0.11, 0, 0, Math.PI * 2); c.fill(); }
-    c.restore();
+  function ilPaleta(c, w, h, t) {
+    sky(c, w, h, '#46d08f', '#bff0d6');
+    // la mesa vista desde arriba, la pelota que va y viene entre las dos paletas
+    const mw = Math.min(w * 0.5, h * 0.62), mh = h * 0.86, mx = (w - mw) / 2, my = (h - mh) / 2;
+    c.fillStyle = INK; rr(c, mx - 4, my, mw + 8, mh + 8, 12); c.fill();
+    c.fillStyle = '#2a7fd4'; c.strokeStyle = INK; c.lineWidth = 3; rr(c, mx - 4, my - 4, mw + 8, mh + 8, 12); c.fill(); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 2; c.strokeRect(mx + 3, my + 3, mw - 6, mh - 6);
+    c.fillStyle = INK; c.fillRect(mx - 10, my + mh / 2 - 2, mw + 20, 4);
+    const f = (t % 1600) / 1600, ida = f < 0.5, p = ida ? f * 2 : (f - 0.5) * 2;
+    const ya = my + mh * 0.86, yb = my + mh * 0.14, xa = mx + mw * 0.3, xb = mx + mw * 0.72;
+    const bx = ida ? xa + (xb - xa) * p : xb - (xb - xa) * p, by = ida ? ya - (ya - yb) * p : yb + (ya - yb) * p;
+    const pw = mw * 0.32, ph = Math.max(6, mh * 0.035);
+    const paleta = (x, y, col) => { c.fillStyle = col; c.strokeStyle = INK; c.lineWidth = 3; rr(c, x - pw / 2, y - ph / 2, pw, ph, ph / 2); c.fill(); c.stroke(); };
+    paleta(ida ? xa : xa + (bx - xa) * 0.4, ya + ph, CC.skin().cuerpo || '#ffcc29');
+    paleta(ida ? xb + (bx - xb) * 0.4 : xb, yb - ph, '#ff7a59');
+    c.fillStyle = PAPER; c.strokeStyle = INK; c.lineWidth = 2.5; c.beginPath(); c.arc(bx, by, Math.max(5, mw * 0.035), 0, Math.PI * 2); c.fill(); c.stroke();
+    const s = Math.min(w * 0.12, h * 0.22);
+    CC.dibujarCubo(c, mx - s * 0.9, h * 0.96, s, { mirar: 1, t });
+    CC.dibujarCubo(c, mx + mw + s * 0.9, h * 0.96, s, { mirar: -1, t, skin: rival('menta'), efecto: false });
   }
+
   function ilEsqui(c, w, h, t) {
     sky(c, w, h, '#eaf4ff', '#cfe3ff');
     const s = Math.min(w / 8, h / 4.6), vel = t * 0.07;
@@ -962,13 +953,13 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     }
   }
 
-  const DIBUJOS = { escalador: ilEscalador, lluvia: ilLluvia, ritmo: ilRitmo, voley: ilVoley, zigzag: ilZigzag, esqui: ilEsqui, pulseada: ilPulseada };
+  const DIBUJOS = { escalador: ilEscalador, lluvia: ilLluvia, ritmo: ilRitmo, voley: ilVoley, paleta: ilPaleta, esqui: ilEsqui, pulseada: ilPulseada };
   const DESC = {
     escalador: 'Tocá el lado donde está el próximo escalón. Si errás, te mareás. Sprint 100, 30 segundos, Libre y el nuevo modo Lava: subí antes de que te alcance.',
     lluvia: 'Movete entre carriles y esquivá los bloques que caen cada vez más rápido.',
     ritmo: 'Tocá el lado de cada nota justo cuando llega a la línea, al ritmo de la música.',
     voley: 'Movete con ◀ ▶ y el cubo devuelve solo. Pegale con el borde para cruzarla. ¿Cuántos puntos le hacés al rival?',
-    zigzag: 'La flecha sube sola en diagonal: ◀ la manda para la izquierda y ▶ para la derecha. Pasá entre las paredes y los pinches.',
+    paleta: 'Mové tu paleta con ◀ ▶ y devolvé la pelota. Pegale con la punta para cruzarla. Contra la máquina o de a dos en el mismo celu.',
     esqui: 'Mantené ◀ o ▶ para doblar y pasá entre las banderas. Cada vez más rápido.',
     pulseada: 'Alterná ◀ ▶ lo más rápido que puedas para ganarle la fuerza al rival. ¿Cuántos toques por segundo hacés?',
   };
@@ -1650,7 +1641,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1.2" fill="currentColor" stroke="none"/></svg>' },
   ];
   // dónde guarda cada juego su "Sonido: sí/no" (Opciones lo cambia en todos)
-  const SONIDO_KEYS = ['cubo-escalador-records', 'cubo-lluvia-records', 'cubo-ritmo-records', 'cubo-voley', 'cubo-zigzag-records',
+  const SONIDO_KEYS = ['cubo-escalador-records', 'cubo-lluvia-records', 'cubo-ritmo-records', 'cubo-voley', 'cubo-paleta-records',
     'cubo-esqui', 'cubo-pulseada-records'];
   const portada = $('portada'), ptCv = $('ptCubo');
   const sesion = (k, v) => { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch (e) {} return null; };

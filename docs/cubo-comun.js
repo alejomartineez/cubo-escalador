@@ -124,7 +124,7 @@
     { id: 'paraguas', nombre: 'Paraguas', logro: 'lluvia-4', cuerpo: '#8fd8ff', extra: 'paraguas' },
     // `antes`: el logro que lo daba antes, de un juego que ya no está (quien lo ganó así lo sigue teniendo).
     { id: 'caja', nombre: 'Cajita', logro: 'ritmo-4', antes: 'clasificador-4', cuerpo: '#dba268', extra: 'caja' },
-    { id: 'equilibrista', nombre: 'Equilibrista', logro: 'zigzag-4', antes: 'equilibrio-4', cuerpo: '#c7a6ff', extra: 'equilibrista' },
+    { id: 'equilibrista', nombre: 'Equilibrista', logro: 'paleta-4', antes: ['equilibrio-4', 'zigzag-4'], cuerpo: '#c7a6ff', extra: 'equilibrista' },
     { id: 'playero', nombre: 'Playero', logro: 'voley-4', cuerpo: '#f0ae7c', extra: 'playero' },
     { id: 'esquiador', nombre: 'Esquiador', logro: 'esqui-4', cuerpo: '#fdf4ee', extra: 'esquiador' },
     { id: 'luchador', nombre: 'Luchador', logro: 'pulseada-4', cuerpo: '#ffc79a', extra: 'luchador', sinCachetes: true },
@@ -183,7 +183,7 @@
     // Premios de juegos
     { id: 'notas', nombre: 'Notas musicales', logro: 'ritmo-4' },
     { id: 'huellitas', nombre: 'Huellitas', logro: 'voley-4', antes: 'paseo-4' },
-    { id: 'estela', nombre: 'Estela espacial', logro: 'zigzag-4', antes: 'cohete-4' },
+    { id: 'estela', nombre: 'Estela espacial', logro: 'paleta-4', antes: ['cohete-4', 'zigzag-4'] },
     // Premios grandes del camino de nivel
     { id: 'nieve', nombre: 'Nieve', pase: true, nivel: 31 },
     { id: 'ki', nombre: 'Aura de ki', pase: true, nivel: 38 },
@@ -259,7 +259,7 @@
     { id: 'lluvia', nombre: 'Lluvia', archivo: 'lluvia.html', color: '#3fc1c9', tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'ritmo', nombre: 'Ritmo', archivo: 'ritmo.html', color: '#8f6bff', tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'voley', nombre: 'Vóley', archivo: 'voley.html', color: '#ff7a59', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
-    { id: 'zigzag', nombre: 'Zigzag', archivo: 'zigzag.html', color: '#ff6fae', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
+    { id: 'paleta', nombre: 'Paleta', archivo: 'paleta.html', color: '#2ec27e', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
     { id: 'esqui', nombre: 'Esquí', archivo: 'esqui.html', color: '#5b8cff', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
     { id: 'pulseada', nombre: 'Pulseada', archivo: 'pulseada.html', color: '#f5b84a', nuevo: true, tablas: tablasDif('mayor', 'num', 'rivales') },
   ];
@@ -286,7 +286,7 @@
     lluvia: [100, 300, 700, 1500],
     ritmo: [5000, 25000, 70000, 160000],
     voley: [5, 12, 20, 32],
-    zigzag: [100, 300, 650, 1200],
+    paleta: [4, 10, 18, 30],
     esqui: [250, 1000, 2500, 5000],
     pulseada: [2, 5, 9, 14],
   };
@@ -349,6 +349,8 @@
     { id: 'escalador-espacio', juego: 'escalador', nombre: 'Houston', desc: 'Llegá al espacio en Libre (escalón 330).', medalla: 'plata',
       prueba: p => (escMejor(p, 'free') || 0) >= 330 },
     // Pulseada: alternando con dos dedos un promedio hace 6 a 8 toques por segundo; 10 sostenidos es de muy buenos.
+    { id: 'paleta-rally', juego: 'paleta', nombre: 'Peloteo eterno', desc: 'Hacé un rally de 30 golpes en la Paleta.', medalla: 'plata',
+      prueba: p => !!p.marcas['paleta-rally'] },
     { id: 'pulseada-tps10', juego: 'pulseada', nombre: 'Diez por segundo', desc: 'Sostené 10 toques por segundo en la Pulseada.', medalla: 'oro',
       prueba: p => !!p.marcas['tps10'] },
     { id: 'escalador-x', juego: 'escalador', nombre: 'Escalera del infierno', desc: 'Sprint 100 en Extremo en menos de 15 s.', medalla: 'oro',
@@ -439,7 +441,7 @@
   // Un código guarda el id de la skin, o 'fx:<id>' si es un efecto (algunos ids se repiten entre skins y efectos).
   const claveCodigo = item => (item.codigo === true ? item.id : item.codigo);
   const libre = (item, p = datos) => (item.codigo ? p.codigos.includes(claveCodigo(item))
-    : item.logro ? !!(p.logros[item.logro] || (item.antes && p.logros[item.antes])) : nivelDe(p.xp).nivel >= (item.nivel || 1));
+    : item.logro ? !!(p.logros[item.logro] || [].concat(item.antes || []).some(a => p.logros[a])) : nivelDe(p.xp).nivel >= (item.nivel || 1));
   // Lo desbloqueado que todavía no se vio en la pantalla de personajes, para marcarlo como nuevo.
   function nuevos() {
     datos = leer();
@@ -661,7 +663,7 @@
   // del juego del día). Jugar días seguidos arma la racha 🔥. El día cambia a las 00:00 UTC: es el mismo en todos lados.
   // Los juegos lo abren con ?diario=1: `diarioDe(juego)` da la semilla, cuenta el intento y dibuja el cartel.
   const DIARIO_INTENTOS = 3;
-  const DIARIO_ORDEN = ['escalador', 'lluvia', 'esqui', 'voley', 'ritmo', 'pulseada'];
+  const DIARIO_ORDEN = ['escalador', 'lluvia', 'paleta', 'esqui', 'voley', 'ritmo', 'pulseada'];
   const DIARIO_TABLA = { escalador: 'time' };   // la tabla normal que se juega ese día (si no está acá, 'normal')
   const DIA_MS = 864e5;
   const fechaDia = n => new Date(n * DIA_MS).toISOString().slice(0, 10);
@@ -683,7 +685,7 @@
   }
   function diario(ahora = ahoraDiario()) {
     const n = Math.floor(ahora / DIA_MS), fecha = fechaDia(n), jid = DIARIO_ORDEN[n % DIARIO_ORDEN.length], j = juego(jid);
-    const d = leer().diario, hoy = d.fecha === fecha, intentos = hoy ? Math.max(0, +d.intentos || 0) : 0;
+    const d = leer().diario, hoy = d.fecha === fecha && (!d.juego || d.juego === jid), intentos = hoy ? Math.max(0, +d.intentos || 0) : 0;
     const tabla = DIARIO_TABLA[jid] || 'normal', mejorHoy = hoy && d.mejor != null ? +d.mejor : null;
     return {
       fecha, fechaLinda: fechaLinda(fecha), juego: jid, nombre: j.nombre, color: j.color, archivo: j.archivo + '?diario=1',
@@ -703,7 +705,7 @@
   // premio de XP la primera vez de cada día (más grande con la racha).
   function anotarDiario(o, valor) {
     const f = o.diario.fecha, d = datos.diario;
-    if (!f || d.fecha !== f) return null;   // el intento era de otro día
+    if (!f || d.fecha !== f || (d.juego && d.juego !== o.juego)) return null;   // el intento era de otro día
     const nueva = isFinite(valor) && valor > 0 && (d.mejor == null || valor > d.mejor);
     if (nueva) { d.mejor = valor; if (datos.apodo) encolar(o.juego, o.diario.tablaRanking, valor); }
     let premio = 0;
@@ -767,7 +769,7 @@
         const n = Math.floor(ahoraDiario() / DIA_MS);
         if (fechaDia(n) !== info.fecha) return false;
         let d = datos.diario;
-        if (d.fecha !== info.fecha) d = datos.diario = { ...d, fecha: info.fecha, intentos: 0, mejor: null };
+        if (d.fecha !== info.fecha || (d.juego && d.juego !== jid)) d = datos.diario = { ...d, fecha: info.fecha, juego: jid, intentos: 0, mejor: null };
         if ((+d.intentos || 0) >= DIARIO_INTENTOS) return false;
         if (d.ultimo !== info.fecha) {
           d.racha = d.ultimo === fechaDia(n - 1) ? (+d.racha || 0) + 1 : 1;
