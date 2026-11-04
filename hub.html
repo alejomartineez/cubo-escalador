@@ -26,7 +26,7 @@ body {
   user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
 }
 button { font: inherit; color: var(--ink); }
-.app { height: 100%; height: 100dvh; display: grid; grid-template-rows: auto auto auto 1fr auto; }
+.app { height: 100%; height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto minmax(0, 1fr) auto; }
 
 /* ---------- desafío del día ---------- */
 .diario {
@@ -51,20 +51,31 @@ button { font: inherit; color: var(--ink); }
   .diario .d-emo, .diario .play span { display: none; }
   .diario .play { width: 44px; padding: 0; justify-content: center; }
 }
-/* el desafío de cada juego, en su slide */
-.drow { display: flex; gap: 8px; }
-.dchip, .dchip-rk {
-  height: 44px; display: flex; align-items: center; cursor: pointer;
-  border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
+/* el desafío de cada juego: un botón con su calendario; en el celu, lo que queda va en una burbuja */
+.dia {
+  position: relative; flex: none; display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; min-width: 52px; padding: 0 12px; cursor: pointer;
+  background: #fff3c4; border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 0 3px 0 var(--ink); text-align: left;
 }
-.dchip { flex: 1; min-width: 0; gap: 8px; padding: 0 12px; background: #fff3c4; font: 400 18px var(--display); text-align: left; }
-.dchip span { flex: none; white-space: nowrap; }
-.dchip small { flex: 1; min-width: 0; text-align: right; font: 800 12px var(--body); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dchip.hecho { background: #e6f9ef; }
-.dchip.hecho small { color: #1f7a52; }
-.dchip-rk { flex: none; gap: 5px; padding: 0 10px; background: #fff; font-weight: 800; font-size: 13px; }
-.dchip-rk svg { width: 20px; height: 20px; }
-.dchip:active, .dchip-rk:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.dia svg { flex: none; width: 24px; height: 24px; }
+.dia .dia-t { display: none; font: 400 18px var(--display); white-space: nowrap; }
+.dia [data-dia-s] { display: none; flex: 1; min-width: 0; text-align: right; font: 800 12px var(--body); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dia [data-dia-n] {
+  position: absolute; top: -10px; right: -9px; min-width: 22px; height: 22px; padding: 0 5px; display: grid; place-items: center; border-radius: 99px;
+  background: var(--accent); color: var(--paper); border: 2px solid var(--ink); font: 400 13px/1 var(--display);
+}
+.dia.hecho { background: #e6f9ef; }
+.dia.hecho [data-dia-s] { color: #1f7a52; }
+.dia.hecho [data-dia-n] { background: #1f9e6a; }
+.dia:hover { background: #fff8d9; }
+.dia.hecho:hover { background: #f1fcf6; }
+.dia:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink); }
+.dchip-rk {
+  display: none; flex: none; align-items: center; justify-content: center; gap: 6px; height: 52px; padding: 0 12px; cursor: pointer;
+  background: #fff; border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 0 3px 0 var(--ink); font-weight: 800; font-size: 14px;
+}
+.dchip-rk svg { width: 22px; height: 22px; }
+.dchip-rk:hover { background: #fff4c7; }
+.dchip-rk:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink); }
 
 /* ---------- arriba ---------- */
 .top {
@@ -101,9 +112,11 @@ button { font: inherit; color: var(--ink); }
   padding: 3px 10px 3px 4px; min-width: 0;
 }
 .me:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.me { min-width: 0; }
 .me canvas { width: 40px; height: 44px; flex: none; }
 .me-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; text-align: left; }
-.me-lvl { font-family: var(--display); font-size: 16px; line-height: 1; white-space: nowrap; }
+.me-lvl { font-family: var(--display); font-size: 16px; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.me .bar { width: 100%; min-width: 44px; max-width: 84px; }
 .bar { width: 84px; height: 8px; border-radius: 99px; background: #e6e2d6; border: 2px solid var(--ink); overflow: hidden; }
 .bar i { display: block; height: 100%; background: var(--accent); }
 .me-edit { font-size: 11px; font-weight: 800; color: var(--muted); white-space: nowrap; }
@@ -130,6 +143,7 @@ button { font: inherit; color: var(--ink); }
 }
 .chip i { flex: none; width: 12px; height: 12px; border-radius: 4px; border: 2px solid var(--ink); background: var(--c); }
 .chip svg { flex: none; width: 15px; height: 15px; }
+.chip .r { display: none; }
 .chip:hover { background: rgba(29, 35, 64, .07); }
 .chip[aria-current="true"] { background: var(--cube); box-shadow: inset 0 0 0 2.5px var(--ink); }
 .chip.es-nuevo::after { content: ""; position: absolute; top: 4px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--ink); }
@@ -174,11 +188,19 @@ button { font: inherit; color: var(--ink); }
   width: min(480px, 100%); display: flex; flex-direction: column; gap: 10px;
   background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 5px 0 var(--ink); padding: 12px 14px;
 }
-.info p { margin: 0; font-size: 15px; line-height: 1.4; }
-.row { display: flex; align-items: center; gap: 10px; }
-.rec { flex: 1; min-width: 0; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.rec b { display: block; font-family: var(--display); font-weight: 400; letter-spacing: 0; text-transform: none; font-size: 19px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rec small { display: block; margin-top: 2px; font-size: 11px; letter-spacing: 0; text-transform: none; }
+/* la descripción: en el celu, un renglón; tocándola se abre entera */
+.desc {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;
+  width: 100%; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
+  font: 400 15px/1.4 var(--body); color: var(--ink);
+}
+.desc[aria-expanded="true"] { -webkit-line-clamp: 6; }
+.rec { display: flex; align-items: baseline; gap: 8px; min-width: 0; white-space: nowrap; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.rec b { min-width: 0; overflow: hidden; text-overflow: ellipsis; font: 400 19px var(--display); letter-spacing: 0; text-transform: none; color: var(--ink); font-variant-numeric: tabular-nums; }
+.rec small { flex: none; margin-left: auto; font-size: 11px; letter-spacing: 0; text-transform: none; }
+.acciones { display: flex; align-items: center; gap: 10px; }
+.acciones .play { flex: 1; justify-content: center; }
+.icon-btn .lbl { display: none; }
 .icon-btn {
   flex: none; width: 52px; height: 52px; display: grid; place-items: center; cursor: pointer;
   background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 5px 0 var(--ink);
@@ -529,7 +551,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 .logro.secreto { background: #2b2f4a; border-color: var(--ink); border-style: solid; color: var(--paper); }
 .logro.secreto .t span { color: #c9cfe6; }
 .logro.secreto .m { background: #8f6bff !important; border-color: var(--ink); color: var(--paper); }
-@media (max-height: 700px) { .info p { display: none; } .slide { gap: 8px; } }
+@media (max-height: 700px) { .slide { gap: 8px; } }
 @media (max-height: 600px) { .tab { height: 48px; } .tab span { display: none; } }
 @media (max-width: 480px) { .amigos-btn span { display: none; } .amigos-btn { padding: 0; } }
 /* 1v1: al lado de Amigos, en rojo para que se vea desde lejos */
@@ -539,7 +561,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
   font: 400 19px var(--display); white-space: nowrap; -webkit-text-stroke: 1.2px var(--ink); paint-order: stroke fill;
 }
 .vs-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-@media (max-width: 400px) { .vs-btn { padding: 0 8px; font-size: 17px; } .me-edit { display: none; } }
+@media (max-width: 400px) { .vs-btn { padding: 0 8px; font-size: 17px; } .me-edit { display: none; } .top, .top-r { gap: 6px; } .me { gap: 5px; padding: 3px 8px 3px 2px; } }
 .vs-local { display: grid; gap: 8px; }
 .vs-op {
   display: flex; align-items: center; gap: 12px; padding: 12px; text-align: left; cursor: pointer; width: 100%;
@@ -552,7 +574,10 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 /* con el botón de amigos no entra el nombre en una línea: va en dos */
 @media (max-width: 420px) { .brand span { display: none; } }
 @media (max-width: 400px) { .bar { width: 64px; } .install span { display: none; } }
-@media (max-width: 340px) { .brand i { width: 44px; height: 44px; } }
+/* con «Instalar» a la vista no entra todo: se va el muñequito del perfil y queda «Nivel N» entero */
+@media (max-width: 420px) { .top:has(#install:not([hidden])) .me canvas { display: none; } .top:has(#install:not([hidden])) .me { padding-left: 10px; } }
+@media (max-width: 400px) { .install { width: 44px; padding: 0; justify-content: center; } }
+@media (max-width: 340px) { .brand i { width: 44px; height: 44px; } .top, .top-r { gap: 4px; } .me { padding: 3px 6px 3px 1px; gap: 3px; } .me canvas { width: 30px; height: 33px; } .vs-btn { padding: 0 6px; font-size: 16px; } }
 @media (prefers-reduced-motion: reduce) { body { transition: none; } .badge, .coach svg, .card, .slide.entra > * { animation: none; } }
 
 /* ---------- portada: lo primero que se ve al entrar. El cubo de la carga salta hasta acá ---------- */
@@ -625,6 +650,79 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
 .creditos a { color: var(--ink); font-weight: 800; }
 @media (max-height: 640px) { .pt-heroe { width: 200px; height: 150px; } .pt-titulo { font-size: clamp(44px, 13vw, 64px); } .pt-jugar { height: 58px; font-size: 28px; } }
 @media (prefers-reduced-motion: reduce) { .pt-nube, .portada .pt-titulo, .portada .pt-sub, .portada .pt-botones > *, .portada .pt-redes, .portada.chau { animation: none; } }
+
+/* ---------- compu: lista de juegos a la izquierda y el elegido en grande a la derecha ----------
+   Toda la app se agranda junta con --hz (la calcula escalaHub: el diseño es de 1240×700 y se agranda hasta llenar la
+   pantalla, también en 4K; antes cada panel crecía por su lado con --ui y la caja de desafíos quedaba chiquita).
+   Ancho máximo para que en pantallas grandes no quede todo en las esquinas. */
+@media (min-width: 900px) and (min-height: 560px) {
+  .app {
+    zoom: var(--hz, 1); width: 100%; max-width: 1180px; height: calc(100dvh / var(--hz, 1)); margin: 0 auto; padding: 0 24px;
+    grid-template-columns: 290px minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto; column-gap: 28px;
+    grid-template-areas: "top top" "diario slides" "elegir slides" "tabs tabs";
+  }
+  .app .top, .app .elegir, .app .info, .app .tabs { zoom: 1; }
+  .top { grid-area: top; padding: 14px 0 12px; }
+  .diario { grid-area: diario; margin: 0; flex-wrap: wrap; row-gap: 10px; padding: 12px 12px 12px 14px; }
+  .diario .d-txt { flex: 1 1 100%; gap: 4px; }
+  .diario b { font-size: 19px; white-space: normal; }
+  .diario small { white-space: normal; }
+  .diario .d-ev { white-space: nowrap; }
+  .diario .d-pips i { max-width: none; }
+  .diario .d-racha { margin-left: auto; }
+  .diario .play { margin-left: auto; }
+  .diario .d-racha:not([hidden]) + .play { margin-left: 0; }
+  .tabs { grid-area: tabs; margin-top: 14px; }
+  .slides { grid-area: slides; }
+
+  /* la lista */
+  .elegir { grid-area: elegir; width: auto; margin: 12px 0 0; align-self: start; max-height: 100%; min-height: 0; flex-direction: column; align-items: stretch; }
+  .elegir .arrow { display: none; }
+  .fila { flex: 0 1 auto; min-height: 0; flex-direction: column; flex-wrap: nowrap; justify-content: flex-start; gap: 0; padding: 5px; overflow-x: hidden; overflow-y: auto; border-width: 3px; box-shadow: 0 4px 0 var(--ink); border-radius: 18px; }
+  .chip { width: 100%; height: 35px; flex: none; gap: 10px; padding: 0 12px; font-size: 17px; border-radius: 11px; }
+  .chip i { width: 16px; height: 16px; border-radius: 5px; }
+  .chip .r { display: block; min-width: 0; margin-left: auto; padding-left: 8px; font: 700 12.5px var(--body); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chip[aria-current="true"] .r { color: var(--ink); }
+  .chip.es-nuevo::after { top: 4px; right: auto; left: 22px; }
+  .chip.todos { display: none; }   /* la lista ya es «todos» */
+
+  /* el elegido */
+  .slides { container-type: inline-size; }
+  .slide {
+    display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; align-items: stretch; justify-content: stretch;
+    gap: 14px; padding: 4px 0 6px; overflow: visible;
+  }
+  .head { align-items: flex-start; }
+  .slide h2 { text-align: left; font-size: 54px; }
+  .stage { width: 100%; max-height: none; min-height: 0; border-radius: 26px; }
+  .info { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 18px; row-gap: 6px; align-items: center; padding: 14px 16px; }
+  .desc { grid-column: 1; -webkit-line-clamp: 3; }
+  .rec { grid-column: 1; }
+  .acciones { grid-column: 2; grid-row: 1 / span 2; }
+  .acciones .play { flex: none; min-width: 150px; }
+
+  /* con lugar, la info va al costado del dibujo, con todo a la vista */
+  @container (min-width: 720px) {
+    .slide { grid-template-columns: minmax(0, 1fr) 270px; grid-template-rows: auto minmax(0, 1fr); column-gap: 18px; }
+    .head { grid-column: 1 / -1; }
+    .info { display: flex; flex-direction: column; align-items: stretch; gap: 14px; padding: 18px 16px 16px; }
+    .desc { display: block; -webkit-line-clamp: none; line-clamp: none; overflow: visible; font-size: 15.5px; line-height: 1.5; }
+    .rec { flex-direction: column; align-items: flex-start; gap: 2px; padding-top: 12px; border-top: 2.5px dashed rgba(29, 35, 64, .18); }
+    .rec b { font-size: 24px; }
+    .rec small { margin-left: 0; color: var(--muted); }
+    .acciones { margin-top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .acciones .play { order: -2; grid-column: 1 / -1; height: 62px; font-size: 28px; }
+    .acciones .play svg { width: 24px; height: 24px; }
+    .acciones > button { width: 100%; }
+    .dia { order: -1; grid-column: 1 / -1; justify-content: flex-start; height: 48px; }
+    .dia .dia-t, .dia [data-dia-s] { display: block; }
+    .dia [data-dia-n] { display: none; }
+    .acciones .icon-btn { width: auto; height: 48px; display: flex; gap: 6px; font-weight: 800; font-size: 14px; }
+    .acciones .icon-btn svg { width: 22px; height: 22px; }
+    .icon-btn .lbl { display: inline; }
+    .dchip-rk { display: flex; height: 48px; }
+  }
+}
 </style>
 
 <div class="app">
@@ -714,7 +812,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
         <button type="submit">Canjear</button>
       </form>
       <p class="codigo-msg" id="codigoMsg" aria-live="polite"></p>
-      <p class="tip">Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 %, Extremo multiplica por 3 y Maestro por 4. Casi todo sale subiendo de nivel (en la pestaña Nivel ves qué da cada uno), algunas cosas con logros y las legendarias solo con secretos o códigos.</p>
+      <p class="tip">Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 %, Extremo multiplica por 2 y Maestro por 2,5. Sin puntos no hay XP. Casi todo sale subiendo de nivel (en la pestaña Nivel ves qué da cada uno), algunas cosas con logros y las legendarias solo con secretos o códigos.</p>
       <div class="apodo"><span style="flex:1;min-width:0">Apodo en el ranking<b id="apodoTxt" style="display:block">—</b></span><button class="mini" type="button" id="apodoBtn">Cambiar</button></div>
     </div>
   </div>
@@ -942,8 +1040,8 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     '¿Tenés un<br>código?': 'Got a<br>code?',
     'CÓDIGO': 'CODE',
     'Canjear': 'Redeem',
-    'Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 %, Extremo multiplica por 3 y Maestro por 4. Casi todo sale subiendo de nivel (en la pestaña Nivel ves qué da cada uno), algunas cosas con logros y las legendarias solo con secretos o códigos.':
-      'You earn XP in every game. The better you play, the more XP: a new best gives +25%, Extreme multiplies it by 3 and Master by 4. Almost everything unlocks by leveling up (the Pass tab shows what each level gives), some things with achievements, and legendaries only with secrets or codes.',
+    'Ganás XP en todos los juegos. Cuanto mejor jugás, más XP: un récord da +25 %, Extremo multiplica por 2 y Maestro por 2,5. Sin puntos no hay XP. Casi todo sale subiendo de nivel (en la pestaña Nivel ves qué da cada uno), algunas cosas con logros y las legendarias solo con secretos o códigos.':
+      'You earn XP in every game. The better you play, the more XP: a new best gives +25%, Extreme multiplies it by 2 and Master by 2.5. No points, no XP. Almost everything unlocks by leveling up (the Pass tab shows what each level gives), some things with achievements, and legendaries only with secrets or codes.',
     'Apodo en el ranking': 'Leaderboard nickname',
     'Cambiar': 'Change',
     'Temporada {n} · nivel {t}': 'Season {n} · level {t}',
@@ -1422,6 +1520,9 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   const slides = $('slides');
   const ICO_PLAY = '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
   const ICO_RANK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M9 20V8h6v12zM3 20v-7h6v7zM15 20v-9h6v9z"/></svg>';
+  // el ranking de siempre es un mundito (online, todos los jugadores); el del desafío, el podio con «Hoy»
+  const ICO_GLOBO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/></svg>';
+  const ICO_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="m12 12.6.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2-1.45-1.4 2-.3z" fill="currentColor" stroke-width="1"/></svg>';
   const ICO_ALL = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>';
 
   JUEGOS.forEach((g, i) => {
@@ -1430,17 +1531,21 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     s.hidden = i !== 0;
     s.innerHTML = `<div class="head"><h2>${g.nombre}${g.nuevo ? `<span class="nuevo">${T('Nuevo')}</span>` : ''}</h2></div>
       <div class="stage"><canvas aria-hidden="true"></canvas></div>
-      <div class="info"><p>${g.desc}</p><div class="row">
+      <div class="info"><button class="desc" type="button" aria-expanded="false">${g.desc}</button>
         <span class="rec">${T('Tu récord')}<b data-rec>—</b><small data-logros></small></span>
-        <button class="icon-btn" type="button" data-rank aria-label="${T('Ranking de {juego}', { juego: g.nombre })}">${ICO_RANK}</button>
-        <button class="play" type="button">${ICO_PLAY}${T('Jugar')}</button></div>
-        <div class="drow"><button class="dchip" type="button" data-dia><span>📅 ${T('Desafío')}</span><small data-dia-s></small></button>
-          <button class="dchip-rk" type="button" data-dia-rank aria-label="${T('Ranking del desafío de hoy en {juego}', { juego: g.nombre })}">${ICO_RANK}<span>${T('Hoy')}</span></button></div></div>`;
+        <div class="acciones">
+          <button class="icon-btn" type="button" data-rank aria-label="${T('Ranking de {juego}', { juego: g.nombre })}">${ICO_GLOBO}<span class="lbl">${T('Ranking')}</span></button>
+          <button class="dia" type="button" data-dia>${ICO_CAL}<span class="dia-t">${T('Desafío')}</span><small data-dia-s></small><span data-dia-n aria-hidden="true"></span></button>
+          <button class="dchip-rk" type="button" data-dia-rank aria-label="${T('Ranking del desafío de hoy en {juego}', { juego: g.nombre })}">${ICO_RANK}<span>${T('Hoy')}</span></button>
+          <button class="play" type="button">${ICO_PLAY}${T('Jugar')}</button>
+        </div></div>`;
     s.querySelector('.play').addEventListener('click', () => jugar(i));
     s.querySelector('[data-dia]').addEventListener('click', () => { location.href = CC.diario(g.id).archivo; });
     s.querySelector('[data-dia-rank]').addEventListener('click', () => CC.verRanking({ juego: g.id, diario: true }));
     s.querySelector('canvas').addEventListener('click', () => jugar(i));
     s.querySelector('[data-rank]').addEventListener('click', () => CC.verRanking({ juego: g.id }));
+    const desc = s.querySelector('.desc');
+    desc.addEventListener('click', () => desc.setAttribute('aria-expanded', desc.getAttribute('aria-expanded') === 'true' ? 'false' : 'true'));
     slides.appendChild(s);
     g.cv = s.querySelector('canvas');
   });
@@ -1449,7 +1554,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   const chips = JUEGOS.map((g, i) => {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'chip' + (g.nuevo ? ' es-nuevo' : ''); b.style.setProperty('--c', g.color);
-    b.innerHTML = `<i></i>${g.nombre}`;
+    b.innerHTML = `<i></i><span>${g.nombre}</span><small class="r"></small>`;
     b.addEventListener('click', () => ir(i));
     fila.appendChild(b);
     return b;
@@ -1462,14 +1567,17 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   }
   for (const b of $('elegir').querySelectorAll('[data-ir]')) b.addEventListener('click', () => { combinacion(+b.dataset.ir); ir(actual + +b.dataset.ir); });
   // que el elegido se vea en la fila: la fila se mueve solo si quedó tapado, y lo justo
-  function verChip(i, suave) {
-    const b = chips[i], margen = 36;
-    let x = fila.scrollLeft;
-    if (b.offsetLeft - margen < x) x = b.offsetLeft - margen;
-    else if (b.offsetLeft + b.offsetWidth + margen > x + fila.clientWidth) x = b.offsetLeft + b.offsetWidth + margen - fila.clientWidth;
-    x = Math.max(0, Math.min(x, fila.scrollWidth - fila.clientWidth));
-    if (Math.abs(x - fila.scrollLeft) < 1) return;
-    fila.scrollTo({ left: x, behavior: suave && !reduceMotion && Math.abs(x - fila.scrollLeft) < fila.clientWidth ? 'smooth' : 'auto' });
+  // (en la compu la fila es una lista vertical: lo mismo, para arriba y abajo)
+  function verChip(i) {
+    const b = chips[i], margen = 36, v = getComputedStyle(fila).flexDirection === 'column';
+    const pos = v ? b.offsetTop : b.offsetLeft, tam = v ? b.offsetHeight : b.offsetWidth, vista = v ? fila.clientHeight : fila.clientWidth;
+    const actualPos = v ? fila.scrollTop : fila.scrollLeft, total = v ? fila.scrollHeight : fila.scrollWidth;
+    let x = actualPos;
+    if (pos - margen < x) x = pos - margen;
+    else if (pos + tam + margen > x + vista) x = pos + tam + margen - vista;
+    x = Math.max(0, Math.min(x, total - vista));
+    if (Math.abs(x - actualPos) < 1) return;
+    fila.scrollTo({ [v ? 'top' : 'left']: x, behavior: 'auto' });   // sin animación: la fila salta lo justo, nada se arrastra
   }
 
   // ---------- desafío del día ----------
@@ -1496,7 +1604,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       const s = slides.children[i], b = s && s.querySelector('[data-dia]');
       if (!b) return;
       b.classList.toggle('hecho', x.hecho);
-      b.firstElementChild.textContent = (x.hecho ? '✓ ' : '📅 ') + T('Desafío');
+      b.querySelector('[data-dia-n]').textContent = x.hecho ? '✓' : x.quedan;
       b.querySelector('[data-dia-s]').textContent = x.hecho ? T('hecho · {r}', { r: x.texto || '—' })
         : x.jugado ? (x.quedan === 1 ? T('queda 1') : T('quedan {n}', { n: x.quedan })) + (x.texto ? ` · ${x.texto}` : '') : T('{n} intentos', { n: x.maxIntentos });
       b.setAttribute('aria-label', T('Desafío de hoy en {juego}', { juego: x.nombre }) + ': ' + (x.hecho ? T('hecho, tu mejor {r}', { r: x.texto || '—' })
@@ -1583,6 +1691,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     JUEGOS.forEach((g, i) => {
       const s = slides.children[i];
       s.querySelector('[data-rec]').textContent = mejorTexto(g, p);
+      chips[i].querySelector('.r').textContent = mejorTexto(g, p) === '—' ? '' : mejorTexto(g, p);
       const ls = CC.LOGROS.filter(l => l.juego === g.id);
       s.querySelector('[data-logros]').textContent = ls.length ? T('{a} de {b} logros', { a: ls.filter(l => p.logros[l.id]).length, b: ls.length }) : '';
     });
@@ -2260,7 +2369,13 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     }
     requestAnimationFrame(frame);
   }
-  addEventListener('resize', () => { todo(); verChip(actual, false); });
+  // escala de la vista de compu (ver el CSS de «compu»): llena la pantalla sin pasarse de alto ni de ancho
+  function escalaHub() {
+    const k = Math.max(1, Math.min(innerWidth / 1240, innerHeight / 700));
+    document.documentElement.style.setProperty('--hz', k.toFixed(3));
+  }
+  escalaHub();
+  addEventListener('resize', () => { escalaHub(); todo(); verChip(actual, false); });
   addEventListener('pageshow', pintarPerfil); // al volver de un juego con "atrás"
 
   // ---------- portada ----------
