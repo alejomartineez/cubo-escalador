@@ -22,11 +22,11 @@
 html, body { height: 100%; }
 body {
   background: var(--bg); color: var(--ink); font-family: var(--body);
-  overflow: hidden; transition: background-color .35s ease;
+  overflow: hidden; transition: background-color .2s ease;
   user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
 }
 button { font: inherit; color: var(--ink); }
-.app { height: 100%; height: 100dvh; display: grid; grid-template-rows: auto auto 1fr auto; }
+.app { height: 100%; height: 100dvh; display: grid; grid-template-rows: auto auto auto 1fr auto; }
 
 /* ---------- desafío del día ---------- */
 .diario {
@@ -114,14 +114,43 @@ button { font: inherit; color: var(--ink); }
 }
 @keyframes latir { 50% { transform: scale(1.12) rotate(-4deg); } }
 
-/* ---------- slides ---------- */
-.slides {
-  display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory;
-  scrollbar-width: none; overscroll-behavior-x: contain; min-height: 0;
+/* ---------- elegir juego ----------
+   Una fila fija con todos los juegos, como el selector de dificultad adentro de cada juego: lo elegido en amarillo.
+   Lo de abajo cambia en el lugar (sin correr la pantalla entera), con un fundido cortito. */
+.elegir { display: flex; align-items: center; gap: 8px; width: min(640px, calc(100% - var(--gx) - var(--gy))); margin: 10px auto 0; min-width: 0; }
+.fila {
+  position: relative; flex: 1; min-width: 0; display: flex; gap: 3px; padding: 4px; overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none; overscroll-behavior-x: contain;
+  background: var(--paper); border: 2.5px solid var(--ink); border-radius: 16px; box-shadow: 0 2px 0 var(--ink);
 }
-.slides::-webkit-scrollbar { display: none; }
+.fila::-webkit-scrollbar { display: none; }
+.chip {
+  position: relative; flex: none; display: flex; align-items: center; gap: 6px; height: 37px; padding: 0 11px 0 9px; cursor: pointer;
+  border: 0; border-radius: 11px; background: transparent; font: 400 16px var(--display); white-space: nowrap;
+}
+.chip i { flex: none; width: 12px; height: 12px; border-radius: 4px; border: 2px solid var(--ink); background: var(--c); }
+.chip svg { flex: none; width: 15px; height: 15px; }
+.chip:hover { background: rgba(29, 35, 64, .07); }
+.chip[aria-current="true"] { background: var(--cube); box-shadow: inset 0 0 0 2.5px var(--ink); }
+.chip.es-nuevo::after { content: ""; position: absolute; top: 4px; right: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--ink); }
+.chip.todos { margin-left: 3px; font: 800 13px var(--body); color: var(--muted); }
+.chip.todos::before { content: ""; position: absolute; left: -4px; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: rgba(29, 35, 64, .15); }
+.elegir .arrow { height: 48px; width: 44px; }
+/* con lugar (compu, Steam Deck), todos a la vista en dos renglones, sin correr la fila */
+@media (min-width: 820px) {
+  .elegir { width: min(760px, calc(100% - var(--gx) - var(--gy))); }
+  .fila { flex-wrap: wrap; justify-content: center; overflow: visible; }
+}
+
+/* ---------- el juego elegido ---------- */
+.slides { display: grid; min-height: 0; touch-action: pan-y; }
+.slide[hidden] { display: none; }
+.slide.entra > * { animation: entrar .16s ease-out; }
+.slide.entra[data-dir="-1"] > * { animation-name: entrar-izq; }
+@keyframes entrar { from { opacity: .25; transform: translateX(10px); } }
+@keyframes entrar-izq { from { opacity: .25; transform: translateX(-10px); } }
 .slide {
-  flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always;
+  grid-area: 1 / 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
   padding: 6px var(--gy) 8px var(--gx); min-height: 0; min-width: 0; overflow: hidden;
 }
@@ -164,23 +193,13 @@ button { font: inherit; color: var(--ink); }
 .play svg { width: 20px; height: 20px; }
 .play:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
 
-/* flechas y puntos */
-.pager { display: flex; align-items: center; justify-content: center; gap: 10px; width: min(480px, 100%); }
+/* flechas */
 .arrow {
   flex: none; width: 48px; height: 44px; display: grid; place-items: center; cursor: pointer;
   background: var(--paper); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink);
 }
 .arrow svg { width: 24px; height: 24px; }
 .arrow:active, .arrow.on { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); background: var(--cube); }
-.dots { flex: 1; min-width: 0; display: flex; justify-content: center; align-items: center; gap: 4px; }
-.dots button { flex: none; width: 9px; height: 9px; padding: 0; border-radius: 99px; border: 2px solid var(--ink); background: var(--paper); cursor: pointer; }
-.dots button[aria-current="true"] { width: 20px; background: var(--cube); }
-.all {
-  flex: none; height: 44px; padding: 0 10px; display: flex; align-items: center; gap: 6px; cursor: pointer;
-  background: var(--paper); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); font-weight: 800; font-size: 13px;
-}
-.all svg { width: 18px; height: 18px; }
-.all:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
 
 /* ---------- barra de abajo ---------- */
 .tabs {
@@ -283,8 +302,8 @@ button { font: inherit; color: var(--ink); }
 button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
 /* ---------- jerarquía: Jugar es lo principal; flechas, "Todos" y pestañas, secundarios ---------- */
-.arrow, .all { box-shadow: 0 2px 0 var(--ink); border-width: 2.5px; }
-.all:hover, .arrow:hover { background: #fff; }
+.arrow { box-shadow: 0 2px 0 var(--ink); border-width: 2.5px; }
+.arrow:hover { background: #fff; }
 .icon-btn { box-shadow: 0 3px 0 var(--ink); border-width: 2.5px; }
 .play { box-shadow: 0 6px 0 var(--ink); font-size: 24px; }
 /* pestañas: una sola barra con la sección actual marcada, no cuatro botones sueltos */
@@ -311,13 +330,10 @@ button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outl
 /* elegir dentro de un grupo: lo elegido en amarillo, como las dificultades y el ranking */
 .seg button[aria-pressed="true"] { background: var(--cube); }
 .seg button:not([aria-pressed="true"]):hover { background: rgba(255, 255, 255, .65); }
-/* los puntitos son chicos: el área para tocarlos es más alta que el dibujo */
-.dots button { position: relative; }
-.dots button::after { content: ""; position: absolute; inset: -16px -3px; }
 button:disabled { cursor: not-allowed; opacity: .55; box-shadow: none; transform: none; }
 
 /* en la compu todo un poco más grande (--ui lo calcula cubo-comun.js) */
-.top, .pager, .info, .tabs, .coach, .sheet .card { zoom: var(--ui, 1); }
+.top, .elegir, .info, .tabs, .coach, .sheet .card { zoom: var(--ui, 1); }
 .stage { width: min(calc(480px * var(--ui, 1)), 100%); max-height: calc(330px * var(--ui, 1)); }
 .slide h2 { font-size: clamp(38px, 10.5vw, calc(60px * var(--ui, 1))); }
 .card { max-height: calc((100dvh - 32px) / var(--ui, 1)); }
@@ -535,9 +551,9 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 .vs-op small { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 600; color: var(--muted); line-height: 1.3; }
 /* con el botón de amigos no entra el nombre en una línea: va en dos */
 @media (max-width: 420px) { .brand span { display: none; } }
-@media (max-width: 400px) { .bar { width: 64px; } .install span { display: none; } .all span { display: none; } }
+@media (max-width: 400px) { .bar { width: 64px; } .install span { display: none; } }
 @media (max-width: 340px) { .brand i { width: 44px; height: 44px; } }
-@media (prefers-reduced-motion: reduce) { body { transition: none; } .badge, .coach svg, .card { animation: none; } }
+@media (prefers-reduced-motion: reduce) { body { transition: none; } .badge, .coach svg, .card, .slide.entra > * { animation: none; } }
 
 /* ---------- portada: lo primero que se ve al entrar. El cubo de la carga salta hasta acá ---------- */
 .portada {
@@ -642,6 +658,12 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     <span class="d-racha" id="dRacha" hidden></span>
     <button class="play" type="button" id="dJugar">Jugar</button>
   </section>
+
+  <nav class="elegir" id="elegir" aria-label="Elegir juego">
+    <button class="arrow" type="button" data-ir="-1" aria-label="Juego anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 7 12l8 8"/></svg></button>
+    <div class="fila" id="fila"></div>
+    <button class="arrow" type="button" data-ir="1" aria-label="Juego siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4 8 8-8 8"/></svg></button>
+  </nav>
 
   <main class="slides" id="slides" aria-label="Juegos"></main>
 
@@ -1400,19 +1422,13 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   const slides = $('slides');
   const ICO_PLAY = '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
   const ICO_RANK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M9 20V8h6v12zM3 20v-7h6v7zM15 20v-9h6v9z"/></svg>';
-  const ICO_PREV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 7 12l8 8"/></svg>';
-  const ICO_NEXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4 8 8-8 8"/></svg>';
   const ICO_ALL = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>';
 
   JUEGOS.forEach((g, i) => {
     const s = document.createElement('section');
     s.className = 'slide'; s.id = g.id; s.setAttribute('aria-label', T('{juego}, juego {n} de {total}', { juego: g.nombre, n: i + 1, total: JUEGOS.length }));
+    s.hidden = i !== 0;
     s.innerHTML = `<div class="head"><h2>${g.nombre}${g.nuevo ? `<span class="nuevo">${T('Nuevo')}</span>` : ''}</h2></div>
-      <div class="pager">
-        <button class="arrow" type="button" data-ir="-1" aria-label="${T('Juego anterior')}">${ICO_PREV}</button>
-        <div class="dots" aria-hidden="true"></div>
-        <button class="arrow" type="button" data-ir="1" aria-label="${T('Juego siguiente')}">${ICO_NEXT}</button>
-      </div>
       <div class="stage"><canvas aria-hidden="true"></canvas></div>
       <div class="info"><p>${g.desc}</p><div class="row">
         <span class="rec">${T('Tu récord')}<b data-rec>—</b><small data-logros></small></span>
@@ -1425,18 +1441,35 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     s.querySelector('[data-dia-rank]').addEventListener('click', () => CC.verRanking({ juego: g.id, diario: true }));
     s.querySelector('canvas').addEventListener('click', () => jugar(i));
     s.querySelector('[data-rank]').addEventListener('click', () => CC.verRanking({ juego: g.id }));
-    for (const b of s.querySelectorAll('[data-ir]')) b.addEventListener('click', () => { combinacion(+b.dataset.ir); ir(actual + +b.dataset.ir); });
-    const dots = s.querySelector('.dots');
-    JUEGOS.forEach((_, k) => { const d = document.createElement('button'); d.type = 'button'; d.tabIndex = -1; if (k === i) d.setAttribute('aria-current', 'true'); d.addEventListener('click', () => ir(k)); dots.appendChild(d); });
     slides.appendChild(s);
     g.cv = s.querySelector('canvas');
   });
-  // "Ver todos" al lado de los puntos, solo en el primer pager visible de cada slide
-  for (const p of slides.querySelectorAll('.pager')) {
+  // la fila de arriba: un botón por juego y, al final, «Todos» (la grilla con dibujo y récord de cada uno)
+  const fila = $('fila');
+  const chips = JUEGOS.map((g, i) => {
     const b = document.createElement('button');
-    b.type = 'button'; b.className = 'all'; b.innerHTML = `${ICO_ALL}<span>${T('Todos')}</span>`; b.setAttribute('aria-label', T('Ver todos los juegos'));
+    b.type = 'button'; b.className = 'chip' + (g.nuevo ? ' es-nuevo' : ''); b.style.setProperty('--c', g.color);
+    b.innerHTML = `<i></i>${g.nombre}`;
+    b.addEventListener('click', () => ir(i));
+    fila.appendChild(b);
+    return b;
+  });
+  {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip todos'; b.innerHTML = `${ICO_ALL}<span>${T('Todos')}</span>`; b.setAttribute('aria-label', T('Ver todos los juegos'));
     b.addEventListener('click', () => abrirJuegos('todos'));
-    p.insertBefore(b, p.lastElementChild);
+    fila.appendChild(b);
+  }
+  for (const b of $('elegir').querySelectorAll('[data-ir]')) b.addEventListener('click', () => { combinacion(+b.dataset.ir); ir(actual + +b.dataset.ir); });
+  // que el elegido se vea en la fila: la fila se mueve solo si quedó tapado, y lo justo
+  function verChip(i, suave) {
+    const b = chips[i], margen = 36;
+    let x = fila.scrollLeft;
+    if (b.offsetLeft - margen < x) x = b.offsetLeft - margen;
+    else if (b.offsetLeft + b.offsetWidth + margen > x + fila.clientWidth) x = b.offsetLeft + b.offsetWidth + margen - fila.clientWidth;
+    x = Math.max(0, Math.min(x, fila.scrollWidth - fila.clientWidth));
+    if (Math.abs(x - fila.scrollLeft) < 1) return;
+    fila.scrollTo({ left: x, behavior: suave && !reduceMotion && Math.abs(x - fila.scrollLeft) < fila.clientWidth ? 'smooth' : 'auto' });
   }
 
   // ---------- desafío del día ----------
@@ -1497,16 +1530,33 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     document.documentElement.style.setProperty('--bg', JUEGOS[i].color);
     guardado(SLIDE_KEY, String(i));
   }
+  // Cambia de juego en el lugar: se muestra su slide (las demás quedan ocultas) con un fundido de 160 ms desde el lado
+  // de donde viene. Antes era un scroll horizontal suave de pantalla entera y mareaba (sobre todo del último al primero).
   function ir(i, suave = true) {
+    const dir = i < actual ? -1 : 1, antes = actual;
     i = (i + JUEGOS.length) % JUEGOS.length;
-    slides.scrollTo({ left: i * slides.clientWidth, behavior: suave && !reduceMotion ? 'smooth' : 'auto' });
+    [...slides.children].forEach((s, k) => { s.hidden = k !== i; s.classList.remove('entra'); });
+    const s = slides.children[i];
+    if (suave && !reduceMotion && i !== antes) { s.dataset.dir = dir; void s.offsetWidth; s.classList.add('entra'); }
     marcar(i);
+    chips.forEach((b, k) => { if (k === i) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+    verChip(i, suave);
+    dibujar(i, reduceMotion ? 1400 : performance.now());
+    if (listo && i !== antes) ocultarCoach();
   }
   function jugar(i) { location.href = JUEGOS[i].archivo; }
-  slides.addEventListener('scroll', () => {
-    const i = Math.round(slides.scrollLeft / Math.max(1, slides.clientWidth));
-    if (i !== actual && i >= 0 && i < JUEGOS.length) { marcar(i); if (listo) ocultarCoach(); }
-  }, { passive: true });
+  // en el celu, deslizar para el costado cambia de juego (de a uno, sin arrastrar la pantalla)
+  let toque = null, deslizo = 0;
+  slides.addEventListener('pointerdown', e => { toque = { x: e.clientX, y: e.clientY }; });
+  slides.addEventListener('pointercancel', () => { toque = null; });
+  slides.addEventListener('pointerup', e => {
+    if (!toque) return;
+    const dx = e.clientX - toque.x, dy = e.clientY - toque.y;
+    toque = null;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4) { deslizo = performance.now(); ir(actual + (dx < 0 ? 1 : -1)); }
+  });
+  // el toque que terminó deslizando no cuenta como clic (si no, deslizar sobre el dibujo abriría el juego)
+  slides.addEventListener('click', e => { if (performance.now() - deslizo < 400) { e.stopPropagation(); e.preventDefault(); } }, true);
 
   // ---------- ayuda de la primera vez ----------
   function ocultarCoach() { if (!$('coach').hidden) { $('coach').hidden = true; guardado('cubo-hub-coach', '1'); } }
@@ -2157,7 +2207,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       if ((e.key === 'Enter' || e.key === ' ') && document.activeElement === document.body) { e.preventDefault(); cerrarPortada(); }
       return;
     }
-    const s = slides.children[actual];
+    const s = $('elegir');
     if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { e.preventDefault(); flash(s.querySelector('[data-ir="-1"]')); combinacion(-1); ir(actual - 1); }
     else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { e.preventDefault(); flash(s.querySelector('[data-ir="1"]')); combinacion(1); ir(actual + 1); }
     else if ((e.key === 'Enter' || e.key === ' ') && (document.activeElement === document.body || document.activeElement?.classList.contains('arrow'))) { e.preventDefault(); jugar(actual); }
@@ -2210,7 +2260,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     }
     requestAnimationFrame(frame);
   }
-  addEventListener('resize', () => { todo(); slides.scrollLeft = actual * slides.clientWidth; });
+  addEventListener('resize', () => { todo(); verChip(actual, false); });
   addEventListener('pageshow', pintarPerfil); // al volver de un juego con "atrás"
 
   // ---------- portada ----------

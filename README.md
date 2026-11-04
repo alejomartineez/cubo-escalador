@@ -6,7 +6,7 @@ Juegos de navegador livianos que se juegan solo con dos flechas, izquierda y der
 
 Se instala como app en el celu (botón **Instalar** arriba, o en iPhone: Compartir → Agregar a inicio) y funciona sin conexión.
 
-La pantalla principal muestra un juego por slide. Todos los juegos suman XP al mismo perfil: subís de nivel, desbloqueás personajes y efectos, conseguís logros y competís en el ranking online.
+La pantalla principal tiene arriba una fila con todos los juegos (el elegido en amarillo, como el selector de dificultad de cada juego) y abajo el juego elegido, que cambia en el lugar con un fundido corto: con las flechas, tocando un juego de la fila o deslizando para el costado en el celu. En pantallas anchas la fila muestra todos a la vez, en dos renglones. Todos los juegos suman XP al mismo perfil: subís de nivel, desbloqueás personajes y efectos, conseguís logros y competís en el ranking online.
 
 | Juego | De qué se trata |
 |---|---|
