@@ -5404,6 +5404,62 @@ html.cc-quieto .cc-guia-dedo{animation:none;opacity:1;transform:translate(-50%,0
     return { listo };
   }
 
+  // ---------- joystick (Gamepad API) ----------
+  // Para Steam Deck y joysticks en la compu: los botones se traducen a eventos de teclado, así cada juego los entiende
+  // sin cambiar nada. Primer joystick: cruz, palanca izquierda o gatillos L/R → ← →; cruz ↑ ↓ → ↑ ↓ (menús);
+  // A → Enter (o toca el botón que tiene el foco); B → Escape; Y → R (reiniciar). Segundo joystick: ← → como A/D
+  // (el jugador de arriba en Paleta, el de la izquierda en Pulseada de a dos).
+  const JOY_MAPA = [
+    { tecla: 'ArrowLeft', code: 'ArrowLeft', b: [14, 4, 6], eje: [0, -1] },
+    { tecla: 'ArrowRight', code: 'ArrowRight', b: [15, 5, 7], eje: [0, 1] },
+    { tecla: 'ArrowUp', code: 'ArrowUp', b: [12], eje: [1, -1] },
+    { tecla: 'ArrowDown', code: 'ArrowDown', b: [13], eje: [1, 1] },
+    { tecla: 'Enter', code: 'Enter', b: [0, 9], aceptar: true },
+    { tecla: 'Escape', code: 'Escape', b: [1, 8] },
+    { tecla: 'r', code: 'KeyR', b: [3] },
+  ];
+  const JOY_MAPA2 = [
+    { tecla: 'a', code: 'KeyA', b: [14, 4, 6, 2], eje: [0, -1] },
+    { tecla: 'd', code: 'KeyD', b: [15, 5, 7, 1], eje: [0, 1] },
+  ];
+  const joyEstado = new Map();   // 'índice:tecla' → apretado
+  let joyAndando = false;
+  function teclaSintetica(tipo, m) {
+    const destino = document.activeElement && document.activeElement !== document.body ? document.activeElement : document.body || document;
+    destino.dispatchEvent(new KeyboardEvent(tipo, { key: m.tecla, code: m.code, bubbles: true, cancelable: true }));
+  }
+  function leerJoysticks() {
+    let pads = [];
+    try { pads = [...(navigator.getGamepads ? navigator.getGamepads() : [])].filter(p => p && p.connected); } catch (e) {}
+    if (!pads.length) { joyAndando = false; return; }
+    pads.slice(0, 2).forEach((p, k) => {
+      for (const m of k === 0 ? JOY_MAPA : JOY_MAPA2) {
+        const boton = m.b.some(i => p.buttons[i] && (p.buttons[i].pressed || p.buttons[i].value > 0.5));
+        const eje = m.eje && p.axes[m.eje[0]] != null && p.axes[m.eje[0]] * m.eje[1] > 0.5;
+        const ahora = !!(boton || eje), clave = k + ':' + m.tecla, antes = !!joyEstado.get(clave);
+        if (ahora === antes) continue;
+        joyEstado.set(clave, ahora);
+        if (ahora && m.aceptar && document.activeElement && document.activeElement !== document.body && document.activeElement.matches('button, [role="radio"], a')) {
+          document.activeElement.click();   // A sobre un botón con foco: lo toca
+          continue;
+        }
+        teclaSintetica(ahora ? 'keydown' : 'keyup', m);
+      }
+    });
+    requestAnimationFrame(leerJoysticks);
+  }
+  function arrancarJoysticks() { if (!joyAndando) { joyAndando = true; requestAnimationFrame(leerJoysticks); } }
+  addEventListener('gamepadconnected', arrancarJoysticks);
+  addEventListener('gamepaddisconnected', () => {
+    // suelta lo que haya quedado apretado
+    for (const [clave, si] of joyEstado) if (si) {
+      const [k, tecla] = clave.split(':'), m = (k === '0' ? JOY_MAPA : JOY_MAPA2).find(x => x.tecla === tecla);
+      if (m) teclaSintetica('keyup', m);
+    }
+    joyEstado.clear();
+  });
+  try { if (navigator.getGamepads && [...navigator.getGamepads()].some(p => p && p.connected)) arrancarJoysticks(); } catch (e) {}
+
   // Chrome bloquea (y avisa en consola) la vibración antes del primer toque del usuario.
   // Se apaga desde Opciones en la portada (cubo-vibrar = '0').
   function vibrar(ms = 12) {

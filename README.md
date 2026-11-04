@@ -24,7 +24,7 @@ La pantalla principal muestra un juego por slide. Todos los juegos suman XP al m
 - En inglés, el HTML de la página (y el que se agrega después) se traduce solo: cada texto que coincide entero con una clave, sin contar emojis o flechas de los costados, y los `aria-label`, `title`, `placeholder` y `alt`. Una frase con etiquetas adentro lleva `data-t` y su clave es el `innerHTML`. Lo que se dibuja en un canvas va siempre con `T()`. Los apodos van con `translate="no"` (o `CC.Tsin`, que no traduce las variables) para que «Oro» no pase a «Gold».
 - Para sumar un texto nuevo: escribilo en español como siempre y agregá su entrada en el `textos` del archivo.
 
-Controles: `←` `→` o `A` `D` en la compu, `R` reinicia; botones grandes y ↻ en el celu. Todos los juegos tienen Fácil, Normal, Difícil, Extremo y Maestro.
+Controles: `←` `→` o `A` `D` en la compu, `R` reinicia; botones grandes y ↻ en el celu. **Joystick** (Steam Deck o uno enchufado a la compu): la cruz, la palanca izquierda o los gatillos L/R son ← →, la cruz ↑ ↓ elige en los menús, A es Enter (o toca el botón con foco), B es Escape e Y reinicia. Un segundo joystick maneja al jugador de arriba en Paleta de a dos (sus ← → son A/D). Lo hace `cubo-comun.js` con la Gamepad API, mandando eventos de teclado: los juegos no cambian. Todos los juegos tienen Fácil, Normal, Difícil, Extremo y Maestro.
 
 **Sensación de juego** (helpers en la sección «sensación de juego» de `cubo-comun.js`):
 - **Frenar al chocar (hitstop):** `CC.frenar(ms)` y, en el frame de cada juego, si `CC.frenado(now)` se dibuja sin avanzar. Entre 50 y 140 ms al chocar, perder una vida, un punto o la partida. En Ritmo es solo visual (las notas siguen el audio) y en el duelo de Pulseada no frena (lo decide el host).
