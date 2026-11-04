@@ -17,6 +17,7 @@ La pantalla principal muestra un juego por slide. Todos los juegos suman XP al m
 | Paleta | Paleta y pelota en una mesa vertical: movés tu paleta con `←` `→` y le pegás con la punta para cruzarla. Contra la máquina (3 vidas, cada 3 puntos llega un rival mejor) o **de a dos en el mismo dispositivo** (cada uno con sus botones, el de arriba dados vuelta; en la compu, flechas y A/D), a 7 puntos. |
 | Esquí | Slalom entre banderas, cada vez más rápido. |
 | Pulseada | Alterná lo más rápido que puedas para ganarle al rival. |
+| Pasadizo | Subí por un pasadizo vertical saltando de pared en pared: el cubo se queda pegado, **mantenés** `←` o `→` para cargar el salto y al **soltar** salta (para la pared de enfrente cruza; para la tuya, trepa un poco). Cuanto más cargás, más alto. El pasadizo se angosta y se ensancha, tiene salientes, pinches, huecos al vacío y paredes que se rompen si te quedás; el generador prueba cada tramo con la misma física para que siempre haya un salto posible. En Normal un arco guía muestra dónde caés; en Difícil para arriba la guía se acorta, la carga se pasa de rosca y la cámara sube sola; en Maestro no hay guía. Puntaje: metros de altura. |
 
 Controles: `←` `→` o `A` `D` en la compu, `R` reinicia; botones grandes y ↻ en el celu. Todos los juegos tienen Fácil, Normal, Difícil, Extremo y Maestro.
 

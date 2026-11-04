@@ -970,7 +970,66 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     }
   }
 
-  const DIBUJOS = { escalador: ilEscalador, lluvia: ilLluvia, ritmo: ilRitmo, voley: ilVoley, paleta: ilPaleta, esqui: ilEsqui, pulseada: ilPulseada };
+  function ilPasadizo(c, w, h, t) {
+    sky(c, w, h, '#b34d8a', '#f09ac8');
+    // un pasadizo visto de frente: el cubo sube saltando de pared en pared, cargando cada salto
+    const s = Math.min(w / 8, h / 4.4);
+    const xl = [w / 2 - s * 1.75, w / 2 - s * 1.45], xr = [w / 2 + s * 1.55, w / 2 + s * 1.85];
+    const corteL = h * 0.52, corteR = h * 0.3, roca = '#7d2f5f', borde = '#f6b6d8';
+    const pared = (pts, cara0, cara1, corte) => {
+      c.fillStyle = roca; c.strokeStyle = INK; c.lineWidth = 3;
+      c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = borde; c.globalAlpha = 0.5;
+      c.fillRect(Math.min(cara0, cara0 + (cara0 < w / 2 ? -5 : 0)), corte, 5, h - corte); c.fillRect(cara1 + (cara1 < w / 2 ? -5 : 0), 0, 5, corte);
+      c.globalAlpha = 1;
+    };
+    pared([[-4, -4], [xl[1], -4], [xl[1], corteL], [xl[0], corteL], [xl[0], h + 4], [-4, h + 4]], xl[0], xl[1], corteL);
+    pared([[w + 4, -4], [xr[1], -4], [xr[1], corteR], [xr[0], corteR], [xr[0], h + 4], [w + 4, h + 4]], xr[0], xr[1], corteR);
+    // un hueco al vacío arriba a la izquierda y pinches abajo a la derecha
+    const g = c.createLinearGradient(xl[1], 0, xl[1] - s * 1.6, 0); g.addColorStop(0, '#2a0f22'); g.addColorStop(1, '#07030a');
+    c.fillStyle = g; c.fillRect(-4, h * 0.06, xl[1] + 4, h * 0.2);
+    c.strokeStyle = INK; c.lineWidth = 3; c.beginPath(); c.moveTo(-4, h * 0.06); c.lineTo(xl[1], h * 0.06); c.moveTo(-4, h * 0.26); c.lineTo(xl[1], h * 0.26); c.stroke();
+    c.fillStyle = '#eef2fb'; c.lineWidth = 2; c.lineJoin = 'round'; c.beginPath();
+    for (let y = h * 0.74; y < h * 0.98; y += s * 0.36) { c.moveTo(xr[0], y); c.lineTo(xr[0] - s * 0.3, y + s * 0.18); c.lineTo(xr[0], y + s * 0.36); }
+    c.fill(); c.stroke();
+    // la saliente
+    c.fillStyle = borde; c.strokeStyle = INK; c.lineWidth = 2.5; rr(c, xr[1] - s * 0.8, h * 0.08, s * 0.8, s * 0.24, 4); c.fill(); c.stroke();
+    // el cubo: carga (aplastado contra la pared), salta y se pega en la de enfrente; tres saltos y vuelve a empezar
+    const T = 980, ciclo = 3 * T + 500, tc = t % ciclo, j = Math.min(2, Math.floor(tc / T)), u = Math.min(1, (tc - j * T) / T);
+    const lado = k => (k % 2 ? 1 : -1);
+    const pos = k => ({ x: lado(k) < 0 ? xl[k < 2 ? 0 : 1] + s / 2 : xr[k < 2 ? 0 : 1] - s / 2, y: h * [0.86, 0.63, 0.4, 0.18][k] });
+    const a = pos(j), b = pos(j + 1), fin = tc >= 3 * T;
+    let x = a.x, y = a.y, carga = 0, enAire = false, pegado = lado(j);
+    if (fin) { x = b.x; y = b.y; pegado = lado(j + 1); }
+    else if (u < 0.55) carga = u / 0.55;
+    else if (u < 0.85) { const v = (u - 0.55) / 0.3; x = a.x + (b.x - a.x) * v; y = a.y + (b.y - a.y) * v - Math.sin(v * Math.PI) * s * 0.9; enAire = true; }
+    else { x = b.x; y = b.y; pegado = lado(j + 1); }
+    if (carga > 0) {
+      c.fillStyle = PAPER; c.strokeStyle = INK; c.lineWidth = 1.5;
+      for (let i = 1; i < 8; i++) {
+        const v = i / 8, px = a.x + (b.x - a.x) * v, py = a.y + (b.y - a.y) * v - Math.sin(v * Math.PI) * s * 0.9;
+        c.globalAlpha = Math.min(1, carga * 1.6) * (1 - v * 0.5); c.beginPath(); c.arc(px, py, 3, 0, Math.PI * 2); c.fill(); c.stroke();
+      }
+      c.globalAlpha = 1;
+    }
+    const ls = s * 0.9;
+    c.save();
+    c.globalAlpha = fin ? Math.max(0, 1 - (tc - 3 * T) / 500) : 1;
+    const ax = x + pegado * ls / 2;
+    c.translate(ax, y);
+    if (enAire) c.scale(0.85, 1.15);
+    else c.scale(1 - 0.28 * carga - (u >= 0.85 && !fin ? 0.25 * (1 - (u - 0.85) / 0.15) : 0), 1 + 0.12 * carga);
+    c.translate(-ax, -y);
+    CC.dibujarCubo(c, x, y + ls / 2, ls, { mirar: enAire ? Math.sign(b.x - a.x) : -pegado, t });
+    c.restore();
+    if (carga > 0) {
+      c.strokeStyle = 'rgba(29,35,64,.5)'; c.lineWidth = 7; c.beginPath(); c.arc(x, y, ls * 0.85, 0, Math.PI * 2); c.stroke();
+      c.strokeStyle = '#ffcc29'; c.lineWidth = 5; c.lineCap = 'round';
+      c.beginPath(); c.arc(x, y, ls * 0.85, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * carga); c.stroke(); c.lineCap = 'butt';
+    }
+  }
+
+  const DIBUJOS = { escalador: ilEscalador, lluvia: ilLluvia, ritmo: ilRitmo, voley: ilVoley, paleta: ilPaleta, esqui: ilEsqui, pulseada: ilPulseada, pasadizo: ilPasadizo };
   const DESC = {
     escalador: 'Tocá el lado donde está el próximo escalón. Si errás, te mareás. Sprint 100, 30 segundos, Libre y el nuevo modo Lava: subí antes de que te alcance.',
     lluvia: 'Movete entre carriles y esquivá los bloques que caen cada vez más rápido.',
@@ -979,6 +1038,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     paleta: 'Mové tu paleta con ◀ ▶ y devolvé la pelota. Pegale con la punta para cruzarla. Contra la máquina o de a dos en el mismo celu.',
     esqui: 'Mantené ◀ o ▶ para doblar y pasá entre las banderas. Cada vez más rápido.',
     pulseada: 'Alterná ◀ ▶ lo más rápido que puedas para ganarle la fuerza al rival. ¿Cuántos toques por segundo hacés?',
+    pasadizo: 'Pegado a la pared, mantené ◀ o ▶ para cargar y soltá para saltar a la de enfrente. Medí la carga: pinches, huecos y paredes que se rompen.',
   };
   const JUEGOS = CC.JUEGOS.map(j => ({ ...j, dibujo: DIBUJOS[j.id], desc: DESC[j.id] }));
 
@@ -1774,7 +1834,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   ];
   // dónde guarda cada juego su "Sonido: sí/no" (Opciones lo cambia en todos)
   const SONIDO_KEYS = ['cubo-escalador-records', 'cubo-lluvia-records', 'cubo-ritmo-records', 'cubo-voley', 'cubo-paleta-records',
-    'cubo-esqui', 'cubo-pulseada-records'];
+    'cubo-esqui', 'cubo-pulseada-records', 'cubo-pasadizo-records'];
   const portada = $('portada'), ptCv = $('ptCubo');
   const sesion = (k, v) => { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch (e) {} return null; };
   let aterrizo = Infinity, saltito = -1e9;   // cuándo cayó el cubo en la portada y cuándo lo tocaron
