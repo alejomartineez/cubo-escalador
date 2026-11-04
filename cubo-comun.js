@@ -641,6 +641,8 @@
     { id: 'esqui', nombre: 'Esquí', archivo: 'esqui.html', color: '#5b8cff', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
     { id: 'pulseada', nombre: 'Pulseada', archivo: 'pulseada.html', color: '#f5b84a', nuevo: true, tablas: tablasDif('mayor', 'num', 'rivales') },
     { id: 'guardia', nombre: 'Guardia', archivo: 'guardia.html', color: '#e2525f', nuevo: true, tablas: tablasDif('mayor', 'num', 'pts') },
+    { id: 'esgrima', nombre: 'Esgrima', archivo: 'esgrima.html', color: '#e0566e', nuevo: true, tablas: tablasDif('mayor', 'num', 'rivales') },
+    { id: 'pasadizo', nombre: 'Pasadizo', archivo: 'pasadizo.html', color: '#d0609c', nuevo: true, tablas: tablasDif('mayor', 'num', 'm') },
   ];
   const juego = id => JUEGOS.find(j => j.id === id);
   const tablaDe = (j, t) => (juego(j) || { tablas: [] }).tablas.find(x => x.id === t);
@@ -739,6 +741,8 @@
       prueba: p => !!p.marcas['tps10'] },
     { id: 'esgrima-racha', juego: 'esgrima', nombre: 'Muñeca de acero', desc: 'Hacé 10 paradas perfectas seguidas en Esgrima.', medalla: 'oro',
       prueba: p => !!p.marcas['esgrima-racha'] },
+    { id: 'pasadizo-ciego', juego: 'pasadizo', nombre: 'A ojo', desc: 'Llegá a 100 m en Maestro, sin arco guía, en el Pasadizo.', medalla: 'oro',
+      prueba: p => !!p.marcas['pasadizo-ciego'] },
     { id: 'escalador-x', juego: 'escalador', nombre: 'Escalera del infierno', desc: 'Sprint 100 en Extremo en menos de 15 s.', medalla: 'oro',
       prueba: p => mejorTabla(p, 'escalador', 'sprint-x') < 15000 },
     { id: 'escalador-lava', juego: 'escalador', nombre: 'Pies calientes', desc: 'Escapá de la lava por 150 escalones.', medalla: 'bronce',

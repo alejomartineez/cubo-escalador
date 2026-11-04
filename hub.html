@@ -1292,16 +1292,6 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     CC.dibujarCubo(c, w / 2 + (pega ? lado * s * 0.15 : 0), piso, s, { mirar: lado, t });
   }
 
-  const DIBUJOS = { escalador: ilEscalador, lluvia: ilLluvia, ritmo: ilRitmo, voley: ilVoley, paleta: ilPaleta, esqui: ilEsqui, pulseada: ilPulseada, guardia: ilGuardia };
-  const DESC = {
-    escalador: T('Tocá el lado donde está el próximo escalón. Si errás, te mareás. Sprint 100, 30 segundos, Libre y el nuevo modo Lava: subí antes de que te alcance.'),
-    lluvia: T('Movete entre carriles y esquivá los bloques que caen cada vez más rápido.'),
-    ritmo: T('Tocá el lado de cada nota justo cuando llega a la línea, al ritmo de la música.'),
-    voley: T('Movete con ◀ ▶ y el cubo devuelve solo. Pegale con el borde para cruzarla. ¿Cuántos puntos le hacés al rival?'),
-    paleta: T('Mové tu paleta con ◀ ▶ y devolvé la pelota. Pegale con la punta para cruzarla. Contra la máquina o de a dos en el mismo celu.'),
-    esqui: T('Mantené ◀ o ▶ para doblar y pasá entre las banderas. Cada vez más rápido.'),
-    pulseada: T('Alterná ◀ ▶ lo más rápido que puedas para ganarle la fuerza al rival. ¿Cuántos toques por segundo hacés?'),
-    guardia: T('Llegan por los dos lados: pegales con ◀ o ▶ justo cuando pisan tu alcance. Si errás, te mareás. Combos, oleadas y jefes.'),
   function ilEsgrima(c, w, h, t) {
     sky(c, w, h, '#f27d8e', '#ffd9de');
     // la pista de costado; el rival se carga arriba o abajo, se tira y vos parás: chispas
@@ -1333,9 +1323,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       for (let i = 0; i < 8; i++) { const a = i * 0.785 + k; c.beginPath(); c.moveTo(tx + Math.cos(a) * s * 0.1, ty + Math.sin(a) * s * 0.1); c.lineTo(tx + Math.cos(a) * s * (0.2 + q * 0.4), ty + Math.sin(a) * s * (0.2 + q * 0.4)); c.stroke(); }
       c.globalAlpha = 1;
     }
-  }
-    esgrima: T('Leé el ataque del rival y pará con ◀ Alta o ▶ Baja. Si parás justo antes del golpe, contraatacás. Cuidado con las fintas.'),
-  function ilPasadizo(c, w, h, t) {
+  }  function ilPasadizo(c, w, h, t) {
     sky(c, w, h, '#b34d8a', '#f09ac8');
     // un pasadizo visto de frente: el cubo sube saltando de pared en pared, cargando cada salto
     const s = Math.min(w / 8, h / 4.4);
@@ -1346,6 +1334,8 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       c.beginPath(); pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); c.fill(); c.stroke();
       c.fillStyle = borde; c.globalAlpha = 0.5;
       c.fillRect(Math.min(cara0, cara0 + (cara0 < w / 2 ? -5 : 0)), corte, 5, h - corte); c.fillRect(cara1 + (cara1 < w / 2 ? -5 : 0), 0, 5, corte);
+      c.globalAlpha = 1;
+    };
     pared([[-4, -4], [xl[1], -4], [xl[1], corteL], [xl[0], corteL], [xl[0], h + 4], [-4, h + 4]], xl[0], xl[1], corteL);
     pared([[w + 4, -4], [xr[1], -4], [xr[1], corteR], [xr[0], corteR], [xr[0], h + 4], [w + 4, h + 4]], xr[0], xr[1], corteR);
     // un hueco al vacío arriba a la izquierda y pinches abajo a la derecha
@@ -1372,6 +1362,9 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       for (let i = 1; i < 8; i++) {
         const v = i / 8, px = a.x + (b.x - a.x) * v, py = a.y + (b.y - a.y) * v - Math.sin(v * Math.PI) * s * 0.9;
         c.globalAlpha = Math.min(1, carga * 1.6) * (1 - v * 0.5); c.beginPath(); c.arc(px, py, 3, 0, Math.PI * 2); c.fill(); c.stroke();
+      }
+      c.globalAlpha = 1;
+    }
     const ls = s * 0.9;
     c.save();
     c.globalAlpha = fin ? Math.max(0, 1 - (tc - 3 * T) / 500) : 1;
@@ -1386,6 +1379,19 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       c.strokeStyle = 'rgba(29,35,64,.5)'; c.lineWidth = 7; c.beginPath(); c.arc(x, y, ls * 0.85, 0, Math.PI * 2); c.stroke();
       c.strokeStyle = '#ffcc29'; c.lineWidth = 5; c.lineCap = 'round';
       c.beginPath(); c.arc(x, y, ls * 0.85, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * carga); c.stroke(); c.lineCap = 'butt';
+    }
+  }
+  const DIBUJOS = { escalador: ilEscalador, lluvia: ilLluvia, ritmo: ilRitmo, voley: ilVoley, paleta: ilPaleta, esqui: ilEsqui, pulseada: ilPulseada, guardia: ilGuardia, esgrima: ilEsgrima, pasadizo: ilPasadizo };
+  const DESC = {
+    escalador: T('Tocá el lado donde está el próximo escalón. Si errás, te mareás. Sprint 100, 30 segundos, Libre y el nuevo modo Lava: subí antes de que te alcance.'),
+    lluvia: T('Movete entre carriles y esquivá los bloques que caen cada vez más rápido.'),
+    ritmo: T('Tocá el lado de cada nota justo cuando llega a la línea, al ritmo de la música.'),
+    voley: T('Movete con ◀ ▶ y el cubo devuelve solo. Pegale con el borde para cruzarla. ¿Cuántos puntos le hacés al rival?'),
+    paleta: T('Mové tu paleta con ◀ ▶ y devolvé la pelota. Pegale con la punta para cruzarla. Contra la máquina o de a dos en el mismo celu.'),
+    esqui: T('Mantené ◀ o ▶ para doblar y pasá entre las banderas. Cada vez más rápido.'),
+    pulseada: T('Alterná ◀ ▶ lo más rápido que puedas para ganarle la fuerza al rival. ¿Cuántos toques por segundo hacés?'),
+    guardia: T('Llegan por los dos lados: pegales con ◀ o ▶ justo cuando pisan tu alcance. Si errás, te mareás. Combos, oleadas y jefes.'),
+    esgrima: T('Leé el ataque del rival y pará con ◀ Alta o ▶ Baja. Si parás justo antes del golpe, contraatacás. Cuidado con las fintas.'),
     pasadizo: T('Pegado a la pared, mantené ◀ o ▶ para cargar y soltá para saltar a la de enfrente. Medí la carga: pinches, huecos y paredes que se rompen.'),
   };
   const JUEGOS = CC.JUEGOS.map(j => ({ ...j, dibujo: DIBUJOS[j.id], desc: DESC[j.id] }));
@@ -2216,9 +2222,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   ];
   // dónde guarda cada juego su "Sonido: sí/no" (Opciones lo cambia en todos)
   const SONIDO_KEYS = ['cubo-escalador-records', 'cubo-lluvia-records', 'cubo-ritmo-records', 'cubo-voley', 'cubo-paleta-records',
-    'cubo-esqui', 'cubo-pulseada-records', 'cubo-guardia-records'];
-    'cubo-esqui', 'cubo-pulseada-records', 'cubo-esgrima-records'];
-    'cubo-esqui', 'cubo-pulseada-records', 'cubo-pasadizo-records'];
+    'cubo-esqui', 'cubo-pulseada-records', 'cubo-guardia-records', 'cubo-esgrima-records', 'cubo-pasadizo-records'];
   const portada = $('portada'), ptCv = $('ptCubo');
   const sesion = (k, v) => { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch (e) {} return null; };
   let aterrizo = Infinity, saltito = -1e9;   // cuándo cayó el cubo en la portada y cuándo lo tocaron

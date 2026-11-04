@@ -18,6 +18,10 @@ export const PAGES = [
     desc: 'Alterná izquierda y derecha lo más rápido que puedas para ganar la pulseada.' },
   { src: 'modo-guardia.html', out: 'guardia.html',
     desc: 'Defendé el centro: pegales con izquierda y derecha a los que llegan por los dos lados.' },
+  { src: 'modo-esgrima.html', out: 'esgrima.html',
+    desc: 'Duelo de esgrima con dos flechas: leé el ataque, pará arriba o abajo y contraatacá con la parada perfecta.' },
+  { src: 'modo-pasadizo.html', out: 'pasadizo.html',
+    desc: 'Subí por un pasadizo saltando de pared en pared: mantené para cargar el salto y soltá para saltar.' },
 ];
 
 // nombre corto de cada página: el de su imagen para compartir (og/<id>.png)
