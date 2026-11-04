@@ -160,6 +160,12 @@
   const Tlit = (es, vars) => T(es).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
   // El diccionario de este archivo (al final de la sección, antes de los datos que lo usan).
   textos({
+    // desafío del día en cada juego
+    ' · jugaste {n} de {m} desafíos de hoy: los otros te esperan en el inicio': ' · you played {n} of {m} daily challenges: the rest are waiting on the home screen',
+    ' · ¡jugaste los {m} desafíos de hoy! Mañana hay otros (en {t})': ' · you played all {m} daily challenges! New ones tomorrow (in {t})',
+    'Ya usaste los {n} intentos de hoy en {j}': 'You used all {n} of today\'s tries in {j}',
+    ' (tu mejor: <strong>{v}</strong>)': ' (your best: <strong>{v}</strong>)',
+    '. Mañana hay otro (en {t}).': '. A new one tomorrow (in {t}).',
     // pantalla de carga (la arma build.mjs) y el botón de volver que se vuelve casita
     'Cargando…': 'Loading…', 'Juegos': 'Games', 'Volver a los juegos': 'Back to games',
     // dificultades
@@ -807,7 +813,7 @@
       recibidasVistas: Array.isArray(p.recibidasVistas) ? p.recibidasVistas.filter(c => typeof c === 'string').slice(-100) : [],
       amigosServidor: p.amigosServidor === true,
       pendientes: Array.isArray(p.pendientes) ? p.pendientes.slice(-40) : [],
-      // desafío del día: { fecha, intentos, mejor, racha, ultimo (último día jugado), mejorRacha, premio (día del premio de XP) }
+      // desafío del día: { fecha, juegos: { [juego]: { intentos, mejor, premio } }, racha, ultimo (último día jugado), mejorRacha }
       diario: obj(p.diario),
       // temporadas: { [n]: { xp, cobrado } } · boost: partidas que quedan con doble XP · misiones: progreso del día y la semana
       temporadas: obj(p.temporadas),
@@ -1074,17 +1080,18 @@
   }
 
   // ---------- desafío del día ----------
-  // Un nivel por día, igual para todo el mundo: el juego rota cada día, se juega en Normal y con la misma semilla, así
-  // los niveles salen idénticos para todos. 3 intentos, cuenta el mejor, y tiene su propio ranking (tabla `d20261104`
-  // del juego del día). Jugar días seguidos arma la racha 🔥. El día cambia a las 00:00 UTC: es el mismo en todos lados.
-  // Los juegos lo abren con ?diario=1: `diarioDe(juego)` da la semilla, cuenta el intento y dibuja el cartel.
+  // Cada juego tiene su desafío, todos los días: se juega en Normal y con la semilla de la fecha y el juego, así los
+  // niveles salen idénticos para todo el mundo. 3 intentos por juego, cuenta el mejor, y cada uno tiene su ranking del
+  // día (tabla `d20261104` de ese juego). Jugar al menos un desafío por día arma la racha 🔥. El día cambia a las 00:00
+  // UTC: es el mismo en todos lados. Los juegos lo abren con ?diario=1: `diarioDe(juego)` da la semilla, cuenta el
+  // intento y dibuja el cartel. Todos los juegos de JUEGOS tienen que llamar a diarioDe (el inicio les pone el botón).
   const DIARIO_INTENTOS = 3;
-  const DIARIO_ORDEN = ['escalador', 'lluvia', 'paleta', 'esqui', 'voley', 'ritmo', 'pulseada'];
-  const DIARIO_TABLA = { escalador: 'time' };   // la tabla normal que se juega ese día (si no está acá, 'normal')
+  const DIARIO_VIEJO = ['escalador', 'lluvia', 'paleta', 'esqui', 'voley', 'ritmo', 'pulseada'];   // la rotación de antes (un juego por día)
+  const DIARIO_TABLA = { escalador: 'time' };   // la tabla normal que se juega en el desafío (si no está acá, 'normal')
   const DIA_MS = 864e5;
   const fechaDia = n => new Date(n * DIA_MS).toISOString().slice(0, 10);
   const fechaLinda = f => new Date(f + 'T12:00:00Z').toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', timeZone: 'UTC' });
-  // Generador con semilla (mulberry32, el mismo de los duelos) y la semilla de cada día sacada de la fecha (FNV-1a).
+  // Generador con semilla (mulberry32, el mismo de los duelos) y la semilla de cada desafío sacada de la fecha y el juego (FNV-1a).
   function azar(semilla) {
     let a = semilla >>> 0;
     return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -1099,46 +1106,76 @@
     try { const f = new URLSearchParams(location.search).get('dia'); if (f && /^\d{4}-\d{2}-\d{2}$/.test(f)) return Date.parse(f + 'T12:00:00Z'); } catch (e) {}
     return Date.now();
   }
-  function diario(ahora = ahoraDiario()) {
-    const n = Math.floor(ahora / DIA_MS), fecha = fechaDia(n), jid = DIARIO_ORDEN[n % DIARIO_ORDEN.length], j = juego(jid);
-    const d = leer().diario, hoy = d.fecha === fecha && (!d.juego || d.juego === jid), intentos = hoy ? Math.max(0, +d.intentos || 0) : 0;
-    const tabla = DIARIO_TABLA[jid] || 'normal', mejorHoy = hoy && d.mejor != null ? +d.mejor : null;
+  // Lo jugado en la fecha f, por juego: { [juego]: { intentos, mejor, premio } }. datos.diario es
+  // { fecha, juegos, racha, ultimo (último día jugado), mejorRacha }; el formato de antes (un solo juego por día, con
+  // juego/intentos/mejor/premio sueltos) se lee igual. Con crear, d queda en el formato nuevo y en la fecha f.
+  function diaDe(d, f, crear) {
+    let js = d.fecha === f && d.juegos && typeof d.juegos === 'object' && !Array.isArray(d.juegos) ? d.juegos : null;
+    if (!js) {
+      js = {};
+      if (d.fecha === f && (+d.intentos || d.mejor != null)) {
+        const jid = d.juego || DIARIO_VIEJO[Math.floor(Date.parse(f + 'T12:00:00Z') / DIA_MS) % DIARIO_VIEJO.length];
+        js[jid] = { intentos: Math.max(0, +d.intentos || 0), mejor: d.mejor != null ? +d.mejor : null, premio: d.premio === f };
+      }
+    }
+    if (crear) {
+      for (const k of ['juego', 'intentos', 'mejor', 'premio']) delete d[k];
+      d.fecha = f; d.juegos = js;
+    }
+    return js;
+  }
+  function infoDiario(jid, n, d) {
+    const j = juego(jid);
+    if (!j) return null;
+    const fecha = fechaDia(n), g = diaDe(d, fecha)[jid] || {}, intentos = Math.min(DIARIO_INTENTOS, Math.max(0, +g.intentos || 0));
+    const tabla = DIARIO_TABLA[jid] || 'normal', mejor = g.mejor != null ? +g.mejor : null, quedan = DIARIO_INTENTOS - intentos;
     return {
       fecha, fechaLinda: fechaLinda(fecha), juego: jid, nombre: j.nombre, color: j.color, archivo: j.archivo + '?diario=1',
-      tabla, tablaRanking: 'd' + fecha.replace(/-/g, ''), semilla: semillaDe('twofingers:' + fecha),
-      intentos, quedan: Math.max(0, DIARIO_INTENTOS - intentos), maxIntentos: DIARIO_INTENTOS,
-      mejor: mejorHoy, texto: mejorHoy != null ? formato(mejorHoy, tablaDe(jid, tabla)) : null,
+      tabla, tablaRanking: 'd' + fecha.replace(/-/g, ''), semilla: semillaDe('twofingers:' + fecha + ':' + jid),
+      intentos, quedan, maxIntentos: DIARIO_INTENTOS, jugado: intentos > 0, hecho: !quedan,
+      mejor, texto: mejor != null ? formato(mejor, tablaDe(jid, tabla)) : null,
       racha: d.ultimo === fecha || d.ultimo === fechaDia(n - 1) ? +d.racha || 0 : 0, jugadoHoy: d.ultimo === fecha,
       mejorRacha: +d.mejorRacha || 0, quedanMs: (n + 1) * DIA_MS - Date.now(),
     };
   }
-  // "5 h" / "40 min": cuánto falta para el próximo desafío
+  // diario(juego): el desafío de hoy de ese juego. diario(): el de todos los juegos juntos (para el inicio), con
+  // `juegos` (la lista), `jugados` (con al menos un intento), `hechos` (sin intentos), la racha y cuánto falta.
+  function diario(jid, ahora = ahoraDiario()) {
+    const n = Math.floor(ahora / DIA_MS), d = leer().diario;
+    if (jid) return infoDiario(jid, n, d);
+    const juegos = JUEGOS.map(j => infoDiario(j.id, n, d)), r = juegos[0], fecha = fechaDia(n);
+    return {
+      fecha, fechaLinda: fechaLinda(fecha), juegos, total: juegos.length, maxIntentos: DIARIO_INTENTOS,
+      jugados: juegos.filter(x => x.jugado).length, hechos: juegos.filter(x => x.hecho).length,
+      racha: r.racha, jugadoHoy: r.jugadoHoy, mejorRacha: r.mejorRacha, quedanMs: r.quedanMs,
+    };
+  }
+  // "5 h" / "40 min": cuánto falta para los próximos desafíos
   function faltaTexto(ms) {
     const min = Math.max(1, Math.ceil(ms / 60000));
     return min >= 60 ? Math.floor(min / 60) + ' h' : min + ' min';
   }
-  // Fin de una partida del desafío (lo llama partida): guarda la mejor de hoy, la manda al ranking del día y da el
-  // premio de XP la primera vez de cada día (más grande con la racha).
+  // Fin de una partida del desafío (lo llama partida): guarda la mejor de hoy de ese juego, la manda a su ranking del
+  // día y da el premio de XP la primera vez de cada juego cada día (un poco más con la racha).
   function anotarDiario(o, valor) {
     const f = o.diario.fecha, d = datos.diario;
-    if (!f || d.fecha !== f || (d.juego && d.juego !== o.juego)) return null;   // el intento era de otro día
-    const nueva = isFinite(valor) && valor > 0 && (d.mejor == null || valor > d.mejor);
-    if (nueva) { d.mejor = valor; if (datos.apodo) encolar(o.juego, o.diario.tablaRanking, valor); }
+    if (!f || d.fecha !== f) return null;   // el intento era de otro día
+    const g = diaDe(d, f, true)[o.juego];
+    if (!g || !g.intentos) return null;
+    const nueva = isFinite(valor) && valor > 0 && (g.mejor == null || valor > g.mejor);
+    if (nueva) { g.mejor = valor; if (datos.apodo) encolar(o.juego, o.diario.tablaRanking, valor); }
     let premio = 0;
-    if (d.premio !== f) { d.premio = f; premio = 25 + 5 * Math.min(6, Math.max(0, (+d.racha || 1) - 1)); }
-    return { nueva, mejor: d.mejor ?? null, texto: d.mejor != null ? formato(d.mejor, tablaDe(o.juego, o.diario.tabla)) : '—',
-      intentos: +d.intentos || 0, quedan: Math.max(0, DIARIO_INTENTOS - (+d.intentos || 0)), racha: +d.racha || 1, premio };
+    if (!g.premio) { g.premio = true; premio = 15 + 2 * Math.min(5, Math.max(0, (+d.racha || 1) - 1)); }
+    const jugados = Object.values(d.juegos).filter(x => x && +x.intentos > 0).length;
+    return { nueva, mejor: g.mejor ?? null, texto: g.mejor != null ? formato(g.mejor, tablaDe(o.juego, o.diario.tabla)) : '—',
+      intentos: +g.intentos || 0, quedan: Math.max(0, DIARIO_INTENTOS - (+g.intentos || 0)), racha: +d.racha || 1, premio,
+      jugados, total: JUEGOS.length };
   }
   function diarioDe(jid) {
     let pide = false;
     try { pide = new URLSearchParams(location.search).has('diario'); } catch (e) {}
-    if (!pide) return null;
-    const info = diario();
-    if (info.juego !== jid) {   // link viejo: hoy toca otro juego, se juega normal
-      try { history.replaceState(null, '', location.pathname); } catch (e) {}
-      setTimeout(() => avisar(T('El desafío de hoy es en <b>{j}</b>. Esta partida es normal.', { j: info.nombre }), 4200), 800);
-      return null;
-    }
+    if (!pide || !juego(jid)) return null;
+    const info = diario(jid);
     estilos();
     const carteles = [];
     function cartel(fin) {
@@ -1151,7 +1188,7 @@
       return el;
     }
     function pintar(r) {
-      const i = diario();
+      const i = diario(jid);
       for (const el of carteles) {
         const fin = el.classList.contains('fin');
         let t;
@@ -1159,13 +1196,14 @@
           t = T('Intento {n} de {m} · tu mejor de hoy: <strong>{v}</strong>', { n: r.intentos, m: DIARIO_INTENTOS, v: r.texto }) +
             (r.nueva && r.intentos > 1 ? T(' (¡mejoraste!)') : '');
           if (r.premio) t += T(' · <strong>+{n} XP</strong> por jugarlo', { n: r.premio });
-          if (!r.quedan) t += T(' · mañana hay otro (en {t})', { t: faltaTexto(i.quedanMs) });
+          if (!r.quedan) t += r.jugados < r.total ? T(' · jugaste {n} de {m} desafíos de hoy: los otros te esperan en el inicio', { n: r.jugados, m: r.total })
+            : T(' · ¡jugaste los {m} desafíos de hoy! Mañana hay otros (en {t})', { m: r.total, t: faltaTexto(i.quedanMs) });
         } else {
           const base = '{f} · Normal · el mismo nivel para todos · ';
-          t = !i.quedan ? T('Ya usaste los {n} intentos de hoy. Mañana hay otro (en {t}).', { n: DIARIO_INTENTOS, t: faltaTexto(i.quedanMs) })
-            : T(base + (i.quedan === DIARIO_INTENTOS ? '{n} intentos' : i.quedan === 1 ? 'te queda 1 intento' : 'te quedan {n} intentos'),
-              { f: i.fechaLinda, n: i.quedan });
-          if (i.texto) t += T(' · tu mejor: <strong>{v}</strong>', { v: i.texto });
+          t = i.quedan ? T(base + (i.quedan === DIARIO_INTENTOS ? '{n} intentos' : i.quedan === 1 ? 'te queda 1 intento' : 'te quedan {n} intentos'),
+              { f: i.fechaLinda, n: i.quedan }) + (i.texto ? T(' · tu mejor: <strong>{v}</strong>', { v: i.texto }) : '')
+            : T('Ya usaste los {n} intentos de hoy en {j}', { n: DIARIO_INTENTOS, j: i.nombre }) + (i.texto ? T(' (tu mejor: <strong>{v}</strong>)', { v: i.texto }) : '')
+              + T('. Mañana hay otro (en {t}).', { t: faltaTexto(i.quedanMs) });
         }
         el.querySelector('.txt').innerHTML = t;
         const racha = fin && r ? r.racha : i.racha;
@@ -1185,21 +1223,20 @@
         datos = leer();
         const n = Math.floor(ahoraDiario() / DIA_MS);
         if (fechaDia(n) !== info.fecha) return false;
-        let d = datos.diario;
-        if (d.fecha !== info.fecha || (d.juego && d.juego !== jid)) d = datos.diario = { ...d, fecha: info.fecha, juego: jid, intentos: 0, mejor: null };
-        if ((+d.intentos || 0) >= DIARIO_INTENTOS) return false;
+        const d = datos.diario, js = diaDe(d, info.fecha, true), g = js[jid] = js[jid] || { intentos: 0, mejor: null };
+        if ((+g.intentos || 0) >= DIARIO_INTENTOS) return false;
         if (d.ultimo !== info.fecha) {
           d.racha = d.ultimo === fechaDia(n - 1) ? (+d.racha || 0) + 1 : 1;
           d.ultimo = info.fecha; d.mejorRacha = Math.max(+d.mejorRacha || 0, d.racha);
         }
-        d.intentos = (+d.intentos || 0) + 1;
+        g.intentos = (+g.intentos || 0) + 1;
         guardar();
         pintar();
         return true;
       },
       // Sin intentos: se sigue jugando el mismo juego, pero normal.
       normal() { location.replace(location.pathname); },
-      quedan: () => diario().quedan,
+      quedan: () => diario(jid).quedan,
       // En el menú: el cartel en lugar del selector de dificultad (y de los modos, si hay). Con alJugar, el cartel trae
       // su propio botón Jugar (para menús donde se juega tocando un modo).
       menu(el, ocultar = [], alJugar) {
@@ -1220,7 +1257,7 @@
         if (btn && !(btn.previousElementSibling && btn.previousElementSibling.classList.contains('cc-dia'))) btn.parentNode.insertBefore(cartel(true), btn);
         for (const x of ocultar) if (x) x.hidden = true;
         pintar(r && r.diario);
-        const q = diario().quedan;
+        const q = diario(jid).quedan;
         textoBoton(btn, q ? `↻ ${T('Intento {n} de {m}', { n: DIARIO_INTENTOS - q + 1, m: DIARIO_INTENTOS })} ` : `▸ ${T('Seguir en modo normal')} `);
       },
     };
@@ -1574,17 +1611,26 @@
       const x = o.temporadas[n] || {}, y = objDe(t);
       o.temporadas[n] = { ...x, xp: Math.max(+x.xp || 0, +y.xp || 0), cobrado: Math.max(+x.cobrado || 0, +y.cobrado || 0) };
     }
-    // desafío del día: la mejor racha, la racha del último día jugado y, si es el mismo día, lo mejor de los dos
-    const da = a.diario, db = objDe(b.diario), d = { ...da };
+    // desafío del día: la mejor racha, la racha del último día jugado y, si es el mismo día, lo mejor de los dos en
+    // cada juego (los dos lados pasan antes al formato por juego, por si alguno es de antes)
+    const da = { ...a.diario }, db = { ...objDe(b.diario) }, d = { ...da };
     d.mejorRacha = Math.max(+da.mejorRacha || 0, +db.mejorRacha || 0);
     if (String(db.ultimo || '') > String(da.ultimo || '')) { d.ultimo = db.ultimo; d.racha = +db.racha || 0; }
     else if (db.ultimo && db.ultimo === da.ultimo) d.racha = Math.max(+da.racha || 0, +db.racha || 0);
-    if (String(db.fecha || '') > String(da.fecha || '')) { d.fecha = db.fecha; d.juego = db.juego; d.intentos = +db.intentos || 0; d.mejor = db.mejor ?? null; }
-    else if (db.fecha && db.fecha === da.fecha) {
-      d.intentos = Math.max(+da.intentos || 0, +db.intentos || 0);
-      if (db.mejor != null && (da.mejor == null || +db.mejor > +da.mejor)) d.mejor = +db.mejor;
+    const ja = da.fecha ? diaDe(da, da.fecha) : {}, jb = db.fecha ? diaDe(db, db.fecha) : {};
+    for (const k of ['juego', 'intentos', 'mejor', 'premio']) delete d[k];
+    if (String(db.fecha || '') > String(da.fecha || '')) { d.fecha = db.fecha; d.juegos = { ...jb }; }
+    else {
+      d.juegos = { ...ja };
+      if (db.fecha && db.fecha === da.fecha) for (const [jid, y] of Object.entries(jb)) {
+        const x = d.juegos[jid] || {};
+        d.juegos[jid] = {
+          intentos: Math.max(+x.intentos || 0, +y.intentos || 0),
+          mejor: x.mejor == null ? (y.mejor ?? null) : y.mejor == null ? x.mejor : Math.max(+x.mejor, +y.mejor),
+          premio: !!(x.premio || y.premio),
+        };
+      }
     }
-    if (String(db.premio || '') > String(da.premio || '')) d.premio = db.premio;
     o.diario = d;
     // misiones: si son del mismo día (o semana), el progreso más alto de cada una y las cumplidas de los dos lados
     const ma = a.misiones, mb = objDe(b.misiones), m = { ...ma };
@@ -2096,7 +2142,7 @@
     const conModos = modos.length > 1;
     const nombreModo = m => (j.tablas.find(t => modoDe(t) === m && t.dif === 'normal') || j.tablas.find(t => modoDe(t) === m)).nombre.replace(/ (Extremo|Maestro)$/, '');
     // o.diario: el ranking del desafío de hoy (una sola tabla, sin modos ni dificultades)
-    const dia = o.diario ? diario() : null;
+    const dia = o.diario ? diario(j.id) : null;
     if (dia) tid = dia.tabla;
     const previo = document.activeElement;
     const box = document.createElement('div');
@@ -2170,7 +2216,7 @@
     async function cargar() {
       pintarSegs();
       for (const b of segQuien.querySelectorAll('button')) b.setAttribute('aria-pressed', String((b.dataset.q === 'amigos') === soloAmigos));
-      const tb = tablaDe(j.id, tid), mio = dia ? diario().mejor : leer().mejores[j.id + ':' + tid];
+      const tb = tablaDe(j.id, tid), mio = dia ? diario(j.id).mejor : leer().mejores[j.id + ':' + tid];
       const tuyo = dia ? (mio != null ? T('Tu mejor de hoy: <strong>{v}</strong>', { v: formato(mio, tb) }) : T('Todavía no lo jugaste hoy.'))
         : T('Tu mejor marca: <strong>{v}</strong>', { v: formato(mio, tb) });
       if (!rankingActivo()) { msg(`${T('El ranking online se está preparando.')}<br>${tuyo}`); return; }
