@@ -16,6 +16,8 @@ export const PAGES = [
     desc: 'Bajá en slalom entre las banderas, cada vez más rápido.' },
   { src: 'modo-pulseada.html', out: 'pulseada.html',
     desc: 'Alterná izquierda y derecha lo más rápido que puedas para ganar la pulseada.' },
+  { src: 'modo-guardia.html', out: 'guardia.html',
+    desc: 'Defendé el centro: pegales con izquierda y derecha a los que llegan por los dos lados.' },
 ];
 
 // nombre corto de cada página: el de su imagen para compartir (og/<id>.png)

@@ -14,7 +14,7 @@
   const CC = window.CuboComun, INK = '#1d2340', CREMA = '#fffaf0';
   const q = new URLSearchParams(location.search), id = q.get('id') || 'hub';
   const hub = id === 'hub', juego = CC.JUEGOS.find(j => j.id === id);
-  const SKIN_DE = { escalador: 'clasico', lluvia: 'abeja', ritmo: 'dj', voley: 'gorra', paleta: 'ninja', esqui: 'pinguino', pulseada: 'vaquero' };
+  const SKIN_DE = { escalador: 'clasico', lluvia: 'abeja', ritmo: 'dj', voley: 'gorra', paleta: 'ninja', esqui: 'pinguino', pulseada: 'vaquero', guardia: 'caballero' };
   const sk = n => CC.SKINS.find(s => s.id === n);
   const color = hub ? '#62c6ff' : juego.color;
   await document.fonts.load('80px "Lilita One"'); await document.fonts.load('800 30px Rubik'); await document.fonts.load('600 30px Rubik');
