@@ -509,6 +509,23 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 @media (max-height: 700px) { .info p { display: none; } .slide { gap: 8px; } }
 @media (max-height: 600px) { .tab { height: 48px; } .tab span { display: none; } }
 @media (max-width: 480px) { .amigos-btn span { display: none; } .amigos-btn { padding: 0; } }
+/* 1v1: al lado de Amigos, en rojo para que se vea desde lejos */
+.vs-btn {
+  flex: none; display: flex; align-items: center; justify-content: center; height: 52px; min-width: 52px; padding: 0 12px; cursor: pointer;
+  background: var(--accent); color: var(--paper); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink);
+  font: 400 19px var(--display); white-space: nowrap; -webkit-text-stroke: 1.2px var(--ink); paint-order: stroke fill;
+}
+.vs-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+@media (max-width: 400px) { .vs-btn { padding: 0 8px; font-size: 17px; } .me-edit { display: none; } }
+.vs-local { display: grid; gap: 8px; }
+.vs-op {
+  display: flex; align-items: center; gap: 12px; padding: 12px; text-align: left; cursor: pointer; width: 100%;
+  background: #fff; border: 2.5px solid var(--ink); border-radius: 16px; box-shadow: 0 3px 0 var(--ink);
+}
+.vs-op:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.vs-op .ico { flex: none; width: 46px; height: 46px; display: grid; place-items: center; font-size: 24px; border-radius: 12px; border: 2.5px solid var(--ink); }
+.vs-op b { display: block; font: 400 19px/1.1 var(--display); }
+.vs-op small { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 600; color: var(--muted); line-height: 1.3; }
 /* con el botón de amigos no entra el nombre en una línea: va en dos */
 @media (max-width: 420px) { .brand span { display: none; } }
 @media (max-width: 400px) { .bar { width: 64px; } .install span { display: none; } .all span { display: none; } }
@@ -605,6 +622,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
         </span>
         <span class="badge" id="meBadge" hidden>¡Nuevo!</span>
       </button>
+      <button class="vs-btn" id="vsBtn" type="button" aria-label="1v1: jugar contra alguien">⚔️ 1v1</button>
       <button class="amigos-btn" id="amigosBtn" type="button" aria-label="Amigos: agregar, comparar y retar a un 1v1">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.2a6.5 6.5 0 0 1 3 5.8"/></svg><span>Amigos</span>
         <span class="badge" id="amigosBadge" hidden></span>
@@ -717,6 +735,19 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
 </div>
 
 <!-- amigos -->
+<div class="sheet" id="sheet1v1" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="t1v1">
+    <div class="card-h"><h3 id="t1v1">⚔️ 1v1</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
+    <div class="card-b">
+      <h4 class="amigos-h">En este dispositivo</h4>
+      <div class="vs-local" id="vsLocal"></div>
+      <h4 class="amigos-h">Online contra un amigo</h4>
+      <div class="amigos" id="vsAmigos"></div>
+      <p class="tip">Online se juega en vivo: los dos a la vez, en Normal y con el mismo nivel, y ven cómo va el otro. Hay duelo de <b>Escalador</b>, <b>Pulseada</b> y <b>Vóley</b>.</p>
+    </div>
+  </div>
+</div>
+
 <div class="sheet" id="sheetAmigos" hidden>
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="tAmi">
     <div class="card-h"><h3 id="tAmi">Amigos</h3><button class="x" type="button" data-cerrar aria-label="Cerrar">✕</button></div>
@@ -1416,6 +1447,37 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   pintarBadgeAmigos();
   setTimeout(() => CC.refrescarAmigos(), 2500);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) CC.refrescarAmigos(); });
+  // ---------- 1v1 ----------
+  // En el mismo dispositivo (Paleta de a dos) u online contra un amigo aceptado (cubo-duelo.js).
+  const LOCALES = [
+    { href: 'paleta.html?dos=1', ico: '🏓', color: '#2ec27e', nombre: 'Paleta de a dos', desc: 'Uno de cada lado de la pantalla. Gana el primero que llega a 7.' },
+  ];
+  for (const l of LOCALES) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'vs-op';
+    b.innerHTML = `<span class="ico" style="background:${l.color}">${l.ico}</span><span><b>${l.nombre}</b><small>${l.desc}</small></span>`;
+    b.addEventListener('click', () => { location.href = l.href; });
+    $('vsLocal').appendChild(b);
+  }
+  function abrir1v1() {
+    const p = CC.perfil(), box = $('vsAmigos');
+    box.replaceChildren();
+    if (!p.apodo) box.insertAdjacentHTML('beforeend', '<div class="vacio-amigos">Para jugar online necesitás un apodo. Ponelo en cualquier ranking y después agregá a tus amigos con su código.</div>');
+    else if (!p.amigos.length) {
+      box.insertAdjacentHTML('beforeend', '<div class="vacio-amigos">Todavía no tenés amigos para retar.<br>Agregalos con su código en <b>Amigos</b>.</div>');
+      boton(box, 'retar', '👥 Ir a Amigos', () => { cerrar(true); abrirAmigos(); });
+    }
+    for (const a of p.amigos) {
+      const el = filaAmigo(a, a.titulo || 'Amigo');
+      boton(el, 'retar', '⚔️ Retar', () => {
+        if (window.CuboDuelo) window.CuboDuelo.elegirJuego(a);
+        else CC.avisar('<div><b>Sin conexión</b><span>Para retar a un amigo hace falta internet.</span></div>');
+      });
+      box.appendChild(el);
+    }
+    abrir('sheet1v1');
+  }
+  $('vsBtn').addEventListener('click', abrir1v1);
   function filaAmigo(a, sub, clase) {
     const el = document.createElement('div'); el.className = 'amigo' + (clase ? ' ' + clase : '');
     el.innerHTML = `<canvas width="72" height="80"></canvas><span class="nm"><span class="ap"></span><small></small></span>`;

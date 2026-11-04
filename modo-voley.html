@@ -287,6 +287,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 </div>
 
 <script src="cubo-comun.js"></script>
+<script src="cubo-duelo.js"></script>
 <script>
 (() => {
   'use strict';
@@ -297,8 +298,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const $ = id => document.getElementById(id);
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  // Duelo 1v1 contra un amigo (cubo-duelo.js): los dos juegan en Normal contra el mismo rival (misma semilla)
+  // y gana el que hace más puntos antes de quedarse sin vidas. Se ven los puntos del otro en vivo.
+  const CD = window.CuboDuelo, DUELO = CD ? CD.partida() : null;
+  let sala = null;
   // desafío del día (?diario=1): Normal, 3 intentos y el rival juega con la semilla del día
-  const DIA = CC && CC.diarioDe ? CC.diarioDe('voley') : null;
+  const DIA = !DUELO && CC && CC.diarioDe ? CC.diarioDe('voley') : null;
   let azar = Math.random;
   const INK = '#1d2340', TAU = Math.PI * 2;
 
@@ -559,6 +564,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       else setTimeout(sfxPoint, 90);
       floats.push({ text: '+' + pts, x: b.x, y: 1.4, t: now });
       const vuelta = Math.floor(G.score / 5) > Math.floor(antes / 5);
+      if (G.duelo) { sala.enviar('p', { p: G.score }); barraDuelo(); if (G.duelo.suyo != null) finDuelo(); }
       banner = { text: G.oro ? '¡Oro! +2' : vuelta ? `¡${G.score - G.score % 5} puntos!` : '¡Punto!', t: now };
     } else {
       G.lives--; G.server = 'p';
@@ -566,6 +572,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       shake = reduceMotion ? 0 : 10; sfxLose(); vibrate(40);
       banner = { text: G.lives > 0 ? (G.lives === 1 ? '¡Última vida!' : '¡Uy!') : '¡Se terminó!', t: now };
       if (G.lives <= 0) { G.done = true; if (CC && !G.demo) CC.morir(); }   // Geo se parte en pedazos
+      if (G.duelo) barraDuelo();
     }
   }
 
@@ -598,6 +605,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function finish() {
     const before = bestFor(G.diff);
     const r = settle();
+    if (G.duelo) { G.duelo.mio = G.score; sala.enviar('fin', { p: G.score }); finDuelo(); return; }
     lastResult = r;
     const isRec = r ? r.record : G.score > before;
     $('eTitle').textContent = isRec && G.score > 0 ? '¡Récord!' : G.score >= 15 ? '¡Partidazo!' : G.score >= 5 ? '¡Buen vóley!' : '¡Se terminó!';
@@ -632,12 +640,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   // R o ↻: partida nueva al instante; si cortás una con puntos, cuenta igual (XP y récord)
   function restart() {
+    if (DUELO) return;
     let xp = 0;
     if (state === 'play' && !G.demo && !G.done && G.score > 0) { const r = settle(); xp = r ? r.xp : 0; }
     start();
     if (xp > 0) floats.push({ text: `+${xp} XP`, x: CW / 2, y: 4.5, t: performance.now(), big: true });
   }
   function leave(toGames) {
+    if (DUELO) { if (sala && confirm('¿Salir del duelo? Lo perdés.')) sala.salir(); return; }
     if (state === 'play' && G && !G.demo && !G.done && G.score > 0) settle();
     if (toGames && CC) CC.volver(); else showMenu();
   }
@@ -1178,8 +1188,78 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     drawBall(c, bx, byy, 7, t * 4);
   }
 
+  // ---------- duelo ----------
+  function empezarDuelo(d) {
+    azar = CD.azar(d.semilla);
+    CD.cerrarCapa();
+    $('end').hidden = true;
+    start();
+    $('btnRestart').hidden = true;
+    G.diff = 'normal';
+    G.duelo = { el: 0, mio: null, suyo: null, fin: false, sk: CD.skinDe(DUELO.rival.skin) };
+    barraDuelo();
+  }
+  function barraDuelo() {
+    const Du = G && G.duelo; if (!Du) return;
+    const hud = $('hud').getBoundingClientRect(), ui = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui')) || 1;
+    const tope = Math.max(10, G.score, Du.el);
+    CD.barra({ top: Math.round((hud.bottom + 8) / ui), nombre: DUELO.rival.apodo, colorYo: CC.skin().cuerpo, colorEl: Du.sk.cuerpo || '#ffcc29',
+      yo: G.score / tope, el: Du.el / tope, txtYo: G.score + (G.done ? ' ✓' : ''), txtEl: Du.el + (Du.suyo != null ? ' ✓' : '') });
+  }
+  // Se decide cuando terminaron los dos (o cuando el que sigue jugando ya pasó los puntos del que terminó).
+  function finDuelo() {
+    const Du = G.duelo, quien = DUELO.rival.apodo.replace(/</g, '&lt;');
+    let gane = null;
+    if (Du.mio != null && Du.suyo != null) gane = Du.mio > Du.suyo ? true : Du.mio < Du.suyo ? false : null;
+    else if (Du.mio != null && Du.el > Du.mio) gane = false;
+    else if (Du.suyo != null && G.score > Du.suyo) gane = true;
+    else {
+      if (Du.mio != null) {   // terminaste vos: a esperar al otro
+        state = 'duelo'; $('pad').classList.add('off');
+        CD.capa({ titulo: 'Esperando a ' + DUELO.rival.apodo, rival: DUELO.rival, cargando: true,
+          texto: `Hiciste <b>${Du.mio}</b> ${Du.mio === 1 ? 'punto' : 'puntos'}. ${quien} va por ${Du.el} y sigue jugando.`,
+          botones: [{ txt: 'Salir', accion: () => sala.salir() }] });
+      }
+      return;
+    }
+    if (Du.fin) return;
+    Du.fin = true;
+    if (Du.mio == null && G.score > 0) settle();   // el que sigue jugando y ya ganó: su partida cuenta igual
+    G.done = true; state = 'duelo'; $('pad').classList.add('off');
+    barraDuelo();
+    const mio = Du.mio ?? G.score, suyo = Du.suyo ?? Du.el;
+    CD.resultado(sala, {
+      gane,
+      texto: gane === null ? `Empataron en <b>${mio}</b> puntos.`
+        : `Vos: <b>${mio}</b> ${mio === 1 ? 'punto' : 'puntos'} · ${quien}: <b>${suyo}</b>` + (Du.suyo == null || Du.mio == null ? ' (y seguía)' : ''),
+    });
+  }
+  function conectarDuelo() {
+    $('menu').hidden = true;
+    sala = CD.sala(DUELO, {
+      alConectar: () => sala.listo(),
+      alEmpezar: d => empezarDuelo(d),
+      alMensaje(ev, d) {
+        if (!G || !G.duelo || G.duelo.fin) return;
+        if (ev === 'p') { G.duelo.el = Math.max(G.duelo.el, +d.p || 0); barraDuelo(); finDuelo(); }
+        else if (ev === 'fin') { G.duelo.suyo = +d.p || 0; G.duelo.el = G.duelo.suyo; barraDuelo(); finDuelo(); }
+        if (G.duelo.mio != null && !G.duelo.fin) finDuelo();
+      },
+      alIrse() {
+        const jugando = G && G.duelo && !G.duelo.fin;
+        if (G && G.duelo) { G.duelo.fin = true; G.done = true; }
+        state = 'duelo'; $('pad').classList.add('off');
+        const quien = DUELO.rival.apodo.replace(/</g, '&lt;');
+        CD.resultado(sala, jugando ? { gane: true, sinRevancha: true, texto: `${quien} se fue del duelo.` }
+          : { titulo: 'Se fue', sinRevancha: true, texto: `${quien} salió del duelo.` });
+      },
+    });
+    CD.esperandoRival(sala);
+  }
+
   resize();
   showMenu();
+  if (DUELO) conectarDuelo();
   requestAnimationFrame(frame);
 })();
 </script>

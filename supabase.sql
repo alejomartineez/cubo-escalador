@@ -656,3 +656,28 @@ insert into public.limites (tabla, minimo, maximo, orden) values
   ('zigzag:facil', null, 20000, 'mayor'), ('zigzag:normal', null, 20000, 'mayor'), ('zigzag:dificil', null, 20000, 'mayor'),
   ('zigzag:extremo', null, 20000, 'mayor'), ('zigzag:maestro', null, 20000, 'mayor')
 on conflict (tabla) do update set minimo = excluded.minimo, maximo = excluded.maximo, orden = excluded.orden;
+
+-- ---------- Parte: duelos de Vóley ----------
+-- Ahora también se puede retar a Vóley (los dos juegan contra el mismo rival y gana el que hace más puntos).
+create or replace function public.retar(p_jugador uuid, p_codigo text, p_juego text, p_dif text)
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  v_para uuid;
+  v_reto public.retos%rowtype;
+begin
+  if not exists (select 1 from public.jugadores where id = p_jugador) then return json_build_object('error', 'sin-apodo'); end if;
+  if coalesce(p_juego, '') not in ('pulseada', 'escalador', 'voley') or coalesce(p_dif, '') !~ '^[a-z]{3,10}$' then return json_build_object('error', 'invalido'); end if;
+  v_para := public.id_de_codigo(p_codigo);
+  if v_para is null or v_para = p_jugador then return json_build_object('error', 'no-existe'); end if;
+  if not public.son_amigos(p_jugador, v_para) then return json_build_object('error', 'no-amigos'); end if;
+  -- para que nadie llene la tabla: como mucho 8 retos por minuto
+  if (select count(*) from public.retos where de = p_jugador and creado > now() - interval '1 minute') >= 8 then
+    return json_build_object('error', 'muchos');
+  end if;
+  delete from public.retos where vence < now() - interval '1 day';
+  update public.retos set estado = 'cancelado' where de = p_jugador and para = v_para and estado = 'pendiente';
+  insert into public.retos (de, para, juego, dif, sala)
+    values (p_jugador, v_para, p_juego, p_dif, replace(gen_random_uuid()::text, '-', ''))
+  returning * into v_reto;
+  return json_build_object('id', v_reto.id, 'sala', v_reto.sala, 'vence', v_reto.vence, 'huella', public.huella_de(v_para));
+end $$;

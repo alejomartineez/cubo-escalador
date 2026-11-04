@@ -338,6 +338,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let state = 'menu';   // menu | play | end
   let G = null, shake = 0, particles = [], floats = [], banner = null;
   let modo = rec.modo === 'dos' ? 'dos' : 'cpu';
+  // ?dos=1 (desde el botón 1v1 del inicio): arranca elegido el modo de a dos
+  try { if (new URLSearchParams(location.search).has('dos')) modo = 'dos'; } catch (e) {}
   const teclas = { p1: 0, p2: 0, l1: false, r1: false, l2: false, r2: false };
 
   function paleta(y, hw) { return { x: FW / 2, y, hw, v: 0, golpe: -9, objetivo: FW / 2, err: 0 }; }
