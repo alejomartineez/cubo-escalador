@@ -966,6 +966,8 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     'Online se juega en vivo: los dos a la vez, en Normal y con el mismo nivel, y ven cómo va el otro. Hay duelo de <b>Escalador</b>, <b>Pulseada</b> y <b>Vóley</b>.':
       "Online is live: you both play at the same time, on Normal with the same level, and see how the other one's doing. There are duels in <b>Climber</b>, <b>Arm Wrestling</b> and <b>Volley</b>.",
     'Paleta de a dos': 'Two-player Paddle',
+    'Pulseada de a dos': 'Two-player Arm Wrestling',
+    'Cada uno con su mitad de la pantalla y sus dos botones. Gana el primero en llevarse 2 rondas.': 'Each player gets half the screen and two buttons. First to win 2 rounds wins.',
     'Uno de cada lado de la pantalla. Gana el primero que llega a 7.': 'One on each side of the screen. First to 7 wins.',
     'Para jugar online necesitás un apodo. Ponelo en cualquier ranking y después agregá a tus amigos con su código.':
       'To play online you need a nickname. Set it on any leaderboard, then add your friends with their code.',
@@ -1775,9 +1777,10 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   setTimeout(() => CC.refrescarAmigos(), 2500);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) CC.refrescarAmigos(); });
   // ---------- 1v1 ----------
-  // En el mismo dispositivo (Paleta de a dos) u online contra un amigo aceptado (cubo-duelo.js).
+  // En el mismo dispositivo (Paleta y Pulseada de a dos) u online contra un amigo aceptado (cubo-duelo.js).
   const LOCALES = [
     { href: 'paleta.html?dos=1', ico: '🏓', color: '#2ec27e', nombre: T('Paleta de a dos'), desc: T('Uno de cada lado de la pantalla. Gana el primero que llega a 7.') },
+    { href: 'pulseada.html?dos=1', ico: '💪', color: '#f5b84a', nombre: T('Pulseada de a dos'), desc: T('Cada uno con su mitad de la pantalla y sus dos botones. Gana el primero en llevarse 2 rondas.') },
   ];
   for (const l of LOCALES) {
     const b = document.createElement('button');

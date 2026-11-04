@@ -139,13 +139,21 @@ body {
 .pad button.next { background: var(--cube); }
 .pad button.dim { opacity: .5; }
 .pad.uno button.next::after {
-  content: "¡Ahora!"; position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+  content: var(--t-ahora, "¡Ahora!"); position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
   font: 800 11px var(--body); letter-spacing: .08em; text-transform: uppercase;
   background: var(--ink); color: var(--paper); padding: 3px 9px; border-radius: 999px;
 }
 .pad button.on { transform: translateY(5px); box-shadow: 0 2px 0 var(--ink); }
 .pad button.bad { background: var(--bad); opacity: 1; animation: sacudir .18s; }
 @keyframes sacudir { 25% { translate: -5px 0; } 75% { translate: 5px 0; } }
+/* de a dos: cuatro botones, los dos de la izquierda para uno y los dos de la derecha para el otro */
+.pad .p2 { display: none; }
+.pad.dos { grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 760px; }
+.pad.dos .p2 { display: flex; border-color: #1d4f7a; }
+.pad.dos #bL2 { margin-left: 14px; }
+.pad.dos button span { display: none; }
+.pad.dos button.next::after { display: none; }
+.pad .p2.next { background: #62c6ff; }
 
 .overlay {
   position: fixed; inset: 0; display: flex;
@@ -298,6 +306,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 <div class="pad off" id="pad">
   <button id="bL" type="button" aria-label="Izquierda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4 7 12l8 8"/></svg><span>Izquierda</span></button>
   <button id="bR" type="button" aria-label="Derecha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 4 8 8-8 8"/></svg><span>Derecha</span></button>
+  <button id="bL2" class="p2" type="button" aria-label="Jugador de la derecha: izquierda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4 7 12l8 8"/></svg></button>
+  <button id="bR2" class="p2" type="button" aria-label="Jugador de la derecha: derecha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 4 8 8-8 8"/></svg></button>
 </div>
 
 <div class="cartel" id="cartel" hidden>
@@ -331,6 +341,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         <button class="btn small" id="btnRank" type="button">🏆 Ranking</button>
         <button class="ter btn small" id="btnMute" type="button">Sonido: sí</button>
         <button class="btn small sombra" id="btnSombra" type="button" hidden>👻 Contra tu sombra <small id="mSombra"></small></button>
+        <button class="btn small" id="btnDos" type="button">👥 De a dos</button>
       </div>
       <p class="teclas" id="mTeclas"></p>
     </div>
@@ -372,6 +383,25 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const reduceMotion = (CC && CC.menosMovimiento) ?? matchMedia('(prefers-reduced-motion: reduce)').matches;
   // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js)
   if (CC && CC.textos) CC.textos({
+    // de a dos
+    '¡Ahora!': 'Now!',
+    'Izquierda {n}/s': 'Left {n}/s',
+    'De a dos': '2 players',
+    'Jugador de la derecha: izquierda': 'Right player: left',
+    'Jugador de la derecha: derecha': 'Right player: right',
+    'Ronda {n}': 'Round {n}',
+    'Izquierda {a} – {b} Derecha': 'Left {a} – {b} Right',
+    'Cada uno alterna sus dos botones: el de la izquierda los de su lado y el de la derecha los suyos. Gana el primero en llevarse 2 rondas.':
+      'Each player alternates their own two buttons: left player on the left, right player on the right. First to win 2 rounds wins.',
+    'Cada uno alterna sus dos teclas: el de la izquierda A y D, el de la derecha ← y →. Gana el primero en llevarse 2 rondas.':
+      'Each player alternates their own two keys: left player A and D, right player ← and →. First to win 2 rounds wins.',
+    '¡Punto para la izquierda!': 'Point for the left!',
+    '¡Punto para la derecha!': 'Point for the right!',
+    '¡Ganó la izquierda!': 'Left wins!',
+    '¡Ganó la derecha!': 'Right wins!',
+    'rondas · izquierda – derecha': 'rounds · left – right',
+    'Mejor ritmo: izquierda <b>{a}</b> · derecha <b>{b}</b> toques/s': 'Best pace: left <b>{a}</b> · right <b>{b}</b> taps/s',
+    'Flechas repetidas: izquierda {a} · derecha {b}': 'Repeated arrows: left {a} · right {b}',
     // título, HUD y botones de juego
     'Pulseada': 'Arm Wrestling',
     'rival': 'rival',
@@ -628,6 +658,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   addEventListener('resize', resize);
 
   // ---------- estado ----------
+  // ---------- de a dos en el mismo dispositivo ----------
+  // Cada uno con un lado de la pantalla: el de la izquierda (el cubo de siempre) alterna sus dos botones, y en la compu
+  // A y D; el de la derecha, los suyos, y en la compu ← →. La misma barra y el mismo filtro de fuerza que contra un
+  // rival, en Normal, al mejor de 3. Sin XP ni ranking. Se elige con «De a dos» en el menú o con ?dos=1 (botón 1v1 del inicio).
+  const COLOR2 = '#62c6ff';
+  const rivalDos = () => ({ n: T('Derecha'), nombre: T('Derecha'), c: COLOR2, o: 'negros', x: [], e: 'parejo', jefe: false, dos: true });
+  let modoDos = false;
+  try { modoDos = !DUELO && !DIA && new URLSearchParams(location.search).has('dos'); } catch (e) {}
   let state = 'menu';   // menu | play | end
   let G = null, shake = 0, particles = [], floats = [], banner = null;
   const playerColor = () => (CC && CC.skin().cuerpo) || '#ffcc29';
@@ -642,8 +680,20 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     particles = []; floats = []; banner = null;
     enterIntro();
   }
+  function newRunDos() {
+    G = {
+      sombra: null, diff: 'normal', score: 0, idx: 0, rival: rivalDos(), phase: 'intro', pt: 0,
+      p: 0, f: 0, you: 0, r1: 0, rv: 0, ft: 0, next: 0, taps: [], best: 0,
+      wrong: 0, valid: 0, timeout: false, settled: true, tironOn: false, lastBad: 0, slide: 0, fall: 0,
+      // el de la derecha: su acumulador de toques, qué flecha le toca, sus errores y su mejor ritmo
+      dos: { ronda: 1, izq: 0, der: 0, f: 0, next: 0, wrong: 0, lastBad: 0, taps: [], best: 0 },
+    };
+    particles = []; floats = []; banner = null;
+    enterIntro();
+  }
   function enterIntro() {
-    G.phase = 'intro'; G.pt = 0; G.rival = G.duelo ? rivalDuelo : G.sombra ? rivalSombra() : rivalDe(G.idx); G.slide = G.idx === 0 ? 0 : 1; G.fall = 0;
+    G.phase = 'intro'; G.pt = 0; G.rival = G.dos ? rivalDos() : G.duelo ? rivalDuelo : G.sombra ? rivalSombra() : rivalDe(G.idx); G.slide = G.dos || G.idx === 0 ? 0 : 1; G.fall = 0;
+    if (G.dos) { G.dos.f = 0; G.dos.next = 0; }
     if (G.duelo) { G.duelo.ya = 0; G.duelo.p = 0; G.duelo.elYou = 0; G.p = 0; }
     G.f = 0; G.you = 0; G.r1 = 0; G.rv = 0; G.ft = 0; G.next = 0; G.taps = [];
     G.minP = 0; G.peligro = false;   // para «¡Casi!» y «¡Remontada!» (vigilarCasi)
@@ -656,14 +706,37 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // primeras partidas: los botones ← → laten uno y otro (CC.guia), que es justo lo que hay que hacer: alternar.
   // Dura la presentación y la cuenta, y se va con el primer toque válido.
   let guia = null;
+  let guia2 = null;
   function ponerGuia() {
-    quitarGuia();
-    if (CC && CC.guia) guia = CC.guia('pulseada', [$('bL'), $('bR')], { ms: 9000 });
+    quitarGuia(); quitarGuia2();
+    if (!(CC && CC.guia)) return;
+    // de a dos: siempre en la primera ronda, una guía por cada par de botones (cada una se va con el primer toque de su dueño)
+    const o = G && G.dos ? { ms: 9000, siempre: true } : { ms: 9000 };
+    guia = CC.guia('pulseada', [$('bL'), $('bR')], o);
+    if (G && G.dos) guia2 = CC.guia('pulseada', [$('bL2'), $('bR2')], o);
   }
   function quitarGuia() { if (guia) { guia.listo(); guia = null; } }
+  function quitarGuia2() { if (guia2) { guia2.listo(); guia2 = null; } }
 
   function showCartel() {
     const r = G.rival, c = $('cartel');
+    if (G.dos) {
+      const Dd = G.dos;
+      $('cNum').textContent = T('De a dos');
+      $('cName').textContent = T('Ronda {n}', { n: Dd.ronda });
+      $('cPide').textContent = T('Izquierda {a} – {b} Derecha', { a: Dd.izq, b: Dd.der });
+      $('cEstilo').textContent = matchMedia('(hover: none)').matches
+        ? T('Cada uno alterna sus dos botones: el de la izquierda los de su lado y el de la derecha los suyos. Gana el primero en llevarse 2 rondas.')
+        : T('Cada uno alterna sus dos teclas: el de la izquierda A y D, el de la derecha ← y →. Gana el primero en llevarse 2 rondas.');
+      c.classList.remove('jefe');
+      const fc = $('cFace').getContext('2d');
+      fc.setTransform(1, 0, 0, 1, 0, 0); fc.clearRect(0, 0, 144, 144);
+      if (CC) { CC.dibujarCubo(fc, 44, 120, 52, { t: 0, mirar: 1, efecto: false }); CC.dibujarCubo(fc, 100, 120, 52, { skin: cubo2(), t: 0, mirar: -1, efecto: false }); }
+      else drawRival(fc, 72, 126, 96, r, 'calma', 0);
+      c.hidden = false;
+      c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
+      return;
+    }
     if (G.duelo) {
       const Du = G.duelo;
       $('cNum').textContent = T('Duelo · Ronda {n}', { n: Du.ronda });
@@ -726,6 +799,54 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const span = toques[toques.length - 1] - toques[0];
     if (span >= 1200) G.best = Math.max(G.best, (toques.length - 1) / (span / 1000));
     sfxTap(d, G.you);
+  }
+
+  // el de la derecha (de a dos): lo mismo que press(), con su propio acumulador
+  function press2(d, now) {
+    if (state !== 'play' || !G || !G.dos) return;
+    flash(d, true);
+    if (G.phase !== 'fight') return;
+    const Dd = G.dos;
+    if (Dd.next !== 0 && d !== Dd.next) {
+      Dd.wrong++;
+      bad(d, true); sfxBad(); CC?.vibrar(25);
+      if (now - Dd.lastBad > 450) { Dd.lastBad = now; floats.push({ text: T('¡Alterná!'), x: CX + U * 2.6, y: Y0 + 3.6 * U, t: now, c: '#ff4f5e' }); }
+      return;
+    }
+    Dd.next = -d; Dd.f += 1;
+    quitarGuia2();
+    const toques = Dd.taps;
+    toques.push(now);
+    while (toques.length && now - toques[0] > 2000) toques.shift();
+    const span = toques[toques.length - 1] - toques[0];
+    if (span >= 1200) Dd.best = Math.max(Dd.best, (toques.length - 1) / (span / 1000));
+    sfxTap(d, G.rv);
+  }
+  // de a dos: termina la ronda. 'won' / 'lost' son las mismas animaciones (cae el de la derecha / marea al de la izquierda).
+  function rondaDos(izq, now) {
+    const Dd = G.dos;
+    if (izq) Dd.izq++; else Dd.der++;
+    G.phase = izq ? 'won' : 'lost'; G.pt = 0;
+    sfxWin(); CC?.vibrar(30);
+    banner = { text: T(izq ? '¡Punto para la izquierda!' : '¡Punto para la derecha!'), t: now, ms: 1200 };
+    slam(izq ? 1 : -1);
+    frenarGolpe(120);
+  }
+  function finRondaDos() {
+    const Dd = G.dos;
+    if (Dd.izq < RONDAS && Dd.der < RONDAS) { Dd.ronda++; G.idx = Dd.ronda - 1; G.timeout = false; enterIntro(); return; }
+    if (state !== 'play') return;
+    const izq = Dd.izq > Dd.der;
+    $('eTitle').textContent = T(izq ? '¡Ganó la izquierda!' : '¡Ganó la derecha!');
+    $('eNum').textContent = `${Dd.izq} – ${Dd.der}`;
+    $('eSub').textContent = T('rondas · izquierda – derecha');
+    $('eSub2').innerHTML = T('Mejor ritmo: izquierda <b>{a}</b> · derecha <b>{b}</b> toques/s', { a: G.best > 0 ? fmt1(G.best) : '—', b: Dd.best > 0 ? fmt1(Dd.best) : '—' });   // — : rondas muy cortas para medirlo
+    $('eSub3').textContent = T('Flechas repetidas: izquierda {a} · derecha {b}', { a: G.wrong, b: Dd.wrong });
+    $('eXP').hidden = true; $('eBadges').innerHTML = '';
+    $('eDifBox').hidden = true; $('btnRankEnd').hidden = true; $('btnSombraEnd').hidden = true;
+    state = 'end';
+    $('end').hidden = false; $('pad').classList.add('off'); $('cartel').hidden = true; showTip(false);
+    setTimeout(() => $('btnAgain').focus({ preventScroll: true }), 50);
   }
 
   function winRound(now) {
@@ -954,7 +1075,23 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('btnSombra').hidden = !S || !!DIA;
     if (S) $('mSombra').textContent = fmt1(ritmoSombra(S)) + '/s';
   }
+  function startDos() {
+    modoSombra = false;
+    state = 'play';
+    $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').classList.remove('off'); $('pad').classList.add('dos');
+    resize();
+    newRunDos();
+    $('hDiff').textContent = '👥 ' + T('De a dos');
+    $('hDiff').classList.remove('hot');
+    showTip(false);
+    ponerGuia();
+    hudCache = ''; padSig = '';
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  }
   function start(sombra) {
+    if (modoDos) return startDos();
+    $('pad').classList.remove('dos');
+    $('eDifBox').hidden = !CC; $('btnRankEnd').hidden = !CC;
     if (DIA) { if (!DIA.empezar()) return DIA.normal(); sombra = false; }
     const S = sombra === true && conSombra ? CC.sombra.cargar('pulseada', 'ritmo') : null;
     modoSombra = !!S;
@@ -981,6 +1118,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showMenu() {
     if (state === 'play' && G && G.score > 0) finish();
+    modoDos = false; $('pad').classList.remove('dos');
     state = 'menu';
     G = null;
     renderMenu();
@@ -992,16 +1130,23 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   // ---------- entrada ----------
   const bL = $('bL'), bR = $('bR');
-  const flash = d => { const b = d < 0 ? bL : bR; b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 80); };
-  const bad = d => { const b = d < 0 ? bL : bR; b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad'); setTimeout(() => b.classList.remove('bad'), 200); };
+  const bL2 = $('bL2'), bR2 = $('bR2');
+  const boton = (d, dos) => (dos ? (d < 0 ? bL2 : bR2) : d < 0 ? bL : bR);
+  const flash = (d, dos) => { const b = boton(d, dos); b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 80); };
+  const bad = (d, dos) => { const b = boton(d, dos); b.classList.remove('bad'); void b.offsetWidth; b.classList.add('bad'); setTimeout(() => b.classList.remove('bad'), 200); };
   let padSig = '';
   function paintPad() {
     // en Maestro no se marca qué botón toca
     const fight = state === 'play' && G && G.phase === 'fight' && DIFS[G.diff].ayuda;
-    const nx = fight ? G.next : 9;
-    const sig = String(nx);
+    const nx = fight ? G.next : 9, nx2 = fight && G.dos ? G.dos.next : 9;
+    const sig = nx + '|' + nx2;
     if (sig === padSig) return;
     padSig = sig;
+    const dos = fight && !!G.dos;
+    bL2.classList.toggle('next', dos && nx2 !== 1);
+    bR2.classList.toggle('next', dos && nx2 !== -1);
+    bL2.classList.toggle('dim', dos && nx2 === 1);
+    bR2.classList.toggle('dim', dos && nx2 === -1);
     bL.classList.toggle('next', fight && nx !== 1);
     bR.classList.toggle('next', fight && nx !== -1);
     bL.classList.toggle('dim', fight && nx === 1);
@@ -1019,7 +1164,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if ((k === 'r' || k === 'R') && (state === 'play' || state === 'end')) { e.preventDefault(); if (!e.repeat) restart(); return; }
     if (state === 'play') {
       // mantener apretada la tecla no suma: solo cuenta cada pulsación nueva
-      if (left) { e.preventDefault(); if (!e.repeat) press(-1, performance.now()); }
+      // de a dos: A y D son del de la izquierda, ← → del de la derecha
+      if (G && G.dos && (left || right)) {
+        e.preventDefault();
+        if (!e.repeat) { const flecha = k === 'ArrowLeft' || k === 'ArrowRight'; (flecha ? press2 : press)(left ? -1 : 1, performance.now()); }
+      }
+      else if (left) { e.preventDefault(); if (!e.repeat) press(-1, performance.now()); }
       else if (right) { e.preventDefault(); if (!e.repeat) press(1, performance.now()); }
       else if (k === 'Escape') showMenu();
       else if (k === ' ') e.preventDefault();
@@ -1038,7 +1188,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   });
   const bindPad = (el, d) => el.addEventListener('pointerdown', e => { e.preventDefault(); press(d, performance.now()); });
   bindPad(bL, -1); bindPad(bR, 1);
-  cv.addEventListener('pointerdown', e => { if (state === 'play') { e.preventDefault(); press(e.clientX < W / 2 ? -1 : 1, performance.now()); } });
+  for (const [el, d] of [[bL2, -1], [bR2, 1]]) el.addEventListener('pointerdown', e => { e.preventDefault(); press2(d, performance.now()); });
+  cv.addEventListener('pointerdown', e => {
+    if (state !== 'play') return;
+    e.preventDefault();
+    // de a dos: la pantalla en cuartos, como los botones (los dos de la izquierda son de uno, los dos de la derecha del otro)
+    if (G && G.dos) { const q = Math.min(3, Math.floor(e.clientX / (W / 4))); (q < 2 ? press : press2)(q % 2 ? 1 : -1, performance.now()); }
+    else press(e.clientX < W / 2 ? -1 : 1, performance.now());
+  });
+  $('btnDos').hidden = !!(DUELO || DIA);
+  document.documentElement.style.setProperty('--t-ahora', JSON.stringify(T('¡Ahora!')));   // el cartelito del botón lo pone el CSS
+  $('btnDos').addEventListener('click', () => { modoDos = true; start(); });
   $('btnPlay').addEventListener('click', () => start());
   $('btnSombra').addEventListener('click', () => start(true));
   $('btnSombraEnd').addEventListener('click', () => start(!modoSombra));
@@ -1125,7 +1285,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         if (G.duelo && sala.host) sala.enviar('ya', { n: G.duelo.ronda });
         G.phase = 'fight'; G.pt = 0; G.p = 0;
         G.sf = 0; G.sn = 0;
-        if (conSombra && !G.duelo) G.graba = { g: CC.sombra.grabar(), n: 0 };
+        if (conSombra && !G.duelo && !G.dos) G.graba = { g: CC.sombra.grabar(), n: 0 };
         sfxCount(0); banner = { text: T('¡Ya!'), t: now, ms: 600 };
       }
     } else if (G.phase === 'fight') {
@@ -1133,7 +1293,16 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       // tu fuerza: cada toque válido suma 1 a un acumulador que se va vaciando; la del rival pasa por el mismo filtro
       G.f *= Math.exp(-dt / TAU1);
       G.you += (G.f / TAU1 - G.you) * a2;
-      if (G.duelo) peleaDuelo(now, dt, a2);
+      if (G.dos) {
+        // el de la derecha: sus toques entran a su acumulador, con el mismo filtro
+        const Dd = G.dos;
+        Dd.f *= Math.exp(-dt / TAU1);
+        G.rv += (Dd.f / TAU1 - G.rv) * a2;
+        G.p = clamp(G.p + K * (G.you - G.rv) * dt, -1, 1);
+        if (G.p >= 1) rondaDos(true, now);
+        else if (G.p <= -1) rondaDos(false, now);
+        else if (G.ft >= D.round) { G.timeout = true; rondaDos(G.p >= 0, now); }
+      } else if (G.duelo) peleaDuelo(now, dt, a2);
       else if (G.sombra) {
         // la sombra: sus toques entran al mismo acumulador que los tuyos
         const n = toquesSombra(G.sombra, G.ft);
@@ -1155,22 +1324,28 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       else if (G.p <= -1) loseRound(now);
       else if (G.ft >= D.round) { G.timeout = true; G.p > 0 ? winRound(now) : loseRound(now); }
       }
-      if (G.phase === 'fight') vigilarCasi(now);
+      if (G.phase === 'fight' && !G.dos) vigilarCasi(now);
     } else if (G.phase === 'won') {
       G.p = Math.min(1.05, G.p + dt * 2);
       G.fall = clamp((G.pt - 0.7) / 0.6, 0, 1);
       G.you *= Math.exp(-dt * 3); G.rv *= Math.exp(-dt * 3);
-      if (G.pt >= T_WON) { if (G.duelo) finRonda(); else if (G.sombra) { if (state === 'play') showEnd(); } else { G.idx++; G.timeout = false; enterIntro(); } }
+      if (G.pt >= T_WON) { if (G.dos) finRondaDos(); else if (G.duelo) finRonda(); else if (G.sombra) { if (state === 'play') showEnd(); } else { G.idx++; G.timeout = false; enterIntro(); } }
     } else if (G.phase === 'lost') {
       G.p = Math.max(-1.05, G.p - dt * 2);
       G.you *= Math.exp(-dt * 3); G.rv *= Math.exp(-dt * 3);
-      if (G.pt >= T_LOST && state === 'play') { if (G.duelo) finRonda(); else showEnd(); }
+      if (G.pt >= T_LOST && state === 'play') { if (G.dos) finRondaDos(); else if (G.duelo) finRonda(); else showEnd(); }
     }
 
     paintPad();
     if (state === 'play') {
-      const sig = G.score + '|' + fmt1(G.you) + '|' + (G.you > G.rv + 0.05 && G.phase === 'fight');
-      if (sig !== hudCache) {
+      const sig = G.score + '|' + fmt1(G.you) + '|' + (G.you > G.rv + 0.05 && G.phase === 'fight') + (G.dos ? '|' + G.dos.izq + G.dos.der + fmt1(G.rv) : '');
+      if (sig !== hudCache && G.dos) {
+        hudCache = sig;
+        $('hScore').textContent = `${G.dos.izq} – ${G.dos.der}`;
+        $('hScoreLbl').textContent = T('rondas');
+        $('hTps').textContent = `${fmt1(G.you)} · ${fmt1(G.rv)}`;
+        $('hTps').classList.remove('gana');
+      } else if (sig !== hudCache) {
         hudCache = sig;
         $('hScore').textContent = G.score;
         $('hScoreLbl').textContent = T(G.duelo ? (G.score === 1 ? 'ronda' : 'rondas') : rivales(G.score));
@@ -1186,6 +1361,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     return { x: CX + FL * Math.sin(th), y: yT - 0.12 * U - FL * Math.cos(th) };
   }
 
+  // el cubo del de la derecha (de a dos): el clásico, celeste
+  const cubo2 = () => ({ ...CC.SKINS[0], cuerpo: COLOR2 });
   // ---------- dibujo ----------
   function draw(now) {
     const g = ctx.createLinearGradient(0, 0, 0, H);
@@ -1243,7 +1420,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const sp = rot(px, pa, s * 0.42, -s * 0.45), sr = rot(rx, ra, -s * 0.42, -s * 0.45);
 
     // rival
-    drawRival(ctx, rx, pie, s, rival, rMood, now, ra);
+    if (rival.dos && CC) {
+      ctx.save(); ctx.translate(rx, pie); ctx.rotate(ra);
+      CC.dibujarCubo(ctx, 0, 0, s, { skin: cubo2(), mirar: -1, mareado: !!G && G.phase === 'won', t: now, efecto: false });
+      ctx.restore();
+    } else drawRival(ctx, rx, pie, s, rival, rMood, now, ra);
     // vos
     ctx.save(); ctx.translate(px, pie); ctx.rotate(pa);
     if (CC) CC.dibujarCubo(ctx, 0, 0, s, { mirar: 1, mareado: pMood, t: now });
@@ -1333,7 +1514,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const inPlay = state === 'play' && G;
     const you = inPlay ? G.you : 4 + 2.5 * (1 + Math.sin(menuT * 0.9)) / 2, rv = inPlay ? G.rv : 4.6;
     ctx.fillStyle = INK;
-    ctx.textAlign = 'left'; ctx.fillText(T('Vos {n}/s', { n: fmt1(you) }), bx, ty);
+    ctx.textAlign = 'left'; ctx.fillText(T(inPlay && G.dos ? 'Izquierda {n}/s' : 'Vos {n}/s', { n: fmt1(you) }), bx, ty);
     // el nombre del rival no puede pisar el reloj del medio (en un duelo es el apodo de tu amigo, que puede ser largo)
     const lado = bw / 2 - (ctx.measureText('00,0 s').width + U * 0.5) / 2 - 6, cola = ' ' + fmt1(rv) + '/s';
     let nom = inPlay ? G.rival.nombre : rival.n;
@@ -1584,8 +1765,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
 
   resize();
+  const dosAlEntrar = modoDos;   // ?dos=1: arranca directo de a dos
   showMenu();
   if (DUELO) conectarDuelo();
+  else if (dosAlEntrar) { modoDos = true; start(); }
   requestAnimationFrame(frame);
 })();
 </script>
