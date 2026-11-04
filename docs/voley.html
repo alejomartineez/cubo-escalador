@@ -251,8 +251,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 <canvas id="cv"></canvas>
 
 <div class="hud" id="hud" hidden>
-  <div class="stat"><span class="big" id="hScore">0</span><span class="lbl">puntos</span></div>
-  <div class="stat mid"><div class="lives" id="hLives" aria-label="Vidas"></div><span class="lbl">vidas</span></div>
+  <div class="stat"><span class="big" id="hScore">0</span><span class="lbl" id="hScoreLbl">puntos</span></div>
+  <div class="stat mid"><div class="lives" id="hLives" aria-label="Vidas"></div><span class="big" id="hRival" hidden>0</span><span class="lbl" id="hLivesLbl">vidas</span></div>
   <div class="right">
     <div class="hbtns">
       <button class="ter smallbtn" id="btnQuit" type="button">← Juegos</button>
@@ -343,10 +343,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const $ = id => document.getElementById(id);
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
-  // Duelo 1v1 contra un amigo (cubo-duelo.js): los dos juegan en Normal contra el mismo rival (misma semilla)
-  // y gana el que hace más puntos antes de quedarse sin vidas. Se ven los puntos del otro en vivo.
+  // Duelo 1v1 contra un amigo (cubo-duelo.js): partido cara a cara, cada uno de su lado de la red, a META puntos
+  // con diferencia de 2. Cada uno se ve a la izquierda: en la pantalla del invitado la cancha va espejada.
+  // Red: el anfitrión (el que retó) manda en la pelota, los saques y los puntos; los toques del invitado los decide
+  // el invitado (así no siente el lag al pegarle) y el anfitrión los aplica. Ver la sección `duelo` más abajo.
   const CD = window.CuboDuelo, DUELO = CD ? CD.partida() : null;
   let sala = null;
+  const META = 11;
   // desafío del día (?diario=1): Normal, 3 intentos y el rival juega con la semilla del día
   const DIA = !DUELO && CC && CC.diarioDe ? CC.diarioDe('voley') : null;
   let azar = Math.random;
@@ -458,7 +461,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let state = 'menu';       // menu | play | end
   let G = null, shake = 0, particles = [], floats = [], banner = null;
   let sel = null;
-  const dif = () => (!DIA && sel ? sel.valor() : 'normal');
+  const dif = () => (!DIA && !DUELO && sel ? sel.valor() : 'normal');
 
   function newRun(demo, d = 'normal') {
     G = {
@@ -475,7 +478,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     particles = []; floats = []; banner = null;
   }
   // la pelota también acelera con tu puntaje: a los ~15 s de una partida en Normal ya se siente
-  const velBase = () => (G.demo ? 1 : 1 + Math.min(G.D.gmax, G.D.gup * G.score));
+  // (en el duelo, con los puntos de los dos y bastante menos)
+  const velBase = () => (G.demo ? 1 : G.red ? 1 + Math.min(0.35, 0.015 * (G.score + G.red.el)) : 1 + Math.min(G.D.gmax, G.D.gup * G.score));
   function setSkill() {
     const D = G.D;
     G.skill = G.demo ? 0.55 : Math.min(D.smax, D.s0 + D.inc * G.score);
@@ -566,6 +570,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       }
       burst(b.x, b.y, smash ? '#ffcc29' : '#fffaf0', smash ? 12 : 6, smash ? 1.1 : 0.6);
       recalc();
+      if (G.red) { toqueRed(1); return; }
       // ¿llega el rival? depende de su destreza, de qué tan bueno fue el tiro y de cuánto viene durando el rally
       const quality = smash ? 1.35 + 0.6 * au : 0.55 + 0.6 * au;
       const q = Math.min(0.8, G.qBase * quality * (1 + 0.12 * (G.rally - 1)));
@@ -595,13 +600,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
   }
 
-  function pointTo(winner, now) {
+  function pointTo(winner, now, marcador) {
     const b = G.ball;
     G.phase = 'point'; G.phaseT = 0; G.winner = winner; G.rally = 0;
     G.land = null; G.contact = null;
     burst(b.x, BR * 0.3, '#ffd99a', 12, 0.8);
     if (G.demo) { G.server = winner === 'p' ? 'r' : 'p'; return; }
     sfxSand();
+    if (G.red) { puntoRed(winner, now, marcador); return; }
     if (winner === 'p') {
       const pts = G.oro ? 2 : 1, antes = G.score;
       G.score += pts; setSkill(); G.server = 'r';
@@ -609,7 +615,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       else setTimeout(sfxPoint, 90);
       floats.push({ text: '+' + pts, x: b.x, y: 1.4, t: now });
       const vuelta = Math.floor(G.score / 5) > Math.floor(antes / 5);
-      if (G.duelo) { sala.enviar('p', { p: G.score }); barraDuelo(); if (G.duelo.suyo != null) finDuelo(); }
       banner = { text: G.oro ? '¡Oro! +2' : vuelta ? `¡${G.score - G.score % 5} puntos!` : '¡Punto!', t: now };
     } else {
       G.lives--; G.server = 'p';
@@ -617,7 +622,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       shake = reduceMotion ? 0 : 10; sfxLose(); vibrate(40);
       banner = { text: G.lives > 0 ? (G.lives === 1 ? '¡Última vida!' : '¡Uy!') : '¡Se terminó!', t: now };
       if (G.lives <= 0) { G.done = true; if (CC && !G.demo) CC.morir(); }   // Geo se parte en pedazos
-      if (G.duelo) barraDuelo();
     }
   }
 
@@ -627,13 +631,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     b.vx = 0; b.vy = 0; b.g = G.D.g * velBase() * velBase(); b.fast = false; b.trail = []; b.last = null; b.lastT = -9;
     // pelota de oro: a partir de unos puntos, de vez en cuando (y seguro si hace mucho que no sale)
     G.saques++;
-    G.oro = !G.demo && G.score >= ORO_DESDE && (G.sinOro >= ORO_SEGURO || (G.sinOro >= 2 && azar() < ORO_PROB));
+    G.oro = !G.demo && !G.red && G.score >= ORO_DESDE && (G.sinOro >= ORO_SEGURO || (G.sinOro >= 2 && azar() < ORO_PROB));
     G.sinOro = G.oro ? 0 : G.sinOro + 1;
     b.held = server; b.heldT = server === 'r' ? 0.75 : 0.6;
     if (server === 'p') { b.x = G.px; b.y = SIDE + 3; }
     else { b.x = G.rx; b.y = SIDE + BR + 0.1; }
     if (G.oro) { banner = { text: '¡Pelota de oro! Vale 2', t: performance.now() }; beep(1320, 0.1, 'triangle', 0.05, 1.2); }
     else if (!G.demo && server === 'p') banner = { text: 'Tu saque', t: performance.now() };
+    if (G.red && G.red.host) { G.red.saque++; marcaRed(); }
   }
 
   // ---------- fin de partida ----------
@@ -648,9 +653,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     });
   }
   function finish() {
+    if (G.red) { finDuelo(); return; }   // el duelo no cuenta para récords ni ranking: da XP por jugarlo
     const before = bestFor(G.diff);
     const r = settle();
-    if (G.duelo) { G.duelo.mio = G.score; sala.enviar('fin', { p: G.score }); finDuelo(); return; }
     lastResult = r;
     const isRec = r ? r.record : G.score > before;
     $('eTitle').textContent = isRec && G.score > 0 ? '¡Récord!' : G.score >= 15 ? '¡Partidazo!' : G.score >= 5 ? '¡Buen vóley!' : '¡Se terminó!';
@@ -756,6 +761,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   addEventListener('keydown', e => {
     const k = e.key;
     if (document.getElementById('cc-rank')) return; // la ventana de ranking maneja sus teclas
+    if (DUELO && state !== 'play') return;          // en el duelo, fuera del partido mandan los botones de la ventana
     if ((k === 'r' || k === 'R') && (state === 'play' || state === 'end')) { e.preventDefault(); if (!e.repeat) restart(); return; }
     if (state === 'play') {
       if (isL(k)) { e.preventDefault(); if (!keys.l) { keys.l = true; pressed(-1); } }
@@ -864,7 +870,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const n = 3 - Math.floor(G.phaseT / 0.55);
       if (n !== G.count) {
         G.count = n;
-        if (n > 0) sfxTick(); else { sfxGo(); banner = { text: '¡Ya!', t: now }; G.phase = 'rally'; G.phaseT = 0; b.heldT = 0.15; }
+        if (n > 0) sfxTick();
+        else if (G.red) {
+          // en el duelo el saque lo larga el anfitrión; el invitado espera a que le llegue
+          sfxGo();
+          if (G.red.host) serve(G.server); else { G.phase = 'wait'; G.phaseT = 0; }
+          banner = { text: '¡Ya!', t: now };
+        } else { sfxGo(); banner = { text: '¡Ya!', t: now }; G.phase = 'rally'; G.phaseT = 0; b.heldT = 0.15; }
       }
     }
 
@@ -885,7 +897,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
     // rival
     const orx = G.rx;
-    {
+    if (G.red) G.rx = lerp(G.rx, G.red.otroX, 1 - Math.exp(-dt * 16));   // el otro: lo que llega por la red, suavizado
+    else {
       let t = HOME_R, sp = G.rs * 0.6;
       if (G.phase === 'rally' && !b.held && b.last === 'p' && G.contact && G.contact.x > NET) {
         t = G.time < G.rWait ? G.rx : G.rTarget; sp = G.rs;
@@ -901,7 +914,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (G.phase === 'rally') b.heldT -= dt;
       if (b.held === 'p') {
         b.x = G.px; b.y = SIDE + 3 + Math.sin(now / 180) * 0.08;
-        if (G.phase === 'rally' && b.heldT <= 0) { b.held = null; b.vx = 0; b.vy = 0; recalc(); }
+        if (G.phase === 'rally' && b.heldT <= 0) { b.held = null; b.vx = 0; b.vy = 0; recalc(); if (G.red) toqueRed(0); }
+      } else if (G.red) {
+        // saca el otro: la tiene arriba de la cabeza y la suelta cuando quiere (llega por la red)
+        b.x = G.rx; b.y = SIDE + 3 + Math.sin(now / 180) * 0.08;
       } else {
         b.x = G.rx; b.y = SIDE + BR + 0.1 + Math.abs(Math.sin(now / 160)) * 0.5;
         if (b.heldT <= 0) hit('r', now);
@@ -915,17 +931,21 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
           if (G.contact.x > NET && b.last === 'p') G.rTarget = planReturn('r', G.rMiss, 0);
           if (G.contact.x < NET && G.demo) G.pTarget = planReturn('p', G.pMiss, 0);
         }
-        if (G.phase === 'rally') {
+        if (G.phase === 'rally' && !(G.red && G.red.quieta)) {
           if (touches(G.px) && !(b.last === 'p' && G.time - b.lastT < COOLDOWN) && !(G.demo && G.pMiss) && b.x < NET) {
             if (b.y >= HIT_MIN_Y) { hit('p', now); continue; }
             glance(G.px);
           }
-          if (touches(G.rx) && !(b.last === 'r' && G.time - b.lastT < COOLDOWN) && !G.rMiss && b.x > NET) {
+          // en el duelo los toques del otro llegan por la red
+          if (!G.red && touches(G.rx) && !(b.last === 'r' && G.time - b.lastT < COOLDOWN) && !G.rMiss && b.x > NET) {
             if (b.y >= HIT_MIN_Y) { hit('r', now); continue; }
             glance(G.rx);
           }
-          if (b.y <= BR) { b.y = BR; pointTo(b.x < 0 || b.x > CW ? (b.last === 'p' ? 'r' : 'p') : b.x < NET ? 'r' : 'p', now); }
-          else if (b.x < -0.8 || b.x > CW + 0.8) pointTo(b.last === 'p' ? 'r' : 'p', now);
+          let gana = null;
+          if (b.y <= BR) { b.y = BR; gana = b.x < 0 || b.x > CW ? (b.last === 'p' ? 'r' : 'p') : b.x < NET ? 'r' : 'p'; }
+          else if (b.x < -0.8 || b.x > CW + 0.8) gana = b.last === 'p' ? 'r' : 'p';
+          if (gana && G.red) caeRed(gana);
+          else if (gana) pointTo(gana, now);
         } else if (b.y < BR) {
           b.y = BR; b.vy = Math.abs(b.vy) * 0.42; b.vx *= 0.7;
           if (b.vy < 0.8) b.vy = 0;
@@ -939,8 +959,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // entre puntos
     if (G.phase === 'point') {
       if (G.done && G.phaseT > 1.0 && state === 'play') { G.phase = 'over'; finish(); }
-      else if (!G.done && G.phaseT > PAUSE) serve(G.server);
+      else if (!G.done && G.phaseT > PAUSE && !(G.red && !G.red.host)) serve(G.server);
     }
+    if (G.red) tickRed(now, dt);
 
     shake *= Math.exp(-dt * 16);
     for (const p of particles) { p.age += dt; p.vy -= 18 * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
@@ -949,7 +970,16 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (banner && now - banner.t > 1100) banner = null;
     if (tipOn && now - tipT > 7000) hideTip();
 
-    if (state === 'play') {
+    if (state === 'play' && G.red) {
+      const sig = G.score + '|' + G.red.el;
+      if (sig !== hudCache) {
+        hudCache = sig;
+        $('hScore').textContent = G.score; $('hRival').textContent = G.red.el;
+        const mp = puntoDePartido();
+        $('hLevel').textContent = mp ? 'Punto de partido' : `A ${META} · diferencia de 2`;
+        $('hLevel').classList.toggle('hot', mp);
+      }
+    } else if (state === 'play') {
       const sig = G.score + '|' + G.lives + '|' + G.diff;
       if (sig !== hudCache) {
         hudCache = sig;
@@ -970,6 +1000,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     b.vx = side * Math.max(1.2, Math.abs(b.vx) * 0.5);
     b.fast = false;
     recalc();
+    if (G.red && cx === G.px) toqueRed(2);
   }
   function touches(cx) {
     const b = G.ball;
@@ -1023,6 +1054,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     for (const x of [0, CW]) { rr(ctx, X(x) - 3, FLOOR + 1, 6, Math.max(8, S * 0.3), 2); ctx.fill(); ctx.stroke(); }
 
     const b = G.ball, inFlight = !b.held && G.phase === 'rally';
+    // en el duelo, al invitado la pelota le llega corregida por la red: se dibuja con un desfase que se apaga solo
+    const bx = b.x + (G.red ? G.red.ox : 0), byv = b.y + (G.red ? G.red.oy : 0);
 
     // dónde va a caer: anillo en la arena
     if (inFlight && G.land && G.D.anillo) {
@@ -1039,9 +1072,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
     // sombra justo abajo de la pelota
     {
-      const k = clamp01(1 - b.y / 7);
+      const k = clamp01(1 - byv / 7);
       ctx.fillStyle = `rgba(29,35,64,${0.1 + 0.22 * k})`;
-      ctx.beginPath(); ctx.ellipse(X(b.x), FLOOR + S * 0.1, S * BR * (0.6 + 0.8 * k), S * 0.08, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(X(bx), FLOOR + S * 0.1, S * BR * (0.6 + 0.8 * k), S * 0.08, 0, 0, TAU); ctx.fill();
     }
 
     // red
@@ -1071,9 +1104,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), br * (0.55 + 0.06 * k), 0, TAU); ctx.fill();
     }
     ctx.globalAlpha = 1;
-    const by = Y(b.y);
-    if (by + br < TOPY - 8) drawOffscreen(X(b.x), b.y);
-    else drawBall(ctx, X(b.x), by, br, b.rot, G.oro);
+    const by = Y(byv);
+    if (by + br < TOPY - 8) drawOffscreen(X(bx), byv);
+    else drawBall(ctx, X(bx), by, br, b.rot, G.oro);
 
     for (const p of particles) {
       ctx.globalAlpha = 1 - p.age / p.life; ctx.fillStyle = p.c;
@@ -1170,6 +1203,16 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const s = SIDE * S, x = X(G.rx);
     shadowAt(x, s);
     const ht = (now - G.rHitT) / 160, q = ht >= 0 && ht < 1 && !reduceMotion ? Math.sin(Math.PI * ht) * 0.16 : 0;
+    if (G.red && CC) {
+      // en el duelo es tu amigo, con su skin
+      const o = { skin: G.red.sk, mirar: G.red.face, t: now, efecto: false };
+      if (G.phase === 'point' && G.winner === 'p') { CC.dibujarCubo(ctx, x, FLOOR, s, { ...o, mareado: true }); return; }
+      ctx.save(); ctx.translate(x, FLOOR);
+      ctx.rotate(reduceMotion ? 0 : clamp(G.rv / G.D.ps, -1, 1) * 0.08); ctx.scale(1 + q, 1 - q);
+      CC.dibujarCubo(ctx, 0, 0, s, o);
+      ctx.restore();
+      return;
+    }
     const lean = reduceMotion ? 0 : clamp(G.rv / G.D.ps, -1, 1) * 0.08 + G.rTilt;
     const lw = Math.max(2.5, s * 0.08);
     ctx.save(); ctx.translate(x, FLOOR); ctx.rotate(lean); ctx.scale(1 + q, 1 - q);
@@ -1233,50 +1276,197 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     drawBall(c, bx, byy, 7, t * 4);
   }
 
-  // ---------- duelo ----------
+  // ---------- duelo: partido cara a cara por la red ----------
+  // Cada pantalla tiene su propio marco: 'p' sos vos (a la izquierda) y 'r' es el otro. Por la red todo viaja en el
+  // marco del anfitrión (él a la izquierda): el invitado espeja x → CW - x al mandar y al recibir.
+  // · El anfitrión simula la pelota, los saques y los puntos, y manda 'e' (estado) hasta 15 veces por segundo
+  //   (4 si nada cambia) y al toque cuando pasa algo: un array chico con la pelota, los marcadores y la fase.
+  // · El invitado mueve su cubo al instante y manda 'i' (dónde está). La pelota la sigue simulando él mismo
+  //   (es una parábola: sale igual en las dos pantallas) y la corrige con cada estado, adelantándolo medio ping.
+  // · Cuando la pelota toca al invitado, lo decide el invitado: manda 'g' con la pelota ya pegada y el anfitrión la
+  //   aplica. Así nadie le pega a una pelota vieja. Si la pelota cae del lado del invitado, el anfitrión espera
+  //   un poquito (medio ping y algo) antes de dar el punto, por si viene un toque en camino.
+  // · `k` cuenta cada cosa que cambia la pelota (saque, toque, punto). El invitado ignora la pelota de los estados
+  //   que son de antes de su último toque, y el anfitrión ignora toques que no siguen al último k.
+  const r2 = v => Math.round(v * 100) / 100;
+  const ladoN = s => (s === 'p' ? 1 : s === 'r' ? 2 : 0);              // marco del anfitrión → número
+  const ladoInv = n => (n === 1 ? 'r' : n === 2 ? 'p' : null);         // número → marco del invitado
+  const medioPing = () => Math.min(0.3, (sala ? sala.rtt : 160) / 2000);
+  const gracia = () => Math.min(0.6, medioPing() + 0.15);
+  const ganaCon = (a, e) => a + 1 >= META && a + 1 - e >= 2;
+  const puntoDePartido = () => !!G.red && !G.done && (ganaCon(G.score, G.red.el) || ganaCon(G.red.el, G.score));
+  const apodoRival = () => DUELO.rival.apodo.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+  // adelanta una pelota t segundos (para compensar lo que tardó en llegar)
+  function avanzar(b, t) {
+    const h = 1 / 240;
+    for (let s = 0; s < t; s += h) {
+      if (b.y <= BR && b.vy <= 0) { b.y = BR; break; }
+      stepBall(b, h, b.g);
+    }
+  }
+
   function empezarDuelo(d) {
     azar = CD.azar(d.semilla);
     CD.cerrarCapa();
     $('end').hidden = true;
     start();
     $('btnRestart').hidden = true;
-    G.diff = 'normal';
-    G.duelo = { el: 0, mio: null, suyo: null, fin: false, sk: CD.skinDe(DUELO.rival.skin) };
-    barraDuelo();
+    G.red = { host: sala.host, k: 0, saque: 0, el: 0, otroX: HOME_R, ox: 0, oy: 0, face: -1, quieta: false, pend: null,
+      tx: 0, firma: '', ultX: null, fin: false, sk: CD.skinDe(DUELO.rival.skin) };
+    // el primer saque lo sortea la semilla (los dos llegan a lo mismo)
+    const yoSaco = (d.semilla % 2 === 0) === sala.host;
+    G.server = yoSaco ? 'p' : 'r';
+    if (!yoSaco) { G.ball.held = 'r'; G.ball.x = G.rx; }
+    $('hLives').hidden = true; $('hRival').hidden = false;
+    $('hScoreLbl').textContent = 'vos';
+    $('hLivesLbl').textContent = DUELO.rival.apodo;
+    $('hLivesLbl').style.cssText = 'max-width:34vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    hudCache = '';
   }
-  function barraDuelo() {
-    const Du = G && G.duelo; if (!Du) return;
-    const hud = $('hud').getBoundingClientRect(), ui = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui')) || 1;
-    const tope = Math.max(10, G.score, Du.el);
-    CD.barra({ top: Math.round((hud.bottom + 8) / ui), nombre: DUELO.rival.apodo, colorYo: CC.skin().cuerpo, colorEl: Du.sk.cuerpo || '#ffcc29',
-      yo: G.score / tope, el: Du.el / tope, txtYo: G.score + (G.done ? ' ✓' : ''), txtEl: Du.el + (Du.suyo != null ? ' ✓' : '') });
+
+  // anfitrión: pasó algo con la pelota → nuevo k y estado al toque
+  function marcaRed() { G.red.k++; enviarEstado(true); }
+  function enviarEstado(ya) {
+    const R = G.red, b = G.ball, now = performance.now();
+    if (R.fin || state !== 'play') return;
+    const fase = G.phase === 'count' ? 0 : G.phase === 'point' ? 2 : G.phase === 'over' ? 3 : 1;
+    const px = r2(G.px), firma = R.k + '|' + fase + '|' + px;
+    if (!ya && !(firma !== R.firma && now - R.tx > 66) && now - R.tx < 250) return;
+    R.tx = now; R.firma = firma;
+    sala.enviar('e', { a: [R.k, fase, r2(b.x), r2(b.y), r2(b.vx), r2(b.vy), Math.round(b.g * 10) / 10,
+      ladoN(b.held), ladoN(b.last), b.fast ? 1 : 0, px, G.score, R.el, ladoN(G.winner), G.rally, R.saque] });
   }
-  // Se decide cuando terminaron los dos (o cuando el que sigue jugando ya pasó los puntos del que terminó).
-  function finDuelo() {
-    const Du = G.duelo, quien = DUELO.rival.apodo.replace(/</g, '&lt;');
-    let gane = null;
-    if (Du.mio != null && Du.suyo != null) gane = Du.mio > Du.suyo ? true : Du.mio < Du.suyo ? false : null;
-    else if (Du.mio != null && Du.el > Du.mio) gane = false;
-    else if (Du.suyo != null && G.score > Du.suyo) gane = true;
-    else {
-      if (Du.mio != null) {   // terminaste vos: a esperar al otro
-        state = 'duelo'; $('pad').classList.add('off');
-        CD.capa({ titulo: 'Esperando a ' + DUELO.rival.apodo, rival: DUELO.rival, cargando: true,
-          texto: `Hiciste <b>${Du.mio}</b> ${Du.mio === 1 ? 'punto' : 'puntos'}. ${quien} va por ${Du.el} y sigue jugando.`,
-          botones: [{ txt: 'Salir', accion: () => sala.salir() }] });
-      }
+
+  // tocaste la pelota (tipo 0: la soltaste para sacar, 1: le pegaste, 2: te rozó de costado)
+  function toqueRed(tipo) {
+    const R = G.red, b = G.ball;
+    if (R.host) { marcaRed(); return; }
+    R.k++;
+    sala.enviar('g', { k: R.k, t: tipo, x: r2(CW - G.px),
+      a: [r2(CW - b.x), r2(b.y), r2(-b.vx), r2(b.vy), Math.round(b.g * 10) / 10, b.fast ? 1 : 0] });
+  }
+
+  // la pelota tocó el piso o se fue: el anfitrión da el punto (si cayó del lado del invitado, después de esperar
+  // un poquito por si viene un toque); el invitado la deja quieta hasta que le llegue qué pasó
+  function caeRed(gana) {
+    const R = G.red;
+    R.quieta = true;
+    if (!R.host) return;
+    if (G.ball.x > NET) R.pend = { w: gana, t: G.time };
+    else { R.quieta = false; pointTo(gana, performance.now()); }
+  }
+
+  function puntoRed(winner, now, marcador) {
+    const R = G.red;
+    R.pend = null; R.quieta = false; R.ox = R.oy = 0;
+    if (marcador) { G.score = marcador[0]; R.el = marcador[1]; }
+    else if (winner === 'p') G.score++;
+    else R.el++;
+    G.server = winner === 'p' ? 'r' : 'p';   // saca el que perdió el punto
+    G.done = (G.score >= META || R.el >= META) && Math.abs(G.score - R.el) >= 2;
+    if (winner === 'p') { setTimeout(sfxPoint, 90); floats.push({ text: '+1', x: G.ball.x, y: 1.4, t: now }); }
+    else { shake = reduceMotion ? 0 : 8; sfxLose(); vibrate(30); }
+    banner = { text: G.done ? (G.score > R.el ? '¡Ganaste!' : '¡Perdiste!') : puntoDePartido() ? '¡Punto de partido!' : winner === 'p' ? '¡Punto!' : '¡Uy!', t: now };
+    if (R.host) marcaRed();
+  }
+
+  function tickRed(now, dt) {
+    const R = G.red, f = Math.exp(-dt * 10);
+    R.ox *= f; R.oy *= f;
+    if (Math.abs(G.rv) > 0.5) R.face = Math.sign(G.rv);
+    if (R.fin || state !== 'play') return;
+    if (R.host) {
+      if (R.pend && G.time - R.pend.t > gracia()) { const w = R.pend.w; R.pend = null; R.quieta = false; pointTo(w, now); }
+      // si el otro no suelta el saque (pestaña escondida, por ejemplo), se le cae sola
+      if (G.ball.held === 'r' && G.phase === 'rally' && G.phaseT > 5) { G.ball.held = null; G.ball.vx = G.ball.vy = 0; recalc(); marcaRed(); }
+      enviarEstado(false);
+    } else {
+      const x = r2(CW - G.px);
+      if ((x !== R.ultX && now - R.tx > 66) || now - R.tx > 500) { R.tx = now; R.ultX = x; sala.enviar('i', { x }); }
+    }
+  }
+
+  // anfitrión: le llegó un toque del invitado
+  function golpeInvitado(d) {
+    const R = G.red, b = G.ball, a = d.a, now = performance.now();
+    if (R.fin || state !== 'play' || G.phase !== 'rally' || +d.k !== R.k + 1 || !Array.isArray(a)) return;
+    R.k = +d.k; R.pend = null; R.quieta = false;
+    R.otroX = G.rx = clamp(+d.x || HOME_R, R_MIN, R_MAX);
+    const vx0 = b.x + R.ox, vy0 = b.y + R.oy, sostenida = !!b.held;
+    b.held = null; b.x = +a[0]; b.y = +a[1]; b.vx = +a[2]; b.vy = +a[3]; b.g = +a[4] || G.D.g; b.fast = !!a[5]; b.trail = [];
+    if (d.t === 1) {
+      b.last = 'r'; b.lastT = G.time; G.rally++; G.maxRally = Math.max(G.maxRally, G.rally); G.rHitT = now;
+      sfxRival(); burst(b.x, b.y, b.fast ? '#ff7a59' : '#fffaf0', b.fast ? 10 : 5, b.fast ? 1 : 0.6);
+    }
+    avanzar(b, medioPing());
+    // en tu pantalla la pelota ya se le había metido un poco en el cubo: llega a la vuelta deslizándose, sin saltar
+    const ex = vx0 - b.x, ey = vy0 - b.y;
+    if (!sostenida && Math.hypot(ex, ey) < 3) { R.ox = ex; R.oy = ey; } else R.ox = R.oy = 0;
+    recalc();
+    enviarEstado(true);
+  }
+
+  // invitado: le llegó el estado del anfitrión
+  function ponerBola(nb) {
+    const b = G.ball;
+    b.x = nb.x; b.y = nb.y; b.vx = nb.vx; b.vy = nb.vy; b.g = nb.g;
+    G.red.ox = G.red.oy = 0;
+  }
+  function corregir(nb, forzar) {
+    const R = G.red, b = G.ball;
+    avanzar(nb, medioPing());
+    // si coincide con lo que ya venía simulando, no se toca: la diferencia es solo que el lag varía un poco
+    // (100 ms de margen a la velocidad que lleva); corregir por eso haría temblar la pelota
+    if (!forzar && Math.hypot(b.x - nb.x, b.y - nb.y) < 0.25 + 0.1 * Math.hypot(nb.vx, nb.vy)) return;
+    const ex = b.x + R.ox - nb.x, ey = b.y + R.oy - nb.y;
+    b.x = nb.x; b.y = nb.y; b.vx = nb.vx; b.vy = nb.vy; b.g = nb.g;
+    if (Math.hypot(ex, ey) < 3) { R.ox = ex; R.oy = ey; } else R.ox = R.oy = 0;
+    recalc();
+  }
+  function estadoAnfitrion(a) {
+    const R = G.red, b = G.ball, now = performance.now();
+    if (!Array.isArray(a) || a.length < 16 || R.fin || state !== 'play') return;
+    R.otroX = CW - a[10];
+    const fase = a[1];
+    if (fase === 0) return;
+    const held = ladoInv(a[7]), nb = { x: CW - a[2], y: a[3], vx: -a[4], vy: a[5], g: a[6] || G.D.g };
+    if (fase >= 2) {
+      if (G.phase !== 'point' && G.phase !== 'over') { R.k = a[0]; ponerBola(nb); pointTo(ladoInv(a[13]), now, [a[12], a[11]]); }
       return;
     }
-    if (Du.fin) return;
-    Du.fin = true;
-    if (Du.mio == null && G.score > 0) settle();   // el que sigue jugando y ya ganó: su partida cuenta igual
-    G.done = true; state = 'duelo'; $('pad').classList.add('off');
-    barraDuelo();
-    const mio = Du.mio ?? G.score, suyo = Du.suyo ?? Du.el;
+    if (a[15] !== R.saque) {   // saque nuevo
+      R.saque = a[15]; R.k = a[0]; G.score = a[12]; R.el = a[11]; R.quieta = false;
+      serve(held || 'r');
+      if (!held) { b.held = null; ponerBola(nb); recalc(); }
+      return;
+    }
+    if (a[0] < R.k) return;   // es de antes de mi último toque: esa pelota ya no existe
+    const nuevo = a[0] > R.k;
+    R.k = a[0];
+    if (!nuevo) { if (!b.held && !held) corregir(nb, false); return; }
+    // pasó algo del lado del anfitrión: soltó el saque, le pegó o la rozó
+    R.quieta = false;
+    if (a[8] === 1 && a[14] !== G.rally) {
+      G.rHitT = now; G.rx = R.otroX; sfxRival();
+      burst(nb.x, nb.y, a[9] ? '#ff7a59' : '#fffaf0', a[9] ? 10 : 5, a[9] ? 1 : 0.6);
+    }
+    G.rally = a[14]; G.maxRally = Math.max(G.maxRally, G.rally);
+    b.held = held; b.last = ladoInv(a[8]); b.lastT = G.time; b.fast = !!a[9]; b.trail = [];
+    if (!held) corregir(nb, true);
+  }
+
+  function finDuelo() {
+    const R = G.red;
+    if (!R || R.fin) return;
+    R.fin = true; G.done = true;
+    state = 'duelo'; $('pad').classList.add('off'); hideTipQuiet();
+    const gane = G.score > R.el, xp = gane ? 40 : 15;
+    if (CC) CC.sumarXP(xp);
     CD.resultado(sala, {
       gane,
-      texto: gane === null ? `Empataron en <b>${mio}</b> puntos.`
-        : `Vos: <b>${mio}</b> ${mio === 1 ? 'punto' : 'puntos'} · ${quien}: <b>${suyo}</b>` + (Du.suyo == null || Du.mio == null ? ' (y seguía)' : ''),
+      texto: `Vos <b>${G.score}</b> – <b>${R.el}</b> ${apodoRival()}`,
+      nota: `+${xp} XP · rally más largo: ${G.maxRally} ${G.maxRally === 1 ? 'toque' : 'toques'} · ${G.smashes} ${G.smashes === 1 ? 'remate' : 'remates'}`,
     });
   }
   function conectarDuelo() {
@@ -1285,18 +1475,19 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       alConectar: () => sala.listo(),
       alEmpezar: d => empezarDuelo(d),
       alMensaje(ev, d) {
-        if (!G || !G.duelo || G.duelo.fin) return;
-        if (ev === 'p') { G.duelo.el = Math.max(G.duelo.el, +d.p || 0); barraDuelo(); finDuelo(); }
-        else if (ev === 'fin') { G.duelo.suyo = +d.p || 0; G.duelo.el = G.duelo.suyo; barraDuelo(); finDuelo(); }
-        if (G.duelo.mio != null && !G.duelo.fin) finDuelo();
+        if (!G || !G.red || G.red.fin) return;
+        if (sala.host) {
+          if (ev === 'i') G.red.otroX = clamp(+d.x || HOME_R, R_MIN, R_MAX);
+          else if (ev === 'g') golpeInvitado(d);
+        } else if (ev === 'e') estadoAnfitrion(d.a);
       },
       alIrse() {
-        const jugando = G && G.duelo && !G.duelo.fin;
-        if (G && G.duelo) { G.duelo.fin = true; G.done = true; }
-        state = 'duelo'; $('pad').classList.add('off');
-        const quien = DUELO.rival.apodo.replace(/</g, '&lt;');
-        CD.resultado(sala, jugando ? { gane: true, sinRevancha: true, texto: `${quien} se fue del duelo.` }
-          : { titulo: 'Se fue', sinRevancha: true, texto: `${quien} salió del duelo.` });
+        const jugando = G && G.red && !G.red.fin;
+        if (G && G.red) { G.red.fin = true; G.done = true; }
+        state = 'duelo'; $('pad').classList.add('off'); hideTipQuiet();
+        const iban = jugando && (G.score || G.red.el) ? ` Iban <b>${G.score} – ${G.red.el}</b>.` : '';
+        CD.resultado(sala, jugando ? { gane: true, sinRevancha: true, texto: `${apodoRival()} se fue del partido.${iban}` }
+          : { titulo: 'Se fue', sinRevancha: true, texto: `${apodoRival()} salió del duelo.` });
       },
     });
     CD.esperandoRival(sala);
