@@ -3,3 +3,10 @@ node_modules/
 .claude/
 codigos-secretos.txt
 NOTAS-PARA-SEGUIR.md
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example

@@ -2,7 +2,7 @@
 
 Juegos de navegador livianos que se juegan solo con dos flechas, izquierda y derecha.
 
-**Jugar:** https://alejomartineez.github.io/cubo-escalador/
+**Jugar:** https://twofingers.pages.dev/
 
 Se instala como app en el celu (botón **Instalar** arriba, o en iPhone: Compartir → Agregar a inicio) y funciona sin conexión.
 
@@ -84,9 +84,7 @@ Después de cambiar algo:
 
 ```bash
 node build.mjs
-git add -A
-git commit -m "Actualizar juegos"
-git push
+npx wrangler pages deploy docs --project-name twofingers --branch main --commit-dirty=true
 ```
 
-`build.mjs` arma la carpeta `docs/`, que es la que publica GitHub Pages. Para sumar un juego, agregalo a `PAGES` en `paginas.mjs` (y corré `node og.mjs` para su imagen), a `JUEGOS` en `cubo-comun.js` y su dibujo a `DIBUJOS` en `hub.html`.
+`build.mjs` arma la carpeta `docs/` y el segundo comando la sube a Cloudflare Pages (proyecto `twofingers`). Cloudflare redirige `escalador.html` → `/escalador`; el service worker guarda copias limpias de esas respuestas para que todo siga andando sin conexión. Para sumar un juego, agregalo a `PAGES` en `paginas.mjs` (y corré `node og.mjs` para su imagen), a `JUEGOS` en `cubo-comun.js` y su dibujo a `DIBUJOS` en `hub.html`.
