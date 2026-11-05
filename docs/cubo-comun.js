@@ -284,6 +284,10 @@
     'Vitrina': 'Showcase', 'Elegir': 'Choose', 'tus más difíciles · elegí cuáles mostrar': 'your hardest · choose which to show',
     'sus más difíciles': 'their hardest', 'Cuando consigas logros, elegí hasta 3 para mostrar acá.': 'Once you earn achievements, pick up to 3 to show here.',
     'Elegir logros para la vitrina': 'Choose achievements for the showcase', 'Elegí uno': 'Pick one',
+    'Te recomendamos ponerte un apodo': 'We recommend picking a nickname',
+    'Sin apodo no salís en el ranking y tus amigos no te pueden agregar ni ver tu perfil.':
+      "Without a nickname you don't show up on the leaderboard, and friends can't add you or see your profile.",
+    'Elegir mi apodo': 'Pick my nickname', 'Para elegir un apodo hace falta internet.': 'You need internet to pick a nickname.',
     'Marcá hasta {n} · {k} de {n}': 'Pick up to {n} · {k} of {n}', 'Logros para la vitrina': 'Achievements for the showcase',
     'Ya elegiste {n}: sacá uno para poner otro.': "You've picked {n}: remove one to add another.",
     'Logro bronce': 'Bronze achievement', 'Logro plata': 'Silver achievement', 'Logro oro': 'Gold achievement',
@@ -2651,6 +2655,15 @@
 #cc-perfil .pf-cuerpo{flex:1;min-height:0;overflow-y:auto;padding:12px 14px 14px;display:flex;flex-direction:column;gap:14px}
 #cc-perfil .pf-nota{margin:0;padding:10px 12px;border-radius:14px;background:#fff3c4;border:2px dashed rgba(29,35,64,.35);font-size:13px;font-weight:600;line-height:1.4}
 #cc-perfil .pf-nota:empty{display:none}
+#cc-perfil .pf-sinap{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:#fff3c4;border:2.5px solid ${INK};box-shadow:0 3px 0 ${INK}}
+#cc-perfil .pf-sinap .pf-ico{font-size:26px;line-height:1}
+#cc-perfil .pf-sinap div{flex:1;min-width:0}
+#cc-perfil .pf-sinap b{display:block;font-size:15px}
+#cc-perfil .pf-sinap small{display:block;font-size:12.5px;font-weight:600;line-height:1.35;opacity:.8;margin-top:2px}
+#cc-perfil .pf-sinap button{appearance:none;flex:none;min-height:42px;padding:0 14px;border-radius:12px;border:2.5px solid ${INK};background:#ffcc29;color:${INK};
+  font:inherit;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 3px 0 ${INK}}
+#cc-perfil .pf-sinap button:active{transform:translateY(2px);box-shadow:0 1px 0 ${INK}}
+@media (max-width:420px){#cc-perfil .pf-sinap{flex-wrap:wrap}#cc-perfil .pf-sinap button{flex:1 1 100%}}
 #cc-perfil .pf-chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 @media (max-width:330px){#cc-perfil .pf-chips{grid-template-columns:repeat(2,minmax(0,1fr))}}
 #cc-perfil .pf-chip{min-width:0;padding:8px 6px 7px;border-radius:14px;background:#fff;border:2.5px solid ${INK};text-align:center}
@@ -2817,7 +2830,6 @@
       const f = foco && cuerpo.querySelector(foco); if (f) f.focus({ preventScroll: true });
     }
     let nota = '', codigo = a.codigo || '', vivo = true, raf = 0;
-    if (yo && !leer().apodo) nota = 'Poné un apodo en cualquier ranking para que tus amigos puedan ver tu perfil.';
 
     function pintar() {
       const v = vista;
@@ -2835,6 +2847,10 @@
       $('.cc-pf').style.setProperty('--cc-pf', fav ? `color-mix(in srgb, ${fav.j.color} 30%, #fffaf0)` : '#e9f6ff');
 
       const h = [];
+      // sin apodo: arriba de todo, la recomendación de ponerse uno (con el botón para hacerlo ahí mismo)
+      if (yo && !leer().apodo) h.push(`<div class="pf-sinap"><span class="pf-ico" aria-hidden="true">🏷️</span><div><b>${T('Te recomendamos ponerte un apodo')}</b>
+        <small>${T('Sin apodo no salís en el ranking y tus amigos no te pueden agregar ni ver tu perfil.')}</small></div>
+        <button type="button" data-apodo>${T('Elegir mi apodo')}</button></div>`);
       h.push(`<p class="pf-nota" role="status"></p>`);
       if (v.con) {
         const desde = v.desde ? new Date(v.desde).toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }).replace('.', '') : '—';
@@ -2950,6 +2966,13 @@
     $('.pf-x').addEventListener('click', () => cerrar());
     box.addEventListener('click', e => { if (e.target === box) cerrar(); });
     cuerpo.addEventListener('click', tocarVitrina);
+    // «Elegir mi apodo»: se cierra la tarjeta, se pregunta el apodo y al terminar vuelve a abrirse (ya con el nombre)
+    cuerpo.addEventListener('click', e => {
+      if (!e.target.closest('[data-apodo]')) return;
+      if (!rankingActivo() || navigator.onLine === false) { ponerNota(T('Para elegir un apodo hace falta internet.')); return; }
+      cerrar(true);
+      if (!pedirApodo({ forzar: true, alCerrar: () => verPerfil({}, o) })) verPerfil({}, o);
+    });
 
     // lo del servidor: el perfil público de los demás; en el tuyo, solo tus puestos en el ranking
     const ponerNota = t => { nota = t; const el = cuerpo.querySelector('.pf-nota'); if (el) el.textContent = t; };
@@ -2990,9 +3013,10 @@
   // que encontrar el botón adentro del ranking. Se pregunta una sola vez por dispositivo (aunque toque «Ahora no»);
   // después se puede poner o cambiar en cualquier ranking. Los juegos lo muestran solos al cargar (ver abajo); el hub, al tocar Jugar.
   const PEDIDO_KEY = 'cubo-apodo-pedido';
-  function pedirApodo() {
+  // { forzar }: lo pidió la persona (desde su perfil), así que se muestra aunque ya se haya preguntado
+  function pedirApodo(op = {}) {
     if (leer().apodo || !rankingActivo() || navigator.onLine === false || document.getElementById('cc-rank')) return false;
-    try { if (localStorage.getItem(PEDIDO_KEY)) return false; localStorage.setItem(PEDIDO_KEY, '1'); } catch (e) { return false; }
+    if (!op.forzar) try { if (localStorage.getItem(PEDIDO_KEY)) return false; localStorage.setItem(PEDIDO_KEY, '1'); } catch (e) { return false; }
     estilos();
     const previo = document.activeElement;
     const box = document.createElement('div');
@@ -3021,7 +3045,12 @@
       ayuda.textContent = conClave ? T('La clave está en el ranking del dispositivo donde ya tenés tu apodo («Jugar en otro dispositivo»).') : ayudaBase;
       setTimeout(() => (conClave ? formClave : form).querySelector('input').focus());
     });
-    function cerrar() { box.remove(); removeEventListener('keydown', tecla, true); if (previo && previo.focus) previo.focus(); }
+    let cerrado = false;
+    function cerrar() {
+      if (cerrado) return; cerrado = true;
+      box.remove(); removeEventListener('keydown', tecla, true); if (previo && previo.focus && document.contains(previo)) previo.focus();
+      if (op.alCerrar) op.alCerrar();
+    }
     function tecla(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); } else if (e.target.tagName !== 'INPUT') e.stopPropagation(); }
     addEventListener('keydown', tecla, true);
     $('.x').addEventListener('click', cerrar);
