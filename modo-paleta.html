@@ -123,8 +123,9 @@ h2 { font-size: 34px; }
 }
 .modo span { font-size: 22px; line-height: 1; }
 .modo small { font-size: 11.5px; font-weight: 600; color: var(--muted); }
-.modo[aria-checked="true"] { background: var(--cube); transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
-.modo[aria-checked="true"] small { color: var(--ink); }
+.modo[aria-checked="true"] { background: var(--ink); color: var(--paper, #fffaf0); transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.modo[aria-checked="true"] small { color: var(--paper, #fffaf0); opacity: .8; }
+.modos .cc-modo-tit { grid-column: 1 / -1; margin-bottom: -4px; }
 .go { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: stretch; }
 .go.solo { grid-template-columns: 1fr; }
 .best[hidden] { display: none; }
@@ -210,6 +211,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Paleta</h1></div>
     <p class="intro" data-t>Mové tu paleta con <b>◀ ▶</b> y devolvé la pelota. Si le pegás con la punta, sale cruzada. ¿Cuántos puntos le hacés?</p>
     <div class="modos" id="modos" role="radiogroup" aria-label="Modo">
+      <p class="cc-modo-tit">Modo</p>
       <button class="modo" type="button" role="radio" data-m="cpu" aria-checked="true"><span>🤖</span>Contra la máquina<small>Rivales cada vez mejores</small></button>
       <button class="modo" type="button" role="radio" data-m="dos" aria-checked="false"><span>👥</span>2 jugadores<small>En el mismo celu o compu</small></button>
     </div>
@@ -782,7 +784,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     CC.leyendaTeclas($('leyenda'), { jugar: T('mover la paleta'), extra: [['R', T('reiniciar')]] });
   } else { $('difs').hidden = true; $('difs2').hidden = true; $('eDifL').hidden = true; }
   function renderMenu() {
-    for (const b of $('modos').children) b.setAttribute('aria-checked', String(b.dataset.m === modo));
+    for (const b of $('modos').querySelectorAll('button')) b.setAttribute('aria-checked', String(b.dataset.m === modo));
     const best = CC ? CC.perfil().mejores['paleta:' + dif()] : rec[dif()];
     $('mBest').textContent = modo === 'dos' ? '—' : best ? String(best) : '—';
     $('mBest').parentNode.hidden = modo === 'dos';
@@ -815,6 +817,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); modo = 'cpu'; }
     newRun(false, dif(), modo);
     mostrarJuego();
+    if (CC && CC.grabar) CC.grabar(modo === 'dos' ? false : undefined);   // la repetición (se sube sola si la partida es récord)
   }
   function mostrarJuego() {
     state = 'play';
@@ -840,6 +843,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (r && r.xp) banner = { text: `+${r.xp} XP`, t: performance.now() };
   }
   function showMenu() {
+    if (CC && CC.grabar) setTimeout(() => CC.grabar(false));   // si quedó una grabación sin partida, se tira
     cortar(); ponerMarca(false);
     state = 'menu';
     newRun(true);

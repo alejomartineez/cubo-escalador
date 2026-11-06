@@ -696,6 +696,42 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
 @media (max-height: 640px) { .pt-heroe { width: 200px; height: 150px; } .pt-titulo { font-size: clamp(44px, 13vw, 64px); } .pt-jugar { height: 58px; font-size: 28px; } }
 @media (prefers-reduced-motion: reduce) { .pt-nube, .portada .pt-titulo, .portada .pt-sub, .portada .pt-botones > *, .portada .pt-redes, .portada.chau { animation: none; } }
 
+/* ---------- bienvenida: slides la primera vez ---------- */
+.bv { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(29,35,64,.6);
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); animation: bv-fondo .25s ease-out; }
+@keyframes bv-fondo { from { background: rgba(29,35,64,0); } }
+.bv-card { position: relative; zoom: var(--ui, 1); width: min(420px, 100%); display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 18px 18px 14px; background: var(--paper); border: 3px solid var(--ink); border-radius: 26px; box-shadow: 0 7px 0 var(--ink);
+  animation: pt-pop .45s cubic-bezier(.2, 1.4, .4, 1) both; }
+.bv-pie { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 34px; }
+.bv-saltar { height: 34px; padding: 0 14px; border-radius: 99px; border: 2px solid rgba(29,35,64,.35); background: transparent; color: var(--muted);
+  font: 800 12.5px var(--body); cursor: pointer; }
+.bv-saltar:hover { background: #fff4c7; color: var(--ink); border-color: var(--ink); }
+.bv-dibujo { display: block; width: 100%; height: 210px; border-radius: 18px; border: 3px solid var(--ink); background: #62c6ff; }
+.bv-texto { text-align: center; min-height: 112px; }
+.bv-texto h2 { margin: 2px 0 6px; font: 400 28px/1.05 var(--display); color: var(--ink); text-wrap: balance; }
+.bv-texto p { margin: 0 4px; font-size: 15px; font-weight: 600; line-height: 1.45; color: var(--muted); text-wrap: pretty; }
+.bv-texto p b { color: var(--ink); }
+.bv-texto.entra { animation: bv-entra .28s ease-out; }
+@keyframes bv-entra { from { opacity: 0; transform: translateX(var(--bv-dir, 16px)); } }
+.bv-puntos { display: flex; gap: 7px; }
+.bv-puntos i { width: 9px; height: 9px; border-radius: 99px; background: rgba(29,35,64,.22); transition: width .2s, background .2s; }
+.bv-puntos i.si { width: 24px; background: var(--ink); }
+.bv-botones { display: grid; grid-template-columns: auto 1fr; gap: 10px; width: 100%; }
+.bv-atras, .bv-sig { display: flex; align-items: center; justify-content: center; gap: 8px; height: 58px; border: 3px solid var(--ink); border-radius: 16px;
+  color: var(--ink); cursor: pointer; font: 400 24px var(--display); }
+.bv-atras { width: 62px; background: #fff; box-shadow: 0 4px 0 var(--ink); }
+.bv-atras:disabled { opacity: .35; cursor: default; }
+.bv-sig { background: var(--cube); box-shadow: 0 5px 0 var(--ink); }
+.bv-sig:hover { background: #ffd94f; }
+.bv-atras:active:not(:disabled), .bv-sig:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.bv-atras svg, .bv-sig svg { width: 22px; height: 22px; flex: none; }
+.bv-tip { margin: 0; font-size: 12px; font-weight: 700; color: var(--muted); }
+@media (pointer: coarse) { .bv-tip { display: none; } .bv-pie { justify-content: center; } }
+.bv button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.bv-ver { width: 100%; height: 46px; font-size: 18px; box-shadow: 0 4px 0 var(--ink); }
+@media (max-height: 640px) { .bv-dibujo { height: 150px; } .bv-texto { min-height: 96px; } .bv-texto h2 { font-size: 24px; } }
+@media (prefers-reduced-motion: reduce) { .bv, .bv-card, .bv-texto.entra { animation: none; } }
 /* ---------- compu: lista de juegos a la izquierda y el elegido en grande a la derecha ----------
    Toda la app se agranda junta con --hz (la calcula escalaHub: el diseño es de 1240×700 y se agranda hasta llenar la
    pantalla, también en 4K; antes cada panel crecía por su lado con --ui y la caja de desafíos quedaba chiquita).
@@ -965,6 +1001,20 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   </footer>
 </div>
 
+<!-- bienvenida: unos slides cortitos la primera vez que tocás Jugar (cubo-bienvenida). Se vuelven a ver desde Opciones -->
+<div class="bv" id="bienvenida" hidden>
+  <div class="bv-card" role="dialog" aria-modal="true" aria-labelledby="bvT" aria-describedby="bvP">
+    <canvas class="bv-dibujo" id="bvCv" aria-hidden="true"></canvas>
+    <div class="bv-texto" aria-live="polite"><h2 id="bvT"></h2><p id="bvP"></p></div>
+    <div class="bv-puntos" id="bvPuntos" aria-hidden="true"></div>
+    <div class="bv-botones">
+      <button class="bv-atras" id="bvAtras" type="button" aria-label="Anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 4-8 8 8 8"/></svg></button>
+      <button class="bv-sig" id="bvSig" type="button"><span id="bvSigT">Siguiente</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4 8 8-8 8"/></svg></button>
+    </div>
+    <div class="bv-pie"><button class="bv-saltar" id="bvSaltar" type="button">Saltar</button><p class="bv-tip" id="bvTip">También con ← →, como en los juegos</p></div>
+  </div>
+</div>
+
 <!-- opciones (desde la portada) -->
 <div class="sheet" id="sheetOpciones" hidden>
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="tOpc">
@@ -994,6 +1044,10 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
         <b>Esta pantalla al entrar</b>
         <div class="seg" role="group" aria-label="Pantalla de inicio al entrar" data-opcion="portada"><button type="button" data-v="1">Sí</button><button type="button" data-v="0">No</button></div>
         <span>Si la sacás, entrás directo a los juegos. Para volver a verla tocá "TwoFingers" arriba.</span>
+      </div>
+      <div class="opcion">
+        <b>¿De qué se trata?</b>
+        <button class="pt-op bv-ver" id="opBienvenida" type="button">Ver la bienvenida otra vez</button>
       </div>
       <p class="creditos" data-t>Hecho por <a href="https://www.instagram.com/alejomartineez_/" target="_blank" rel="noopener">@alejomartineez_</a>. Música de Ritmo: Juhani Junkala (CC0).</p>
     </div>
@@ -1924,9 +1978,14 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     $('bigBar').style.width = Math.round(100 * p.enNivel / p.paraSiguiente) + '%';
     const todos = [...CC.SKINS, ...CC.EFECTOS].filter(i => !i.logro && !i.codigo && i.nivel > p.nivel).sort((a, b) => a.nivel - b.nivel);
     $('bigNext').textContent = todos.length ? T('En nivel {n} desbloqueás {cosas}.', { n: todos[0].nivel, cosas: todos.filter(i => i.nivel === todos[0].nivel).map(i => i.nombre).join(T(' y ')) }) : T('Ya desbloqueaste todo lo que da el nivel.');
-    $('apodoTxt').textContent = p.apodo ? `${p.apodo} · ${p.titulo.nombre}` : T('Todavía no tenés');
+    // el apodo va en su propio span (con el color de la legendaria): si fuera todo el renglón, los efectos del nombre
+    // (la arañita de Noctámbulo) caminarían también por arriba del título
     CC.estilos();
-    $('apodoTxt').className = p.apodo ? CC.claseNombre(p.skin) : '';
+    if (p.apodo) {
+      const ap = document.createElement('span');
+      ap.textContent = p.apodo; ap.className = CC.claseNombre(p.skin); ap.setAttribute('translate', 'no');
+      $('apodoTxt').replaceChildren(ap, ' · ' + p.titulo.nombre);
+    } else $('apodoTxt').textContent = T('Todavía no tenés');
     pintarItems();
   }
   function abrirPersonaje() {
@@ -2551,9 +2610,215 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   };
   // la primera vez, al entrar a jugar se pregunta el apodo (para el ranking)
   const preguntarApodo = ms => setTimeout(() => { if (CC.pedirApodo) CC.pedirApodo(); }, ms);
-  $('ptJugar').addEventListener('click', () => { cerrarPortada(); preguntarApodo(450); });
+  // la primera vez, antes del apodo, la bienvenida
+  $('ptJugar').addEventListener('click', () => {
+    cerrarPortada();
+    if (!yaVioBienvenida()) setTimeout(() => abrirBienvenida(() => preguntarApodo(300)), 380);
+    else preguntarApodo(450);
+  });
   $('ptCubo').addEventListener('click', () => { if (performance.now() - saltito > 520) { saltito = performance.now(); CC.vibrar(10); } });
   $('brand').addEventListener('click', () => mostrarPortada(false));
+
+  // ---------- bienvenida ----------
+  // Unos slides cortitos la primera vez que alguien entra a jugar (cubo-bienvenida en localStorage). Quien ya jugó alguna
+  // partida no los ve. Se pasan con los botones, deslizando o con ← → (así ya practica las dos flechas). Opciones los
+  // vuelve a mostrar. Al terminar sigue lo de siempre: pedir el apodo.
+  const BV = [
+    { t: 'Esto es TwoFingers', p: 'Juegos cortitos que se juegan con <b>solo dos flechas</b>: izquierda y derecha. Nada más.', d: bvHola },
+    { t: '10 juegos, los mismos dos botones', p: 'En el celu tocás los <b>botones grandes de abajo</b>; en la compu, <b>← →</b> o <b>A D</b>. Cada juego los usa a su manera.', d: bvJuegos },
+    { t: 'Elegí dificultad y modo', p: 'Antes de jugar elegís la <b>dificultad</b>, de Fácil a Maestro (más difícil, más XP), y en algunos juegos el <b>modo</b>.', d: bvDificultad },
+    { t: 'Todo suma a tu personaje', p: 'Cada partida da <b>XP</b>: subís de nivel y desbloqueás <b>personajes, efectos y títulos</b>.', d: bvPersonajes },
+    { t: 'Competí con todos', p: 'Ranking online con <b>repeticiones</b>, el <b>desafío del día</b> con tu racha 🔥, tu <b>sombra</b> y amigos para retar a un <b>1v1</b>.', d: bvPodio },
+  ];
+  if (CC.textos) CC.textos({
+    'Esto es TwoFingers': 'This is TwoFingers', 'Saltar': 'Skip', 'Siguiente': 'Next', 'Anterior': 'Back', '¡A jugar!': "Let's play!",
+    'Juegos cortitos que se juegan con <b>solo dos flechas</b>: izquierda y derecha. Nada más.': "Quick games you play with <b>just two arrows</b>: left and right. That's it.",
+    '10 juegos, los mismos dos botones': '10 games, the same two buttons',
+    'En el celu tocás los <b>botones grandes de abajo</b>; en la compu, <b>← →</b> o <b>A D</b>. Cada juego los usa a su manera.': 'On your phone, tap the <b>big buttons at the bottom</b>; on a computer, <b>← →</b> or <b>A D</b>. Each game uses them its own way.',
+    'Elegí dificultad y modo': 'Pick difficulty and mode',
+    'Antes de jugar elegís la <b>dificultad</b>, de Fácil a Maestro (más difícil, más XP), y en algunos juegos el <b>modo</b>.': 'Before playing you pick the <b>difficulty</b>, from Easy to Master (harder means more XP), and in some games the <b>mode</b>.',
+    'Todo suma a tu personaje': 'Everything levels up your character',
+    'Cada partida da <b>XP</b>: subís de nivel y desbloqueás <b>personajes, efectos y títulos</b>.': 'Every game gives <b>XP</b>: you level up and unlock <b>characters, effects and titles</b>.',
+    'Competí con todos': 'Compete with everyone',
+    'Ranking online con <b>repeticiones</b>, el <b>desafío del día</b> con tu racha 🔥, tu <b>sombra</b> y amigos para retar a un <b>1v1</b>.': 'Online leaderboard with <b>replays</b>, the <b>daily challenge</b> with your streak 🔥, your <b>shadow</b> and friends to challenge to a <b>1v1</b>.',
+    'También con ← →, como en los juegos': 'Also with ← →, just like in the games',
+    '¿De qué se trata?': "What's it about?", 'Ver la bienvenida otra vez': 'See the welcome again',
+    '¡Nivel {n}!': 'Level {n}!', 'Sprint 100': 'Sprint 100', '30 segundos': '30 seconds', 'Libre': 'Free',
+  });
+  let bvK = 0, bvFin = null, bvRaf = 0, bvT0 = 0;
+  const bvCv = $('bvCv');
+  const yaVioBienvenida = () => guardado('cubo-bienvenida') === '1' || (CC.perfil().total || 0) > 0;
+  const fuenteDisplay = () => getComputedStyle(document.documentElement).getPropertyValue('--display') || 'sans-serif';
+  function bvPintar(dir) {
+    const sl = BV[bvK], tx = document.querySelector('.bv-texto');
+    $('bvT').textContent = T(sl.t); $('bvP').innerHTML = T(sl.p);
+    tx.style.setProperty('--bv-dir', (dir || 1) * 16 + 'px');
+    tx.classList.remove('entra'); void tx.offsetWidth; if (dir) tx.classList.add('entra');
+    $('bvPuntos').innerHTML = BV.map((_, k) => `<i class="${k === bvK ? 'si' : ''}"></i>`).join('');
+    $('bvAtras').disabled = bvK === 0;
+    const ultimo = bvK === BV.length - 1;
+    $('bvSigT').textContent = T(ultimo ? '¡A jugar!' : 'Siguiente');
+    $('bvSaltar').style.visibility = ultimo ? 'hidden' : '';
+    bvT0 = performance.now();
+  }
+  function bvIr(paso) {
+    const k = bvK + paso;
+    if (k < 0) return;
+    if (k >= BV.length) return cerrarBienvenida();
+    bvK = k; CC.vibrar(8); bvPintar(paso);
+  }
+  function bvCuadro(now) {
+    if ($('bienvenida').hidden) return;
+    const [c, w, h] = tam(bvCv);
+    c.clearRect(0, 0, w, h);
+    try { BV[bvK].d(c, w, h, reduceMotion ? 900 : now, now - bvT0); } catch (e) {}
+    bvRaf = requestAnimationFrame(bvCuadro);
+  }
+  function abrirBienvenida(alTerminar) {
+    bvFin = alTerminar || null; bvK = 0;
+    $('bienvenida').hidden = false;
+    bvPintar(0);
+    cancelAnimationFrame(bvRaf); bvRaf = requestAnimationFrame(bvCuadro);
+    addEventListener('keydown', bvTecla, true);
+    $('bvSig').focus({ preventScroll: true });
+  }
+  function cerrarBienvenida() {
+    if ($('bienvenida').hidden) return;
+    guardado('cubo-bienvenida', '1');
+    $('bienvenida').hidden = true;
+    cancelAnimationFrame(bvRaf);
+    removeEventListener('keydown', bvTecla, true);
+    const f = bvFin; bvFin = null;
+    if (f) f();
+  }
+  function bvTecla(e) {
+    const k = e.key;
+    if (k === 'ArrowRight' || k === 'd' || k === 'D') bvIr(1);
+    else if (k === 'ArrowLeft' || k === 'a' || k === 'A') bvIr(-1);
+    else if (k === 'Escape') cerrarBienvenida();
+    else return;   // Enter, espacio y Tab hacen lo de siempre con el botón que tiene el foco
+    e.preventDefault(); e.stopPropagation();
+  }
+  $('bvSig').addEventListener('click', () => bvIr(1));
+  $('bvAtras').addEventListener('click', () => bvIr(-1));
+  $('bvSaltar').addEventListener('click', cerrarBienvenida);
+  $('opBienvenida').addEventListener('click', () => { cerrar(); abrirBienvenida(); });
+  {   // deslizar para el costado
+    let x0 = null;
+    const card = document.querySelector('.bv-card');
+    card.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') x0 = e.clientX; });
+    card.addEventListener('pointerup', e => { if (x0 == null) return; const dx = e.clientX - x0; x0 = null; if (Math.abs(dx) > 50) bvIr(dx < 0 ? 1 : -1); });
+    card.addEventListener('pointercancel', () => { x0 = null; });
+  }
+  // --- los dibujos de cada slide (en px de CSS; t: reloj, dt: ms desde que se abrió el slide) ---
+  function bvCielo(c, w, h) {
+    const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#62c6ff'); g.addColorStop(1, '#b9ecff');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.fillStyle = 'rgba(255,255,255,.8)';
+    for (const [x, y, k] of [[0.16, 0.2, 1], [0.82, 0.3, 0.8]]) {
+      c.beginPath(); c.ellipse(w * x, h * y, 30 * k, 10 * k, 0, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.ellipse(w * x - 8 * k, h * y - 8 * k, 14 * k, 12 * k, 0, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.ellipse(w * x + 10 * k, h * y - 10 * k, 16 * k, 14 * k, 0, 0, Math.PI * 2); c.fill();
+    }
+  }
+  function bvFlecha(c, x, y, s, dir, on) {
+    const baja = on ? 4 : 0;
+    if (!on) { rr(c, x - s / 2, y - s / 2 + 5, s, s, s * 0.22); c.fillStyle = INK; c.fill(); }
+    rr(c, x - s / 2, y - s / 2 + baja, s, s, s * 0.22);
+    c.fillStyle = on ? '#ffcc29' : PAPER; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
+    c.save(); c.translate(x, y + baja); c.scale(dir, 1);
+    c.beginPath(); c.moveTo(-s * 0.1, -s * 0.24); c.lineTo(s * 0.16, 0); c.lineTo(-s * 0.1, s * 0.24);
+    c.lineWidth = s * 0.11; c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = INK; c.stroke(); c.restore();
+  }
+  function bvHola(c, w, h, t) {
+    bvCielo(c, w, h);
+    const lado = Math.min(84, h * 0.4), pie = h * 0.78, fase = Math.floor(t / 520) % 2;
+    // el cubo se corre para el lado de la flecha que se aprieta
+    const x = w / 2 + (reduceMotion ? 0 : (fase ? 1 : -1) * Math.min(26, w * 0.06) * Math.min(1, (t % 520) / 140));
+    c.fillStyle = 'rgba(29,35,64,.16)'; c.beginPath(); c.ellipse(w / 2, pie + 6, lado * 0.9, 6, 0, 0, Math.PI * 2); c.fill();
+    CC.dibujarCubo(c, x, pie - bob(t, 260) * 10, lado, { t, mirar: fase ? 1 : -1 });
+    const s = Math.min(64, h * 0.3);
+    bvFlecha(c, w * 0.15, pie - s * 0.6, s, -1, !reduceMotion && fase === 0);
+    bvFlecha(c, w * 0.85, pie - s * 0.6, s, 1, !reduceMotion && fase === 1);
+  }
+  function bvJuegos(c, w, h, t) {
+    c.fillStyle = '#62c6ff'; c.fillRect(0, 0, w, h);
+    // tres juegos a la vez; cada 1,6 s entra el siguiente
+    const n = JUEGOS.length, paso = reduceMotion ? 0 : Math.floor(t / 1600), gap = 8, cw = (w - gap * 4) / 3, ch = h - gap * 2;
+    for (let k = 0; k < 3; k++) {
+      const g = JUEGOS[(paso + k) % n], x = gap + k * (cw + gap);
+      c.save(); rr(c, x, gap, cw, ch, 12); c.clip();
+      c.translate(x, gap);
+      try { g.dibujo(c, cw, ch, t); } catch (e) {}
+      c.restore();
+      rr(c, x, gap, cw, ch, 12); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
+      const nom = T(g.nombre);
+      c.font = '400 15px ' + fuenteDisplay();
+      const tw = c.measureText(nom).width + 14;
+      rr(c, x + cw / 2 - tw / 2, gap + ch - 30, tw, 22, 11); c.fillStyle = INK; c.fill();
+      c.fillStyle = PAPER; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(nom, x + cw / 2, gap + ch - 18.5);
+    }
+  }
+  function bvDificultad(c, w, h, t) {
+    c.fillStyle = '#ece8dc'; c.fillRect(0, 0, w, h);
+    const difs = CC.DIFS, n = difs.length, gap = 6, bw = Math.min(70, (w - 24 - gap * (n - 1)) / n), x0 = (w - (bw * n + gap * (n - 1))) / 2;
+    const elegida = reduceMotion ? 1 : Math.floor(t / 1100) % n, y = h * 0.17, bh = h * 0.4;
+    const fuente = fuenteDisplay();
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillStyle = INK; c.globalAlpha = 0.6; c.font = '800 10.5px Rubik, system-ui, sans-serif';
+    c.fillText(T('Dificultad').toUpperCase(), w / 2, y - 14); c.fillText(T('Modo').toUpperCase(), w / 2, h * 0.66 - 10); c.globalAlpha = 1;
+    difs.forEach((d, k) => {
+      const x = x0 + k * (bw + gap), si = k === elegida, sube = si ? 3 : 0;
+      const col = d.id === 'extremo' ? '#ff6b6b' : d.id === 'maestro' ? '#b49bff' : '#ffcc29';
+      rr(c, x, y - sube, bw, bh, 12); c.fillStyle = si ? col : 'rgba(255,255,255,.6)'; c.fill();
+      if (si) { c.lineWidth = 3; c.strokeStyle = INK; c.stroke(); }
+      c.fillStyle = INK; c.font = `400 ${Math.min(15, bw * 0.24)}px ${fuente}`;
+      c.fillText(T(d.nombre), x + bw / 2, y + bh * 0.4 - sube);
+      c.font = '700 10px Rubik, system-ui, sans-serif'; c.globalAlpha = 0.7;
+      c.fillText('XP ×' + (CC.idioma === 'en' ? String(d.xp) : String(d.xp).replace('.', ',')), x + bw / 2, y + bh * 0.7 - sube); c.globalAlpha = 1;
+      if (si) {
+        c.beginPath(); c.arc(x + bw - 4, y - sube - 2, 9, 0, Math.PI * 2); c.fillStyle = INK; c.fill();
+        c.fillStyle = '#fff'; c.font = '800 10px Rubik, system-ui, sans-serif'; c.fillText('✓', x + bw - 4, y - sube - 1.5);
+      }
+    });
+    // el modo, abajo y en oscuro: es otra cosa que se elige
+    const mods = [T('Sprint 100'), T('30 segundos'), T('Libre')], mw = Math.min(110, (w - 40) / 3), my = h * 0.68, mh = h * 0.2, mx0 = (w - mw * 3 - 16) / 2;
+    const modo = reduceMotion ? 0 : Math.floor(t / 2200) % 3;
+    mods.forEach((m, k) => {
+      const x = mx0 + k * (mw + 8);
+      rr(c, x, my, mw, mh, 10); c.fillStyle = k === modo ? INK : '#fff'; c.fill(); c.lineWidth = 2.5; c.strokeStyle = INK; c.stroke();
+      c.fillStyle = k === modo ? PAPER : INK; c.font = `400 ${Math.min(15, mw * 0.15)}px ${fuente}`; c.fillText(m, x + mw / 2, my + mh / 2 + 1);
+    });
+  }
+  function bvPersonajes(c, w, h, t, dt) {
+    bvCielo(c, w, h);
+    const skins = CC.SKINS.filter(s => !s.legendaria && !s.exclusiva).slice(0, 12), n = 4;
+    const off = reduceMotion ? 0 : Math.floor(t / 1400);
+    const lado = Math.min(50, w / 8), pie = h * 0.62;
+    for (let k = 0; k < n; k++) {
+      const sk = skins[(off + k * 3) % skins.length], x = w * (k + 0.5) / n;
+      CC.dibujarCubo(c, x, pie - bob(t + k * 200, 300) * 8, lado, { skin: sk, t: t + k * 400, efecto: false });
+    }
+    // barrita de XP que se llena
+    const f = reduceMotion ? 0.7 : Math.min(1, (dt % 2600) / 2200), bx = w * 0.14, bw = w * 0.72, by = h * 0.8;
+    rr(c, bx, by, bw, 16, 8); c.fillStyle = PAPER; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
+    if (f > 0) { rr(c, bx + 3, by + 3, Math.max(10, (bw - 6) * f), 10, 5); c.fillStyle = '#ff5d7d'; c.fill(); }
+    c.fillStyle = INK; c.font = '800 12px Rubik, system-ui, sans-serif'; c.textAlign = 'left'; c.textBaseline = 'bottom';
+    c.fillText('XP', bx, by - 4);
+    c.textAlign = 'right'; c.fillText(f >= 1 ? T('¡Nivel {n}!', { n: 2 }) : 'Lvl 1', bx + bw, by - 4);
+  }
+  function bvPodio(c, w, h, t) {
+    bvCielo(c, w, h);
+    const skins = CC.SKINS.filter(s => !s.exclusiva), lado = Math.min(44, w / 9), base = h * 0.92, bw = Math.min(86, w / 4.2);
+    const puestos = [{ x: w / 2, alto: h * 0.36, n: 1, col: '#ffcc29', sk: skins[5] }, { x: w / 2 - bw, alto: h * 0.25, n: 2, col: '#d7deea', sk: skins[2] },
+      { x: w / 2 + bw, alto: h * 0.17, n: 3, col: '#e9b48a', sk: skins[8] }];
+    for (const p of puestos) {
+      rr(c, p.x - bw / 2, base - p.alto, bw, p.alto + 10, 8); c.fillStyle = p.col; c.fill(); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
+      c.fillStyle = INK; c.font = `400 ${Math.round(p.alto * 0.4)}px ` + fuenteDisplay();
+      c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(p.n), p.x, base - p.alto / 2 + 4);
+      CC.dibujarCubo(c, p.x, base - p.alto - 2 - (p.n === 1 ? bob(t, 300) * 10 : 0), lado * (p.n === 1 ? 1.15 : 1), { skin: p.sk || skins[0], t: t + p.n * 300, efecto: false });
+    }
+  }
 
   // ---------- opciones ----------
   const leerJSON = k => { try { const o = JSON.parse(localStorage.getItem(k)); return o && typeof o === 'object' ? o : null; } catch (e) { return null; } };
@@ -2594,7 +2859,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
 
   // ---------- arranque ----------
   if (guardado('cubo-portada') !== '0' && !sesion('cubo-portada-vista') && !location.hash) mostrarPortada(!!$('cargando'));
-  else addEventListener('load', () => preguntarApodo(900));   // sin portada, apenas carga
+  else addEventListener('load', () => { if (!yaVioBienvenida()) setTimeout(() => abrirBienvenida(() => preguntarApodo(300)), 600); else preguntarApodo(900); });   // sin portada, apenas carga
   let inicio = +(guardado(SLIDE_KEY) || 0) || 0;
   const porHash = JUEGOS.findIndex(g => '#' + g.id === location.hash);
   if (porHash >= 0) inicio = porHash;

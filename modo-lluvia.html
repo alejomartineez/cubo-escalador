@@ -690,9 +690,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         : T('También A y D, o los botones de abajo. Esquivá los bloques y juntá monedas. Arranca cuando te muevas.');
       $('help').hidden = false;
     }
+    if (CC && CC.grabar) CC.grabar();   // la repetición (se sube sola si la partida es récord)
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   }
   function showMenu() {
+    if (CC && CC.grabar) setTimeout(() => CC.grabar(false));   // si quedó una grabación sin partida, se tira
     ponerMarca(false);
     if (guia) { guia.listo(); guia = null; }
     state = 'menu';

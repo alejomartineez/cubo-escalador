@@ -1255,6 +1255,12 @@
     const logros = revisarLogros();
     premiarMisiones(cumplidas);
     if (record || (dia && dia.nueva)) subirPendientes();
+    // la repetición: si fue tu mejor marca (de la tabla, o del desafío de hoy), se sube; si no, se tira
+    if (grab) {
+      const g = grab; grab = null;
+      const tablaRep = !datos.apodo ? null : record ? clave : dia && dia.nueva ? o.juego + ':' + o.diario.tablaRanking : null;
+      if (tablaRep) terminarGrabacion(g).then(v => v && subirRepeticion(tablaRep, valor, v)); else cortarGrabacion(g);
+    }
     return {
       xp: r.ganada + logros.reduce((a, l) => a + MEDALLAS[l.medalla].xp, 0), base, nivel: perfil().nivel, subio: perfil().nivel > nivelAntes,
       record, primera: record && anterior == null, anterior: anterior ?? null,
@@ -1690,7 +1696,7 @@
     } catch (e) { return ''; }
   }
   // Top de una tabla: [{ apodo, valor, skin, titulo, maestria, yo }] más tu puesto si no estás en la lista.
-  let rankingSinMaestria = false;
+  const rankingExtras = ['maestria', 'rep'];   // columnas que pueden no estar si falta correr una parte de supabase.sql
   async function top(jid, tid, n = 50, o = {}) {
     const tb = tablaDe(jid, tid);
     const orden = tb && tb.orden === 'menor' ? 'asc' : 'desc';
@@ -1700,14 +1706,17 @@
     const filtro = o.amigos ? `&huella=in.(${[mia, ...leer().amigos.map(a => a.huella)].filter(Boolean).join(',')})` : '';
     // la maestría de cada uno viene en la vista desde «Parte: maestrías y vitrina» de supabase.sql; sin esa parte, la
     // columna no existe (error 400) y se pide sin ella: solo se ve la tuya
-    const pedir = conM => api(`ranking?tabla=eq.${t}${filtro}&select=apodo,valor,skin,huella,titulo${conM ? ',maestria' : ''}&order=valor.${orden},creado.asc&limit=${n}`);
+    // lo mismo con `rep` (si la fila tiene repetición), desde «Parte: tus sombras y repeticiones»
+    const pedir = () => api(`ranking?tabla=eq.${t}${filtro}&select=apodo,valor,skin,huella,titulo${rankingExtras.map(c => ',' + c).join('')}&order=valor.${orden},creado.asc&limit=${n}`);
     let filas;
-    if (rankingSinMaestria) filas = await pedir(false);
-    else try { filas = await pedir(true); } catch (e) { if (!/ 400$/.test(e.message)) throw e; rankingSinMaestria = true; filas = await pedir(false); }
+    while (true) {
+      try { filas = await pedir(); break; }
+      catch (e) { if (!/ 400$/.test(e.message) || !rankingExtras.length) throw e; rankingExtras.pop(); }
+    }
     const miMaestria = maestria(leer(), jid).nivel;
     const lista = filas.map((f, k) => {
       const yo = !!mia && f.huella === mia;
-      return { puesto: k + 1, apodo: f.apodo, valor: +f.valor, skin: f.skin, titulo: f.titulo || '', huella: f.huella, yo, maestria: yo ? miMaestria : Math.max(0, +f.maestria || 0) };
+      return { puesto: k + 1, apodo: f.apodo, valor: +f.valor, skin: f.skin, titulo: f.titulo || '', huella: f.huella, yo, rep: f.rep === true, maestria: yo ? miMaestria : Math.max(0, +f.maestria || 0) };
     });
     let yo = lista.find(f => f.yo) || null;
     const mio = o.mio !== undefined ? o.mio : leer().mejores[jid + ':' + tid];
@@ -2047,7 +2056,18 @@
 .cc-dif small{font-family:"Rubik",system-ui,sans-serif;font-weight:700;font-size:10.5px;opacity:.7;white-space:nowrap}
 .cc-dif:hover{background:rgba(255,255,255,.65)}
 .cc-dif:active{transform:scale(.95)}
-.cc-dif[aria-checked="true"]{background:#ffcc29;box-shadow:inset 0 0 0 2.5px ${INK}}
+.cc-dif{position:relative}
+.cc-dif[aria-checked="true"]{background:#ffcc29;box-shadow:inset 0 0 0 2.5px ${INK},0 2px 0 ${INK};transform:translateY(-1px)}
+/* la elegida lleva una tilde en la esquina: se ve qué está elegido aunque no se distinga el color */
+.cc-dif[aria-checked="true"]::after{content:"✓";position:absolute;top:-6px;right:-3px;width:17px;height:17px;border-radius:50%;background:${INK};color:#fff;
+  font:800 10px/17px "Rubik",system-ui,sans-serif;text-align:center}
+.cc-difs.compacto .cc-dif[aria-checked="true"]::after{top:-5px;right:-2px;width:14px;height:14px;font-size:8.5px;line-height:14px}
+/* título del selector (Dificultad) y de los selectores de modo de cada juego (.cc-modo-tit) */
+.cc-difs-tit,.cc-modo-tit{grid-column:1/-1;margin:0 0 2px;padding:1px 4px 0;font:800 10.5px/1.2 "Rubik",system-ui,sans-serif;letter-spacing:.12em;
+  text-transform:uppercase;color:inherit;opacity:.62;text-align:left}
+/* los selectores de MODO (Ritmo, Paleta, ranking) van en oscuro, así no se confunden con la dificultad (amarilla) */
+.cc-modo-sel button[aria-checked="true"],.cc-modo-sel button[aria-pressed="true"]{background:${INK}!important;color:#fffaf0!important;box-shadow:0 2px 0 rgba(29,35,64,.35)!important}
+.cc-modo-sel button[aria-checked="true"] small,.cc-modo-sel button[aria-pressed="true"] small{color:#fffaf0!important;opacity:.8}
 .cc-dif[data-d="extremo"]{color:#b3122a}
 .cc-dif[data-d="extremo"][aria-checked="true"]{background:#ff6b6b;color:${INK}}
 .cc-dif[data-d="maestro"]{color:#5b2bbf}
@@ -2085,14 +2105,52 @@
 .cc-marca.paso{background:#ffcc29}.cc-marca.paso i{background:#ffcc29}
 .cc-dif:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
 .cc-difs-nota{grid-column:1/-1;margin:2px 0 0;font:600 12px/1.35 "Rubik",system-ui,sans-serif;color:inherit;opacity:.85;text-align:center;min-height:16px}
-#cc-avisos{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 76px);transform:translateX(-50%);z-index:9999;
-  display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:max-content;max-width:calc(100vw - 32px)}
-.cc-aviso{display:flex;align-items:center;gap:12px;background:${CREMA};color:${INK};border:3px solid ${INK};border-radius:16px;
-  box-shadow:0 5px 0 ${INK};padding:9px 15px 9px 10px;font-family:"Rubik",system-ui,sans-serif}
-.cc-aviso b{display:block;font-family:"Lilita One","Trebuchet MS",sans-serif;font-weight:400;font-size:21px;line-height:1.05}
-.cc-aviso span{display:block;font-size:13px;font-weight:600;margin-top:2px}
+/* avisos: chiquitos, abajo a la izquierda (arriba quedan el puntaje y la cuenta de cada juego), uno arriba del otro.
+   En el celu van arriba de los botones grandes de ← →, más angostos. */
+#cc-avisos{position:fixed;left:calc(env(safe-area-inset-left,0px) + 12px);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);z-index:9999;
+  display:flex;flex-direction:column-reverse;gap:6px;align-items:flex-start;pointer-events:none;width:max-content;max-width:min(320px,calc(100vw - 24px))}
+@media (pointer:coarse),(max-width:700px){#cc-avisos{bottom:calc(env(safe-area-inset-bottom,0px) + 150px);max-width:min(270px,calc(100vw - 24px))}}
+.cc-aviso{display:flex;align-items:center;gap:8px;background:${CREMA};color:${INK};border:2px solid ${INK};border-radius:12px;
+  box-shadow:0 3px 0 ${INK};padding:5px 10px 5px 7px;font-family:"Rubik",system-ui,sans-serif;max-width:100%}
+.cc-aviso > div{min-width:0}
+.cc-aviso b{display:block;font-family:"Lilita One","Trebuchet MS",sans-serif;font-weight:400;font-size:15px;line-height:1.1}
+.cc-aviso span{display:block;font-size:11px;font-weight:600;margin-top:1px;line-height:1.25;opacity:.85}
+.cc-aviso canvas{width:30px!important;height:33px!important}
 .cc-medalla{flex:none;width:40px;height:40px;border-radius:50%;border:3px solid ${INK};display:grid;place-items:center;
   font-family:"Lilita One","Trebuchet MS",sans-serif;font-size:18px;color:${INK}}
+.cc-aviso .cc-medalla{width:26px;height:26px;border-width:2px;font-size:12px}
+/* interruptores (Sonido, Sombra): una llavecita a la derecha del texto, así no parecen botones de acción */
+button.cc-sw{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+button.cc-sw::after{content:"";flex:none;width:28px;height:16px;border-radius:99px;box-sizing:border-box;border:2px solid ${INK};
+  background:#d9d4c6 radial-gradient(circle at 7px 50%,#fff 0 4.5px,${INK} 5px 5.6px,transparent 6px) no-repeat;transition:background .15s}
+button.cc-sw.cc-sw-on::after{background:#3fcf8e radial-gradient(circle at calc(100% - 7px) 50%,#fff 0 4.5px,${INK} 5px 5.6px,transparent 6px) no-repeat}
+/* botón ▶ de las filas del ranking que tienen repetición */
+#cc-rank li .cc-ver-rep{appearance:none;flex:none;width:34px;height:34px;margin-left:-2px;border-radius:50%;border:2.5px solid ${INK};background:#fff;
+  box-shadow:0 2px 0 ${INK};color:${INK};font:700 12px/1 system-ui;cursor:pointer;display:grid;place-items:center;padding:0 0 0 2px}
+#cc-rank li .cc-ver-rep:hover{background:#ff5d7d;color:#fff}
+#cc-rank li .cc-ver-rep:active{transform:translateY(2px);box-shadow:none}
+/* ventana de la repetición */
+#cc-rep{position:fixed;inset:0;z-index:10001;display:flex;align-items:center;justify-content:center;background:rgba(29,35,64,.72);box-sizing:border-box;
+  padding:12px;font-family:"Rubik",system-ui,sans-serif;color:${INK}}
+#cc-rep *{box-sizing:border-box}
+#cc-rep .cc-rp{zoom:var(--ui,1);width:100%;max-width:520px;max-height:calc((100dvh - 24px) / var(--ui,1));display:flex;flex-direction:column;
+  background:${CREMA};border:3px solid ${INK};border-radius:22px;box-shadow:0 6px 0 ${INK};overflow:hidden;animation:cc-sube .2s ease-out}
+#cc-rep header{display:flex;align-items:center;gap:8px;padding:12px 10px 10px 18px}
+#cc-rep header > div{flex:1;min-width:0}
+#cc-rep h2{margin:0;font:400 24px/1 "Lilita One","Trebuchet MS",sans-serif}
+#cc-rep header small{display:block;margin-top:3px;font-size:13px;font-weight:700;opacity:.6}
+#cc-rep .x{appearance:none;flex:none;width:44px;height:44px;border-radius:12px;border:2.5px solid ${INK};background:#fff;box-shadow:0 3px 0 ${INK};
+  font:700 20px/1 system-ui;color:${INK};cursor:pointer}
+#cc-rep .pantalla{flex:1 1 auto;min-height:200px;display:grid;place-items:center;background:${INK};border-block:3px solid ${INK};overflow:hidden}
+#cc-rep video{display:block;width:100%;height:auto;max-height:calc((100dvh - 190px) / var(--ui,1));object-fit:contain;background:${INK}}
+#cc-rep .msg{margin:0;padding:24px;color:${CREMA};font-weight:600;text-align:center}
+#cc-rep .pie{display:flex;align-items:center;gap:10px;padding:10px 14px 12px}
+#cc-rep .quien{flex:1;min-width:0;display:flex;align-items:baseline;gap:10px;overflow:hidden}
+#cc-rep .quien b{font-weight:800;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cc-rep .quien .v{font-weight:800;font-variant-numeric:tabular-nums;opacity:.75}
+#cc-rep .vel{appearance:none;min-width:52px;height:38px;border-radius:999px;border:2px solid ${INK};background:#fff;box-shadow:0 2px 0 ${INK};
+  font:800 13px "Rubik",system-ui,sans-serif;color:${INK};cursor:pointer}
+#cc-rep button:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
 #cc-rank{position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:center;background:rgba(29,35,64,.55);box-sizing:border-box;
   padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px));font-family:"Rubik",system-ui,sans-serif;color:${INK}}
 @media (min-width:600px) and (min-height:560px){#cc-rank{align-items:center}}
@@ -2178,11 +2236,12 @@
 .cc-leg-sombra{color:#5a2fc8;text-shadow:0 0 8px rgba(143,107,255,.85)}
 .cc-leg-geo{background:linear-gradient(180deg,#ffd21f,#ff8a1c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 3px rgba(95,245,255,.95))}
 /* Noctámbulo: una arañita le camina por arriba del nombre, de punta a punta, y se da vuelta en cada punta */
-.cc-leg-noctambulo{position:relative;color:#0b0e1c;text-shadow:0 0 6px rgba(79,216,255,.95),0 0 12px rgba(79,216,255,.55)}
-.cc-leg-noctambulo::after{content:"";position:absolute;top:-.3em;left:0;width:.72em;height:.56em;pointer-events:none;
+.cc-leg-noctambulo{position:relative;display:inline-block;max-width:100%;vertical-align:bottom;padding-top:.6em;line-height:1.15;
+  white-space:nowrap;color:#0b0e1c;text-shadow:0 0 6px rgba(79,216,255,.95),0 0 12px rgba(79,216,255,.55)}
+.cc-leg-noctambulo::after{content:"";position:absolute;top:.02em;left:0;width:.8em;height:.62em;pointer-events:none;
   background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 14'%3E%3Cpath d='M6 6 4 2.5 1.5 2M8 5.5 7.5 1.5 5.5.5M10 5.5 11 1.5 13 .5M11 6 14 3 16.5 2.5M6 8 4 11.5 1.5 12M8 8.5 7.5 12.5 5.5 13.5M10 8.5 11 12.5 13 13.5M11 8 14 11 16.5 11.5' stroke='%2305070f' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Cellipse cx='7.5' cy='7' rx='3.6' ry='3' fill='%2305070f'/%3E%3Ccircle cx='12' cy='7' r='2' fill='%2305070f'/%3E%3Ccircle cx='13.2' cy='6.2' r='.6' fill='%234fd8ff'/%3E%3Ccircle cx='13.2' cy='7.8' r='.6' fill='%234fd8ff'/%3E%3C/svg%3E") center/contain no-repeat;
   filter:drop-shadow(0 0 2px rgba(79,216,255,.9));animation:cc-arana 7s linear infinite,cc-patitas .16s steps(2) infinite}
-@keyframes cc-arana{0%{left:0;transform:scaleX(1)}46%{left:calc(100% - .72em);transform:scaleX(1)}50%{left:calc(100% - .72em);transform:scaleX(-1)}96%{left:0;transform:scaleX(-1)}100%{left:0;transform:scaleX(1)}}
+@keyframes cc-arana{0%{left:0;transform:scaleX(1)}46%{left:calc(100% - .8em);transform:scaleX(1)}50%{left:calc(100% - .8em);transform:scaleX(-1)}96%{left:0;transform:scaleX(-1)}100%{left:0;transform:scaleX(1)}}
 @keyframes cc-patitas{to{translate:0 -1px}}
 .cc-leg-dev{background:linear-gradient(90deg,#00b4c8,#ff3bd4);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 5px rgba(95,245,255,.9))}
 @media (prefers-reduced-motion:reduce){.cc-leg-glitch,.cc-leg-holograma,.cc-leg-noctambulo::after{animation:none}}
@@ -2263,7 +2322,11 @@
     el.style.setProperty('--n', lista.length);
     el.setAttribute('role', 'radiogroup');
     el.setAttribute('aria-label', T('Dificultad'));
-    el.innerHTML = lista.map(d => `<button type="button" class="cc-dif" role="radio" data-d="${d.id}" aria-checked="${d.id === v}">` +
+    // el título «Dificultad» va adentro del recuadro, salvo que la página ya tenga uno justo arriba (Escalador)
+    const previo = el.previousElementSibling;
+    const conTitulo = !o.compacto && !o.sinTitulo && !(previo && /dificultad|difficulty/i.test(previo.textContent || '') && (previo.textContent || '').length < 40);
+    el.innerHTML = (conTitulo ? `<p class="cc-difs-tit">${T('Dificultad')}</p>` : '') +
+      lista.map(d => `<button type="button" class="cc-dif" role="radio" data-d="${d.id}" aria-checked="${d.id === v}">` +
       `${iconoDif(d.id, o.compacto ? 20 : 24)}${T(d.nombre)}<small>XP ×${coma(d.xp)}</small></button>`).join('') +
       (o.sinNota || o.compacto ? '' : '<p class="cc-difs-nota" aria-live="polite"></p>');
     const nota = el.querySelector('.cc-difs-nota');
@@ -2357,6 +2420,29 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', casita); else casita();
 
+  // Los botones de prendido/apagado de cada juego («Sonido: sí», «Sombra: no») se veían igual que los de acción (Ranking,
+  // Amigo). Sin tocar los juegos: se les suma una llavecita que se prende y se apaga sola cuando el juego cambia el texto.
+  const INTERRUPTOR = /^\s*(Sonido|Sombra|Música|Sound|Shadow|Music)\s*:\s*(sí|si|no|on|off)\s*$/i;
+  function interruptores() {
+    for (const b of document.querySelectorAll('button')) {
+      if (b.dataset.ccSw || !INTERRUPTOR.test(b.textContent)) continue;
+      estilos();
+      b.dataset.ccSw = '1';
+      b.classList.add('cc-sw');
+      const pintar = () => {
+        const m = b.textContent.match(INTERRUPTOR);
+        if (!m) return;
+        const on = !/^(no|off)$/i.test(m[2]);
+        b.classList.toggle('cc-sw-on', on);
+        b.setAttribute('aria-pressed', String(on));
+      };
+      pintar();
+      new MutationObserver(pintar).observe(b, { childList: true, characterData: true, subtree: true });
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', interruptores); else interruptores();
+  setTimeout(interruptores, 1000);
+
   // Al abrir cualquier página se revisan los logros: así aparecen los que ya cumplías con una regla vieja.
   setTimeout(() => { try { revisarLogros(); } catch (e) {} }, 1200);
 
@@ -2372,10 +2458,10 @@
     const n = box.children.length - 1;
     if (el.animate) {
       el.animate([
-        { opacity: 0, transform: 'translateY(-12px) scale(.9)' },
-        { opacity: 1, transform: 'none', offset: 0.1 },
-        { opacity: 1, transform: 'none', offset: 0.88 },
-        { opacity: 0, transform: 'translateY(-8px)' },
+        { opacity: 0, transform: 'translateX(-24px)' },
+        { opacity: 1, transform: 'none', offset: 0.08 },
+        { opacity: 1, transform: 'none', offset: 0.9 },
+        { opacity: 0, transform: 'translateX(-16px)' },
       ], { duration: ms, delay: n * 250, easing: 'ease', fill: 'both' }).onfinish = () => el.remove();
     } else setTimeout(() => el.remove(), ms);
     return el;
@@ -2417,7 +2503,7 @@
     box.innerHTML = `<div class="cc-rk" role="dialog" aria-modal="true" aria-labelledby="cc-rank-t">
       <header><div><h2 id="cc-rank-t">${T(dia ? 'Desafío del día' : 'Ranking')}</h2><small>${dia ? T(j.nombre) + ' · ' + dia.fechaLinda : T(j.nombre)}</small></div><button class="x" type="button" aria-label="${T('Cerrar')}">✕</button></header>
       <div class="seg quien" role="group" aria-label="${T('Quiénes')}" hidden><button type="button" data-q="todos" aria-pressed="true">🌎 ${T('Todos')}</button><button type="button" data-q="amigos" aria-pressed="false">👥 ${T('Amigos')}</button></div>
-      ${conModos ? `<div class="seg modos" role="group" aria-label="${T('Modo')}"></div>` : ''}<div class="seg difs" role="group" aria-label="${T('Dificultad')}"${dia ? ' hidden' : ''}></div>
+      ${conModos ? `<div class="seg modos cc-modo-sel" role="group" aria-label="${T('Modo')}"></div>` : ''}<div class="seg difs" role="group" aria-label="${T('Dificultad')}"${dia ? ' hidden' : ''}></div>
       <ol aria-live="polite"></ol>
       <div class="pie"><div class="yo-txt"></div>
         <form class="f-apodo"><input name="a" maxlength="14" autocomplete="nickname" placeholder="${T('Tu apodo (3 a 14 letras)')}" aria-label="${T('Tu apodo')}"><button type="submit">${T('Guardar')}</button></form>
@@ -2500,7 +2586,8 @@
         ol.innerHTML = '';
         const fila = f => {
           const li = document.createElement('li'); if (f.yo) li.className = 'yo';
-          li.innerHTML = `<span class="p${f.puesto <= 3 ? ' m' + f.puesto : ''}">${f.puesto}</span><canvas width="52" height="60"></canvas><span class="n"></span><span class="v">${formato(f.valor, tb)}</span>`;
+          li.innerHTML = `<span class="p${f.puesto <= 3 ? ' m' + f.puesto : ''}">${f.puesto}</span><canvas width="52" height="60"></canvas><span class="n"></span><span class="v">${formato(f.valor, tb)}</span>` +
+            (f.rep ? `<button class="cc-ver-rep" type="button" aria-label="${T('Ver repetición')}" title="${T('Ver repetición')}">▶</button>` : '');
           const nm = li.querySelector('.n'), sk = SKINS.find(s => s.id === f.skin);
           // el apodo, en su propio span con translate="no" (el observer no tiene que traducir un apodo «Gato»)
           const ap = document.createElement('span'); ap.setAttribute('translate', 'no'); ap.textContent = f.apodo;
@@ -2520,8 +2607,11 @@
           if (f.huella) {
             li.classList.add('ver'); li.tabIndex = 0; li.setAttribute('role', 'button'); li.title = 'Ver perfil';
             const ver = () => verPerfil({ huella: f.huella, apodo: f.apodo, skin: f.skin, titulo: f.titulo, yo: f.yo }, { padre: cerrar });
-            li.addEventListener('click', ver);
-            li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ver(); } });
+            li.addEventListener('click', e => {
+              if (e.target.closest('.cc-ver-rep')) verRepeticion(f, dia ? j.id + ':' + dia.tablaRanking : j.id + ':' + tid);
+              else ver();
+            });
+            li.addEventListener('keydown', e => { if (e.target === li && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); ver(); } });
           }
           ol.appendChild(li);
           return li;
@@ -6355,6 +6445,177 @@
     // "+0,8 s" / "−1,2 s" (negativo = vas adelante)
     textoDif(ms) { const s = Math.abs(ms) / 1000; return (ms < 0 ? '−' : '+') + coma(s.toFixed(1)) + ' s'; },
   };
+  // Tus sombras de la nube: completa las que no están en este dispositivo (o las que allá son mejores). Hace falta porque
+  // localStorage es de cada dirección del sitio: al pasar de github.io a pages.dev las sombras quedaron del otro lado.
+  // Una vez por pestaña (sessionStorage), con apodo e internet.
+  async function bajarSombras() {
+    const p = leer();
+    if (!p.apodo || !rankingActivo() || navigator.onLine === false) return;
+    try { if (sessionStorage.getItem('cubo-sombras-bajadas')) return; } catch (e) {}
+    try {
+      const r = await api('rpc/mis_sombras', { method: 'POST', body: JSON.stringify({ p_jugador: p.id }) });
+      if (!Array.isArray(r)) return;
+      const todas = leerSombras();
+      let cambio = false;
+      for (const x of r) {
+        const clave = x.juego + ':' + x.tabla, local = todas[clave], v = +x.valor;
+        if (!(v > 0) || !decodificarSombra(x.curva)) continue;
+        if (local && !mejor(tablaDe(x.juego, x.tabla), v, local.valor)) continue;
+        todas[clave] = { s: x.curva, valor: v, fecha: Date.now() };
+        cambio = true;
+      }
+      if (cambio) localStorage.setItem(SOMBRAS, JSON.stringify(todas));
+      try { sessionStorage.setItem('cubo-sombras-bajadas', '1'); } catch (e) {}
+    } catch (e) {}
+  }
+  setTimeout(() => bajarSombras(), 1200);
+
+  // ---------- repeticiones ----------
+  // Mientras jugás se graba un video chico del lienzo del juego (MediaRecorder, sin sonido). Si la partida fue tu mejor
+  // marca de esa tabla, al terminar se sube al ranking y los demás la ven con ▶ en tu fila. Si no, se tira.
+  //   CC.grabar()            al arrancar cada partida (busca solo el lienzo más grande; o CC.grabar(canvas))
+  //   CC.partida(...)        la corta y decide si la sube (supabase.sql, «Parte: tus sombras y repeticiones»)
+  //   CC.grabar(false)       descarta la grabación en curso (salir al menú, duelos, de a dos)
+  // Solo graba con apodo, con internet y si el navegador sabe (si no, el juego anda igual). Lado más largo 640 px,
+  // 25 cuadros por segundo y unos 300 kbit/s: un Sprint 100 pesa menos de 1 MB. Más de 8 MB o 8 minutos no se sube.
+  const REP = { LADO: 640, FPS: 25, BPS: 300000, MAX_BYTES: 8 * 1024 * 1024 - 65536, MAX_MS: 8 * 60 * 1000 };
+  let grab = null;
+  function formatoVideo() {
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return null;
+    for (const [mime, tipo] of [['video/webm;codecs=vp9', 'webm'], ['video/webm;codecs=vp8', 'webm'], ['video/webm', 'webm'], ['video/mp4;codecs=avc1', 'mp4'], ['video/mp4', 'mp4']])
+      if (MediaRecorder.isTypeSupported(mime)) return { mime, tipo };
+    return null;
+  }
+  // el lienzo más grande que se ve en la página: el del juego
+  function lienzoDelJuego() {
+    let mejorCv = null, area = 0;
+    for (const cv of document.querySelectorAll('canvas')) {
+      const r = cv.getBoundingClientRect(), a = r.width * r.height;
+      if (a > area && cv.width > 50 && cv.height > 50 && getComputedStyle(cv).visibility !== 'hidden') { area = a; mejorCv = cv; }
+    }
+    return mejorCv;
+  }
+  function cortarGrabacion(g) {
+    if (!g) return;
+    g.fin = true;
+    cancelAnimationFrame(g.raf);
+    try { if (g.rec.state !== 'inactive') g.rec.stop(); } catch (e) {}
+    try { g.stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+  }
+  function grabar(src) {
+    if (grab) { cortarGrabacion(grab); grab = null; }
+    if (src === false) return false;
+    const p = leer(), fmt = formatoVideo();
+    if (!fmt || !p.apodo || !rankingActivo() || navigator.onLine === false) return false;
+    src = src instanceof HTMLCanvasElement ? src : lienzoDelJuego();
+    if (!src || !src.width || !src.height) return false;
+    try {
+      const k = Math.min(1, REP.LADO / Math.max(src.width, src.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.max(2, Math.round(src.width * k / 2) * 2); cv.height = Math.max(2, Math.round(src.height * k / 2) * 2);
+      const c = cv.getContext('2d');
+      // si el lienzo es transparente, abajo va el color de la página (si no, el video queda negro)
+      let fondo = getComputedStyle(document.body).backgroundColor;
+      if (!fondo || /rgba\(.*,\s*0\)|transparent/.test(fondo)) fondo = '#62c6ff';
+      const stream = cv.captureStream(REP.FPS);
+      const rec = new MediaRecorder(stream, { mimeType: fmt.mime, videoBitsPerSecond: REP.BPS });
+      const g = { rec, stream, tipo: fmt.tipo, mime: fmt.mime.split(';')[0], partes: [], bytes: 0, t0: performance.now(), raf: 0, fin: false, roto: false };
+      const pintar = () => {
+        if (g.fin) return;
+        if (performance.now() - g.t0 > REP.MAX_MS) { g.roto = true; cortarGrabacion(g); return; }
+        c.fillStyle = fondo; c.fillRect(0, 0, cv.width, cv.height);
+        try { c.drawImage(src, 0, 0, cv.width, cv.height); } catch (e) {}
+        g.raf = requestAnimationFrame(pintar);
+      };
+      rec.ondataavailable = e => {
+        if (!e.data || !e.data.size) return;
+        g.partes.push(e.data); g.bytes += e.data.size;
+        if (g.bytes > REP.MAX_BYTES) { g.roto = true; cortarGrabacion(g); }
+      };
+      g.parado = new Promise(r => { rec.onstop = r; rec.onerror = () => { g.roto = true; r(); }; });
+      rec.start(1000);
+      pintar();
+      grab = g;
+      return true;
+    } catch (e) { return false; }
+  }
+  // Corta la grabación en curso. → Promise<{ blob, tipo } | null>
+  async function terminarGrabacion(g) {
+    if (!g) return null;
+    const durMs = performance.now() - g.t0;
+    cortarGrabacion(g);
+    await Promise.race([g.parado, new Promise(r => setTimeout(r, 3000))]);
+    if (g.roto || !g.partes.length || durMs < 1500) return null;
+    return { blob: new Blob(g.partes, { type: g.mime }), tipo: g.tipo };
+  }
+  const urlRepeticion = archivo => RANKING.url.replace(/\/$/, '') + '/storage/v1/object/public/repeticiones/' + archivo;
+  // Sube la repetición de tu marca `valor` en `tabla` ('escalador:sprint'). El puntaje tiene que estar en el servidor antes.
+  async function subirRepeticion(tabla, valor, v) {
+    try {
+      if (!v || !v.blob || v.blob.size > REP.MAX_BYTES) return false;
+      await esperarSubida(20000);
+      const p = leer();
+      if (!p.apodo || p.pendientes.some(x => x.j + ':' + x.t === tabla)) return false;   // el puntaje todavía no subió
+      const archivo = await api('rpc/pedir_repeticion', { method: 'POST', body: JSON.stringify({ p_jugador: p.id, p_tabla: tabla, p_valor: valor, p_tipo: v.tipo }) });
+      if (typeof archivo !== 'string' || !archivo) return false;
+      const r = await fetch(RANKING.url.replace(/\/$/, '') + '/storage/v1/object/repeticiones/' + archivo, {
+        method: 'POST', body: v.blob,
+        headers: { apikey: RANKING.clave, 'Content-Type': 'video/' + v.tipo, 'x-upsert': 'false', 'cache-control': '31536000' },
+      });
+      if (!r.ok) return false;
+      const c = await api('rpc/confirmar_repeticion', { method: 'POST', body: JSON.stringify({ p_jugador: p.id, p_archivo: archivo }) });
+      // las repeticiones que quedaron viejas se borran del bucket (desde SQL Supabase no deja)
+      for (const v of (c && c.viejas) || []) {
+        if (/^[0-9a-f]{32}\.(webm|mp4)$/.test(v)) fetch(RANKING.url.replace(/\/$/, '') + '/storage/v1/object/repeticiones/' + v, { method: 'DELETE', headers: { apikey: RANKING.clave } }).catch(() => {});
+      }
+      return !!(c && c.ok);
+    } catch (e) { return false; }
+  }
+  // Ventana con el video de alguien del ranking. f: { huella, apodo, skin, valor }, tabla: 'escalador:sprint'.
+  async function verRepeticion(f, tabla, o = {}) {
+    estilos();
+    const [jid, tid] = tabla.split(':'), j = juego(jid), tb = tablaDe(jid, tid);
+    const previo = document.activeElement;
+    const box = document.createElement('div');
+    box.id = 'cc-rep';
+    box.innerHTML = `<div class="cc-rp" role="dialog" aria-modal="true" aria-labelledby="cc-rep-t">
+      <header><div><h2 id="cc-rep-t">${T('Repetición')}</h2><small></small></div><button class="x" type="button" aria-label="${T('Cerrar')}">✕</button></header>
+      <div class="pantalla"><p class="msg">${T('Cargando…')}</p></div>
+      <div class="pie"><span class="quien"><b translate="no"></b><span class="v"></span></span><button class="vel" type="button" hidden>×1</button></div></div>`;
+    document.body.appendChild(box);
+    const $ = s => box.querySelector(s);
+    $('small').textContent = T((j || {}).nombre || '') + (tb ? ' · ' + T(tb.nombre) : '');
+    const ap = $('.quien b'); ap.textContent = f.apodo || '—';
+    const sk = SKINS.find(s => s.id === f.skin); if (sk && sk.legendaria) ap.className = claseNombre(sk);
+    $('.quien .v').textContent = tb ? formato(f.valor, tb) : String(f.valor);
+    function cerrar() { box.remove(); removeEventListener('keydown', tecla, true); if (previo && previo.focus) previo.focus(); if (o.alCerrar) o.alCerrar(); }
+    function tecla(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); } else if (e.key !== ' ') e.stopPropagation(); }
+    addEventListener('keydown', tecla, true);
+    $('.x').addEventListener('click', cerrar);
+    box.addEventListener('click', e => { if (e.target === box) cerrar(); });
+    $('.x').focus();
+    const msg = t => { $('.pantalla').innerHTML = '<p class="msg"></p>'; $('.pantalla .msg').textContent = t; };
+    if (sinRed()) return msg(sinRed().msg);
+    try {
+      const r = await api('rpc/repeticion_de', { method: 'POST', body: JSON.stringify({ p_huella: f.huella, p_tabla: tabla }) });
+      if (!box.isConnected) return;
+      if (!r || !r.archivo) return msg(T('Esta marca todavía no tiene repetición.'));
+      const vid = document.createElement('video');
+      vid.src = urlRepeticion(r.archivo); vid.controls = true; vid.autoplay = true; vid.muted = true; vid.loop = true; vid.playsInline = true;
+      vid.setAttribute('playsinline', '');
+      vid.addEventListener('error', () => msg(T('Este navegador no puede mostrar la repetición.')));
+      $('.pantalla').replaceChildren(vid);
+      if (tb && +r.valor !== +f.valor) $('.quien .v').textContent = formato(+r.valor, tb);
+      // velocidad: ×1 → ×2 → ×0,5
+      const vel = $('.vel'), velocidades = [1, 2, 0.5];
+      vel.hidden = false;
+      vel.addEventListener('click', () => {
+        const k = (velocidades.indexOf(vid.playbackRate) + 1) % velocidades.length;
+        vid.playbackRate = velocidades[k]; vel.textContent = '×' + coma(velocidades[k]);
+      });
+      vid.play().catch(() => {});
+    } catch (e) { if (box.isConnected) msg(T('No se pudo cargar la repetición. Probá de nuevo en un rato.')); }
+  }
 
   // ---------- sensación de juego ----------
   // Reducir movimiento: se elige en Opciones de la portada (`cubo-movimiento`: '0' = menos movimiento, '1' = todo).
@@ -6491,7 +6752,7 @@ html.cc-quieto .cc-guia-dedo{animation:none;opacity:1;transform:translate(-50%,0
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
     avisar, vibrar, volver, dibujarCubo, pulseada, morir, sombra, pedirApodo, diario, diarioDe, azar, faltaTexto,
     temporada, misiones, eventoXP, TEMP_XP, sincronizarNube, menosMovimiento, frenar, frenado, guia, T, Tsin: Tlit, textos, idioma, IDIOMAS, ponerIdioma, LOCALE, traducirNodo,
-    verPerfil, perfilPublico, horasTexto, empezar,
+    verPerfil, perfilPublico, horasTexto, empezar, grabar, verRepeticion,
     RAREZAS, rarezaTitulo, pintarTitulo, rangoLogro, medallaLogro, NOMBRE_RANGO, maestria, maestrias, insigniaMaestria, RANGOS_MAESTRIA,
     vitrinaDe, elegirVitrina, VITRINA_MAX,
   };

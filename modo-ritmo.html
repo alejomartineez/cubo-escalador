@@ -147,7 +147,8 @@ body {
 .seg-modo { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 4px; background: #ece8dc; border: 2.5px solid var(--ink); border-radius: 16px; }
 .seg-modo button { appearance: none; border: 0; border-radius: 11px; background: transparent; min-height: 42px; cursor: pointer;
   font: 400 17px var(--display); color: var(--ink); }
-.seg-modo button[aria-checked="true"] { background: var(--cube); box-shadow: inset 0 0 0 2.5px var(--ink); }
+.seg-modo button[aria-checked="true"] { background: var(--ink); color: var(--paper, #fffaf0); box-shadow: 0 2px 0 rgba(29,35,64,.35); }
+.seg-modo .cc-modo-tit { grid-column: 1 / -1; }
 .canciones { display: grid; gap: 8px; }
 .cancion { appearance: none; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; padding: 9px 14px; cursor: pointer; text-align: left;
   background: #fff; color: var(--ink); border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 0 3px 0 var(--ink); }
@@ -285,6 +286,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     </div>
     <div class="col">
       <div class="seg-modo" id="segModo" role="radiogroup" aria-label="Modo">
+        <p class="cc-modo-tit">Modo</p>
         <button type="button" role="radio" data-m="infinito" aria-checked="true">∞ Infinito</button>
         <button type="button" role="radio" data-m="cancion" aria-checked="false">🎵 Canciones</button>
       </div>
@@ -1157,7 +1159,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const hay = CANCIONES.length > 0;
     $('segModo').hidden = !hay || !!DIA;
     if (!hay) modo = 'infinito';
-    for (const b of $('segModo').children) b.setAttribute('aria-checked', String(b.dataset.m === modo));
+    for (const b of $('segModo').querySelectorAll('button')) b.setAttribute('aria-checked', String(b.dataset.m === modo));
     $('canciones').hidden = $('credito').hidden = modo !== 'cancion';
     $('btnRank').hidden = !CC || modo === 'cancion';
     renderRecs();
@@ -1176,7 +1178,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       box.appendChild(b);
     }
   }
-  for (const b of $('segModo').children) b.addEventListener('click', () => { modo = b.dataset.m; rec.modo = modo; saveRec(); renderModo(); });
+  for (const b of $('segModo').querySelectorAll('button')) b.addEventListener('click', () => { modo = b.dataset.m; rec.modo = modo; saveRec(); renderModo(); });
 
   function showStart() {
     if (enCurso()) cerrarPartida();
@@ -1225,6 +1227,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       banner = { text: '🎵 ' + c.nombre, t: performance.now() };
     }
     blur(); schedule();
+    if (CC && CC.grabar) CC.grabar();   // la repetición (se sube sola si la partida es récord)
   }
   const verRanking = () => CC.verRanking({ juego: 'ritmo', tabla: diff });
   function pauseGame() {

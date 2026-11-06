@@ -769,6 +769,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     soltarGuia();
     if (CC && CC.guia) guia = CC.guia('voley', [$('bL'), $('bR')]);
     G.pista = CC && CC.perfil ? (CC.perfil().partidas.voley || 0) < 3 : !rec.ayuda;
+    if (CC && CC.grabar) CC.grabar();   // la repetición (se sube sola si la partida es récord)
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   }
   function hideTip() {
@@ -776,6 +777,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     tipOn = false; $('tip').hidden = true; rec.ayuda = 1; saveRec();
   }
   function showMenu() {
+    if (CC && CC.grabar) setTimeout(() => CC.grabar(false));   // si quedó una grabación sin partida, se tira
     state = 'menu';
     newRun(true, dif());
     renderMenu();

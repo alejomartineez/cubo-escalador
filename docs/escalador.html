@@ -159,7 +159,7 @@ h2 { font-size: 34px; }
 .intro { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.45; }
 .modes { display: flex; flex-direction: column; gap: 10px; }
 .mode {
-  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px;
+  display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 12px;
   text-align: left; font: inherit; color: var(--ink);
   background: #fff; border: 3px solid var(--ink); border-radius: 16px;
   box-shadow: 0 4px 0 var(--ink); padding: 12px 14px; cursor: pointer;
@@ -191,6 +191,13 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .exp b { font-family: var(--display); font-weight: 400; font-size: 20px; }
 .exp span { display: block; margin-top: 2px; }
 .dif-h { margin: 0 0 -8px; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.dif-h-sub { letter-spacing: .02em; text-transform: none; font-weight: 700; }
+.dif-h-sub::before { content: "· "; }
+/* cada modo es un botón que arranca la partida: el ▶ de la esquina lo dice */
+.mode { position: relative; }
+.mode .go { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--ink); color: var(--paper); font-size: 12px; padding-left: 2px; box-sizing: border-box; transition: transform .12s; }
+.mode:hover .go, .mode:focus-visible .go { transform: scale(1.15); background: var(--accent); }
 .mode.lava { background: linear-gradient(100deg, #fff 55%, #ffe1cc); }
 .mode.lava:hover { background: linear-gradient(100deg, #fff4cc 55%, #ffd2b3); }
 .mode.lava .key { background: #ff7a3d; }
@@ -216,6 +223,8 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
   .modes { display: grid; grid-template-columns: 1fr 1fr; }
   .mode { grid-template-columns: auto 1fr; }
   .mode .mrec { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; text-align: left; }
+  .mode .go { position: absolute; top: 10px; right: 10px; }
+  .mode .mname { padding-right: 34px; }
 }
 .pad button svg { width: calc(44px * var(--ui, 1)); height: calc(44px * var(--ui, 1)); }
 .xbtn {
@@ -313,7 +322,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     <p class="intro">Tocá la flecha del lado donde está el próximo escalón. Si le errás, el cubo queda mareado.</p>
     <p class="dif-h">Dificultad</p>
     <div id="difs"></div>
-    <p class="dif-h">Modo</p>
+    <p class="dif-h">Modo <span class="dif-h-sub">tocá uno para jugar</span></p>
     <div class="modes" id="modes"></div>
     <div class="foot">
       <button class="smallbtn ter" id="btnHome" type="button">← Juegos</button>
@@ -376,7 +385,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // menú
     'Tocá la flecha del lado donde está el próximo escalón. Si le errás, el cubo queda mareado.': 'Tap the arrow on the side of the next step. Miss, and your cube gets dizzy.',
     'Dificultad': 'Difficulty',
-    'Modo': 'Mode',
+    'Modo': 'Mode', 'tocá uno para jugar': 'tap one to play',
     'Juegos': 'Games',
     'Ranking': 'Leaderboard',
     'Un cubo transparente repite tu mejor partida': 'A see-through cube replays your best run',
@@ -871,7 +880,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const r = !v ? '—' : id === 'sprint' ? fmtS(v) + ' s' : T('{n} esc.', { n: v });
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'mode' + (id === 'lava' ? ' lava' : ''); b.id = 'mode-' + id;
-      b.innerHTML = `<span class="key">${m.key}</span><span><span class="mname">${m.name}${m.nuevo ? `<span class="nuevo">${T('Nuevo')}</span>` : ''}</span><span class="mdesc">${m.desc}</span></span><span class="mrec">${T('Récord')}<b>${r}</b></span>`;
+      b.innerHTML = `<span class="key">${m.key}</span><span><span class="mname">${m.name}${m.nuevo ? `<span class="nuevo">${T('Nuevo')}</span>` : ''}</span><span class="mdesc">${m.desc}</span></span><span class="mrec">${T('Récord')}<b>${r}</b></span><span class="go" aria-hidden="true">▶</span>`;
       b.addEventListener('click', () => start(id));
       box.appendChild(b);
     }
@@ -916,9 +925,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('hLava').hidden = mode !== 'lava';
     $('hSombra').hidden = !G.sombra;
     $('tuto').hidden = !!rec.tuto;
+    if (CC && CC.grabar) CC.grabar();   // la repetición (se sube sola si la partida es récord)
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   }
   function showMenu() {
+    if (CC && CC.grabar) setTimeout(() => CC.grabar(false));   // si quedó una grabación sin partida, se tira
     cortar();
     sinGuia();
     contraAmigo = null;

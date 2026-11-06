@@ -833,3 +833,130 @@ begin
 end $$;
 revoke all on function public.perfil_publico(text) from public;
 grant execute on function public.perfil_publico(text) to anon, authenticated;
+
+-- ---------- Parte: tus sombras y repeticiones ----------
+-- Tus sombras: hasta ahora solo se subían (para tus amigos) y se leían del dispositivo. Al cambiar de dispositivo, o de
+-- dirección del sitio (github.io → pages.dev: cada dirección tiene su propio localStorage), quedaban en la nube pero el
+-- juego no las veía. mis_sombras las devuelve todas para que cubo-comun.js (bajarSombras) complete las que faltan.
+create or replace function public.mis_sombras(p_jugador uuid)
+returns json language sql stable security definer set search_path = public as $$
+  select coalesce(json_agg(json_build_object('juego', juego, 'tabla', tabla, 'valor', valor, 'curva', curva)), '[]'::json)
+  from public.sombras where jugador = p_jugador;
+$$;
+revoke all on function public.mis_sombras(uuid) from public;
+grant execute on function public.mis_sombras(uuid) to anon, authenticated;
+
+-- Repeticiones: un video chico (webm o mp4, como mucho 8 MB) de la partida que te dio tu mejor marca de cada tabla del
+-- ranking. Lo graba cubo-comun.js (CC.grabar) mientras jugás y, si la partida fue récord, lo sube al bucket público
+-- `repeticiones` de Supabase Storage. Para que nadie llene el bucket, solo se puede subir un archivo que el servidor
+-- autorizó antes (pedir_repeticion, que revisa que el valor sea tu marca en el ranking); después confirmar_repeticion
+-- lo deja como tu repetición de esa tabla y el juego borra la anterior. El ranking marca con `rep` las filas que tienen una y
+-- repeticion_de da el archivo para verla.
+create table if not exists public.repeticiones (
+  id      bigint generated always as identity primary key,
+  jugador uuid not null references public.jugadores (id) on delete cascade,
+  tabla   text not null check (tabla ~ '^[a-z]+:[a-z0-9-]+$'),
+  valor   double precision not null,
+  archivo text not null unique check (archivo ~ '^[0-9a-f]{32}\.(webm|mp4)$'),
+  estado  text not null default 'pendiente' check (estado in ('pendiente', 'lista', 'vieja')),
+  creado  timestamptz not null default now()
+);
+create index if not exists repeticiones_jugador_tabla on public.repeticiones (jugador, tabla);
+alter table public.repeticiones drop constraint if exists repeticiones_estado_check;
+alter table public.repeticiones add constraint repeticiones_estado_check check (estado in ('pendiente', 'lista', 'vieja'));
+alter table public.repeticiones enable row level security;   -- nadie la lee directo: solo por las funciones de abajo
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('repeticiones', 'repeticiones', true, 8388608, array['video/webm', 'video/mp4'])
+on conflict (id) do update set public = true, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+
+-- Pide permiso para subir la repetición de tu marca `p_valor` en `p_tabla`. → nombre del archivo, o null.
+create or replace function public.pedir_repeticion(p_jugador uuid, p_tabla text, p_valor double precision, p_tipo text)
+returns text language plpgsql security definer set search_path = public as $$
+declare v_archivo text;
+begin
+  if coalesce(p_tipo, '') not in ('webm', 'mp4') or coalesce(p_tabla, '') !~ '^[a-z]+:[a-z0-9-]+$' then return null; end if;
+  if not exists (select 1 from public.puntajes where tabla = p_tabla and jugador = p_jugador and abs(valor - p_valor) < 1e-6) then return null; end if;
+  delete from public.repeticiones where estado = 'pendiente' and creado < now() - interval '1 hour';
+  delete from public.repeticiones r where r.jugador = p_jugador and r.estado = 'vieja'
+    and not exists (select 1 from storage.objects o where o.bucket_id = 'repeticiones' and o.name = r.archivo);
+  -- como mucho 6 pedidos cada 10 minutos por jugador
+  if (select count(*) from public.repeticiones where jugador = p_jugador and estado = 'pendiente' and creado > now() - interval '10 minutes') >= 6 then
+    return null;
+  end if;
+  v_archivo := replace(gen_random_uuid()::text, '-', '') || '.' || p_tipo;
+  insert into public.repeticiones (jugador, tabla, valor, archivo) values (p_jugador, p_tabla, p_valor, v_archivo);
+  return v_archivo;
+end $$;
+revoke all on function public.pedir_repeticion(uuid, text, double precision, text) from public;
+grant execute on function public.pedir_repeticion(uuid, text, double precision, text) to anon, authenticated;
+
+-- La usa la regla del bucket: solo se puede subir un archivo pedido hace menos de 15 minutos y todavía sin confirmar.
+create or replace function public.repeticion_permitida(p_nombre text)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.repeticiones where archivo = p_nombre and estado = 'pendiente' and creado > now() - interval '15 minutes');
+$$;
+revoke all on function public.repeticion_permitida(text) from public;
+grant execute on function public.repeticion_permitida(text) to anon, authenticated;
+
+drop policy if exists "subir repeticiones" on storage.objects;
+create policy "subir repeticiones" on storage.objects for insert to anon, authenticated
+  with check (bucket_id = 'repeticiones' and public.repeticion_permitida(name));
+
+-- Ya subiste el archivo: queda como tu repetición de esa tabla. Las anteriores pasan a 'vieja' y se devuelven sus archivos:
+-- Supabase no deja borrar de storage.objects desde SQL (storage.protect_delete), así que los borra el juego con la API de
+-- Storage, que solo deja borrar archivos de repeticiones viejas (regla «borrar repeticiones viejas»). → { ok, viejas: [...] }
+drop function if exists public.confirmar_repeticion(uuid, text);
+create or replace function public.confirmar_repeticion(p_jugador uuid, p_archivo text)
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  v_r public.repeticiones%rowtype;
+  v_viejas json;
+begin
+  select * into v_r from public.repeticiones where archivo = p_archivo and jugador = p_jugador and estado = 'pendiente';
+  if not found then return json_build_object('ok', false); end if;
+  if not exists (select 1 from storage.objects where bucket_id = 'repeticiones' and name = p_archivo) then return json_build_object('ok', false); end if;
+  update public.repeticiones set estado = 'vieja' where jugador = p_jugador and tabla = v_r.tabla and id <> v_r.id and estado = 'lista';
+  update public.repeticiones set estado = 'lista' where id = v_r.id;
+  select coalesce(json_agg(archivo), '[]'::json) into v_viejas from public.repeticiones where jugador = p_jugador and estado = 'vieja';
+  return json_build_object('ok', true, 'viejas', v_viejas);
+end $$;
+revoke all on function public.confirmar_repeticion(uuid, text) from public;
+grant execute on function public.confirmar_repeticion(uuid, text) to anon, authenticated;
+
+-- Para la regla del bucket: archivos de repeticiones reemplazadas (cualquiera las puede borrar: ya no se muestran).
+create or replace function public.repeticion_vieja(p_nombre text)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.repeticiones where archivo = p_nombre and estado = 'vieja');
+$$;
+revoke all on function public.repeticion_vieja(text) from public;
+grant execute on function public.repeticion_vieja(text) to anon, authenticated;
+drop policy if exists "ver repeticiones viejas" on storage.objects;
+create policy "ver repeticiones viejas" on storage.objects for select to anon, authenticated
+  using (bucket_id = 'repeticiones' and public.repeticion_vieja(name));
+drop policy if exists "borrar repeticiones viejas" on storage.objects;
+create policy "borrar repeticiones viejas" on storage.objects for delete to anon, authenticated
+  using (bucket_id = 'repeticiones' and public.repeticion_vieja(name));
+
+-- La repetición de alguien del ranking (por su huella). → { archivo, valor, creado } o null.
+create or replace function public.repeticion_de(p_huella text, p_tabla text)
+returns json language sql stable security definer set search_path = public as $$
+  select json_build_object('archivo', r.archivo, 'valor', r.valor, 'creado', r.creado)
+  from public.repeticiones r
+  where r.estado = 'lista' and r.tabla = p_tabla and public.huella_de(r.jugador) = p_huella
+  order by r.creado desc limit 1;
+$$;
+revoke all on function public.repeticion_de(text, text) from public;
+grant execute on function public.repeticion_de(text, text) to anon, authenticated;
+
+-- La vista del ranking suma `rep`: si esa fila tiene repetición (para mostrar el botón ▶).
+create or replace view public.ranking as
+  select p.tabla, j.apodo, p.valor, j.skin, p.creado,
+         left(encode(sha256(convert_to(p.jugador::text, 'UTF8')), 'hex'), 12) as huella, j.titulo,
+         case when jsonb_typeof(pf.datos->'maestria'->split_part(p.tabla, ':', 1)) = 'number'
+              then least(50, greatest(0, floor((pf.datos->'maestria'->>split_part(p.tabla, ':', 1))::numeric)))::int
+              else 0 end as maestria,
+         exists (select 1 from public.repeticiones r where r.jugador = p.jugador and r.tabla = p.tabla and r.estado = 'lista') as rep
+  from public.puntajes p join public.jugadores j on j.id = p.jugador
+  left join public.perfiles pf on pf.jugador = p.jugador;
+grant select on public.ranking to anon, authenticated;

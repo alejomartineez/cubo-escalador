@@ -962,6 +962,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     ponerMarca(true);
     resize();
     cam = 0;
+    if (CC && CC.grabar) CC.grabar();   // la repetición (se sube sola si la partida es récord)
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   }
   // salir o reiniciar a mitad de partida: cuenta lo que llevabas (y si ya habías perdido, la partida entera)
@@ -972,6 +973,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (r && r.xp) banner = { text: `+${r.xp} XP`, t: performance.now() };
   }
   function showMenu() {
+    if (CC && CC.grabar) setTimeout(() => CC.grabar(false));   // si quedó una grabación sin partida, se tira
     cortar(); ponerMarca(false);
     state = 'menu';
     azar = Math.random;

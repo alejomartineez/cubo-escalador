@@ -1052,6 +1052,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     soltar(); hudCache = '';
     ponerMarca(true);
     resize();
+    if (CC && CC.grabar) CC.grabar();   // la repetición (se sube sola si la partida es récord)
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   }
   function cortar() { if (state === 'play' && G && !G.demo && !G.done && G.score > 0) return settle(); return null; }
@@ -1061,6 +1062,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (r && r.xp && G) G.banner = { text: `+${r.xp} XP`, t: ahora() };
   }
   function showMenu() {
+    if (CC && CC.grabar) setTimeout(() => CC.grabar(false));   // si quedó una grabación sin partida, se tira
     cortar(); ponerMarca(false);
     state = 'menu';
     azar = Math.random;
