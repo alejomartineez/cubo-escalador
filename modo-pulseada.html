@@ -418,8 +418,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'El primer rival pide unos 3,5 toques/s. Ideal para aprender.': 'The first rival needs about 3.5 taps/s. Great for learning.',
     'Arranca en casi 5 toques/s y cada 5 rivales viene un jefe.': 'Starts at almost 5 taps/s, and every 5 rivals there\'s a boss.',
     'Arrancan en 6 toques/s y repetir flecha te hace retroceder.': 'Starts at 6 taps/s, and repeating an arrow pushes you back.',
-    'Arrancan en 8 toques/s y cada error te hunde. XP ×3.': 'Starts at 8 taps/s, and every mistake sinks you. XP ×3.',
-    'Casi 10 toques/s desde el primero, sin ayuda y cada error pesa el doble. XP ×4.': 'Almost 10 taps/s from the first rival, no help, and every mistake counts double. XP ×4.',
+    'Arrancan en 8 toques/s y cada error te hunde.': 'Starts at 8 taps/s, and every mistake sinks you.',
+    'Casi 10 toques/s desde el primero, sin ayuda y cada error pesa el doble.': 'Almost 10 taps/s from the first rival, no help, and every mistake counts double.',
     // lo que se dibuja en el canvas
     '¡Alterná!': 'Alternate!',
     '¡Tirón!': 'Yank!',
@@ -483,7 +483,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const ANG = 1.15;                   // inclinación máxima de los brazos (rad)
   // la presentación del primer rival es tranquila; de ahí en más, más corta para no cortar el ritmo
   const T_INTRO = 1.7, T_COUNT = 1.5, T_INTRO2 = 1.15, T_COUNT2 = 0.9, T_WON = 1.3, T_LOST = 1.2;
-  const tIntro = () => (G && G.idx > 0 ? T_INTRO2 : T_INTRO), tCount = () => (G && G.idx > 0 ? T_COUNT2 : T_COUNT);
+  // al reintentar (R / Otra vez), el primer rival ya lo conocés: presentación y cuenta cortitas (menos de 1 s en total)
+  const T_INTRO_R = 0.35, T_COUNT_R = 0.6;
+  const tIntro = () => (G && G.idx > 0 ? T_INTRO2 : G && G.rapido ? T_INTRO_R : T_INTRO);
+  const tCount = () => (G && G.idx > 0 ? T_COUNT2 : G && G.rapido ? T_COUNT_R : T_COUNT);
 
   // o: ojos · x: detalles · e: estilo de fuerza
   const RIVALES = [
@@ -625,9 +628,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let G = null, shake = 0, particles = [], floats = [], banner = null;
   const playerColor = () => (CC && CC.skin().cuerpo) || '#ffcc29';
 
-  function newRun(d, S) {
+  function newRun(d, S, rapido) {
     G = {
-      sombra: S || null, sf: 0, sn: 0, graba: null, mejorRonda: null,
+      sombra: S || null, sf: 0, sn: 0, graba: null, mejorRonda: null, rapido: !!rapido,
       diff: d, score: 0, idx: 0, rival: rivalDe(0), phase: 'intro', pt: 0,
       p: 0, f: 0, you: 0, r1: 0, rv: 0, ft: 0, next: 0, taps: [], best: 0,
       wrong: 0, valid: 0, timeout: false, settled: false, tironOn: false, lastBad: 0, slide: 1, fall: 0,
@@ -822,6 +825,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     banner = { text: T(G.timeout ? '¡Tiempo!' : '¡Uy!'), t: now, ms: 1100 };
     slam(-1);
     frenarGolpe(130);
+    if (!G.duelo) CC?.morir();   // perdiste: personajes con muerte propia (Geo se parte en pedazos); en el duelo es solo una ronda
   }
   // hitstop en el golpe final de la ronda. En el duelo no: el host decide la ronda y los tiempos de la siguiente
   // (el 'ya' de la cuenta), y frenar de un solo lado los desacomodaría.
@@ -997,8 +1001,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     facil: T('El primer rival pide unos 3,5 toques/s. Ideal para aprender.'),
     normal: T('Arranca en casi 5 toques/s y cada 5 rivales viene un jefe.'),
     dificil: T('Arrancan en 6 toques/s y repetir flecha te hace retroceder.'),
-    extremo: T('Arrancan en 8 toques/s y cada error te hunde. XP ×3.'),
-    maestro: T('Casi 10 toques/s desde el primero, sin ayuda y cada error pesa el doble. XP ×4.'),
+    extremo: T('Arrancan en 8 toques/s y cada error te hunde.'),
+    maestro: T('Casi 10 toques/s desde el primero, sin ayuda y cada error pesa el doble.'),
   };
   const sel = CC ? CC.selectorDif($('difs'), { juego: 'pulseada', notas: NOTAS, alCambiar: renderMenu }) : (() => {
     // sin la librería: uno mínimo con las mismas dificultades
@@ -1043,7 +1047,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     hudCache = ''; padSig = '';
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   }
-  function start(sombra) {
+  // reintento: R, ↻ u «Otra vez» (la cuenta del primer rival es más corta)
+  function start(sombra, reintento) {
     if (modoDos) return startDos();
     $('pad').classList.remove('dos');
     $('eDifBox').hidden = !CC; $('btnRankEnd').hidden = !CC;
@@ -1054,7 +1059,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false; $('pad').classList.remove('off');
     resize();
     const D = DIA ? 'normal' : sel.valor();
-    newRun(D, S);
+    newRun(D, S, reintento);
     $('hDiff').innerHTML = S ? '👻 ' + T('Sombra') : (CC ? CC.iconoDif(D, 16) : '') + T(DIFS[D].name);
     $('hDiff').classList.toggle('hot', D === 'extremo' || D === 'maestro');
     let seen = false;
@@ -1069,7 +1074,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function restart() {
     let xp = 0;
     if (state === 'play' && G && G.score > 0) { const res = finish(); xp = res && res.r ? res.r.xp : 0; }
-    start(modoSombra);
+    start(modoSombra, true);
     if (xp > 0) banner = { text: `+${xp} XP`, t: performance.now(), ms: 1100 };
   }
   function showMenu() {
@@ -1140,7 +1145,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         if (enDif) { const b = a.parentNode.querySelector('.cc-dif[aria-checked="true"]'); if (b) b.focus(); }
       }
       else if (left || right) e.preventDefault();
-      else if ((k === 'Enter' || k === ' ') && (!a || a === document.body || enDif || a === $('btnPlay') || a === $('btnAgain'))) { e.preventDefault(); if (!e.repeat) start(state === 'end' && modoSombra); }
+      else if ((k === 'Enter' || k === ' ') && (!a || a === document.body || enDif || a === $('btnPlay') || a === $('btnAgain'))) { e.preventDefault(); if (!e.repeat) start(state === 'end' && modoSombra, state === 'end'); }
     }
   });
   const bindPad = (el, d) => el.addEventListener('pointerdown', e => { e.preventDefault(); press(d, performance.now()); });
@@ -1172,7 +1177,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   $('btnHome').addEventListener('click', () => CC ? CC.volver() : showMenu());
   $('btnRank').addEventListener('click', ranking);
   $('btnRankEnd').addEventListener('click', ranking);
-  $('btnAgain').addEventListener('click', () => start(modoSombra));
+  $('btnAgain').addEventListener('click', () => start(modoSombra, true));
   $('btnMute').addEventListener('click', () => {
     muted = !muted; rec.muted = muted; saveRec(); renderMenu();
     if (!muted) beep(660, 0.08);

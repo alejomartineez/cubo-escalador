@@ -296,8 +296,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'Paleta ancha, pelota lenta y 5 vidas.': 'Wide paddle, slow ball and 5 lives.',
     '3 vidas. Cada 3 puntos viene un rival mejor.': '3 lives. Every 3 points a better rival shows up.',
     'Pelota más rápida y paleta más chica.': 'Faster ball and smaller paddle.',
-    'Rapidísima, paleta corta y 2 vidas. XP ×3.': 'Super fast, short paddle and 2 lives. XP ×3.',
-    'Una sola vida y la pelota vuela. XP ×4.': 'Just one life and the ball flies. XP ×4.',
+    'Rapidísima, paleta corta y 2 vidas.': 'Super fast, short paddle and 2 lives.',
+    'Una sola vida y la pelota vuela.': 'Just one life and the ball flies.',
     'El Profe': 'The Prof',
     // en el juego (canvas)
     '¡Rival nuevo: {n}!': 'New rival: {n}!',
@@ -347,8 +347,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     facil: T('Paleta ancha, pelota lenta y 5 vidas.'),
     normal: T('3 vidas. Cada 3 puntos viene un rival mejor.'),
     dificil: T('Pelota más rápida y paleta más chica.'),
-    extremo: T('Rapidísima, paleta corta y 2 vidas. XP ×3.'),
-    maestro: T('Una sola vida y la pelota vuela. XP ×4.'),
+    extremo: T('Rapidísima, paleta corta y 2 vidas.'),
+    maestro: T('Una sola vida y la pelota vuela.'),
   };
   const RIVALES = [
     { n: 'Tito', c: '#ff7a59' }, { n: 'Lola', c: '#8f6bff' }, { n: 'Rulo', c: '#3fc1c9' }, { n: 'Mora', c: '#ff6fae' },
@@ -528,7 +528,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // saca el que perdió el punto
     G.saca = ganoAbajo ? 'arriba' : 'abajo';
     const termino = G.modo === 'cpu' ? G.vidas <= 0 : G.score >= META_DOS || G.contra >= META_DOS;
-    if (termino) { G.done = true; G.fase = 'fin'; setTimeout(terminar, 650); }
+    if (termino) {
+      G.done = true; G.fase = 'fin'; setTimeout(terminar, 650);
+      if (G.modo === 'cpu' && !G.red) CC?.morir();   // personajes con muerte propia (Geo se parte en pedazos), al perder la última
+    }
   }
 
   // ---------- actualizar ----------
@@ -618,7 +621,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       $('eBadge').hidden = true; $('eXP').hidden = true; $('eLogros').hidden = true;
       if (CC) CC.sumarXP(10);   // un poco de XP por jugar con alguien
     } else {
-      CC?.morir();
       const r = settle();
       $('eTitle').textContent = T(G.score >= 15 ? '¡Partidazo!' : G.score >= 6 ? '¡Buena paleta!' : '¡Se terminó!');
       $('eNum').textContent = G.score;
