@@ -17,7 +17,9 @@
 //   // guarda el récord, revisa logros, sube al ranking y muestra los carteles.
 //   const r = CC.partida({ juego: 'lluvia', tabla: 'normal', valor: 1234, texto: '1.234 pts',
 //                          xp: CC.xpEscala(1234, 200, 3000), datos: { ... } });
-//   // r → { xp, base, nivel, subio, record, anterior, logros: [nombres], dif }
+//   // r → { xp, base, nivel, subio, record, anterior, logros: [nombres], dif, valida, segundos, topeXP }
+//   // Con valor 0 (saliste al instante) la partida no cuenta: ni partidas, ni misiones, ni Extremo/Maestro, ni racha.
+//   // La XP base se topa según lo que duró (8 + 0,7 por segundo): pasá `ms` si el juego lo sabe.
 //
 //   CC.verRanking({ juego: 'lluvia', tabla: 'normal' });  // ventana con el ranking online
 //   CC.verPerfil({ huella, apodo, skin });               // tarjeta con el perfil de alguien (sin nada: el tuyo)
@@ -252,7 +254,7 @@
     'Iluminado': 'Enlightened', 'Terminá una partida en Maestro.': 'Finish a game on Master.',
     'Jugá en Maestro en 3 juegos distintos.': 'Play Master in 3 different games.',
     'Coleccionista': 'Collector', 'Conseguí 10 logros.': 'Earn 10 achievements.',
-    'Leyenda viva': 'True Legend', 'Conseguí una medalla de diamante en cualquier juego.': 'Earn a diamond medal in any game.',
+    'Leyenda viva': 'True Legend', 'Conseguí una medalla de diamante por tu marca en un juego.': 'Earn a diamond medal for your score in a game.',
     'Primer sprint': 'First Sprint', 'Sprint 100 en menos de 20 s.': 'Sprint 100 in under 20 s.',
     'Dedos rápidos': 'Quick Fingers', 'Sprint 100 en menos de 14 s.': 'Sprint 100 in under 14 s.',
     'Velocista': 'Sprinter', 'Sprint 100 en menos de 12 s.': 'Sprint 100 in under 12 s.',
@@ -730,8 +732,11 @@
       progreso: p => [Object.keys(p.maestro).length, 3] },
     { id: 'logros10', nombre: 'Coleccionista', desc: 'Conseguí 10 logros.', medalla: 'plata',
       progreso: p => [Object.keys(p.logros).length, 10] },
-    { id: 'leyenda', nombre: 'Leyenda viva', desc: 'Conseguí una medalla de diamante en cualquier juego.', medalla: 'diamante',
-      prueba: p => LOGROS.some(l => l.medalla === 'diamante' && l.id !== 'leyenda' && p.logros[l.id]) },
+    // Solo cuentan los diamantes de un juego (los que piden una marca: Sprint en menos de 11 s, la lava, el 4.º umbral…).
+    // Los de jugar en Maestro (maestro3, secreto-maestro11) o de racha no miden habilidad: antes, con 3 salidas al
+    // instante en Maestro salían Gran maestro y, de arrastre, esta.
+    { id: 'leyenda', nombre: 'Leyenda viva', desc: 'Conseguí una medalla de diamante por tu marca en un juego.', medalla: 'diamante',
+      prueba: p => LOGROS.some(l => l.medalla === 'diamante' && l.juego && p.logros[l.id]) },
 
     // Escalador: Sprint 100. Un jugador promedio toca unas 6 o 7 flechas por segundo.
     { id: 'escalador-20', juego: 'escalador', nombre: 'Primer sprint', desc: 'Sprint 100 en menos de 20 s.', medalla: 'bronce',
@@ -1212,32 +1217,48 @@
     return h + ' h' + (m && h < 10 ? ' ' + m + ' min' : '');
   }
 
+  // Tope de la XP base según lo que duró la partida: 8 + 0,7 por segundo (antes de los multiplicadores de dificultad,
+  // récord y eventos). Sin esto el Sprint 100 daba ~45–67 XP en 11–15 s (unos 130 XP por minuto contando el menú)
+  // contra 10–20 por minuto de los otros juegos. Con el tope:
+  //   Sprint de 15 s → 19 · de 11 s → 16 · 30 segundos (~33 s) → 31 · 1 min → 50 · 75 s → 61 · 2 min → 92.
+  // Una partida normal de 1 a 2 minutos que da 15–60 XP casi no se toca (solo un experto que saca 60 en menos de 75 s).
+  // Los segundos son los de tiempoDePartida: `ms` si el juego lo pasa, si no el reloj de actividad.
+  const topeXP = seg => Math.round(8 + 0.7 * seg);
+
   // Fin de partida. Ver el comentario de arriba.
+  // Una partida sin puntos (valor 0, negativo o no numérico: saliste al instante) no cuenta como partida: no suma a las
+  // partidas jugadas (ni a los logros de partidas, Explorador o la maestría), no marca Extremo ni Maestro, no avanza
+  // misiones ni la racha del desafío y no da el premio del desafío. Sí suma el tiempo jugado (es una estadística).
   function partida(o) {
     datos = leer();
+    const seg = tiempoDePartida(o);   // primero: lee el reloj y lo pone en cero
     const nivelAntes = nivelDe(datos.xp).nivel;
     const tb = tablaDe(o.juego, o.tabla);
     const clave = o.juego + ':' + o.tabla;
     const dif = DIFS.find(d => d.id === (o.dif || (tb && tb.dif))) || null;
     const valor = +o.valor;
     const anterior = datos.mejores[clave];
-    const valido = isFinite(valor) && valor > 0 && !o.sinRecord;
+    const jugada = isFinite(valor) && valor > 0;   // hiciste algo (aunque sea una canción propia sin récord)
+    const valido = jugada && !o.sinRecord;
     const record = valido && mejor(tb, valor, anterior);
     if (record) {
       datos.mejores[clave] = valor;
       if (o.texto) datos.records[o.juego] = String(o.texto);
       if (datos.apodo) encolar(o.juego, o.tabla, valor);
     }
-    datos.partidas[o.juego] = (datos.partidas[o.juego] || 0) + 1;
-    datos.tiempo[o.juego] = (+datos.tiempo[o.juego] || 0) + tiempoDePartida(o);
-    datos.total++;
-    if (dif && DURAS.includes(dif.id)) datos.extremo[o.juego] = 1;
-    if (dif && dif.id === 'maestro') datos.maestro[o.juego] = 1;
-    // hora capicúa (se lee igual al revés): 11:11, 12:21, 20:02… son 16 minutos por día
-    const ahora = new Date(), hhmm = String(ahora.getHours()).padStart(2, '0') + String(ahora.getMinutes()).padStart(2, '0');
-    if (hhmm === [...hhmm].reverse().join('')) datos.marcas['espejo'] = 1;
+    datos.tiempo[o.juego] = (+datos.tiempo[o.juego] || 0) + seg;
+    if (jugada) {
+      datos.partidas[o.juego] = (datos.partidas[o.juego] || 0) + 1;
+      datos.total++;
+      if (dif && DURAS.includes(dif.id)) datos.extremo[o.juego] = 1;
+      if (dif && dif.id === 'maestro') datos.maestro[o.juego] = 1;
+      // hora capicúa (se lee igual al revés): 11:11, 12:21, 20:02… son 16 minutos por día
+      const ahora = new Date(), hhmm = String(ahora.getHours()).padStart(2, '0') + String(ahora.getMinutes()).padStart(2, '0');
+      if (hhmm === [...hhmm].reverse().join('')) datos.marcas['espejo'] = 1;
+    }
     for (const m of o.marcas || []) datos.marcas[m] = 1;
-    const base = Math.max(0, Math.round(+o.xp || 0));
+    const pedida = Math.max(0, Math.round(+o.xp || 0)), tope = topeXP(seg);
+    const base = Math.min(pedida, tope);
     let xp = Math.round(base * (dif ? dif.xp : 1));
     if (record && anterior != null) xp = Math.round(xp * 1.25);
     const dia = o.diario ? anotarDiario(o, valor) : null;
@@ -1249,7 +1270,8 @@
     if (boost) { xp *= 2; datos.boostU++; datos.boost--; ev = null; }
     else if (ev && xp > 0) xp = Math.round(xp * ev.mult);
     if (ev || boost) avisar(`<b>⚡ ${[ev && `${ev.nombre}: ${ev.texto}`, boost && T('Doble XP (te quedan {n})', { n: datos.boost })].filter(Boolean).join(' · ')}</b>`, 2600);
-    const cumplidas = avanzarMisiones({ partida: { juego: o.juego, dif: dif ? dif.id : null, record, valor, diario: !!dia } });
+    // «Superá un récord» pide que haya habido una marca anterior: la primera partida en una tabla nueva no supera nada.
+    const cumplidas = !jugada ? [] : avanzarMisiones({ partida: { juego: o.juego, dif: dif ? dif.id : null, record: record && anterior != null, valor, diario: !!dia } });
     guardar();
     const r = sumarSolo(xp);
     const logros = revisarLogros();
@@ -1263,6 +1285,8 @@
     }
     return {
       xp: r.ganada + logros.reduce((a, l) => a + MEDALLAS[l.medalla].xp, 0), base, nivel: perfil().nivel, subio: perfil().nivel > nivelAntes,
+      // valida: contó como partida (tenía puntos) · segundos: lo que duró · topeXP: el tope de la XP base si la recortó
+      valida: jugada, segundos: seg, topeXP: pedida > tope ? tope : null,
       record, primera: record && anterior == null, anterior: anterior ?? null,
       logros: logros.map(l => l.nombre), dif: dif ? dif.id : null,
       texto: formato(valor, tb), textoAnterior: anterior != null ? formato(anterior, tb) : null, diario: dia,
@@ -1358,20 +1382,32 @@
     const min = Math.max(1, Math.ceil(ms / 60000));
     return min >= 60 ? Math.floor(min / 60) + ' h' : min + ' min';
   }
+  // Racha 🔥: el primer día con un desafío jugado con puntos suma uno (o vuelve a 1 si ayer no jugaste).
+  function sumarRacha(d, f) {
+    if (d.ultimo === f) return;
+    const n = Math.floor(Date.parse(f + 'T12:00:00Z') / DIA_MS);
+    d.racha = d.ultimo === fechaDia(n - 1) ? (+d.racha || 0) + 1 : 1;
+    d.ultimo = f; d.mejorRacha = Math.max(+d.mejorRacha || 0, d.racha);
+  }
   // Fin de una partida del desafío (lo llama partida): guarda la mejor de hoy de ese juego, la manda a su ranking del
-  // día y da el premio de XP la primera vez de cada juego cada día (un poco más con la racha).
+  // día y da el premio de XP la primera vez de cada juego cada día (un poco más con la racha), si el intento tuvo puntos.
   function anotarDiario(o, valor) {
     const f = o.diario.fecha, d = datos.diario;
     if (!f || d.fecha !== f) return null;   // el intento era de otro día
     const g = diaDe(d, f, true)[o.juego];
     if (!g || !g.intentos) return null;
-    const nueva = isFinite(valor) && valor > 0 && (g.mejor == null || valor > g.mejor);
+    const jugada = isFinite(valor) && valor > 0;
+    const nueva = jugada && (g.mejor == null || valor > g.mejor);
     if (nueva) { g.mejor = valor; if (datos.apodo) encolar(o.juego, o.diario.tablaRanking, valor); }
+    // la racha y el premio, con el primer intento con puntos del día (salir al instante no los da)
+    if (jugada) sumarRacha(d, f);
     let premio = 0;
-    if (!g.premio) { g.premio = true; premio = 15 + 2 * Math.min(5, Math.max(0, (+d.racha || 1) - 1)); }
+    if (jugada && !g.premio) { g.premio = true; premio = 15 + 2 * Math.min(5, Math.max(0, (+d.racha || 1) - 1)); }
     const jugados = Object.values(d.juegos).filter(x => x && +x.intentos > 0).length;
     return { nueva, mejor: g.mejor ?? null, texto: g.mejor != null ? formato(g.mejor, tablaDe(o.juego, o.diario.tabla)) : '—',
-      intentos: +g.intentos || 0, quedan: Math.max(0, DIARIO_INTENTOS - (+g.intentos || 0)), racha: +d.racha || 1, premio,
+      // la racha viva: la de hoy si ya jugaste con puntos, la de ayer si todavía no (y 0 si se cortó)
+      intentos: +g.intentos || 0, quedan: Math.max(0, DIARIO_INTENTOS - (+g.intentos || 0)), premio,
+      racha: d.ultimo === f || d.ultimo === fechaDia(Math.floor(Date.parse(f + 'T12:00:00Z') / DIA_MS) - 1) ? +d.racha || 0 : 0,
       jugados, total: JUEGOS.length };
   }
   function diarioDe(jid) {
@@ -1428,10 +1464,7 @@
         if (fechaDia(n) !== info.fecha) return false;
         const d = datos.diario, js = diaDe(d, info.fecha, true), g = js[jid] = js[jid] || { intentos: 0, mejor: null };
         if ((+g.intentos || 0) >= DIARIO_INTENTOS) return false;
-        if (d.ultimo !== info.fecha) {
-          d.racha = d.ultimo === fechaDia(n - 1) ? (+d.racha || 0) + 1 : 1;
-          d.ultimo = info.fecha; d.mejorRacha = Math.max(+d.mejorRacha || 0, d.racha);
-        }
+        // la racha ya no se suma acá: la suma anotarDiario cuando el intento termina con puntos
         g.intentos = (+g.intentos || 0) + 1;
         guardar();
         pintar();
@@ -1558,7 +1591,16 @@
     { id: 'dificil', txt: 'Jugá 10 partidas en Difícil o más', meta: 10, xp: 500 },
   ];
   const DIFICILES = ['dificil', 'extremo', 'maestro'];
-  function armarMisiones(pool, clave, cuantas) {
+  // La marca a pedir en la misión «Hacé V en X»: el umbral del próximo logro de ese juego que te falta (bronce, plata,
+  // oro, diamante); si ya los tenés todos, el de oro. Antes era siempre el de bronce, que a la larga es regalado.
+  function umbralMision(p, jid) {
+    const u = UMBRALES[jid], logros = (p && p.logros) || {};
+    const k = u.findIndex((_, i) => !logros[`${jid}-${i + 1}`]);
+    return u[k < 0 ? 2 : k];
+  }
+  // p: el perfil (para la marca de «Hacé V en X»); g: el progreso guardado de ese período. Al cumplirse, la marca queda
+  // fija en g['v:' + clave], así la misión cumplida sigue mostrando la que pediste y no la del logro siguiente.
+  function armarMisiones(pool, clave, cuantas, p, g) {
     const r = azar(semillaDe('misiones:' + clave)), lista = pool.slice(), out = [];
     while (out.length < cuantas && lista.length) out.push(lista.splice(Math.floor(r() * lista.length), 1)[0]);
     return out.map((m, k) => {
@@ -1567,7 +1609,7 @@
         const opciones = m.id === 'marca' ? JUEGOS.filter(j => UMBRALES[j.id]) : JUEGOS;
         const j = opciones[Math.floor(r() * opciones.length)];
         x.juego = j.id;
-        if (m.id === 'marca') x.valor = UMBRALES[j.id][0];
+        if (m.id === 'marca') x.valor = g && +g['v:' + x.clave] > 0 ? +g['v:' + x.clave] : umbralMision(p, j.id);
         x.txt = T(m.txt, { j: j.nombre, v: m.id === 'marca' ? formato(x.valor, j.tablas[1]) : '' });
       }
       if (m.id === 'distintos' && !m.meta) x.meta = JUEGOS.length;
@@ -1579,12 +1621,13 @@
     return { dia: fechaDia(n), semana: 's' + semana, finDia: (n + 1) * DIA_MS, finSemana: ((semana + 1) * 7 - 3) * DIA_MS };
   }
   function misiones() {
-    const c = claves(), m = leer().misiones;
+    const c = claves(), p = leer(), m = p.misiones;
+    const gd = m.dia === c.dia ? m.d : null, gs = m.semana === c.semana ? m.s : null;
     const prog = (x, guardado) => { const v = guardado && guardado[x.clave]; return Array.isArray(v) ? v.length : +v || 0; };
     const ver = (lista, g) => lista.map(x => ({ ...x, prog: Math.min(x.meta, prog(x, g)), hecha: !!(g && g['ok:' + x.clave]) }));
     return {
-      diarias: ver(armarMisiones(MIS_DIA, c.dia, 3), m.dia === c.dia ? m.d : null),
-      semanales: ver(armarMisiones(MIS_SEMANA, c.semana, 3), m.semana === c.semana ? m.s : null),
+      diarias: ver(armarMisiones(MIS_DIA, c.dia, 3, p, gd), gd),
+      semanales: ver(armarMisiones(MIS_SEMANA, c.semana, 3, p, gs), gs),
       quedanDia: c.finDia - Date.now(), quedanSemana: c.finSemana - Date.now(),
     };
   }
@@ -1618,11 +1661,12 @@
         }
         if (suma) g[x.clave] = (+g[x.clave] || 0) + suma;
         const v = g[x.clave], hecho = Array.isArray(v) ? v.length : +v || 0;
-        if (hecho >= x.meta) { g['ok:' + x.clave] = 1; cumplidas.push(x); }
+        if (hecho >= x.meta) { g['ok:' + x.clave] = 1; if (x.id === 'marca') g['v:' + x.clave] = x.valor; cumplidas.push(x); }
       }
     };
-    mover(armarMisiones(MIS_DIA, c.dia, 3), m.d = { ...m.d });
-    mover(armarMisiones(MIS_SEMANA, c.semana, 3), m.s = { ...m.s });
+    m.d = { ...m.d }; m.s = { ...m.s };
+    mover(armarMisiones(MIS_DIA, c.dia, 3, datos, m.d), m.d);
+    mover(armarMisiones(MIS_SEMANA, c.semana, 3, datos, m.s), m.s);
     return cumplidas;
   }
   function premiarMisiones(cumplidas) {
