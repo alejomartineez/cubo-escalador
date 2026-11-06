@@ -2399,7 +2399,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     if (document.getElementById('cc-rank')) return;
     if (abierta) { if (e.key === 'Escape') cerrar(); return; }
     if (!portada.hidden) {
-      if ((e.key === 'Enter' || e.key === ' ') && document.activeElement === document.body) { e.preventDefault(); cerrarPortada(); }
+      if ((e.key === 'Enter' || e.key === ' ') && document.activeElement === document.body) { e.preventDefault(); $('ptJugar').click(); }   // lo mismo que tocar Jugar (el nuevo va derecho a jugar)
       return;
     }
     const s = $('elegir');
