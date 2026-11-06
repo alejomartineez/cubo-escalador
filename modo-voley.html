@@ -154,17 +154,11 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .result { text-align: center; display: flex; flex-direction: column; gap: 6px; align-items: center; }
 .result .num { font-family: var(--display); font-size: 64px; line-height: 1; font-variant-numeric: tabular-nums; }
 .result .sub { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.xp {
-  font-family: var(--display); font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums;
-  background: var(--cube); border: 2px solid var(--ink); border-radius: 999px; padding: 5px 14px; margin-top: 4px;
-}
+.fin { width: 100%; }
+.fin:empty { display: none; }
 .badge {
   font-weight: 800; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
   background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
-}
-.logros { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
-.logros span {
-  font-weight: 800; font-size: 13px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 3px 10px;
 }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .btn {
@@ -269,11 +263,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="num" id="eNum">0</span>
       <span class="sub" id="eSub"></span>
       <span class="sub" id="eSub2"></span>
-      <span class="xp" id="eXP" hidden>+0 XP</span>
       <span class="badge" id="eBadge" hidden>Nuevo récord</span>
-      <div class="logros" id="eLogros" hidden></div>
+      <div class="fin" id="eFin"></div>
     </div>
     <button class="btn primary big" id="btnAgain" type="button"><span id="againT">↻ Otra vez</span><kbd>R</kbd></button>
+    <div class="fin" id="eFin2"></div>
     <div class="difbox" id="difBox">
       <span class="t">Dificultad</span>
       <div id="difsFin"></div>
@@ -717,14 +711,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('eSub2').textContent = T(G.smashes === 1 ? '{n} remate' : '{n} remates', { n: G.smashes }) + ' · ' +
       T(G.maxRally === 1 ? 'rally más largo: {n} toque' : 'rally más largo: {n} toques', { n: G.maxRally }) +
       (G.oros ? ' · ' + T(G.oros === 1 ? '{n} pelota de oro' : '{n} pelotas de oro', { n: G.oros }) : '') +
-      (isRec ? prev : ' · ' + T('récord: {n}', { n: fmtN(bestFor(G.diff)) }));
-    $('eXP').hidden = !r; if (r) $('eXP').textContent = `+${r.xp} XP`;
-    $('eBadge').hidden = !(isRec && G.score > 0);
-    $('eBadge').textContent = T(r && r.primera ? 'Primer récord' : 'Nuevo récord');
-    const lg = r ? r.logros : [];
-    $('eLogros').hidden = !lg.length;
-    $('eLogros').innerHTML = '';
-    for (const n of lg) { const s = document.createElement('span'); s.textContent = '★ ' + T(n); $('eLogros').appendChild(s); }
+      (r ? '' : isRec ? prev : ' · ' + T('récord: {n}', { n: fmtN(bestFor(G.diff)) }));
+    // con la librería, el récord (o qué tan cerca quedaste), la XP, el próximo premio, los logros y las misiones los arma
+    // CC.finDePartida; sin ella, el récord de este dispositivo
+    $('eBadge').hidden = !!r || !(isRec && G.score > 0);
+    $('eBadge').textContent = T('Nuevo récord');
+    $('eFin').replaceChildren(); $('eFin2').replaceChildren();
+    if (CC && r) CC.finDePartida($('eFin'), r, { abajo: $('eFin2'), reintentar: $('btnAgain') });
     showEnd();
     if (DIA) DIA.fin(r, $('btnAgain'), [$('difsFin').parentNode]);
   }

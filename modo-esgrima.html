@@ -130,17 +130,8 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .result .num { font-family: var(--display); font-size: 64px; line-height: 1; font-variant-numeric: tabular-nums; }
 .result .sub { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .lbl-dif { margin: 0 0 -6px; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: center; }
-.xp {
-  font-family: var(--display); font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums;
-  background: var(--cube); border: 2px solid var(--ink); border-radius: 999px; padding: 5px 14px; margin-top: 4px;
-}
-.badge {
-  font-weight: 800; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
-  background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
-}
-.logros { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 2px; }
-.logro { font-weight: 800; font-size: 13px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 4px 10px; }
-.logro::before { content: "★ "; color: #e0a000; }
+.fin { width: 100%; }
+.fin:empty { display: none; }
 .row { display: flex; gap: 10px; }
 .row > * { flex: 1; }
 .btn {
@@ -212,12 +203,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <h2 id="eTitle">¡Touché!</h2>
       <span class="num" id="eNum">0</span>
       <span class="sub" id="eSub"></span>
-      <span class="badge" id="eBadge" hidden>Nuevo récord</span>
       <span class="sub" id="eSub2"></span>
-      <span class="xp" id="eXP" hidden>+0 XP</span>
-      <div class="logros" id="eLogros" hidden></div>
+      <div class="fin" id="eFin"></div>
     </div>
     <button class="btn primary big" id="btnAgain" type="button">↻ Otra vez <kbd class="kbd-only">R</kbd></button>
+    <div class="fin" id="eFin2"></div>
     <p class="lbl-dif" id="eDifL">Dificultad</p>
     <div id="difs2"></div>
     <div class="row">
@@ -781,14 +771,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('eTitle').textContent = T(n >= 8 ? '¡Maestro de armas!' : n >= 4 ? '¡Gran esgrimista!' : n >= 1 ? '¡Bien ahí!' : '¡Touché!');
     $('eNum').textContent = n;
     $('eSub').textContent = `${T(n === 1 ? '{n} rival vencido' : '{n} rivales vencidos', { n })} · ${T(G.D.name)} · ${T('te ganó {n}', { n: G.el.info.n })}`;
-    $('eSub2').textContent = T('Paradas perfectas: {n} · mejor racha: {m}', { n: G.perfectas, m: G.mejorRacha }) +
-      (r && !r.record && r.textoAnterior ? ' · ' + T('récord: {t}', { t: r.textoAnterior }) : '');
-    $('eBadge').hidden = !(r && r.record);
-    if (r) $('eBadge').textContent = T(r.primera ? 'Primer récord' : 'Nuevo récord');
-    $('eXP').hidden = !r; if (r) $('eXP').textContent = `+${r.xp} XP`;
-    const lg = (r && r.logros) || [];
-    $('eLogros').hidden = !lg.length;
-    $('eLogros').replaceChildren(...lg.map(x => Object.assign(document.createElement('span'), { className: 'logro', textContent: x })));
+    $('eSub2').textContent = T('Paradas perfectas: {n} · mejor racha: {m}', { n: G.perfectas, m: G.mejorRacha });
+    // el récord (o qué tan cerca quedaste), la XP, el próximo premio, los logros y las misiones: CC.finDePartida
+    $('eFin').replaceChildren(); $('eFin2').replaceChildren();
+    if (CC && r) CC.finDePartida($('eFin'), r, { abajo: $('eFin2'), reintentar: $('btnAgain') });
     if (DIA) DIA.fin(r, $('btnAgain'), [$('difs2'), $('eDifL')]);
     $('btnRank2').hidden = !CC;
     showEnd();
@@ -1084,7 +1070,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   showMenu();
   requestAnimationFrame(frame);
-  if (CC && CC.pedirApodo) setTimeout(() => CC.pedirApodo(), 600);
   // para probar desde la consola: __esgrima.manual(true) frena el reloj y paso(dt) avanza a mano
   window.__esgrima = { get G() { return G; }, parar, start, manual: v => { manual = v; }, paso(dt, dibujar = true) { const n = performance.now(); update(n, dt); if (dibujar) draw(n); } };
 })();
