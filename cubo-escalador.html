@@ -361,8 +361,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'Sin reloj. Subí hasta el espacio y más allá.': 'No clock. Climb to space and beyond.',
     'La lava sube cada vez más rápido. ¡Que no te alcance!': "The lava rises faster and faster. Don't let it catch you!",
     'Mareo de medio segundo y ves todos los escalones.': 'Half a second of dizziness, and you see every step.',
-    'Mareo de 1 segundo, ves 4 escalones y si te quedás quieto 2 s, el escalón se rompe. XP ×3.': 'One second of dizziness, you see 4 steps, and if you stand still for 2 s the step breaks. XP ×3.',
-    'Ves 3 escalones, un error termina la partida y el escalón se rompe a los 1,6 s. XP ×4.': 'You see 3 steps, one mistake ends the run, and the step breaks after 1.6 s. XP ×4.',
+    'Mareo de 1 segundo, ves 4 escalones y si te quedás quieto 2 s, el escalón se rompe.': 'One second of dizziness, you see 4 steps, and if you stand still for 2 s the step breaks.',
+    'Ves 3 escalones, un error termina la partida y el escalón se rompe a los 1,6 s.': 'You see 3 steps, one mistake ends the run, and the step breaks after 1.6 s.',
     'subir': 'climb',
     'dificultad <kbd>1</kbd>–<kbd>4</kbd> modo': 'difficulty <kbd>1</kbd>–<kbd>4</kbd> mode',
     'otra vez': 'again',
@@ -400,8 +400,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'récord {r}': 'best {r}',
     'No te quedes quieto: el escalón se rompe.': "Don't stand still: the step breaks.",
     'En Maestro el Sprint tiene que salir perfecto.': 'In Master, the Sprint has to be perfect.',
-    'Extremo ×3': 'Extreme ×3',
-    'Maestro ×4': 'Master ×4',
     'Logros: {l}': 'Achievements: {l}',
     '{t} s (Sprint 100)': '{t} s (Sprint 100)',
     '{n} esc. en 30 s': '{n} steps in 30 s',
@@ -430,6 +428,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'Se fue': 'They left',
   });
   const T = (s, v) => (CC && CC.T ? CC.T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s);
+  // «Extremo ×2»: el multiplicador sale de CC.DIFS, el mismo que usa la XP
+  const difXP = id => {
+    const d = CC && CC.DIFS && CC.DIFS.find(x => x.id === id);
+    return d ? `${T(d.nombre)} ×${CC.idioma === 'en' ? d.xp : String(d.xp).replace('.', ',')}` : '';
+  };
   const cv = document.getElementById('cv');
   const ctx = cv.getContext('2d');
   const $ = id => document.getElementById(id);
@@ -461,8 +464,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const LOCAL = { normal: '', extremo: 'X', maestro: 'M' };
   const NOTAS = {
     normal: T('Mareo de medio segundo y ves todos los escalones.'),
-    extremo: T('Mareo de 1 segundo, ves 4 escalones y si te quedás quieto 2 s, el escalón se rompe. XP ×3.'),
-    maestro: T('Ves 3 escalones, un error termina la partida y el escalón se rompe a los 1,6 s. XP ×4.'),
+    extremo: T('Mareo de 1 segundo, ves 4 escalones y si te quedás quieto 2 s, el escalón se rompe.'),
+    maestro: T('Ves 3 escalones, un error termina la partida y el escalón se rompe a los 1,6 s.'),
   };
   const ZONES = [
     ['#ff7a95', '#d94a6c'], ['#ffad4d', '#d9801c'], ['#3fdca8', '#16a676'],
@@ -803,7 +806,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (G.mode === 'sprint') {
       num = G.i + ' / ' + SPRINT_GOAL;
       sub = T(por === 'derrumbe' ? 'No te quedes quieto: el escalón se rompe.' : 'En Maestro el Sprint tiene que salir perfecto.');
-      if (CC && G.i > 0) CC.sumarXP(G.i / 6);
+      // cuenta como partida (XP por los escalones, tiempo jugado, misiones), pero no es récord: no llegaste arriba
+      if (CC && !G.demo && G.i > 0) {
+        try { r = CC.partida({ juego: 'escalador', tabla: tabla('sprint', G.dif), valor: G.i, sinRecord: true, xp: G.i / 6 }); } catch (e) { r = null; }
+      }
     } else {
       num = valor;
       const seg = G.started ? ((now - G.t0) / 1000).toFixed(1) : '0';
@@ -824,7 +830,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('eTitle').textContent = title; $('eNum').textContent = num; $('eSub').textContent = sub;
     $('eBadge').hidden = !isRec;
     $('eXp').hidden = !r;
-    if (r) $('eXp').innerHTML = `<b>+${r.xp} XP</b>` + (G.dif === 'extremo' ? ' · ' + T('Extremo ×3') : G.dif === 'maestro' ? ' · ' + T('Maestro ×4') : '') + (r.logros.length ? `<span>${T('Logros: {l}', { l: r.logros.map(x => T(x)).join(', ') })}</span>` : '');
+    if (r) $('eXp').innerHTML = `<b>+${r.xp} XP</b>` + (G.dif === 'extremo' || G.dif === 'maestro' ? ' · ' + difXP(G.dif) : '') + (r.logros.length ? `<span>${T('Logros: {l}', { l: r.logros.map(x => T(x)).join(', ') })}</span>` : '');
   }
 
   // ---------- pantallas ----------
@@ -1521,8 +1527,20 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
   }
 
+  // ?jugar=sprint | 30 | libre | lava: arranca esa partida apenas carga, sin pasar por el menú (lo usa el inicio para
+  // que la primera vez se juegue con un solo toque). Va en la dificultad guardada (o Normal); con ?diario=1 es el
+  // desafío del día (30 segundos en Normal), como si tocaras Jugar en su cartel.
+  const JUGAR = { sprint: 'sprint', '30': 'time', time: 'time', libre: 'free', free: 'free', lava: 'lava' };
+  function arranqueDirecto() {
+    let q = null;
+    try { q = new URLSearchParams(location.search).get('jugar'); } catch (e) {}
+    const mode = q && JUGAR[q.toLowerCase()];
+    if (mode) start(DIA ? 'time' : mode);
+  }
+
   showMenu();
   if (DUELO) conectarDuelo();
+  else arranqueDirecto();
   requestAnimationFrame(frame);
 })();
 </script>

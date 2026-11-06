@@ -221,8 +221,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const cv = document.getElementById('cv');
   const ctx = cv.getContext('2d');
   const $ = id => document.getElementById(id);
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  // «Reducir movimiento» de Opciones (si nunca se tocó, sigue al sistema): sin temblor y chispas chicas
+  const reduceMotion = (CC && CC.menosMovimiento) ?? matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const frenar = ms => { if (CC && CC.frenar) CC.frenar(ms); };
+  const frenado = now => !!(CC && CC.frenado && CC.frenado(now));
   // Textos en inglés (la clave es el texto en español). Si cubo-comun.js todavía no tiene idioma, queda en español.
   if (CC && CC.textos) CC.textos({
     'Guardia': 'Guard',
@@ -244,8 +247,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'Pocos enemigos y lentos, 5 vidas.': 'Few, slow enemies and 5 lives.',
     '3 vidas. Cada oleada llegan más rápido.': '3 lives. Every wave they come faster.',
     'Más rápidos y la franja más corta.': 'Faster, and a shorter strip.',
-    'Llegan de a muchos y 2 vidas. XP ×3.': 'Lots at once and 2 lives. XP ×3.',
-    'Una sola vida y vienen volando. XP ×4.': 'One life and they fly in. XP ×4.',
+    'Llegan de a muchos y 2 vidas.': 'Lots at once and 2 lives.',
+    'Una sola vida y vienen volando.': 'One life and they fly in.',
+    '◀ ¡Ahora!': '◀ Now!', '¡Ahora! ▶': 'Now! ▶',
+    'Otra vez': 'Again', 'Menú': 'Menu', 'Volver al menú (Esc)': 'Back to menu (Esc)', 'Reiniciar (R)': 'Restart (R)',
   });
   const T = (s, v) => (CC && CC.T ? CC.T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s);
   // desafío del día (?diario=1): en Normal, 3 intentos y los enemigos salen con la semilla del día (iguales para todos)
@@ -270,8 +275,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     facil: 'Pocos enemigos y lentos, 5 vidas.',
     normal: '3 vidas. Cada oleada llegan más rápido.',
     dificil: 'Más rápidos y la franja más corta.',
-    extremo: 'Llegan de a muchos y 2 vidas. XP ×3.',
-    maestro: 'Una sola vida y vienen volando. XP ×4.',
+    extremo: 'Llegan de a muchos y 2 vidas.',
+    maestro: 'Una sola vida y vienen volando.',
   };
   // tipos de enemigo: aparecen de a poco (desde la oleada `desde`)
   const TIPOS = {
@@ -448,6 +453,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function golpear(lado) {
     if (!G || G.done || G.fase === 'cuenta') return;
     if (G.torpe > 0) return;   // mareado: no te sale nada
+    if (!G.demo) sinGuia();
     G.mirar = lado;
     G.ataque = { lado, t: ahora() };
     const al = alcance();
@@ -534,6 +540,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     floatTexto(T('¡Auch!'), e.lado * 0.15, 0.4, '#ff9db0');
     sfxAuch(); CC?.vibrar(45);
     shake = reduceMotion ? 0 : 12;
+    frenar(G.vidas <= 0 ? 140 : 110);   // frenito al perder una vida (más largo si es la última)
     hudCache = '';
     if (G.vidas <= 0) {
       G.done = true;
@@ -653,6 +660,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
   }
   function chispas(x, y, color, n, power) {
+    if (reduceMotion) { n = Math.ceil(n / 3); power *= 0.3; }
     for (let k = 0; k < n; k++) {
       const a = Math.random() * Math.PI * 2, sp = (0.4 + Math.random() * 1.1) * power;
       G.particulas.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp + 0.3, life: 0.25 + Math.random() * 0.3, age: 0, s: 0.016 + Math.random() * 0.018, c: color });
@@ -959,6 +967,19 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         ctx.fillText(G.aviso.text, CX, ya + (tam + 16) / 2, W - 44);
         ctx.globalAlpha = 1;
       }
+      // la guía de las primeras partidas: «¡Ahora!» arriba de la franja donde hay alguien para pegarle
+      if (G.pistas && G.oleada <= 2 && G.torpe <= 0) {
+        const al = alcance();
+        for (const lado of [-1, 1]) {
+          const hay = G.enemigos.some(e => e.lado === lado && e.est !== 'salta' && e.est !== 'muerto' && frente(e) <= al &&
+            !(e.tipo === 'jefe' && escudoArriba(e)));
+          if (!hay) continue;
+          const late = reduceMotion ? 1 : 0.8 + 0.2 * Math.sin(now / 80);
+          ctx.globalAlpha = late;
+          texto(T(lado < 0 ? '◀ ¡Ahora!' : '¡Ahora! ▶'), px(lado * (CONTACTO + al) / 2), GY - sz * 1.5, Math.round(Math.min(30, L * 0.12)), '#ffcc29');
+          ctx.globalAlpha = 1;
+        }
+      }
       for (const f of G.floats) {
         const k = (now - f.t) / 900;
         ctx.globalAlpha = 1 - k; texto(f.text, px(f.x), py(f.y) - k * 30, Math.round(Math.min(30, L * 0.12)), f.c); ctx.globalAlpha = 1;
@@ -997,9 +1018,20 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (on && CC && CC.sombra && G && !G.demo) marca = CC.sombra.marca('guardia', G.diff);
   }
   function soltar() { for (const b of document.querySelectorAll('.pad button')) b.classList.remove('on'); }
+  // primeras partidas (CC.guia): los botones laten uno y otro con una manito hasta el primer golpe, y en las dos
+  // primeras oleadas un cartel marca de qué lado pegar cuando alguien pisa la franja
+  let guia = null;
+  const sinGuia = () => { if (guia) { guia.listo(); guia = null; } };
+  function primeras() {
+    if (!CC) return false;
+    try { return (CC.perfil().partidas.guardia || 0) < 3; } catch (e) { return false; }
+  }
   function start() {
     if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); }
     newRun(false, dif());
+    G.pistas = primeras();
+    sinGuia();
+    guia = CC && CC.guia ? CC.guia('guardia', [$('bL'), $('bR')], { ms: 8000 }) : null;
     state = 'play';
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false;
     $('pad').classList.remove('off');
@@ -1018,7 +1050,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showMenu() {
     if (CC && CC.grabar) setTimeout(() => CC.grabar(false));   // si quedó una grabación sin partida, se tira
-    cortar(); ponerMarca(false);
+    cortar(); ponerMarca(false); sinGuia();
     state = 'menu';
     azar = Math.random;
     newRun(true);
@@ -1029,6 +1061,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showEnd() {
     state = 'end';
+    sinGuia();
     $('end').hidden = false; $('hud').hidden = true;
     $('pad').classList.add('off');
     soltar();
@@ -1087,7 +1120,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    update(now, dt); draw(now);
+    // frenado (hitstop): se dibuja sin avanzar nada; `last` ya quedó al día, así que el tiempo frenado no se acumula
+    if (!frenado(now)) update(now, dt);
+    draw(now);
     requestAnimationFrame(frame);
   }
   showMenu();

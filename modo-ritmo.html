@@ -413,9 +413,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'Más lento, pocas notas y mucho margen. Ideal para aprender.': 'Slower, few notes and lots of room. Great for learning.',
     'Rápido pero con aire entre nota y nota.': 'Fast, but with some space between notes.',
     'Arranca rápido y con corcheas desde el primer compás.': 'Starts fast, with eighth notes from the very first bar.',
-    'Rapidísimo, ventana de acierto mínima y cada error duele. XP ×3.': 'Super fast, a tiny timing window and every miss hurts. XP ×3.',
-    'Más rápido que el tope de Normal desde el arranque, 25 ms de margen y 4 errores te sacan. XP ×4.':
-      'Faster than Normal\'s top speed from the start, 25 ms of room, and 4 misses knock you out. XP ×4.',
+    'Rapidísimo, ventana de acierto mínima y cada error duele.': 'Super fast, a tiny timing window and every miss hurts.',
+    'Más rápido que el tope de Normal desde el arranque, 25 ms de margen y 4 errores te sacan.':
+      'Faster than Normal\'s top speed from the start, 25 ms of room, and 4 misses knock you out.',
     'Récord en {d}:': 'Best on {d}:',
     'Mejor combo:': 'Best combo:',
     '{c} en {d}:': '{c} on {d}:',
@@ -1098,8 +1098,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     facil: T('Más lento, pocas notas y mucho margen. Ideal para aprender.'),
     normal: T('Rápido pero con aire entre nota y nota.'),
     dificil: T('Arranca rápido y con corcheas desde el primer compás.'),
-    extremo: T('Rapidísimo, ventana de acierto mínima y cada error duele. XP ×3.'),
-    maestro: T('Más rápido que el tope de Normal desde el arranque, 25 ms de margen y 4 errores te sacan. XP ×4.'),
+    extremo: T('Rapidísimo, ventana de acierto mínima y cada error duele.'),
+    maestro: T('Más rápido que el tope de Normal desde el arranque, 25 ms de margen y 4 errores te sacan.'),
   };
   const alCambiar = id => { diff = id; renderRecs(); renderAgain(); };
   const sel = CC ? CC.selectorDif($('diffs'), { juego: 'ritmo', notas: NOTAS, alCambiar }) : null;
@@ -1181,6 +1181,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   for (const b of $('segModo').querySelectorAll('button')) b.addEventListener('click', () => { modo = b.dataset.m; rec.modo = modo; saveRec(); renderModo(); });
 
   function showStart() {
+    if (CC && CC.grabar) setTimeout(() => CC.grabar(false));   // si quedó una grabación sin partida, se tira
     if (enCurso()) cerrarPartida();
     state = 'start';
     if (bus) { try { bus.disconnect(); } catch (e) {} bus = null; }

@@ -318,8 +318,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'Puertas anchas y 4 vidas, pero acelera rápido.': 'Wide gates and 4 lives, but it speeds up fast.',
     'Arranca andando y cada tanto viene un tramo distinto.': 'Starts at speed, and every so often a different section comes up.',
     'Arranca rápido, puertas más angostas y más árboles.': 'Starts fast, with narrower gates and more trees.',
-    'Rapidísimo, zigzag cerrado y solo 2 vidas. XP ×3.': 'Super fast, tight zigzag and only 2 lives. XP ×3.',
-    'Una sola vida, sin flecha guía y a toda velocidad. XP ×4.': 'Just one life, no guide arrow and full speed. XP ×4.',
+    'Rapidísimo, zigzag cerrado y solo 2 vidas.': 'Super fast, tight zigzag and only 2 lives.',
+    'Una sola vida, sin flecha guía y a toda velocidad.': 'Just one life, no guide arrow and full speed.',
     // en el juego (canvas)
     '¡Zigzag!': 'Zigzag!', 'curvas cerradas': 'tight turns',
     '¡Bosque!': 'Forest!', 'esquivá los árboles': 'dodge the trees',
@@ -392,8 +392,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     facil: tr('Puertas anchas y 4 vidas, pero acelera rápido.'),
     normal: tr('Arranca andando y cada tanto viene un tramo distinto.'),
     dificil: tr('Arranca rápido, puertas más angostas y más árboles.'),
-    extremo: tr('Rapidísimo, zigzag cerrado y solo 2 vidas. XP ×3.'),
-    maestro: tr('Una sola vida, sin flecha guía y a toda velocidad. XP ×4.'),
+    extremo: tr('Rapidísimo, zigzag cerrado y solo 2 vidas.'),
+    maestro: tr('Una sola vida, sin flecha guía y a toda velocidad.'),
   };
   const sel = CC ? CC.selectorDif($('difs'), {
     juego: 'esqui',
@@ -490,10 +490,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const rnd = (a, b) => a + Math.random() * (b - a);
   const rndP = (a, b) => a + azar() * (b - a);   // lo que arma la pista (puertas, árboles y piedras)
 
-  function newRun(demo, d = difId()) {
+  // rapido: al reintentar, la cuenta 3-2-1 dura 0,9 s en vez de 2,4 s
+  function newRun(demo, d = difId(), rapido = false) {
     const D = DIFS[d];
     G = {
-      demo, dif: d, D, t: 0, count: demo ? 0 : 2.4, lastCount: 4,
+      demo, dif: d, D, t: 0, count: demo ? 0 : rapido ? 0.9 : 2.4, cuentaPaso: rapido ? 0.3 : 0.8, lastCount: 4,
       x: 0, y: 0, a: 0, w: 0, v: D.v0 * 0.45,
       dizzy: 0, edgeCd: 0, lives: D.vidas, streak: 0, bestStreak: 0, passed: 0, missed: 0, hits: 0,
       gates: [], obst: [], deco: [], trail: [], side: azar() < 0.5 ? -1 : 1,
@@ -666,11 +667,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function restart() {
     if (state === 'play' && G && !G.demo && !G.done && G.y > 30) {
       const r = settle();
-      start();
+      start(true);
       if (r && r.xp) banner = { text: `+${r.xp} XP`, t: performance.now() };
       return;
     }
-    start();
+    start(true);
   }
   // primeras partidas (3, como la guía de los botones): una línea marca el camino hasta la próxima puerta
   let guia = null;
@@ -679,10 +680,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     try { return (CC.perfil().partidas.esqui || 0) < 3; } catch (e) { return false; }
   }
   const sinGuia = () => { if (guia) { guia.listo(); guia = null; } };
-  function start() {
+  // reintento: R, ↻ u «Otra vez» (cuenta más corta)
+  function start(reintento) {
     if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); }
     resize();
-    newRun(false, difId());
+    newRun(false, difId(), reintento === true);
     G.pista = primeras() && !G.D.sinFlecha;
     if (!CC) { pref.jugadas = (pref.jugadas || 0) + 1; savePref(); }
     // los botones laten uno y otro con una manito hasta que doblás por primera vez (primeras partidas)
@@ -754,7 +756,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         if (enDif) { const b = a.parentNode.querySelector('.cc-dif[aria-checked="true"]'); if (b) b.focus(); }
       }
       else if (left || right) e.preventDefault();
-      else if ((k === 'Enter' || k === ' ') && (a === document.body || !a || enDif || a === $('btnPlay') || a === $('btnAgain'))) { e.preventDefault(); if (!e.repeat) start(); }
+      else if ((k === 'Enter' || k === ' ') && (a === document.body || !a || enDif || a === $('btnPlay') || a === $('btnAgain'))) { e.preventDefault(); if (!e.repeat) start(state === 'end'); }
     }
   });
   addEventListener('keyup', e => {
@@ -779,7 +781,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   addEventListener('pointerup', release); addEventListener('pointercancel', release);
   for (const b of [$('bL'), $('bR')]) { b.addEventListener('lostpointercapture', release); b.addEventListener('contextmenu', e => e.preventDefault()); }
 
-  $('btnPlay').addEventListener('click', start);
+  $('btnPlay').addEventListener('click', () => start());
   $('btnQuit').addEventListener('click', leave);
   $('btnRestart').addEventListener('pointerdown', e => { e.preventDefault(); restart(); });
   $('btnRestart').addEventListener('click', e => { if (e.detail === 0) restart(); }); // Enter/espacio con foco
@@ -787,7 +789,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   if (!CC) { $('btnHome').textContent = tr('Inicio'); $('btnRank').hidden = true; $('btnRank2').hidden = true; $('btnQuit').textContent = tr('Menú'); }
   $('btnBack').addEventListener('click', () => CC?.volver());
   $('btnHome').addEventListener('click', () => CC ? CC.volver() : showMenu());
-  $('btnAgain').addEventListener('click', start);
+  $('btnAgain').addEventListener('click', () => start(true));
   $('btnRank').addEventListener('click', openRank);
   $('btnSombra').addEventListener('click', () => { CC.sombra.elegir('esqui', !CC.sombra.activa('esqui')); renderMenu(); });
   $('btnRank2').addEventListener('click', openRank);
@@ -947,7 +949,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (!G.done || G.demo) {
       if (G.count > 0) {
         G.count -= dt;
-        const c = Math.ceil(G.count / 0.8);
+        const c = Math.ceil(G.count / G.cuentaPaso);
         if (c !== G.lastCount && !G.demo) { G.lastCount = c; if (c > 0) sfxCount(false); }
         if (G.count <= 0) { banner = { text: tr('¡Ya!'), t: now }; sfxCount(true); }
       } else {
@@ -1244,7 +1246,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (state === 'play' && !G.demo) {
       ctx.fillStyle = CREMA; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       if (G.count > 0) {
-        const c = Math.ceil(G.count / 0.8), ph = (G.count % 0.8) / 0.8;
+        const c = Math.ceil(G.count / G.cuentaPaso), ph = (G.count % G.cuentaPaso) / G.cuentaPaso;
         const sz = Math.min(W, H) * 0.2 * (reduceMotion ? 1 : 0.8 + ph * 0.3);
         ctx.font = `${Math.round(sz)}px "Lilita One", "Trebuchet MS", sans-serif`; ctx.lineWidth = Math.max(6, sz * 0.09);
         ctx.strokeText(String(c), W / 2, H * 0.52); ctx.fillText(String(c), W / 2, H * 0.52);
