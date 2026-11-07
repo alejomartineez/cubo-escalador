@@ -85,7 +85,7 @@ button { font: inherit; color: var(--ink); }
 .diario .d-racha[hidden] { display: none; }
 .diario .play { height: 44px; padding: 0 14px 0 12px; font-size: 19px; box-shadow: 0 3px 0 var(--ink); }
 .diario .play[disabled] { background: #e6e2d6; color: var(--muted); cursor: default; box-shadow: none; transform: none; }
-/* 7 rayitas: una por juego, llena si ya lo jugaste hoy */
+/* una rayita por juego, llena si ya lo jugaste hoy */
 .diario .d-pips { display: flex; gap: 3px; margin-top: 1px; }
 .diario .d-pips i { flex: 1; max-width: 22px; height: 6px; border-radius: 99px; background: #fff; border: 1.5px solid var(--ink); }
 .diario .d-pips i.si { background: #ff9f1c; }
@@ -106,7 +106,7 @@ button { font: inherit; color: var(--ink); }
 .dia [data-dia-s] { display: none; flex: 1; min-width: 0; text-align: right; font: 800 12px var(--body); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dia [data-dia-n] {
   position: absolute; top: -10px; right: -9px; min-width: 22px; height: 22px; padding: 0 5px; display: grid; place-items: center; border-radius: 99px;
-  background: var(--accent); color: var(--paper); border: 2px solid var(--ink); font: 400 13px/1 var(--display);
+  background: var(--accent); color: var(--ink); border: 2px solid var(--ink); font: 400 13px/1 var(--display);
 }
 .dia.hecho { background: #e6f9ef; }
 .dia.hecho [data-dia-s] { color: #1f7a52; }
@@ -167,7 +167,7 @@ button { font: inherit; color: var(--ink); }
 .me-edit { font-size: 11px; font-weight: 800; color: var(--muted); white-space: nowrap; }
 .badge {
   position: absolute; top: -10px; right: -8px; padding: 2px 7px; border-radius: 99px;
-  background: var(--accent); color: var(--paper); border: 2.5px solid var(--ink);
+  background: var(--accent); color: var(--ink); border: 2.5px solid var(--ink);
   font: 400 13px/1.1 var(--display); letter-spacing: .02em; animation: latir 1.4s ease-in-out infinite;
 }
 @keyframes latir { 50% { transform: scale(1.12) rotate(-4deg); } }
@@ -221,7 +221,7 @@ button { font: inherit; color: var(--ink); }
 }
 .nuevo {
   display: inline-block; vertical-align: top; margin-left: 6px; padding: 3px 8px 2px; border-radius: 10px; transform: rotate(6deg);
-  background: var(--accent); color: var(--paper); border: 2.5px solid var(--ink); -webkit-text-stroke: 0;
+  background: var(--accent); color: var(--ink); border: 2.5px solid var(--ink); -webkit-text-stroke: 0;
   font: 400 15px/1 var(--display); text-shadow: none; box-shadow: 0 3px 0 var(--ink);
 }
 .stage {
@@ -366,7 +366,7 @@ button { font: inherit; color: var(--ink); }
 .coach svg { width: 28px; height: 28px; animation: deslizar 1.4s ease-in-out infinite; }
 @keyframes deslizar { 0%, 100% { transform: translateX(8px); } 50% { transform: translateX(-8px); } }
 
-button:focus-visible, .me:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+button:focus-visible, .me:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 
 /* ---------- jerarquía: Jugar es lo principal; flechas, "Todos" y pestañas, secundarios ---------- */
 .arrow { box-shadow: 0 2px 0 var(--ink); border-width: 2.5px; }
@@ -541,7 +541,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 .amigo canvas { width: 36px; height: 40px; flex: none; }
 .amigo.ver canvas, .amigo.ver .nm { cursor: pointer; }
 .amigo.ver .nm:hover .ap { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 2px; }
-.amigo.ver .nm:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.amigo.ver .nm:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; border-radius: 6px; }
 .amigo .nm { flex: 1; min-width: 0; font-weight: 800; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .amigo .nm small { display: block; font-size: 11px; font-weight: 700; color: var(--muted); }
 .amigo .vs { height: 40px; padding: 0 12px; border-radius: 12px; border: 2.5px solid var(--ink); background: #ff5d7d; color: #fff; box-shadow: 0 3px 0 var(--ink); font-family: var(--display); font-size: 16px; cursor: pointer; }
@@ -555,7 +555,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 }
 /* solicitudes: las que te llegaron (Aceptar / Rechazar) y las que mandaste (pendientes) */
 .amigos-h { display: flex; align-items: center; gap: 8px; margin: 6px 2px -2px; font: 400 17px/1 var(--display); color: var(--ink); }
-.amigos-h b { min-width: 24px; padding: 2px 7px; border-radius: 99px; background: var(--accent); color: var(--paper); border: 2px solid var(--ink); font: 400 13px/1.1 var(--display); text-align: center; }
+.amigos-h b { min-width: 24px; padding: 2px 7px; border-radius: 99px; background: var(--accent); color: var(--ink); border: 2px solid var(--ink); font: 400 13px/1.1 var(--display); text-align: center; }
 .amigo.pide { background: #fff4c7; }
 .amigo.espera { border-style: dashed; }
 .amigo.espera canvas { opacity: .6; }
@@ -651,7 +651,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 .pt-heroe { position: relative; width: 240px; height: 200px; flex: none; margin: -4px 0 -6px; }
 .pt-heroe canvas { display: block; width: 100%; height: 100%; cursor: pointer; }
 .pt-nivel { position: absolute; right: 8px; top: 34px; padding: 3px 9px 2px; border-radius: 10px; transform: rotate(8deg);
-  background: var(--accent); color: var(--paper); border: 2.5px solid var(--ink); box-shadow: 0 3px 0 var(--ink); font: 400 15px/1 var(--display); }
+  background: var(--accent); color: var(--ink); border: 2.5px solid var(--ink); box-shadow: 0 3px 0 var(--ink); font: 400 15px/1 var(--display); }
 .pt-botones { display: grid; gap: 12px; width: min(300px, 100%); }
 .pt-jugar, .pt-op {
   display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; color: var(--ink);
@@ -677,7 +677,7 @@ ol.pase li.lock .pr.pase::after { animation: none; }
 .pt-red.instagram i { background: radial-gradient(circle at 30% 107%, #fdf497 0, #fd5949 45%, #d6249f 60%, #285aeb 90%); }
 .pt-red:hover { background: #fff4c7; }
 .pt-red:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-.pt-red:focus-visible, .pt-jugar:focus-visible, .pt-op:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.pt-red:focus-visible, .pt-jugar:focus-visible, .pt-op:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 /* entrada: el título, los botones y las redes aparecen recién cuando el cubo aterriza */
 .portada .pt-titulo, .portada .pt-sub, .portada .pt-botones > *, .portada .pt-redes { animation: pt-pop .5s cubic-bezier(.2, 1.4, .4, 1) both; }
 .portada .pt-sub { animation-delay: .08s; }
@@ -728,7 +728,10 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
 .bv-atras svg, .bv-sig svg { width: 22px; height: 22px; flex: none; }
 .bv-tip { margin: 0; font-size: 12px; font-weight: 700; color: var(--muted); }
 @media (pointer: coarse) { .bv-tip { display: none; } .bv-pie { justify-content: center; } }
-.bv button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+/* una sola diapositiva (la que sale al volver de la primera partida): sin puntitos, sin «atrás» y sin «Saltar» */
+.bv.una .bv-puntos, .bv.una .bv-atras, .bv.una .bv-pie { display: none; }
+.bv.una .bv-botones { grid-template-columns: 1fr; }
+.bv button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 .bv-ver { width: 100%; height: 46px; font-size: 18px; box-shadow: 0 4px 0 var(--ink); }
 @media (max-height: 640px) { .bv-dibujo { height: 150px; } .bv-texto { min-height: 96px; } .bv-texto h2 { font-size: 24px; } }
 @media (prefers-reduced-motion: reduce) { .bv, .bv-card, .bv-texto.entra { animation: none; } }
@@ -818,7 +821,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
       <button class="me" id="me" type="button" aria-label="Tu perfil: nivel, récords y logros">
         <canvas id="avatar" width="80" height="88"></canvas>
         <span class="me-info">
-          <span class="me-lvl" id="meLvl">Lvl 1</span>
+          <span class="me-lvl" id="meLvl">Nv. 1</span>
           <span class="bar"><i id="meBar" style="width:0%"></i></span>
           <span class="me-edit">Ver mi perfil</span>
         </span>
@@ -978,7 +981,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   <span id="coachTxt">Deslizá para ver los juegos</span>
 </div>
 
-<!-- portada: aparece al entrar (una vez por visita). Se vuelve tocando el nombre de arriba a la izquierda -->
+<!-- portada: aparece al entrar (como mucho una vez por día). Se vuelve tocando el nombre de arriba a la izquierda -->
 <div class="portada espera" id="portada" hidden>
   <i class="pt-nube" aria-hidden="true"></i><i class="pt-nube" aria-hidden="true"></i><i class="pt-nube" aria-hidden="true"></i>
   <div class="pt-centro">
@@ -986,7 +989,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     <p class="pt-sub" id="ptSub">Juegos con solo dos flechas</p>
     <div class="pt-heroe">
       <canvas id="ptCubo" width="480" height="400" aria-label="Tu personaje"></canvas>
-      <span class="pt-nivel" id="ptNivel">Lvl 1</span>
+      <span class="pt-nivel" id="ptNivel">Nv. 1</span>
     </div>
     <div class="pt-botones">
       <button class="pt-jugar" id="ptJugar" type="button">
@@ -1001,7 +1004,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   </footer>
 </div>
 
-<!-- bienvenida: unos slides cortitos la primera vez que tocás Jugar (cubo-bienvenida). Se vuelven a ver desde Opciones -->
+<!-- bienvenida: una diapositiva al volver de la primera partida (cubo-bienvenida). Las cinco se ven desde Opciones -->
 <div class="bv" id="bienvenida" hidden>
   <div class="bv-card" role="dialog" aria-modal="true" aria-labelledby="bvT" aria-describedby="bvP">
     <canvas class="bv-dibujo" id="bvCv" aria-hidden="true"></canvas>
@@ -1117,8 +1120,8 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     'Deslizá para ver los juegos': 'Swipe to see the games',
     'Deslizá para ver los {n} juegos': 'Swipe to see the {n} games',
     'Usá ← → para ver los {n} juegos': 'Use ← → to see the {n} games',
-    'Tocá el lado donde está el próximo escalón. Si errás, te mareás. Sprint 100, 30 segundos, Libre y el nuevo modo Lava: subí antes de que te alcance.':
-      'Tap the side where the next step is. Miss and you get dizzy. Sprint 100, 30 seconds, Free and the new Lava mode: climb before it catches you.',
+    'Tocá el lado donde está el próximo escalón. Si errás, te mareás. Sprint 100, 30 segundos, Libre y Lava: subí antes de que te alcance.':
+      'Tap the side where the next step is. Miss and you get dizzy. Sprint 100, 30 seconds, Free and Lava: climb before it catches you.',
     'Movete entre carriles y esquivá los bloques que caen cada vez más rápido.': 'Move between lanes and dodge the blocks that fall faster and faster.',
     'Tocá el lado de cada nota justo cuando llega a la línea, al ritmo de la música.': 'Tap the side of each note right as it hits the line, to the beat of the music.',
     'Movete con ◀ ▶ y el cubo devuelve solo. Pegale con el borde para cruzarla. ¿Cuántos puntos le hacés al rival?':
@@ -1299,6 +1302,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     'Reducir movimiento': 'Reduce motion',
     'Saca el temblor de pantalla, los sacudones y las animaciones. Se aplica al volver a abrir cada juego.': 'Removes screen shake, jolts and animations. Applies the next time you open each game.',
     'Esta pantalla al entrar': 'This screen on start',
+    'Nv. {n}': 'Lvl {n}', 'Nivel {n} · {a} / {b} XP': 'Level {n} · {a} / {b} XP',
     'Pantalla de inicio al entrar': 'Start screen on launch',
     'Si la sacás, entrás directo a los juegos. Para volver a verla tocá "TwoFingers" arriba.': 'If you turn it off, you go straight to the games. To see it again, tap "TwoFingers" at the top.',
     'Hecho por <a href="https://www.instagram.com/alejomartineez_/" target="_blank" rel="noopener">@alejomartineez_</a>. Música de Ritmo: Juhani Junkala (CC0).':
@@ -1616,7 +1620,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   }
   const DIBUJOS = { escalador: ilEscalador, lluvia: ilLluvia, ritmo: ilRitmo, voley: ilVoley, paleta: ilPaleta, esqui: ilEsqui, pulseada: ilPulseada, guardia: ilGuardia, esgrima: ilEsgrima, pasadizo: ilPasadizo };
   const DESC = {
-    escalador: T('Tocá el lado donde está el próximo escalón. Si errás, te mareás. Sprint 100, 30 segundos, Libre y el nuevo modo Lava: subí antes de que te alcance.'),
+    escalador: T('Tocá el lado donde está el próximo escalón. Si errás, te mareás. Sprint 100, 30 segundos, Libre y Lava: subí antes de que te alcance.'),
     lluvia: T('Movete entre carriles y esquivá los bloques que caen cada vez más rápido.'),
     ritmo: T('Tocá el lado de cada nota justo cuando llega a la línea, al ritmo de la música.'),
     voley: T('Movete con ◀ ▶ y el cubo devuelve solo. Pegale con el borde para cruzarla. ¿Cuántos puntos le hacés al rival?'),
@@ -1797,7 +1801,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   }
   function pintarPerfil() {
     const p = CC.perfil();
-    $('meLvl').textContent = 'Lvl ' + p.nivel;
+    $('meLvl').textContent = T('Nv. {n}', { n: p.nivel });
     $('meBar').style.width = Math.round(100 * p.enNivel / p.paraSiguiente) + '%';
     const n = CC.nuevos().length;
     $('tabBadge').hidden = !n; $('tabBadge').textContent = n;
@@ -1974,7 +1978,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   function pintarPersonaje() {
     const p = CC.perfil();
     $('bigName').textContent = p.skin.nombre + (p.efecto.id !== 'ninguno' ? ' · ' + p.efecto.nombre : '');
-    $('bigLvl').textContent = `Lvl ${p.nivel} · ${p.enNivel} / ${p.paraSiguiente} XP`;
+    $('bigLvl').textContent = T('Nivel {n} · {a} / {b} XP', { n: p.nivel, a: p.enNivel, b: p.paraSiguiente });
     $('bigBar').style.width = Math.round(100 * p.enNivel / p.paraSiguiente) + '%';
     const todos = [...CC.SKINS, ...CC.EFECTOS].filter(i => !i.logro && !i.codigo && i.nivel > p.nivel).sort((a, b) => a.nivel - b.nivel);
     $('bigNext').textContent = todos.length ? T('En nivel {n} desbloqueás {cosas}.', { n: todos[0].nivel, cosas: todos.filter(i => i.nivel === todos[0].nivel).map(i => i.nombre).join(T(' y ')) }) : T('Ya desbloqueaste todo lo que da el nivel.');
@@ -2110,7 +2114,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     if (sig) {
       const x = sig.premios.find(q => q.it.pase) || sig.premios[0];
       let falta = p.paraSiguiente - p.enNivel;
-      for (let n = p.nivel + 1; n < sig.nivel; n++) falta += 80 + 40 * (n - 1);
+      for (let n = p.nivel + 1; n < sig.nivel; n++) falta += CC.xpPara(n);   // la curva de XP actual (la misma de la pantalla de fin)
       sb.innerHTML = (x.tipo === 'titulo' ? '<span class="tt-ico">🏷️</span>' : '<canvas width="112" height="124"></canvas>') +
         `<div><small>${T('Próximo premio · nivel {n}', { n: sig.nivel })}</small><b></b><span>${T('Te faltan {n} XP', { n: falta.toLocaleString(LOCALE) })}</span></div>`;
       sb.querySelector('b').textContent = sig.premios.map(q => q.it.nombre).join(' + ');
@@ -2440,7 +2444,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     if (document.getElementById('cc-rank')) return;
     if (abierta) { if (e.key === 'Escape') cerrar(); return; }
     if (!portada.hidden) {
-      if ((e.key === 'Enter' || e.key === ' ') && document.activeElement === document.body) { e.preventDefault(); cerrarPortada(); }
+      if ((e.key === 'Enter' || e.key === ' ') && document.activeElement === document.body) { e.preventDefault(); $('ptJugar').click(); }   // lo mismo que tocar Jugar (el nuevo va derecho a jugar)
       return;
     }
     const s = $('elegir');
@@ -2506,7 +2510,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   addEventListener('pageshow', pintarPerfil); // al volver de un juego con "atrás"
 
   // ---------- portada ----------
-  // Lo primero que se ve al entrar (una vez por visita). El cubo de la pantalla de carga salta hasta acá:
+  // Lo primero que se ve al entrar (como mucho una vez por día; la casita la vuelve a mostrar). El cubo de la pantalla de carga salta hasta acá:
   // build.mjs llama a window.alSalirCarga en vez de desvanecer la carga.
   const REDES = [
     { id: 'instagram', red: 'Instagram', nombre: '@alejomartineez_', url: 'https://www.instagram.com/alejomartineez_/',
@@ -2516,7 +2520,10 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   const SONIDO_KEYS = ['cubo-escalador-records', 'cubo-lluvia-records', 'cubo-ritmo-records', 'cubo-voley', 'cubo-paleta-records',
     'cubo-esqui', 'cubo-pulseada-records', 'cubo-guardia-records', 'cubo-esgrima-records', 'cubo-pasadizo-records'];
   const portada = $('portada'), ptCv = $('ptCubo');
-  const sesion = (k, v) => { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch (e) {} return null; };
+  // el día (local) en que se mostró la portada por última vez, en cubo-portada-dia: así no sale en cada pestaña nueva
+  // ni cada vez que se abre la app instalada, pero sí al otro día
+  const hoy = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+  const portadaHoy = () => guardado('cubo-portada-dia') === hoy();
   let aterrizo = Infinity, saltito = -1e9;   // cuándo cayó el cubo en la portada y cuándo lo tocaron
   // el cubo de la portada, apoyado en su escalón (en px de CSS del canvas)
   const geoHeroe = (w, h) => ({ lado: Math.round(h * 0.42), pie: Math.round(h * 0.8), x: w / 2 });
@@ -2561,7 +2568,8 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     portada.classList.remove('espera');
   }
   function mostrarPortada(vuelo) {
-    $('ptNivel').textContent = 'Lvl ' + CC.perfil().nivel;
+    $('ptNivel').textContent = T('Nv. {n}', { n: CC.perfil().nivel });
+    guardado('cubo-portada-dia', hoy());
     portada.classList.remove('chau'); portada.classList.add('espera');
     portada.hidden = false;
     aterrizo = Infinity;
@@ -2569,7 +2577,6 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   }
   function cerrarPortada() {
     if (portada.hidden || portada.classList.contains('chau')) return;
-    sesion('cubo-portada-vista', '1');
     if (reduceMotion) { portada.hidden = true; return; }
     portada.classList.add('chau');
     portada.addEventListener('animationend', function fin(e) {
@@ -2608,21 +2615,23 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     vuelo.onfinish = fin; setTimeout(fin, 1800);
     return true;
   };
-  // la primera vez, al entrar a jugar se pregunta el apodo (para el ranking)
-  const preguntarApodo = ms => setTimeout(() => { if (CC.pedirApodo) CC.pedirApodo(); }, ms);
-  // la primera vez, antes del apodo, la bienvenida
+  // Quien todavía no jugó ninguna partida va derecho a jugar: Escalador, Sprint 100 en Normal, sin menú ni explicaciones.
+  // Lo demás (la bienvenida, el apodo) viene después de esa primera partida.
+  const PRIMERA = 'escalador.html?jugar=sprint';
+  const esNuevo = () => !((CC.perfil().total || 0) > 0);
   $('ptJugar').addEventListener('click', () => {
+    if (esNuevo()) { CC.vibrar(10); location.href = PRIMERA; return; }
     cerrarPortada();
-    if (!yaVioBienvenida()) setTimeout(() => abrirBienvenida(() => preguntarApodo(300)), 380);
-    else preguntarApodo(450);
+    quizasBienvenida(450);
   });
   $('ptCubo').addEventListener('click', () => { if (performance.now() - saltito > 520) { saltito = performance.now(); CC.vibrar(10); } });
   $('brand').addEventListener('click', () => mostrarPortada(false));
 
   // ---------- bienvenida ----------
-  // Unos slides cortitos la primera vez que alguien entra a jugar (cubo-bienvenida en localStorage). Quien ya jugó alguna
-  // partida no los ve. Se pasan con los botones, deslizando o con ← → (así ya practica las dos flechas). Opciones los
-  // vuelve a mostrar. Al terminar sigue lo de siempre: pedir el apodo.
+  // Antes de jugar no se explica nada. La primera vez que alguien vuelve al hub con al menos una partida jugada sale una
+  // sola diapositiva («10 juegos, los mismos dos botones»), para que sepa que hay más juegos. Las cinco se ven desde
+  // Opciones → «Ver la bienvenida otra vez». Se pasan con los botones, deslizando o con ← →.
+  // cubo-bienvenida: '1' ya la vio; 'pendiente' entró al hub sin haber jugado (le toca verla cuando vuelva de jugar).
   const BV = [
     { t: 'Esto es TwoFingers', p: 'Juegos cortitos que se juegan con <b>solo dos flechas</b>: izquierda y derecha. Nada más.', d: bvHola },
     { t: '10 juegos, los mismos dos botones', p: 'En el celu tocás los <b>botones grandes de abajo</b>; en la compu, <b>← →</b> o <b>A D</b>. Cada juego los usa a su manera.', d: bvJuegos },
@@ -2645,18 +2654,30 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     '¿De qué se trata?': "What's it about?", 'Ver la bienvenida otra vez': 'See the welcome again',
     '¡Nivel {n}!': 'Level {n}!', 'Sprint 100': 'Sprint 100', '30 segundos': '30 seconds', 'Libre': 'Free',
   });
-  let bvK = 0, bvFin = null, bvRaf = 0, bvT0 = 0;
+  let bvK = 0, bvFin = null, bvRaf = 0, bvT0 = 0, bvLista = BV;
   const bvCv = $('bvCv');
-  const yaVioBienvenida = () => guardado('cubo-bienvenida') === '1' || (CC.perfil().total || 0) > 0;
+  // Le toca la diapositiva a quien ya jugó y nunca vio la bienvenida. A quien venía jugando desde antes de este cambio
+  // (sin 'pendiente' y con varias partidas) no se le muestra: ya conoce el hub.
+  const debeBienvenida = () => {
+    const b = guardado('cubo-bienvenida'), n = CC.perfil().total || 0;
+    return b !== '1' && n > 0 && (b === 'pendiente' || n <= 5);
+  };
+  // la muestra si corresponde y no hay nada encima (portada, apodo, otra hoja abierta)
+  function quizasBienvenida(ms) {
+    setTimeout(() => {
+      if (!portada.hidden || !$('bienvenida').hidden || document.getElementById('cc-rank') || document.querySelector('.sheet:not([hidden])')) return;
+      if (debeBienvenida()) abrirBienvenida(null, [BV[1]]);
+    }, ms);
+  }
   const fuenteDisplay = () => getComputedStyle(document.documentElement).getPropertyValue('--display') || 'sans-serif';
   function bvPintar(dir) {
-    const sl = BV[bvK], tx = document.querySelector('.bv-texto');
+    const sl = bvLista[bvK], tx = document.querySelector('.bv-texto');
     $('bvT').textContent = T(sl.t); $('bvP').innerHTML = T(sl.p);
     tx.style.setProperty('--bv-dir', (dir || 1) * 16 + 'px');
     tx.classList.remove('entra'); void tx.offsetWidth; if (dir) tx.classList.add('entra');
-    $('bvPuntos').innerHTML = BV.map((_, k) => `<i class="${k === bvK ? 'si' : ''}"></i>`).join('');
+    $('bvPuntos').innerHTML = bvLista.map((_, k) => `<i class="${k === bvK ? 'si' : ''}"></i>`).join('');
     $('bvAtras').disabled = bvK === 0;
-    const ultimo = bvK === BV.length - 1;
+    const ultimo = bvK === bvLista.length - 1;
     $('bvSigT').textContent = T(ultimo ? '¡A jugar!' : 'Siguiente');
     $('bvSaltar').style.visibility = ultimo ? 'hidden' : '';
     bvT0 = performance.now();
@@ -2664,18 +2685,20 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   function bvIr(paso) {
     const k = bvK + paso;
     if (k < 0) return;
-    if (k >= BV.length) return cerrarBienvenida();
+    if (k >= bvLista.length) return cerrarBienvenida();
     bvK = k; CC.vibrar(8); bvPintar(paso);
   }
   function bvCuadro(now) {
     if ($('bienvenida').hidden) return;
     const [c, w, h] = tam(bvCv);
     c.clearRect(0, 0, w, h);
-    try { BV[bvK].d(c, w, h, reduceMotion ? 900 : now, now - bvT0); } catch (e) {}
+    try { bvLista[bvK].d(c, w, h, reduceMotion ? 900 : now, now - bvT0); } catch (e) {}
     bvRaf = requestAnimationFrame(bvCuadro);
   }
-  function abrirBienvenida(alTerminar) {
-    bvFin = alTerminar || null; bvK = 0;
+  // lista: qué diapositivas (sin nada, las cinco)
+  function abrirBienvenida(alTerminar, lista) {
+    bvFin = alTerminar || null; bvK = 0; bvLista = lista || BV;
+    $('bienvenida').classList.toggle('una', bvLista.length === 1);
     $('bienvenida').hidden = false;
     bvPintar(0);
     cancelAnimationFrame(bvRaf); bvRaf = requestAnimationFrame(bvCuadro);
@@ -2805,7 +2828,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     if (f > 0) { rr(c, bx + 3, by + 3, Math.max(10, (bw - 6) * f), 10, 5); c.fillStyle = '#ff5d7d'; c.fill(); }
     c.fillStyle = INK; c.font = '800 12px Rubik, system-ui, sans-serif'; c.textAlign = 'left'; c.textBaseline = 'bottom';
     c.fillText('XP', bx, by - 4);
-    c.textAlign = 'right'; c.fillText(f >= 1 ? T('¡Nivel {n}!', { n: 2 }) : 'Lvl 1', bx + bw, by - 4);
+    c.textAlign = 'right'; c.fillText(f >= 1 ? T('¡Nivel {n}!', { n: 2 }) : T('Nv. {n}', { n: 1 }), bx + bw, by - 4);
   }
   function bvPodio(c, w, h, t) {
     bvCielo(c, w, h);
@@ -2858,8 +2881,15 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   $('ptOpciones').addEventListener('click', () => { pintarOpciones(); abrir('sheetOpciones'); });
 
   // ---------- arranque ----------
-  if (guardado('cubo-portada') !== '0' && !sesion('cubo-portada-vista') && !location.hash) mostrarPortada(!!$('cargando'));
-  else addEventListener('load', () => { if (!yaVioBienvenida()) setTimeout(() => abrirBienvenida(() => preguntarApodo(300)), 600); else preguntarApodo(900); });   // sin portada, apenas carga
+  if (esNuevo() && guardado('cubo-bienvenida') !== '1') guardado('cubo-bienvenida', 'pendiente');
+  if (guardado('cubo-portada') !== '0' && !portadaHoy() && !location.hash) mostrarPortada(!!$('cargando'));
+  else addEventListener('load', () => quizasBienvenida(600));   // sin portada, apenas carga
+  // al volver de la primera partida con «atrás» la página sale de la memoria tal como quedó (con la portada puesta)
+  addEventListener('pageshow', e => {
+    if (!e.persisted) return;
+    if (!portada.hidden && portadaHoy()) portada.hidden = true;
+    quizasBienvenida(400);
+  });
   let inicio = +(guardado(SLIDE_KEY) || 0) || 0;
   const porHash = JUEGOS.findIndex(g => '#' + g.id === location.hash);
   if (porHash >= 0) inicio = porHash;

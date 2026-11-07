@@ -17,7 +17,13 @@
 //   // guarda el récord, revisa logros, sube al ranking y muestra los carteles.
 //   const r = CC.partida({ juego: 'lluvia', tabla: 'normal', valor: 1234, texto: '1.234 pts',
 //                          xp: CC.xpEscala(1234, 200, 3000), datos: { ... } });
-//   // r → { xp, base, nivel, subio, record, anterior, logros: [nombres], dif }
+//   // r → { xp, base, nivel, subio, record, anterior, logros: [nombres], dif, valida, segundos, topeXP, xpAntes,
+//   //       xpDespues, premios, misiones (las que avanzaron), logrosDetalle, temporada, ... }
+//   // En la tarjeta de fin, el bloque común (récord o «te faltó», barra de XP, próximo premio, logros, misiones, apodo):
+//   CC.finDePartida(elDeArriba, r, { abajo: elDeAbajoDelBoton, reintentar: botonOtraVez });
+//   // Los avisos de nivel, logros, misiones y temporada de la partida no salen como toast: están en ese bloque.
+//   // Con valor 0 (saliste al instante) la partida no cuenta: ni partidas, ni misiones, ni Extremo/Maestro, ni racha.
+//   // La XP base se topa según lo que duró (8 + 0,7 por segundo): pasá `ms` si el juego lo sabe.
 //
 //   CC.verRanking({ juego: 'lluvia', tabla: 'normal' });  // ventana con el ranking online
 //   CC.verPerfil({ huella, apodo, skin });               // tarjeta con el perfil de alguien (sin nada: el tuyo)
@@ -252,7 +258,7 @@
     'Iluminado': 'Enlightened', 'Terminá una partida en Maestro.': 'Finish a game on Master.',
     'Jugá en Maestro en 3 juegos distintos.': 'Play Master in 3 different games.',
     'Coleccionista': 'Collector', 'Conseguí 10 logros.': 'Earn 10 achievements.',
-    'Leyenda viva': 'True Legend', 'Conseguí una medalla de diamante en cualquier juego.': 'Earn a diamond medal in any game.',
+    'Leyenda viva': 'True Legend', 'Conseguí una medalla de diamante por tu marca en un juego.': 'Earn a diamond medal for your score in a game.',
     'Primer sprint': 'First Sprint', 'Sprint 100 en menos de 20 s.': 'Sprint 100 in under 20 s.',
     'Dedos rápidos': 'Quick Fingers', 'Sprint 100 en menos de 14 s.': 'Sprint 100 in under 14 s.',
     'Velocista': 'Sprinter', 'Sprint 100 en menos de 12 s.': 'Sprint 100 in under 12 s.',
@@ -730,8 +736,11 @@
       progreso: p => [Object.keys(p.maestro).length, 3] },
     { id: 'logros10', nombre: 'Coleccionista', desc: 'Conseguí 10 logros.', medalla: 'plata',
       progreso: p => [Object.keys(p.logros).length, 10] },
-    { id: 'leyenda', nombre: 'Leyenda viva', desc: 'Conseguí una medalla de diamante en cualquier juego.', medalla: 'diamante',
-      prueba: p => LOGROS.some(l => l.medalla === 'diamante' && l.id !== 'leyenda' && p.logros[l.id]) },
+    // Solo cuentan los diamantes de un juego (los que piden una marca: Sprint en menos de 11 s, la lava, el 4.º umbral…).
+    // Los de jugar en Maestro (maestro3, secreto-maestro11) o de racha no miden habilidad: antes, con 3 salidas al
+    // instante en Maestro salían Gran maestro y, de arrastre, esta.
+    { id: 'leyenda', nombre: 'Leyenda viva', desc: 'Conseguí una medalla de diamante por tu marca en un juego.', medalla: 'diamante',
+      prueba: p => LOGROS.some(l => l.medalla === 'diamante' && l.juego && p.logros[l.id]) },
 
     // Escalador: Sprint 100. Un jugador promedio toca unas 6 o 7 flechas por segundo.
     { id: 'escalador-20', juego: 'escalador', nombre: 'Primer sprint', desc: 'Sprint 100 en menos de 20 s.', medalla: 'bronce',
@@ -1080,8 +1089,8 @@
     if (sk || fx) datos.eleccion = Date.now();
     guardar();
     subirPendientes();
-    avisar(`<canvas width="96" height="104" style="width:48px;height:52px;flex:none"></canvas><div><b>${exclamar(items.map(i => i.nombre).join(T(' y ')))}</b><span>${T(sk ? 'Personaje legendario desbloqueado' : 'Efecto legendario desbloqueado')}</span></div>`, 4200);
-    const cv = document.querySelector('#cc-avisos .cc-aviso:last-child canvas');
+    const av = avisar(`<canvas width="96" height="104" style="width:48px;height:52px;flex:none"></canvas><div><b>${exclamar(items.map(i => i.nombre).join(T(' y ')))}</b><span>${T(sk ? 'Personaje legendario desbloqueado' : 'Efecto legendario desbloqueado')}</span></div>`, 4200);
+    const cv = av && av.querySelector('canvas');
     if (cv) { const c = cv.getContext('2d'); c.scale(2, 2); dibujarCubo(c, 24, 46, 28, { skin: sk || skin(), t: 900, efecto: fx ? fx.id : false }); }
     return { ok: true, items, skin: sk, efecto: fx };
   }
@@ -1126,7 +1135,7 @@
     guardar();
     const ahora = nivelDe(datos.xp).nivel;
     const nuevas = porNivel(antes, ahora);
-    if (ahora > antes && !silencioso) avisoNivel(ahora, nuevas);
+    if (ahora > antes && !silencioso) avisoNivel(antes, ahora);
     if (!silencioso) avisoTemporada(nivT);
     premiarMisiones(cumplidas);
     return { ganada: n, nivel: ahora, subio: ahora > antes, desbloqueadas: nuevas.map(s => T(s.nombre)) };
@@ -1156,7 +1165,7 @@
     for (const l of ganados) avisoLogro(l);
     avisoTemporada(nivT);
     const ahora = nivelDe(datos.xp).nivel;
-    if (ahora > antes) avisoNivel(ahora, porNivel(antes, ahora));
+    if (ahora > antes) avisoNivel(antes, ahora);
     return ganados;
   }
 
@@ -1212,32 +1221,63 @@
     return h + ' h' + (m && h < 10 ? ' ' + m + ' min' : '');
   }
 
+  // Tope de la XP base según lo que duró la partida: 8 + 0,7 por segundo (antes de los multiplicadores de dificultad,
+  // récord y eventos). Sin esto el Sprint 100 daba ~45–67 XP en 11–15 s (unos 130 XP por minuto contando el menú)
+  // contra 10–20 por minuto de los otros juegos. Con el tope:
+  //   Sprint de 15 s → 19 · de 11 s → 16 · 30 segundos (~33 s) → 31 · 1 min → 50 · 75 s → 61 · 2 min → 92.
+  // Una partida normal de 1 a 2 minutos que da 15–60 XP casi no se toca (solo un experto que saca 60 en menos de 75 s).
+  // Los segundos son los de tiempoDePartida: `ms` si el juego lo pasa, si no el reloj de actividad.
+  const topeXP = seg => Math.round(8 + 0.7 * seg);
+
   // Fin de partida. Ver el comentario de arriba.
+  // Una partida sin puntos (valor 0, negativo o no numérico: saliste al instante) no cuenta como partida: no suma a las
+  // partidas jugadas (ni a los logros de partidas, Explorador o la maestría), no marca Extremo ni Maestro, no avanza
+  // misiones ni la racha del desafío y no da el premio del desafío. Sí suma el tiempo jugado (es una estadística).
   function partida(o) {
+    // los avisos de nivel, logros, misiones y temporada de esta partida se guardan para la pantalla de fin (ver avisar)
+    if (recolector) soltarAvisos(recolector);
+    const avisos = recolector = { items: [], nivel: null, hecho: false, timer: 0 };
+    try { return partidaAdentro(o, avisos); }
+    finally {
+      recolector = null;
+      // si el juego no muestra la pantalla de fin (cortaste con R), los avisos salen solos
+      if (!avisos.hecho) avisos.timer = setTimeout(() => soltarAvisos(avisos), 1500);
+    }
+  }
+  // Para la pantalla de fin: cómo estaban las misiones y la temporada antes de la partida, para mostrar lo que avanzó.
+  const fotoMisiones = () => { try { const m = misiones(); return [...m.diarias, ...m.semanales.map(x => ({ ...x, semanal: true }))]; } catch (e) { return []; } };
+  const tipoDe = it => (SKINS.includes(it) ? 'skin' : EFECTOS.includes(it) ? 'efecto' : MARCOS.includes(it) ? 'marco' : 'titulo');
+  function partidaAdentro(o, avisos) {
     datos = leer();
-    const nivelAntes = nivelDe(datos.xp).nivel;
+    const seg = tiempoDePartida(o);   // primero: lee el reloj y lo pone en cero
+    const nivelAntes = nivelDe(datos.xp).nivel, xpAntes = datos.xp;
+    const misAntes = fotoMisiones(), tempAntes = (() => { try { return temporada().nivel; } catch (e) { return 0; } })();
     const tb = tablaDe(o.juego, o.tabla);
     const clave = o.juego + ':' + o.tabla;
     const dif = DIFS.find(d => d.id === (o.dif || (tb && tb.dif))) || null;
     const valor = +o.valor;
     const anterior = datos.mejores[clave];
-    const valido = isFinite(valor) && valor > 0 && !o.sinRecord;
+    const jugada = isFinite(valor) && valor > 0;   // hiciste algo (aunque sea una canción propia sin récord)
+    const valido = jugada && !o.sinRecord;
     const record = valido && mejor(tb, valor, anterior);
     if (record) {
       datos.mejores[clave] = valor;
       if (o.texto) datos.records[o.juego] = String(o.texto);
       if (datos.apodo) encolar(o.juego, o.tabla, valor);
     }
-    datos.partidas[o.juego] = (datos.partidas[o.juego] || 0) + 1;
-    datos.tiempo[o.juego] = (+datos.tiempo[o.juego] || 0) + tiempoDePartida(o);
-    datos.total++;
-    if (dif && DURAS.includes(dif.id)) datos.extremo[o.juego] = 1;
-    if (dif && dif.id === 'maestro') datos.maestro[o.juego] = 1;
-    // hora capicúa (se lee igual al revés): 11:11, 12:21, 20:02… son 16 minutos por día
-    const ahora = new Date(), hhmm = String(ahora.getHours()).padStart(2, '0') + String(ahora.getMinutes()).padStart(2, '0');
-    if (hhmm === [...hhmm].reverse().join('')) datos.marcas['espejo'] = 1;
+    datos.tiempo[o.juego] = (+datos.tiempo[o.juego] || 0) + seg;
+    if (jugada) {
+      datos.partidas[o.juego] = (datos.partidas[o.juego] || 0) + 1;
+      datos.total++;
+      if (dif && DURAS.includes(dif.id)) datos.extremo[o.juego] = 1;
+      if (dif && dif.id === 'maestro') datos.maestro[o.juego] = 1;
+      // hora capicúa (se lee igual al revés): 11:11, 12:21, 20:02… son 16 minutos por día
+      const ahora = new Date(), hhmm = String(ahora.getHours()).padStart(2, '0') + String(ahora.getMinutes()).padStart(2, '0');
+      if (hhmm === [...hhmm].reverse().join('')) datos.marcas['espejo'] = 1;
+    }
     for (const m of o.marcas || []) datos.marcas[m] = 1;
-    const base = Math.max(0, Math.round(+o.xp || 0));
+    const pedida = Math.max(0, Math.round(+o.xp || 0)), tope = topeXP(seg);
+    const base = Math.min(pedida, tope);
     let xp = Math.round(base * (dif ? dif.xp : 1));
     if (record && anterior != null) xp = Math.round(xp * 1.25);
     const dia = o.diario ? anotarDiario(o, valor) : null;
@@ -1248,8 +1288,17 @@
     const boost = datos.boost > 0 && xp > 0 && (!ev || ev.mult < 2);
     if (boost) { xp *= 2; datos.boostU++; datos.boost--; ev = null; }
     else if (ev && xp > 0) xp = Math.round(xp * ev.mult);
-    if (ev || boost) avisar(`<b>⚡ ${[ev && `${ev.nombre}: ${ev.texto}`, boost && T('Doble XP (te quedan {n})', { n: datos.boost })].filter(Boolean).join(' · ')}</b>`, 2600);
-    const cumplidas = avanzarMisiones({ partida: { juego: o.juego, dif: dif ? dif.id : null, record, valor, diario: !!dia } });
+    // el evento sale una vez por sesión (después queda en la línea de motivos de la pantalla de fin); la doble XP, ahí
+    if (ev) {
+      const visto = (() => { try { return sessionStorage.getItem('cubo-evento-visto'); } catch (e) { return null; } })();
+      if (visto !== ev.nombre + ev.hasta) {
+        try { sessionStorage.setItem('cubo-evento-visto', ev.nombre + ev.hasta); } catch (e) {}
+        avisar(`<b>⚡ ${ev.nombre}: ${ev.texto}</b>`, 2600);
+      }
+    }
+    if (boost) avisar(`<b>⚡ ${T('Doble XP (te quedan {n})', { n: datos.boost })}</b>`, 2600, 'boost');
+    // «Superá un récord» pide que haya habido una marca anterior: la primera partida en una tabla nueva no supera nada.
+    const cumplidas = !jugada ? [] : avanzarMisiones({ partida: { juego: o.juego, dif: dif ? dif.id : null, record: record && anterior != null, valor, diario: !!dia } });
     guardar();
     const r = sumarSolo(xp);
     const logros = revisarLogros();
@@ -1261,13 +1310,35 @@
       const tablaRep = !datos.apodo ? null : record ? clave : dia && dia.nueva ? o.juego + ':' + o.diario.tablaRanking : null;
       if (tablaRep) terminarGrabacion(g).then(v => v && subirRepeticion(tablaRep, valor, v)); else cortarGrabacion(g);
     }
-    return {
+    // lo que necesita la pantalla de fin: la XP de antes y de ahora (con logros y misiones), los premios nuevos, las
+    // misiones que avanzaron y los niveles de temporada
+    const xpDespues = leer().xp, nivelDespues = nivelDe(xpDespues).nivel;
+    const nuevosPremios = [...porNivel(nivelAntes, nivelDespues),
+      ...[...SKINS, ...EFECTOS].filter(i => i.logro && logros.some(l => l.id === i.logro))].map(it => ({ tipo: tipoDe(it), it }));
+    const misAhora = fotoMisiones();
+    const avanzadas = misAhora.map(x => {
+      const a = misAntes.find(y => y.clave === x.clave);
+      return a && !a.hecha && (x.prog > a.prog || x.hecha) ? { id: x.id, txt: x.txt, prog: x.prog, meta: x.meta, antes: a.prog, hecha: x.hecha, xp: x.xp, semanal: !!x.semanal } : null;
+    }).filter(Boolean);
+    const tempAhora = (() => { try { return temporada(); } catch (e) { return null; } })();
+    const res = {
       xp: r.ganada + logros.reduce((a, l) => a + MEDALLAS[l.medalla].xp, 0), base, nivel: perfil().nivel, subio: perfil().nivel > nivelAntes,
+      // valida: contó como partida (tenía puntos) · segundos: lo que duró · topeXP: el tope de la XP base si la recortó
+      valida: jugada, segundos: seg, topeXP: pedida > tope ? tope : null,
       record, primera: record && anterior == null, anterior: anterior ?? null,
       logros: logros.map(l => l.nombre), dif: dif ? dif.id : null,
       texto: formato(valor, tb), textoAnterior: anterior != null ? formato(anterior, tb) : null, diario: dia,
       evento: ev ? ev.nombre : null, boost,
+      // para CC.finDePartida
+      juego: o.juego, tabla: o.tabla, valor: jugada ? valor : 0, sinRecord: !!o.sinRecord, xpAntes, xpDespues,
+      eventoTexto: ev ? ev.texto : null, boostQuedan: boost ? datos.boost : null, multDif: dif ? dif.xp : 1, difNombre: dif ? dif.nombre : null,
+      logrosDetalle: logros.map(l => ({ id: l.id, nombre: l.nombre, medalla: l.medalla, xp: MEDALLAS[l.medalla].xp })),
+      premios: nuevosPremios, misiones: avanzadas,
+      temporada: tempAhora && tempAhora.nivel > tempAntes ? { nombre: tempAhora.nombre, color: tempAhora.color, desde: tempAntes, nivel: tempAhora.nivel } : null,
     };
+    // los avisos guardados viajan con el resultado (sin verse en JSON) para que CC.finDePartida los dé por mostrados
+    Object.defineProperty(res, 'avisos', { value: avisos, enumerable: false });
+    return res;
   }
 
   // Para juegos que ya guardaban récords antes: los pasa al perfil (y al ranking) sin sumar partidas ni XP.
@@ -1358,20 +1429,32 @@
     const min = Math.max(1, Math.ceil(ms / 60000));
     return min >= 60 ? Math.floor(min / 60) + ' h' : min + ' min';
   }
+  // Racha 🔥: el primer día con un desafío jugado con puntos suma uno (o vuelve a 1 si ayer no jugaste).
+  function sumarRacha(d, f) {
+    if (d.ultimo === f) return;
+    const n = Math.floor(Date.parse(f + 'T12:00:00Z') / DIA_MS);
+    d.racha = d.ultimo === fechaDia(n - 1) ? (+d.racha || 0) + 1 : 1;
+    d.ultimo = f; d.mejorRacha = Math.max(+d.mejorRacha || 0, d.racha);
+  }
   // Fin de una partida del desafío (lo llama partida): guarda la mejor de hoy de ese juego, la manda a su ranking del
-  // día y da el premio de XP la primera vez de cada juego cada día (un poco más con la racha).
+  // día y da el premio de XP la primera vez de cada juego cada día (un poco más con la racha), si el intento tuvo puntos.
   function anotarDiario(o, valor) {
     const f = o.diario.fecha, d = datos.diario;
     if (!f || d.fecha !== f) return null;   // el intento era de otro día
     const g = diaDe(d, f, true)[o.juego];
     if (!g || !g.intentos) return null;
-    const nueva = isFinite(valor) && valor > 0 && (g.mejor == null || valor > g.mejor);
+    const jugada = isFinite(valor) && valor > 0;
+    const nueva = jugada && (g.mejor == null || valor > g.mejor);
     if (nueva) { g.mejor = valor; if (datos.apodo) encolar(o.juego, o.diario.tablaRanking, valor); }
+    // la racha y el premio, con el primer intento con puntos del día (salir al instante no los da)
+    if (jugada) sumarRacha(d, f);
     let premio = 0;
-    if (!g.premio) { g.premio = true; premio = 15 + 2 * Math.min(5, Math.max(0, (+d.racha || 1) - 1)); }
+    if (jugada && !g.premio) { g.premio = true; premio = 15 + 2 * Math.min(5, Math.max(0, (+d.racha || 1) - 1)); }
     const jugados = Object.values(d.juegos).filter(x => x && +x.intentos > 0).length;
     return { nueva, mejor: g.mejor ?? null, texto: g.mejor != null ? formato(g.mejor, tablaDe(o.juego, o.diario.tabla)) : '—',
-      intentos: +g.intentos || 0, quedan: Math.max(0, DIARIO_INTENTOS - (+g.intentos || 0)), racha: +d.racha || 1, premio,
+      // la racha viva: la de hoy si ya jugaste con puntos, la de ayer si todavía no (y 0 si se cortó)
+      intentos: +g.intentos || 0, quedan: Math.max(0, DIARIO_INTENTOS - (+g.intentos || 0)), premio,
+      racha: d.ultimo === f || d.ultimo === fechaDia(Math.floor(Date.parse(f + 'T12:00:00Z') / DIA_MS) - 1) ? +d.racha || 0 : 0,
       jugados, total: JUEGOS.length };
   }
   function diarioDe(jid) {
@@ -1428,10 +1511,7 @@
         if (fechaDia(n) !== info.fecha) return false;
         const d = datos.diario, js = diaDe(d, info.fecha, true), g = js[jid] = js[jid] || { intentos: 0, mejor: null };
         if ((+g.intentos || 0) >= DIARIO_INTENTOS) return false;
-        if (d.ultimo !== info.fecha) {
-          d.racha = d.ultimo === fechaDia(n - 1) ? (+d.racha || 0) + 1 : 1;
-          d.ultimo = info.fecha; d.mejorRacha = Math.max(+d.mejorRacha || 0, d.racha);
-        }
+        // la racha ya no se suma acá: la suma anotarDiario cuando el intento termina con puntos
         g.intentos = (+g.intentos || 0) + 1;
         guardar();
         pintar();
@@ -1521,7 +1601,7 @@
     const p = niveles[niveles.length - 1], T = temporadaDe();
     // (acá `T` es la temporada: la función de traducir es `tr`)
     const premio = p.items.length ? p.items.map(x => tr(x.it.nombre)).join(' + ') : '⚡ ' + tr('Doble XP en tus próximas {n} partidas', { n: BOOST_PARTIDAS });
-    avisar(`<b>🏆 ${tr('Temporada {t}: nivel {n}', { t: T.nombre, n: p.nivel })}</b><br>${premio}`, 3600);
+    avisar(`<b>🏆 ${tr('Temporada {t}: nivel {n}', { t: T.nombre, n: p.nivel })}</b><br>${premio}`, 3600, 'temporada');
   }
 
   // Eventos de XP: el arranque de cada temporada (3 días), la hora feliz (de 20 a 21, hora tuya) y los fines de semana.
@@ -1558,7 +1638,16 @@
     { id: 'dificil', txt: 'Jugá 10 partidas en Difícil o más', meta: 10, xp: 500 },
   ];
   const DIFICILES = ['dificil', 'extremo', 'maestro'];
-  function armarMisiones(pool, clave, cuantas) {
+  // La marca a pedir en la misión «Hacé V en X»: el umbral del próximo logro de ese juego que te falta (bronce, plata,
+  // oro, diamante); si ya los tenés todos, el de oro. Antes era siempre el de bronce, que a la larga es regalado.
+  function umbralMision(p, jid) {
+    const u = UMBRALES[jid], logros = (p && p.logros) || {};
+    const k = u.findIndex((_, i) => !logros[`${jid}-${i + 1}`]);
+    return u[k < 0 ? 2 : k];
+  }
+  // p: el perfil (para la marca de «Hacé V en X»); g: el progreso guardado de ese período. Al cumplirse, la marca queda
+  // fija en g['v:' + clave], así la misión cumplida sigue mostrando la que pediste y no la del logro siguiente.
+  function armarMisiones(pool, clave, cuantas, p, g) {
     const r = azar(semillaDe('misiones:' + clave)), lista = pool.slice(), out = [];
     while (out.length < cuantas && lista.length) out.push(lista.splice(Math.floor(r() * lista.length), 1)[0]);
     return out.map((m, k) => {
@@ -1567,7 +1656,7 @@
         const opciones = m.id === 'marca' ? JUEGOS.filter(j => UMBRALES[j.id]) : JUEGOS;
         const j = opciones[Math.floor(r() * opciones.length)];
         x.juego = j.id;
-        if (m.id === 'marca') x.valor = UMBRALES[j.id][0];
+        if (m.id === 'marca') x.valor = g && +g['v:' + x.clave] > 0 ? +g['v:' + x.clave] : umbralMision(p, j.id);
         x.txt = T(m.txt, { j: j.nombre, v: m.id === 'marca' ? formato(x.valor, j.tablas[1]) : '' });
       }
       if (m.id === 'distintos' && !m.meta) x.meta = JUEGOS.length;
@@ -1579,12 +1668,13 @@
     return { dia: fechaDia(n), semana: 's' + semana, finDia: (n + 1) * DIA_MS, finSemana: ((semana + 1) * 7 - 3) * DIA_MS };
   }
   function misiones() {
-    const c = claves(), m = leer().misiones;
+    const c = claves(), p = leer(), m = p.misiones;
+    const gd = m.dia === c.dia ? m.d : null, gs = m.semana === c.semana ? m.s : null;
     const prog = (x, guardado) => { const v = guardado && guardado[x.clave]; return Array.isArray(v) ? v.length : +v || 0; };
     const ver = (lista, g) => lista.map(x => ({ ...x, prog: Math.min(x.meta, prog(x, g)), hecha: !!(g && g['ok:' + x.clave]) }));
     return {
-      diarias: ver(armarMisiones(MIS_DIA, c.dia, 3), m.dia === c.dia ? m.d : null),
-      semanales: ver(armarMisiones(MIS_SEMANA, c.semana, 3), m.semana === c.semana ? m.s : null),
+      diarias: ver(armarMisiones(MIS_DIA, c.dia, 3, p, gd), gd),
+      semanales: ver(armarMisiones(MIS_SEMANA, c.semana, 3, p, gs), gs),
       quedanDia: c.finDia - Date.now(), quedanSemana: c.finSemana - Date.now(),
     };
   }
@@ -1618,17 +1708,18 @@
         }
         if (suma) g[x.clave] = (+g[x.clave] || 0) + suma;
         const v = g[x.clave], hecho = Array.isArray(v) ? v.length : +v || 0;
-        if (hecho >= x.meta) { g['ok:' + x.clave] = 1; cumplidas.push(x); }
+        if (hecho >= x.meta) { g['ok:' + x.clave] = 1; if (x.id === 'marca') g['v:' + x.clave] = x.valor; cumplidas.push(x); }
       }
     };
-    mover(armarMisiones(MIS_DIA, c.dia, 3), m.d = { ...m.d });
-    mover(armarMisiones(MIS_SEMANA, c.semana, 3), m.s = { ...m.s });
+    m.d = { ...m.d }; m.s = { ...m.s };
+    mover(armarMisiones(MIS_DIA, c.dia, 3, datos, m.d), m.d);
+    mover(armarMisiones(MIS_SEMANA, c.semana, 3, datos, m.s), m.s);
     return cumplidas;
   }
   function premiarMisiones(cumplidas) {
     if (!cumplidas.length) return 0;
     const xp = cumplidas.reduce((a, x) => a + x.xp, 0);
-    for (const x of cumplidas) avisar(`<b>🎯 ${T('Misión cumplida')}</b><br>${x.txt} · +${x.xp} XP`, 3200);
+    for (const x of cumplidas) avisar(`<b>🎯 ${T('Misión cumplida')}</b><br>${x.txt} · +${x.xp} XP`, 3200, 'mision');
     sumarSolo(xp, false, true);
     return xp;
   }
@@ -2119,6 +2210,70 @@
 .cc-medalla{flex:none;width:40px;height:40px;border-radius:50%;border:3px solid ${INK};display:grid;place-items:center;
   font-family:"Lilita One","Trebuchet MS",sans-serif;font-size:18px;color:${INK}}
 .cc-aviso .cc-medalla{width:26px;height:26px;border-width:2px;font-size:12px}
+/* pantalla de fin de partida (finDePartida): compacta, para que Otra vez quede a la vista en 375 px */
+.cc-fin{width:100%;max-width:360px;margin:0 auto;display:flex;flex-direction:column;gap:6px;box-sizing:border-box;color:${INK};
+  font-family:"Rubik",system-ui,sans-serif;text-align:left}
+.cc-fin p{margin:0}
+.cc-fin-rec{align-self:center;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;column-gap:7px;background:#ffcc29;
+  border:3px solid ${INK};border-radius:999px;box-shadow:0 3px 0 ${INK};padding:3px 14px 4px;font:400 18px/1.15 "Lilita One","Trebuchet MS",sans-serif}
+.cc-fin-rec small{font:700 12px/1.2 "Rubik",system-ui,sans-serif;opacity:.8}
+.cc-fin-falta{align-self:center;text-align:center;display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;column-gap:7px}
+.cc-fin-falta b{font:400 17px/1.15 "Lilita One","Trebuchet MS",sans-serif;color:#e0405f}
+.cc-fin-falta small{font:700 12px/1.2 "Rubik",system-ui,sans-serif;opacity:.75}
+.cc-fin-xp{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center;background:#fff;border:3px solid ${INK};
+  border-radius:14px;box-shadow:0 3px 0 ${INK};padding:6px 8px}
+.cc-fin-nv{display:flex;flex-direction:column;align-items:center;justify-content:center;width:42px;height:42px;border-radius:11px;background:${INK};color:#ffcc29}
+.cc-fin-nv small{font:800 8px/1 "Rubik",system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:${CREMA};margin-bottom:2px}
+.cc-fin-nv b{font:400 21px/1 "Lilita One","Trebuchet MS",sans-serif}
+.cc-fin-bar{position:relative;height:18px;border:2.5px solid ${INK};border-radius:99px;background:#ece8dc;overflow:hidden;box-sizing:border-box}
+.cc-fin-bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:#ffcc29;box-shadow:inset -2.5px 0 0 ${INK}}
+.cc-fin-gan{position:absolute;right:7px;top:50%;transform:translateY(-50%);font:800 11.5px/1 "Rubik",system-ui,sans-serif;color:${INK}}
+.cc-fin-sig{display:flex;gap:6px;align-items:baseline;margin-top:4px!important;font:700 12.5px/1.2 "Rubik",system-ui,sans-serif;min-width:0}
+.cc-fin-sigt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.cc-fin-sube{flex:none;font:400 14px/1 "Lilita One","Trebuchet MS",sans-serif;color:#e0405f}
+.cc-fin-pr{display:block;line-height:0}
+.cc-fin-tt{display:grid;place-items:center;font-size:24px;line-height:1}
+.cc-fin-xp.sube .cc-fin-nv{animation:cc-fin-pop .5s ease}
+.cc-fin-xp.sube .cc-fin-sube{animation:cc-fin-pop .5s ease}
+@keyframes cc-fin-pop{0%{transform:scale(1)}40%{transform:scale(1.28)}100%{transform:scale(1)}}
+.cc-fin-nuevo{display:flex;gap:10px;align-items:center;background:${CREMA};border:3px solid ${INK};border-radius:14px;box-shadow:0 3px 0 #ff5d7d;padding:5px 10px 5px 6px;
+  animation:cc-fin-entra .45s ease}
+.cc-fin-nuevo > div{min-width:0}
+.cc-fin-nuevo small{display:block;font:800 10.5px/1.2 "Rubik",system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#e0405f}
+.cc-fin-nuevo b{display:block;font:400 21px/1.05 "Lilita One","Trebuchet MS",sans-serif}
+.cc-fin-nuevo span{display:block;font:600 11.5px/1.25 "Rubik",system-ui,sans-serif;opacity:.8}
+@keyframes cc-fin-entra{from{opacity:0;transform:translateY(6px) scale(.96)}to{opacity:1;transform:none}}
+.cc-fin-lg{display:flex;flex-wrap:wrap;justify-content:center;gap:5px}
+.cc-fin-lg span{font:800 12px/1.2 "Rubik",system-ui,sans-serif;background:#fff;border:2px solid ${INK};border-radius:99px;padding:3px 10px}
+.cc-fin-lg i{font-style:normal;-webkit-text-stroke:1px ${INK}}
+.cc-fin-lg em{font-style:normal}
+.cc-fin-mot{text-align:center;font:600 11.5px/1.3 "Rubik",system-ui,sans-serif;opacity:.78}
+.cc-fin-abajo{gap:5px}
+.cc-fin-mi{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;background:rgba(255,255,255,.75);
+  border:2px solid ${INK};border-radius:11px;padding:4px 9px;font:700 12px/1.2 "Rubik",system-ui,sans-serif}
+.cc-fin-mi .ic{font-size:13px}
+.cc-fin-mi .tx{min-width:0;display:flex;flex-direction:column;gap:3px}
+.cc-fin-mi .tx > span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-fin-mi .mb{display:block;height:6px;border-radius:99px;background:#ece8dc;overflow:hidden;box-shadow:inset 0 0 0 1.5px ${INK}}
+.cc-fin-mi .mb i{display:block;height:100%;background:#3fcf8e;transition:width .7s ease .15s}
+.cc-fin-mi .vl{font-weight:800;white-space:nowrap}
+.cc-fin-mi.ok{background:#e3f9ec}
+.cc-fin-mi.ok .ic{color:#1a9e5c;font-weight:900}
+.cc-fin-temp{text-align:center;font:700 12px/1.25 "Rubik",system-ui,sans-serif;border:2px solid ${INK};border-radius:99px;padding:3px 10px;
+  background:color-mix(in srgb,var(--tc,#ffcc29) 22%,#fff)}
+.cc-fin-apodo{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 10px;background:${CREMA};border:2px dashed ${INK};
+  border-radius:12px;padding:6px 10px;text-align:center}
+.cc-fin-apodo p{flex:1 1 180px;min-width:0}
+.cc-fin-apodo b{display:block;font:700 12.5px/1.25 "Rubik",system-ui,sans-serif}
+.cc-fin-apodo small{display:block;font:700 11.5px/1.25 "Rubik",system-ui,sans-serif;color:#e0405f;margin-top:1px}
+.cc-fin-apodo > div{display:flex;gap:6px;flex:none}
+.cc-fin-apodo button{appearance:none;cursor:pointer;font:800 12.5px/1 "Rubik",system-ui,sans-serif;color:${INK};border:2px solid ${INK};border-radius:99px;
+  padding:7px 12px;background:#fff;box-shadow:0 2px 0 ${INK}}
+.cc-fin-apodo button.si{background:#ffcc29}
+.cc-fin-apodo button.no{background:transparent;box-shadow:none;border-style:dashed}
+.cc-fin-apodo button:active{transform:translateY(2px);box-shadow:none}
+.cc-fin-apodo button:focus-visible{outline:3px solid #ff5d7d;outline-offset:2px}
+.cc-fin-apodo.ok{border-style:solid;background:#e3f9ec}
 /* interruptores (Sonido, Sombra): una llavecita a la derecha del texto, así no parecen botones de acción */
 button.cc-sw{display:inline-flex;align-items:center;justify-content:center;gap:8px}
 button.cc-sw::after{content:"";flex:none;width:28px;height:16px;border-radius:99px;box-sizing:border-box;border:2px solid ${INK};
@@ -2447,26 +2602,62 @@ button.cc-sw.cc-sw-on::after{background:#3fcf8e radial-gradient(circle at calc(1
   setTimeout(() => { try { revisarLogros(); } catch (e) {} }, 1200);
 
   // ---------- avisos (nivel y logros), uno debajo del otro ----------
-  function avisar(html, ms = 3200) {
-    if (!document.body) return;
-    estilos();
-    let box = document.getElementById('cc-avisos');
-    if (!box) { box = document.createElement('div'); box.id = 'cc-avisos'; box.setAttribute('role', 'status'); document.body.appendChild(box); }
+  // Cola: se ven como mucho AVISOS_MAX a la vez y el resto espera su turno (antes, al terminar una partida podían salir
+  // 6 a 9 juntos y tapaban la pantalla). `tipo` ('nivel', 'logro', 'mision', 'temporada', 'boost'): durante una
+  // partida (adentro de CC.partida) esos no salen; se guardan para la pantalla de fin (CC.finDePartida), que ya los
+  // muestra. Si el juego no la muestra (cortaste con R), salen solos un ratito después. Devuelve el aviso (o null si
+  // quedó guardado) para dibujar en su canvas: el elemento existe aunque todavía esté en la cola.
+  const AVISOS_MAX = 2, colaAvisos = [];
+  let avisosVivos = 0, recolector = null;
+  function avisar(html, ms = 3200, tipo) {
+    if (!document.body) return null;
+    if (recolector && tipo) { recolector.items.push({ html, ms, tipo }); return null; }
     const el = document.createElement('div');
     el.className = 'cc-aviso'; el.innerHTML = html;
-    box.appendChild(el);
-    const n = box.children.length - 1;
-    if (el.animate) {
-      el.animate([
-        { opacity: 0, transform: 'translateX(-24px)' },
-        { opacity: 1, transform: 'none', offset: 0.08 },
-        { opacity: 1, transform: 'none', offset: 0.9 },
-        { opacity: 0, transform: 'translateX(-16px)' },
-      ], { duration: ms, delay: n * 250, easing: 'ease', fill: 'both' }).onfinish = () => el.remove();
-    } else setTimeout(() => el.remove(), ms);
+    colaAvisos.push({ el, ms });
+    sacarAviso();
     return el;
   }
-  function avisoNivel(nivel, nuevas) {
+  function sacarAviso() {
+    while (avisosVivos < AVISOS_MAX && colaAvisos.length) {
+      const { el, ms } = colaAvisos.shift();
+      estilos();
+      let box = document.getElementById('cc-avisos');
+      if (!box) { box = document.createElement('div'); box.id = 'cc-avisos'; box.setAttribute('role', 'status'); document.body.appendChild(box); }
+      box.appendChild(el);
+      avisosVivos++;
+      const fin = () => { el.remove(); avisosVivos--; sacarAviso(); };
+      if (el.animate && !menosMovimiento) {
+        el.animate([
+          { opacity: 0, transform: 'translateX(-24px)' },
+          { opacity: 1, transform: 'none', offset: 0.08 },
+          { opacity: 1, transform: 'none', offset: 0.9 },
+          { opacity: 0, transform: 'translateX(-16px)' },
+        ], { duration: ms, easing: 'ease', fill: 'both' }).onfinish = fin;
+      } else setTimeout(fin, ms);
+    }
+  }
+  // Lo guardado durante una partida que nadie mostró: un solo aviso de nivel (con todo lo que desbloqueaste) y el resto.
+  function soltarAvisos(g) {
+    if (!g || g.hecho) return;
+    g.hecho = true; clearTimeout(g.timer);
+    if (g.nivel) avisoNivel(g.nivel.desde, g.nivel.hasta);
+    for (const x of g.items) avisar(x.html, x.ms);
+  }
+  // Un solo aviso de nivel aunque subas por la partida, los logros y las misiones (cada una llama acá).
+  let nivelPendiente = null;
+  function avisoNivel(desde, hasta) {
+    if (!(hasta > desde)) return;
+    if (recolector) {
+      const n = recolector.nivel;
+      recolector.nivel = n ? { desde: Math.min(n.desde, desde), hasta: Math.max(n.hasta, hasta) } : { desde, hasta };
+      return;
+    }
+    if (nivelPendiente) { nivelPendiente.desde = Math.min(nivelPendiente.desde, desde); nivelPendiente.hasta = Math.max(nivelPendiente.hasta, hasta); return; }
+    nivelPendiente = { desde, hasta };
+    queueMicrotask(() => { const n = nivelPendiente; nivelPendiente = null; mostrarNivel(n.hasta, porNivel(n.desde, n.hasta)); });
+  }
+  function mostrarNivel(nivel, nuevas) {
     const nueva = [...nuevas].reverse().find(i => SKINS.includes(i));
     const el = avisar((nueva ? '<canvas width="96" height="104" style="width:48px;height:52px;flex:none"></canvas>' : '') +
       `<div><b>${exclamar(T('Nivel {n}', { n: nivel }))}</b>` +
@@ -2478,7 +2669,252 @@ button.cc-sw.cc-sw-on::after{background:#3fcf8e radial-gradient(circle at calc(1
     const m = MEDALLAS[l.medalla];
     const premio = [...SKINS, ...EFECTOS].filter(i => i.logro === l.id).map(i => i.nombre);
     avisar(`<div class="cc-medalla" style="background:${m.color}">★</div><div><b>${l.nombre}</b>` +
-      `<span>${T('Logro ' + l.medalla)} · +${m.xp} XP${premio.length ? ' · ' + T('Desbloqueaste {x}', { x: premio.join(', ') }) : ''}</span></div>`, 3800);
+      `<span>${T('Logro ' + l.medalla)} · +${m.xp} XP${premio.length ? ' · ' + T('Desbloqueaste {x}', { x: premio.join(', ') }) : ''}</span></div>`, 3800, 'logro');
+  }
+
+  // ---------- pantalla de fin de partida ----------
+  // Un bloque común adentro de la tarjeta de fin de cada juego, con lo que importa para jugar otra: el récord (o qué tan
+  // cerca quedaste), la barra de XP que se llena (y pasa de nivel adentro de la pantalla), el próximo premio con su
+  // dibujo (o el que recién ganaste, grande), los logros, los motivos de la XP, las misiones que avanzaron, la temporada
+  // y, sin apodo, el renglón para ponerlo. Lo propio de cada juego (puntaje grande, estrellas, desafío) queda afuera.
+  //   CC.finDePartida(contenedor, r, { abajo, reintentar });
+  // r: lo que devolvió CC.partida. contenedor: dónde va lo de arriba (en el lugar de la XP de antes, arriba del botón de
+  // Otra vez). abajo: dónde van las misiones y el apodo (abajo del botón, así no lo empujan; sin abajo, va todo junto).
+  // reintentar: el botón de Otra vez, para devolverle el foco si se cierra el renglón del apodo.
+  // Los avisos de nivel, logros, misiones y temporada de esa partida no salen como toast: están acá.
+  textos({
+    'Primer récord': 'First best', 'Nuevo récord': 'New best', 'antes {t}': 'was {t}', 'Récord: {t}': 'Best: {t}',
+    '¡Igualaste tu récord!': 'You tied your best!', 'Te faltaron {s} s para tu récord': '{s} s short of your best',
+    'Te faltó el {p} % para tu récord': '{p}% short of your best',
+    'A 1 escalón de tu récord': '1 step short of your best', 'A {n} escalones de tu récord': '{n} steps short of your best',
+    'A 1 rival de tu récord': '1 rival short of your best', 'A {n} rivales de tu récord': '{n} rivals short of your best',
+    'A {n} m de tu récord': '{n} m short of your best',
+    'A 1 punto de tu récord': '1 point short of your best', 'A {n} puntos de tu récord': '{n} points short of your best',
+    'Nivel': 'Level', 'nivel {n}': 'level {n}', '{p} en {n} XP': '{p} in {n} XP', '¡Llegaste al nivel máximo!': 'You reached the top level!',
+    '¡Premio nuevo!': 'New reward!', 'y 1 más': 'and 1 more', 'y {n} más': 'and {n} more', 'elegilo en Personaje': 'pick it in Character',
+    'Personaje': 'Character', 'Efecto': 'Effect', 'Brillo': 'Glow', 'Título': 'Title', 'Semana': 'Week',
+    '×{x} por {d}': '×{x} for {d}', '+25 % por récord': '+25% for new best', '+{n} XP del desafío': '+{n} XP from the challenge',
+    'incluye logros': 'includes achievements', '+{n} XP de misiones': '+{n} XP from missions',
+    'Poné tu apodo para aparecer en el ranking': 'Pick a nickname to show up on the leaderboard', 'Poner apodo': 'Pick nickname',
+    'Quedarías nº {n} del mundo': "You'd be #{n} in the world", '¡Listo, {a}! Ya estás en el ranking.': "Done, {a}! You're on the leaderboard.",
+  });
+  const ORDEN_TIPO = { skin: 0, efecto: 1, marco: 2, titulo: 3 };
+  const NOMBRE_TIPO = { skin: 'Personaje', efecto: 'Efecto', marco: 'Brillo', titulo: 'Título' };
+  // El próximo nivel que da algo (personaje, efecto, brillo o título) y cuánta XP falta, desde `xp`.
+  function proximoPremio(xp) {
+    const { nivel, enNivel, paraSiguiente } = nivelDe(xp);
+    const sig = pase().find(n => n.nivel > nivel && n.premios.length);
+    if (!sig) return null;
+    let falta = paraSiguiente - enNivel;
+    for (let n = nivel + 1; n < sig.nivel; n++) falta += xpPara(n);
+    const x = [...sig.premios].sort((a, b) => ORDEN_TIPO[a.tipo] - ORDEN_TIPO[b.tipo])[0];
+    return { nivel: sig.nivel, x, falta, todos: sig.premios };
+  }
+  // El dibujo de un premio, como las miniaturas del camino de nivel del hub (un título no tiene dibujo: 🏷️).
+  function premioHTML(x, w, h) {
+    return x.tipo === 'titulo' ? `<span class="cc-fin-tt" aria-hidden="true" style="width:${w}px;height:${h}px">🏷️</span>`
+      : `<canvas width="${w * 2}" height="${h * 2}" style="width:${w}px;height:${h}px" aria-hidden="true"></canvas>`;
+  }
+  function pintarPremio(cv, x, w, h, t = 900) {
+    if (!cv) return;
+    const c = cv.getContext('2d'); c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, w, h);
+    const k = w / 48;
+    if (x.tipo === 'skin') dibujarCubo(c, w / 2, h - 7 * k, 24 * k, { skin: x.it, t, efecto: false, marco: false });
+    else if (x.tipo === 'marco') dibujarCubo(c, w / 2, h - 8 * k, 24 * k, { t, efecto: 'ninguno', marco: x.it.id });
+    else dibujarCubo(c, w / 2, h - 9 * k, 20 * k, { t, efecto: x.it.id, marco: false });
+  }
+  // «A 3 escalones de tu récord», «Te faltaron 0,4 s», «Te faltó el 12 %», según la tabla. null si no corresponde.
+  function cercaDelRecord(r) {
+    const tb = tablaDe(r.juego, r.tabla);
+    if (!tb || !r.valida || r.record || r.sinRecord || r.anterior == null || !(r.valor > 0)) return null;
+    const dif = tb.orden === 'menor' ? r.valor - r.anterior : r.anterior - r.valor;
+    if (dif === 0) return T('¡Igualaste tu récord!');
+    if (!(dif > 0)) return null;
+    if (tb.formato === 'ms') {
+      const sg = dif / 1000;
+      return T('Te faltaron {s} s para tu récord', { s: coma(sg < 0.1 ? sg.toFixed(2) : sg.toFixed(1)) });
+    }
+    const n = Math.round(dif);
+    if (tb.unidad === 'pts' && r.anterior >= 1000) return T('Te faltó el {p} % para tu récord', { p: Math.max(1, Math.round(100 * dif / r.anterior)) });
+    const N = n.toLocaleString(LOCALE);
+    if (tb.unidad === 'esc.') return T(n === 1 ? 'A 1 escalón de tu récord' : 'A {n} escalones de tu récord', { n: N });
+    if (tb.unidad === 'rivales') return T(n === 1 ? 'A 1 rival de tu récord' : 'A {n} rivales de tu récord', { n: N });
+    if (tb.unidad === 'm') return T('A {n} m de tu récord', { n: N });
+    return T(n === 1 ? 'A 1 punto de tu récord' : 'A {n} puntos de tu récord', { n: N });
+  }
+  // Tu puesto en una tabla con esa marca (cuántos tienen una mejor, más uno). null sin internet o si tarda.
+  async function puestoCon(jid, tid, valor) {
+    const tb = tablaDe(jid, tid);
+    if (!tb || !rankingActivo() || navigator.onLine === false || !(valor > 0)) return null;
+    const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+    const corte = setTimeout(() => ctl && ctl.abort(), 3500);
+    try {
+      const op = tb.orden === 'menor' ? 'lt' : 'gt';
+      const res = await fetch(RANKING.url.replace(/\/$/, '') + `/rest/v1/ranking?tabla=eq.${encodeURIComponent(jid + ':' + tid)}&valor=${op}.${valor}&select=huella`, {
+        method: 'HEAD', headers: { apikey: RANKING.clave, Prefer: 'count=exact' }, signal: ctl ? ctl.signal : undefined,
+      });
+      const total = +(res.headers.get('content-range') || '').split('/')[1];
+      return res.ok && isFinite(total) ? total + 1 : null;
+    } catch (e) { return null; } finally { clearTimeout(corte); }
+  }
+  // «Ahora no» en el renglón del apodo (o en su ventana): a las dos veces no se ofrece más.
+  const APODO_NO = 'cubo-apodo-no';
+  const apodoNoes = () => { try { return +localStorage.getItem(APODO_NO) || 0; } catch (e) { return 9; } };
+  const sumarApodoNo = () => { try { localStorage.setItem(APODO_NO, String(apodoNoes() + 1)); } catch (e) {} };
+  function filaApodo(r, o) {
+    if (!r.valida || leer().apodo || !rankingActivo() || navigator.onLine === false || apodoNoes() >= 2) return null;
+    const fila = document.createElement('div');
+    fila.className = 'cc-fin-apodo';
+    fila.innerHTML = `<p><b>${T('Poné tu apodo para aparecer en el ranking')}</b><small hidden></small></p>
+      <div><button class="si" type="button">${T('Poner apodo')}</button><button class="no" type="button">${T('Ahora no')}</button></div>`;
+    const volverFoco = () => { if (o.reintentar && o.reintentar.focus && document.contains(o.reintentar)) o.reintentar.focus({ preventScroll: true }); };
+    const quitar = () => { const tenia = fila.contains(document.activeElement); fila.remove(); if (tenia) volverFoco(); };
+    fila.querySelector('.no').addEventListener('click', () => { sumarApodoNo(); quitar(); });
+    fila.querySelector('.si').addEventListener('click', () => {
+      pedirApodo({ forzar: true, alNo: sumarApodoNo, alCerrar: () => {
+        const a = leer().apodo;
+        if (a) {
+          fila.innerHTML = '<p><b></b></p>'; fila.classList.add('ok');
+          fila.querySelector('b').textContent = Tlit('¡Listo, {a}! Ya estás en el ranking.', { a });
+          volverFoco();
+        } else if (apodoNoes() >= 2) quitar();
+        else volverFoco();
+      } });
+    });
+    puestoCon(r.juego, r.tabla, leer().mejores[r.juego + ':' + r.tabla]).then(n => {
+      const sm = fila.querySelector('small');
+      if (!n || !fila.isConnected || !sm) return;
+      sm.textContent = T('Quedarías nº {n} del mundo', { n: n.toLocaleString(LOCALE) }); sm.hidden = false;
+    });
+    return fila;
+  }
+  function finDePartida(cont, r, o = {}) {
+    if (!cont || !r) return null;
+    estilos();
+    // lo guardado de esta partida ya no sale como aviso: se ve acá
+    if (r.avisos && !r.avisos.hecho) { r.avisos.hecho = true; clearTimeout(r.avisos.timer); }
+    const abajo = o.abajo && o.abajo !== cont ? o.abajo : null;
+    for (const el of [cont, abajo]) if (el) for (const x of [...el.children]) if (x.classList.contains('cc-fin')) x.remove();
+    const box = document.createElement('div');
+    box.className = 'cc-fin';
+    const xp0 = Math.max(0, +r.xpAntes || 0), xp1 = Math.max(xp0, +(r.xpDespues != null ? r.xpDespues : leer().xp) || 0);
+    const n0 = nivelDe(xp0), n1 = nivelDe(xp1);
+    const partes = [];
+    // 1. récord o qué tan cerca quedaste
+    if (r.record && r.valida) {
+      partes.push(`<p class="cc-fin-rec"><span>★ ${exclamar(T(r.primera ? 'Primer récord' : 'Nuevo récord'))}</span>` +
+        (r.textoAnterior && !r.primera ? `<small>${T('antes {t}', { t: r.textoAnterior })}</small>` : '') + '</p>');
+    } else {
+      const cerca = cercaDelRecord(r);
+      if (cerca) partes.push(`<p class="cc-fin-falta"><b>${cerca}</b>${r.textoAnterior ? `<small>${T('Récord: {t}', { t: r.textoAnterior })}</small>` : ''}</p>`);
+    }
+    // 2. la barra de XP con el próximo premio
+    const prox = proximoPremio(xp1);
+    const subio = n1.nivel > n0.nivel;
+    const gan = xp1 - xp0;
+    const sigTxt = prox ? T('{p} en {n} XP', { p: T(prox.x.it.nombre), n: prox.falta.toLocaleString(LOCALE) }) : T('¡Llegaste al nivel máximo!');
+    partes.push(`<div class="cc-fin-xp">
+      <span class="cc-fin-nv" aria-hidden="true"><small>${T('Nivel')}</small><b>${n0.nivel}</b></span>
+      <div class="cc-fin-col">
+        <div class="cc-fin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${n1.paraSiguiente}" aria-valuenow="${n1.enNivel}"
+          aria-label="${T('Nivel {n}', { n: n1.nivel })}: ${n1.enNivel} / ${n1.paraSiguiente} XP"><i></i><span class="cc-fin-gan">${gan > 0 ? '+' + gan.toLocaleString(LOCALE) + ' XP' : ''}</span></div>
+        <p class="cc-fin-sig"><span class="cc-fin-sube" hidden></span><span class="cc-fin-sigt"></span></p>
+      </div>
+      ${prox ? `<span class="cc-fin-pr" title="${T(NOMBRE_TIPO[prox.x.tipo])} · ${T('nivel {n}', { n: prox.nivel })}">${premioHTML(prox.x, 38, 42)}</span>` : ''}
+    </div>`);
+    // 3. premio nuevo (lo que desbloqueaste en esta partida), grande
+    const nuevos = [...(r.premios || [])].sort((a, b) => ORDEN_TIPO[a.tipo] - ORDEN_TIPO[b.tipo]);
+    if (nuevos.length) {
+      const x = nuevos[0], mas = nuevos.length - 1;
+      partes.push(`<div class="cc-fin-nuevo"${subio && !menosMovimiento ? ' hidden' : ''}>${premioHTML(x, 52, 58)}
+        <div><small>${T('¡Premio nuevo!')}</small><b></b><span>${T(NOMBRE_TIPO[x.tipo])}${mas ? ' · ' + T(mas === 1 ? 'y 1 más' : 'y {n} más', { n: mas }) : ''} · ${T('elegilo en Personaje')}</span></div></div>`);
+    }
+    // 4. logros de esta partida
+    const lg = r.logrosDetalle || (r.logros || []).map(nombre => ({ nombre, medalla: 'bronce', xp: 0 }));
+    if (lg.length) partes.push(`<div class="cc-fin-lg">${lg.map(l => `<span><i style="color:${(MEDALLAS[l.medalla] || MEDALLAS.bronce).color}">★</i> <em></em>${l.xp ? ` +${l.xp} XP` : ''}</span>`).join('')}</div>`);
+    // 5. los motivos de la XP, en una línea
+    const mot = [];
+    if (r.multDif && r.multDif !== 1 && r.difNombre) mot.push(T('×{x} por {d}', { x: coma(r.multDif), d: T(r.difNombre) }));
+    if (r.record && r.anterior != null) mot.push(T('+25 % por récord'));
+    if (r.diario && r.diario.premio > 0) mot.push(T('+{n} XP del desafío', { n: r.diario.premio }));
+    if (r.evento) mot.push(`${r.evento} ${r.eventoTexto || ''}`.trim());
+    if (r.boost) mot.push(T('Doble XP (te quedan {n})', { n: r.boostQuedan || 0 }));
+    if (lg.length) mot.push(T('incluye logros'));
+    const xpMis = (r.misiones || []).filter(x => x.hecha).reduce((a, x) => a + x.xp, 0);
+    if (xpMis) mot.push(T('+{n} XP de misiones', { n: xpMis }));
+    if (mot.length && gan > 0) partes.push(`<p class="cc-fin-mot">${mot.join(' · ')}</p>`);
+    box.innerHTML = partes.join('');
+    const ems = box.querySelectorAll('.cc-fin-lg em');
+    lg.forEach((l, k) => { ems[k].textContent = l.nombre; });
+    box.querySelector('.cc-fin-sigt').textContent = sigTxt;
+    if (prox) pintarPremio(box.querySelector('.cc-fin-pr canvas'), prox.x, 38, 42);
+    if (nuevos.length) {
+      const nb = box.querySelector('.cc-fin-nuevo');
+      nb.querySelector('b').textContent = T(nuevos[0].it.nombre);
+      pintarPremio(nb.querySelector('canvas'), nuevos[0], 52, 58);
+    }
+    cont.appendChild(box);
+    // abajo del botón: misiones que avanzaron, temporada y apodo
+    const bajo = document.createElement('div');
+    bajo.className = 'cc-fin cc-fin-abajo';
+    // primero las cumplidas, después las de partidas (las de «Ganá X XP» avanzan siempre: van al final), las del día antes
+    const mis = [...(r.misiones || [])].sort((a, b) => (b.hecha - a.hecha) || ((a.id === 'xp') - (b.id === 'xp')) || (a.semanal - b.semanal)).slice(0, 3);
+    for (const x of mis) {
+      const el = document.createElement('div');
+      el.className = 'cc-fin-mi' + (x.hecha ? ' ok' : '');
+      el.innerHTML = `<span class="ic" aria-hidden="true">${x.hecha ? '✓' : '🎯'}</span><span class="tx"><span></span><span class="mb"><i style="width:${Math.round(100 * Math.min(1, x.antes / x.meta))}%"></i></span></span>` +
+        `<span class="vl">${x.hecha ? `+${x.xp} XP` : `${x.prog.toLocaleString(LOCALE)}/${x.meta.toLocaleString(LOCALE)}`}</span>`;
+      el.querySelector('.tx > span').textContent = (x.hecha ? T('Misión cumplida') + ': ' : x.semanal ? T('Semana') + ': ' : '') + x.txt;
+      el.dataset.fin = String(Math.round(100 * Math.min(1, x.prog / x.meta)));
+      bajo.appendChild(el);
+    }
+    if (r.temporada) {
+      const el = document.createElement('p');
+      el.className = 'cc-fin-temp';
+      el.style.setProperty('--tc', r.temporada.color || '#ffcc29');
+      el.textContent = '🏆 ' + T('Temporada {t}: nivel {n}', { t: r.temporada.nombre, n: r.temporada.nivel });
+      bajo.appendChild(el);
+    }
+    const ap = filaApodo(r, o);
+    if (ap) bajo.appendChild(ap);
+    if (bajo.children.length) (abajo || cont).appendChild(bajo);
+    // la animación: la barra se llena desde la XP de antes; si pasás de nivel, llega al tope, se vacía y sigue
+    const barra = box.querySelector('.cc-fin-bar i'), nv = box.querySelector('.cc-fin-nv b'), sube = box.querySelector('.cc-fin-sube');
+    const fila = box.querySelector('.cc-fin-xp');
+    const pintar = xp => {
+      const q = nivelDe(xp);
+      barra.style.width = (100 * q.enNivel / q.paraSiguiente).toFixed(2) + '%';
+      if (nv.textContent !== String(q.nivel)) {
+        nv.textContent = q.nivel;
+        if (q.nivel > n0.nivel) {
+          sube.textContent = exclamar(T('Nivel {n}', { n: q.nivel })); sube.hidden = false;
+          fila.classList.remove('sube'); void fila.offsetWidth; fila.classList.add('sube');
+        }
+      }
+    };
+    const misFinal = () => { for (const el of bajo.querySelectorAll('.cc-fin-mi')) el.querySelector('.mb i').style.width = el.dataset.fin + '%'; };
+    const final = () => {
+      pintar(xp1); misFinal();
+      for (const x of box.querySelectorAll('.cc-fin-nuevo[hidden]')) x.hidden = false;
+    };
+    pintar(xp0);
+    if (menosMovimiento || gan <= 0) { final(); return box; }
+    const dur = Math.min(2600, 900 + 550 * (n1.nivel - n0.nivel));
+    let t0 = 0, espera = 0;
+    const paso = now => {
+      if (!box.isConnected) return;
+      if (!t0) {
+        // espera a que la tarjeta se vea (los juegos la muestran un ratito después de perder)
+        if (!box.getClientRects().length) { if (++espera < 600) requestAnimationFrame(paso); else final(); return; }
+        t0 = now + 280;
+        misFinal();
+      }
+      const k = Math.max(0, Math.min(1, (now - t0) / dur)), e = 1 - Math.pow(1 - k, 3);
+      pintar(xp0 + (xp1 - xp0) * e);
+      if (k < 1) requestAnimationFrame(paso); else final();
+    };
+    requestAnimationFrame(paso);
+    return box;
   }
 
   // Clase CSS para pintar un apodo con el color de su personaje (solo legendarias; si no, '').
@@ -3099,9 +3535,10 @@ button.cc-sw.cc-sw-on::after{background:#3fcf8e radial-gradient(circle at calc(1
   }
 
   // ---------- apodo la primera vez ----------
-  // La primera vez que alguien entra a jugar sin apodo, se le pregunta cómo se llama: así sale en el ranking sin tener
-  // que encontrar el botón adentro del ranking. Se pregunta una sola vez por dispositivo (aunque toque «Ahora no»);
-  // después se puede poner o cambiar en cualquier ranking. Los juegos lo muestran solos al cargar (ver abajo); el hub, al tocar Jugar.
+  // Ya no se pregunta al abrir un juego (tapaba la primera partida): la pantalla de fin (CC.finDePartida) ofrece un
+  // renglón «Poné tu apodo para aparecer en el ranking» desde la primera partida con puntos, hasta que lo pone o toca
+  // «Ahora no» dos veces (`cubo-apodo-no`), y ese botón abre esta ventana con { forzar: true }. También se abre desde el
+  // perfil y desde cualquier ranking. { alNo }: se llama si toca «Ahora no» adentro de la ventana.
   const PEDIDO_KEY = 'cubo-apodo-pedido';
   // { forzar }: lo pidió la persona (desde su perfil), así que se muestra aunque ya se haya preguntado
   function pedirApodo(op = {}) {
@@ -3144,7 +3581,7 @@ button.cc-sw.cc-sw-on::after{background:#3fcf8e radial-gradient(circle at calc(1
     function tecla(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(); } else if (e.target.tagName !== 'INPUT') e.stopPropagation(); }
     addEventListener('keydown', tecla, true);
     $('.x').addEventListener('click', cerrar);
-    $('.no').addEventListener('click', cerrar);
+    $('.no').addEventListener('click', () => { if (op.alNo) op.alNo(); cerrar(); });
     const esperando = (f, si) => { for (const el of f.elements) el.disabled = si; };
     const listo = a => {
       box.querySelector('.cc-ap').innerHTML = `<header><div><h2>${T('¡Hola, <span translate="no"></span>!')}</h2><small>${T('Ya estás en el ranking')}</small></div></header>`;
@@ -3171,11 +3608,6 @@ button.cc-sw.cc-sw-on::after{background:#3fcf8e radial-gradient(circle at calc(1
     });
     setTimeout(() => input.focus({ preventScroll: true }), 50);
     return true;
-  }
-  // En los juegos se pregunta solo, cuando terminan de cargar. El hub (que tiene portada) lo llama al tocar Jugar.
-  // Solo en las páginas del sitio (las que tienen pantalla de carga): no en la plantilla de imágenes para compartir.
-  if (document.getElementById('cargando')) {
-    addEventListener('load', () => setTimeout(() => { if (!document.getElementById('portada')) pedirApodo(); }, 700));
   }
 
   // ---------- dibujo ----------
@@ -6750,7 +7182,7 @@ html.cc-quieto .cc-guia-dedo{animation:none;opacity:1;transform:translate(-50%,0
     xpPara, nivelDe, perfil, skin, efecto, elegirSkin, elegirEfecto, libre, nuevos, marcarVistos,
     sumarXP, xpEscala, partida, importarRecord, anotarRecord, revisarLogros, tieneLogro,
     claseNombre, estilos, juego, tablaDe, formato, iconoDif, selectorDif, verRanking, top, ponerApodo, vincular, limpiarApodo, rankingActivo, subirPendientes,
-    avisar, vibrar, volver, dibujarCubo, pulseada, morir, sombra, pedirApodo, diario, diarioDe, azar, faltaTexto,
+    avisar, finDePartida, vibrar, volver, dibujarCubo, pulseada, morir, sombra, pedirApodo, diario, diarioDe, azar, faltaTexto,
     temporada, misiones, eventoXP, TEMP_XP, sincronizarNube, menosMovimiento, frenar, frenado, guia, T, Tsin: Tlit, textos, idioma, IDIOMAS, ponerIdioma, LOCALE, traducirNodo,
     verPerfil, perfilPublico, horasTexto, empezar, grabar, verRepeticion,
     RAREZAS, rarezaTitulo, pintarTitulo, rangoLogro, medallaLogro, NOMBRE_RANGO, maestria, maestrias, insigniaMaestria, RANGOS_MAESTRIA,

@@ -251,8 +251,8 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 }
 .row { display: flex; gap: 10px; }
 .row .btn { flex: 1; }
-.logros { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-weight: 800; font-size: 14px; }
-.logros li::before { content: "★ "; color: #f5b301; -webkit-text-stroke: 1px var(--ink); }
+.fin { width: 100%; }
+.fin:empty, .result .sub:empty { display: none; }
 .hint { margin: 0; text-align: center; font-size: 13px; color: var(--muted); }
 .btn {
   font: 800 16px var(--body); color: var(--ink); padding: 14px 10px; cursor: pointer;
@@ -261,7 +261,6 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .btn.primary { background: var(--cube); }
 .btn.big { font: 400 24px var(--display); padding: 14px; -webkit-text-stroke: 0; text-shadow: none; }
 .tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-.badge.xp { background: var(--cube); }
 .diffs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .diff {
   font: 400 15px var(--display); color: var(--ink); padding: 9px 4px 7px; cursor: pointer; line-height: 1;
@@ -395,12 +394,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="sub" id="eRec"></span>
       <div class="tags">
         <span class="badge" id="eBadge" hidden>Nuevo récord</span>
-        <span class="badge xp" id="eXP" hidden></span>
       </div>
-      <ul class="logros" id="eLogros" hidden></ul>
+      <div class="fin" id="eFin"></div>
       <p class="ajuste" id="eAjuste" hidden><span id="eAjTxt"></span><button class="ter smallbtn" id="btnAjuste" type="button">Corregir</button></p>
     </div>
     <button class="btn primary big" id="btnAgain" type="button">↻ Otra vez <kbd class="kbhint">R</kbd></button>
+    <div class="fin" id="eFin2"></div>
     <div class="difend" id="eDif" hidden>
       <div class="ehead"><span>Dificultad</span><span class="kbhint"><kbd>↑</kbd> <kbd>↓</kbd></span></div>
       <div id="diffsEnd"></div>
@@ -458,9 +457,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'Más lento, pocas notas y mucho margen. Ideal para aprender.': 'Slower, few notes and lots of room. Great for learning.',
     'Rápido pero con aire entre nota y nota.': 'Fast, but with some space between notes.',
     'Arranca rápido y con corcheas desde el primer compás.': 'Starts fast, with eighth notes from the very first bar.',
-    'Rapidísimo, ventana de acierto mínima y cada error duele. XP ×3.': 'Super fast, a tiny timing window and every miss hurts. XP ×3.',
-    'Más rápido que el tope de Normal desde el arranque, 25 ms de margen y 4 errores te sacan. XP ×4.':
-      'Faster than Normal\'s top speed from the start, 25 ms of room, and 4 misses knock you out. XP ×4.',
+    'Rapidísimo, ventana de acierto mínima y cada error duele.': 'Super fast, a tiny timing window and every miss hurts.',
+    'Más rápido que el tope de Normal desde el arranque, 25 ms de margen y 4 errores te sacan.':
+      'Faster than Normal\'s top speed from the start, 25 ms of room, and 4 misses knock you out.',
     'Récord en {d}:': 'Best on {d}:',
     'Mejor combo:': 'Best combo:',
     '{c} en {d}:': '{c} on {d}:',
@@ -1011,14 +1010,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('eNum').textContent = fmt(G.score);
     $('eSub').textContent = T('{d} · combo máx {c} · {p} perfectos · {a}% de aciertos · {b} BPM',
       { d: G.D.name, c: G.maxCombo, p: G.perfect, a: total ? Math.round(100 * hits / total) : 0, b: G.shownBpm });
-    $('eRec').textContent = isRec ? (prev ? T('Antes: {p}', { p: prev }) : T('¡Tu primer récord en {d}!', { d: G.D.name }))
+    // con la librería, el récord (o qué tan cerca quedaste) lo muestra CC.finDePartida; sin ella, el de este dispositivo
+    $('eRec').textContent = r ? '' : isRec ? (prev ? T('Antes: {p}', { p: prev }) : T('¡Tu primer récord en {d}!', { d: G.D.name }))
       : T('Récord en {d}: {n} pts', { d: G.D.name, n: fmt(rec.bests[G.diff] || 0) });
-    $('eBadge').hidden = !isRec;
-    $('eXP').hidden = !r;
-    if (r) $('eXP').textContent = `+${fmt(r.xp)} XP` + (r.subio ? ' · ' + T('¡nivel {n}!', { n: r.nivel }) : '');
-    const logros = r ? r.logros : [];
-    $('eLogros').hidden = !logros.length;
-    $('eLogros').replaceChildren(...logros.map(n => Object.assign(document.createElement('li'), { textContent: T('Logro: {n}', { n }) })));
+    $('eBadge').hidden = !!r || !isRec;
+    // la XP, el próximo premio, los logros y las misiones (y el récord de la tabla, si no es una canción): CC.finDePartida
+    $('eFin').replaceChildren(); $('eFin2').replaceChildren();
+    if (CC && r) CC.finDePartida($('eFin'), r, { abajo: $('eFin2'), reintentar: $('btnAgain') });
     mostrarAjuste();
     setTimeout(() => { if (state === 'over') showEnd(); }, 1100);
   }
@@ -1089,11 +1087,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       : T('{c} · {d} · llegaste al {a}% de la canción', { c: c.nombre, d: G.D.name, a: avance });
     $('eRec').textContent = isRec ? T('¡Récord en esta canción!') : viejo ? T('Mejor: {e} · {n} pts', { e: estrellas(viejo.est), n: fmt(viejo.score) }) : '';
     $('eBadge').hidden = !isRec;
-    $('eXP').hidden = !r;
-    if (r) $('eXP').textContent = `+${fmt(r.xp)} XP` + (r.subio ? ' · ' + T('¡nivel {n}!', { n: r.nivel }) : '');
-    const logros = r ? r.logros : [];
-    $('eLogros').hidden = !logros.length;
-    $('eLogros').replaceChildren(...logros.map(n => Object.assign(document.createElement('li'), { textContent: T('Logro: {n}', { n }) })));
+    // la XP, el próximo premio, los logros y las misiones (y el récord de la tabla, si no es una canción): CC.finDePartida
+    $('eFin').replaceChildren(); $('eFin2').replaceChildren();
+    if (CC && r) CC.finDePartida($('eFin'), r, { abajo: $('eFin2'), reintentar: $('btnAgain') });
     mostrarAjuste();
   }
   function terminarCancion() {
@@ -1143,8 +1139,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     facil: T('Más lento, pocas notas y mucho margen. Ideal para aprender.'),
     normal: T('Rápido pero con aire entre nota y nota.'),
     dificil: T('Arranca rápido y con corcheas desde el primer compás.'),
-    extremo: T('Rapidísimo, ventana de acierto mínima y cada error duele. XP ×3.'),
-    maestro: T('Más rápido que el tope de Normal desde el arranque, 25 ms de margen y 4 errores te sacan. XP ×4.'),
+    extremo: T('Rapidísimo, ventana de acierto mínima y cada error duele.'),
+    maestro: T('Más rápido que el tope de Normal desde el arranque, 25 ms de margen y 4 errores te sacan.'),
   };
   const alCambiar = id => { diff = id; renderRecs(); renderAgain(); };
   const sel = CC ? CC.selectorDif($('diffs'), { juego: 'ritmo', notas: NOTAS, alCambiar }) : null;
@@ -1226,6 +1222,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   for (const b of $('segModo').querySelectorAll('button')) b.addEventListener('click', () => { modo = b.dataset.m; rec.modo = modo; saveRec(); renderModo(); });
 
   function showStart() {
+    if (CC && CC.grabar) setTimeout(() => CC.grabar(false));   // si quedó una grabación sin partida, se tira
     if (enCurso()) cerrarPartida();
     state = 'start';
     if (bus) { try { bus.disconnect(); } catch (e) {} bus = null; }

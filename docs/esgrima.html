@@ -175,17 +175,8 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .result .num { font-family: var(--display); font-size: 64px; line-height: 1; font-variant-numeric: tabular-nums; }
 .result .sub { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .lbl-dif { margin: 0 0 -6px; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: center; }
-.xp {
-  font-family: var(--display); font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums;
-  background: var(--cube); border: 2px solid var(--ink); border-radius: 999px; padding: 5px 14px; margin-top: 4px;
-}
-.badge {
-  font-weight: 800; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
-  background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
-}
-.logros { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 2px; }
-.logro { font-weight: 800; font-size: 13px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 4px 10px; }
-.logro::before { content: "★ "; color: #e0a000; }
+.fin { width: 100%; }
+.fin:empty { display: none; }
 .row { display: flex; gap: 10px; }
 .row > * { flex: 1; }
 .btn {
@@ -257,12 +248,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <h2 id="eTitle">¡Touché!</h2>
       <span class="num" id="eNum">0</span>
       <span class="sub" id="eSub"></span>
-      <span class="badge" id="eBadge" hidden>Nuevo récord</span>
       <span class="sub" id="eSub2"></span>
-      <span class="xp" id="eXP" hidden>+0 XP</span>
-      <div class="logros" id="eLogros" hidden></div>
+      <div class="fin" id="eFin"></div>
     </div>
     <button class="btn primary big" id="btnAgain" type="button">↻ Otra vez <kbd class="kbd-only">R</kbd></button>
+    <div class="fin" id="eFin2"></div>
     <p class="lbl-dif" id="eDifL">Dificultad</p>
     <div id="difs2"></div>
     <div class="row">
@@ -280,8 +270,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const cv = document.getElementById('cv');
   const ctx = cv.getContext('2d');
   const $ = id => document.getElementById(id);
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  // «Reducir movimiento» de Opciones (si nunca se tocó, sigue al sistema): sin temblor y chispas chicas
+  const reduceMotion = (CC && CC.menosMovimiento) ?? matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const frenar = ms => { if (CC && CC.frenar) CC.frenar(ms); };
+  const frenado = now => !!(CC && CC.frenado && CC.frenado(now));
   // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js, si ya está)
   if (CC && CC.textos) CC.textos({
     'Esgrima': 'Fencing', 'rivales': 'rivals', 'Alta': 'High', 'Baja': 'Low', 'Parada alta': 'High parry', 'Parada baja': 'Low parry',
@@ -301,12 +294,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'Parada más larga y rivales lentos. El rival necesita 4 toques.': 'Longer parry and slow rivals. The rival needs 4 touches.',
     'Ganá 3 toques a cada rival. Cada uno es mejor que el anterior.': 'Score 3 touches on each rival. Each one is better than the last.',
     'Ataques más rápidos y más fintas.': 'Faster attacks and more feints.',
-    'Rapidísimos y con 2 toques te ganan. XP ×3.': 'Super fast, and 2 touches beat you. XP ×3.',
-    'La parada más corta y fintas por todos lados. XP ×4.': 'The shortest parry and feints everywhere. XP ×4.',
+    'Rapidísimos y con 2 toques te ganan.': 'Super fast, and 2 touches beat you.',
+    'La parada más corta y fintas por todos lados.': 'The shortest parry and feints everywhere.',
     '¡Maestro de armas!': 'Master of arms!', '¡Gran esgrimista!': 'Great fencer!', '¡Bien ahí!': 'Nice!', '¡Touché!': 'Touché!',
     '{n} rival vencido': '{n} rival beaten', '{n} rivales vencidos': '{n} rivals beaten', 'te ganó {n}': '{n} beat you',
     'Paradas perfectas: {n} · mejor racha: {m}': 'Perfect parries: {n} · best streak: {m}', 'récord: {t}': 'best: {t}',
     'parar alta / baja': 'parry high / low', 'reiniciar': 'restart', '×{n} seguidas': '×{n} in a row',
+    '◀ ¡Alta!': '◀ High!', '¡Baja! ▶': 'Low! ▶',
+    'Récord': 'Best', 'Jugar': 'Play', 'Sonido: sí': 'Sound: on', 'Sonido: no': 'Sound: off', 'Otra vez': 'Again', 'Menú': 'Menu',
+    'Volver al menú (Esc)': 'Back to menu (Esc)', 'Reiniciar (R)': 'Restart (R)', 'Nuevo récord': 'New best', 'Primer récord': 'First best',
   });
   const T = (s, v) => (CC && CC.T ? CC.T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s);
   // desafío del día (?diario=1): en Normal, 3 intentos y los rivales atacan con la semilla del día
@@ -333,8 +329,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     facil: 'Parada más larga y rivales lentos. El rival necesita 4 toques.',
     normal: 'Ganá 3 toques a cada rival. Cada uno es mejor que el anterior.',
     dificil: 'Ataques más rápidos y más fintas.',
-    extremo: 'Rapidísimos y con 2 toques te ganan. XP ×3.',
-    maestro: 'La parada más corta y fintas por todos lados. XP ×4.',
+    extremo: 'Rapidísimos y con 2 toques te ganan.',
+    maestro: 'La parada más corta y fintas por todos lados.',
   };
   // Estilos de ataque. espera: cuánto se carga (s, al azar entre los dos) · estoc: lo que tarda la estocada ·
   // pausa: entre ataques · cambio: prob. de cambiar de altura justo antes de tirarse · amague: prob. de tirarse a medias
@@ -464,10 +460,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let state = 'menu';   // menu | play | end
   let G = null, shake = 0, flash = null, particles = [], floats = [], banner = null;
 
-  function newRun(demo, d = 'normal') {
+  function newRun(demo, d = 'normal', rapido = false) {
     const D = DIFS[d];
     G = {
-      demo, diff: d, D, t: 0, congelar: 0,
+      demo, diff: d, D, t: 0, congelar: 0, rapido,
       score: 0, nivel: demo ? Math.floor(Math.random() * RIVALES.length) : 0,
       toques: 0, recibidos: 0, pista: 0, cx: 0, cxObj: 0,
       fase: 'guardia', faseT: 0, intro: false, sigue: null,
@@ -493,7 +489,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const R = G.el, P = G.yo;
     R.f = 'pausa'; R.ft = 0; R.dur = 0.3; R.off = 0; R.plan = null;
     P.parada = null; P.recupHasta = 0; P.contra = null; P.ia = null; P.off = 0;
-    G.fase = 'guardia'; G.intro = !!intro && !G.demo; G.faseT = G.demo ? 0.6 : intro ? 2.4 : 1.0;
+    // al reintentar, el primer rival se presenta corto (1 s): ya lo viste
+    G.fase = 'guardia'; G.intro = !!intro && !G.demo;
+    G.faseT = G.faseT0 = G.demo ? 0.6 : intro && !(G.rapido && G.nivel === 0) ? 2.4 : 1.0;
     hudCache = '';
   }
 
@@ -670,6 +668,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (!G.demo) {
       banner = { text: texto, t: performance.now() };
       (yo ? sfxToqueYo : sfxToqueEl)();
+      if (!yo) {
+        // te tocaron: frenito (más largo si es el último) y, si perdiste, la muerte propia del personaje ahí mismo
+        const fin = G.recibidos >= G.D.aguante;
+        frenar(fin ? 140 : 100);
+        if (fin) CC?.morir();
+      }
     }
     hudCache = '';
   }
@@ -779,6 +783,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     R.lean = sigue(R.lean, lean, 20, dt); R.squash = sigue(R.squash, squash, 20, dt);
   }
   function chispas(x, y, n, power, color) {
+    if (reduceMotion) { n = Math.ceil(n / 3); power *= 0.3; }
     for (let k = 0; k < n; k++) {
       const a = Math.random() * Math.PI * 2, sp = (2 + Math.random() * 6) * power;
       particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.5 * power, life: 0.25 + Math.random() * 0.35, age: 0,
@@ -807,19 +812,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function terminar() {
     if (!G || state !== 'play') return;
     ponerMarca(false);
-    CC?.morir();
     const r = settle(), n = G.score;
     $('eTitle').textContent = T(n >= 8 ? '¡Maestro de armas!' : n >= 4 ? '¡Gran esgrimista!' : n >= 1 ? '¡Bien ahí!' : '¡Touché!');
     $('eNum').textContent = n;
     $('eSub').textContent = `${T(n === 1 ? '{n} rival vencido' : '{n} rivales vencidos', { n })} · ${T(G.D.name)} · ${T('te ganó {n}', { n: G.el.info.n })}`;
-    $('eSub2').textContent = T('Paradas perfectas: {n} · mejor racha: {m}', { n: G.perfectas, m: G.mejorRacha }) +
-      (r && !r.record && r.textoAnterior ? ' · ' + T('récord: {t}', { t: r.textoAnterior }) : '');
-    $('eBadge').hidden = !(r && r.record);
-    if (r) $('eBadge').textContent = r.primera ? 'Primer récord' : 'Nuevo récord';
-    $('eXP').hidden = !r; if (r) $('eXP').textContent = `+${r.xp} XP`;
-    const lg = (r && r.logros) || [];
-    $('eLogros').hidden = !lg.length;
-    $('eLogros').replaceChildren(...lg.map(x => Object.assign(document.createElement('span'), { className: 'logro', textContent: x })));
+    $('eSub2').textContent = T('Paradas perfectas: {n} · mejor racha: {m}', { n: G.perfectas, m: G.mejorRacha });
+    // el récord (o qué tan cerca quedaste), la XP, el próximo premio, los logros y las misiones: CC.finDePartida
+    $('eFin').replaceChildren(); $('eFin2').replaceChildren();
+    if (CC && r) CC.finDePartida($('eFin'), r, { abajo: $('eFin2'), reintentar: $('btnAgain') });
     if (DIA) DIA.fin(r, $('btnAgain'), [$('difs2'), $('eDifL')]);
     $('btnRank2').hidden = !CC;
     showEnd();
@@ -944,7 +944,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const tam = Math.round(Math.min(40, S * 1.05));
       if (G.fase === 'guardia') {
         if (G.intro) {
-          const k = Math.min(1, (2.4 - G.faseT) / 0.25);
+          const k = G.faseT0 < 2 ? 1 : Math.min(1, (G.faseT0 - G.faseT) / 0.25);   // la corta aparece de una
           ctx.globalAlpha = k;
           texto(T('Rival {n}', { n: R.info.nivel + 1 }) + ' · ' + T(R.E.nombre), W / 2, zonaY(0.14), Math.round(tam * 0.55));
           texto(R.info.n, W / 2, zonaY(0.38), Math.round(tam * 1.2), R.info.c || '#c9d3e3');
@@ -952,6 +952,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
           ctx.globalAlpha = 1;
         }
         if (G.faseT < 1) texto(T('¡En guardia!'), W / 2, zonaY(G.intro ? 0.85 : 0.5), tam);
+      }
+      // la guía de las primeras partidas: contra el primer rival, de qué lado parar mientras se carga
+      if (G.pistas && G.nivel === 0 && G.fase === 'duelo' && (R.f === 'carga' || R.f === 'estocada')) {
+        const late = reduceMotion ? 1 : 0.75 + 0.25 * Math.sin(now / 90);
+        ctx.globalAlpha = late;
+        texto(T(R.alto ? '◀ ¡Alta!' : '¡Baja! ▶'), W / 2, zonaY(0.82), Math.round(tam * 0.8), '#ffe14d');
+        ctx.globalAlpha = 1;
       }
       if (banner && now - banner.t < 1300) texto(banner.text, W / 2, zonaY(0.5), Math.round(tam * 0.95));
       for (const f of floats) {
@@ -988,7 +995,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const best = CC ? CC.perfil().mejores['esgrima:' + dif()] : rec[dif()];
     $('mBest').textContent = best ? String(best) : '—';
     $('btnRank').hidden = !CC;
-    $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+    $('btnMute').textContent = T(muted ? 'Sonido: no' : 'Sonido: sí');
   }
   let marca = null;
   function ponerMarca(on) {
@@ -996,13 +1003,25 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (on && CC && CC.sombra && G && !G.demo) marca = CC.sombra.marca('esgrima', G.diff);
   }
   function soltarBotones() { for (const b of document.querySelectorAll('.pad button')) b.classList.remove('on'); }
-  function start() {
+  // primeras partidas (CC.guia): los botones laten uno y otro con una manito hasta la primera parada, y contra el
+  // primer rival un cartel dice de qué lado viene cada ataque
+  let guia = null;
+  const sinGuia = () => { if (guia) { guia.listo(); guia = null; } };
+  function primeras() {
+    if (!CC) return false;
+    try { return (CC.perfil().partidas.esgrima || 0) < 3; } catch (e) { return false; }
+  }
+  // reintento: R o «Otra vez» (la presentación del primer rival es más corta)
+  function start(reintento) {
     if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); }
-    newRun(false, dif());
+    newRun(false, dif(), reintento === true);
+    G.pistas = primeras();
+    sinGuia();
+    guia = CC && CC.guia ? CC.guia('esgrima', [$('bL'), $('bR')], { ms: 9000 }) : null;
     state = 'play';
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false;
     $('pad').classList.remove('off');
-    $('hDif').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + G.D.name;
+    $('hDif').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + T(G.D.name);
     soltarBotones(); hudCache = '';
     ponerMarca(true);
     resize();
@@ -1014,12 +1033,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function cortar() { if (state === 'play' && G && !G.demo && (G.done || G.score > 0 || G.toques > 0)) return settle(); return null; }
   function restart() {
     const r = cortar();
-    start();
+    start(true);
     if (r && r.xp) banner = { text: `+${r.xp} XP`, t: performance.now() };
   }
   function showMenu() {
     if (CC && CC.grabar) setTimeout(() => CC.grabar(false));   // si quedó una grabación sin partida, se tira
-    cortar(); ponerMarca(false);
+    cortar(); ponerMarca(false); sinGuia();
     state = 'menu';
     azar = Math.random;
     newRun(true);
@@ -1030,6 +1049,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showEnd() {
     state = 'end';
+    sinGuia();
     $('end').hidden = false; $('hud').hidden = true;
     $('pad').classList.add('off');
     soltarBotones();
@@ -1037,8 +1057,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   const volver = () => { cortar(); if (CC) CC.volver(); else location.href = 'index.html'; };
   const verRanking = t => CC?.verRanking({ juego: 'esgrima', tabla: t });
-  $('btnPlay').addEventListener('click', start);
-  $('btnAgain').addEventListener('click', start);
+  $('btnPlay').addEventListener('click', () => start());
+  $('btnAgain').addEventListener('click', () => start(true));
   $('btnBack').addEventListener('click', volver);
   $('btnHome').addEventListener('click', volver);
   $('btnMenu').addEventListener('click', showMenu);
@@ -1052,7 +1072,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const apretones = {};
   function tocar(btn, alto) {
     if (state !== 'play' || !G || G.demo) return;
-    parar(alto);
+    if (parar(alto)) sinGuia();
     btn.classList.add('on');
     clearTimeout(apretones[btn.id]);
     apretones[btn.id] = setTimeout(() => btn.classList.remove('on'), 130);
@@ -1077,9 +1097,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       else if (k === 'Enter' && document.activeElement === document.body) start();
       else if (k === 'Escape') volver();
     } else if (state === 'end') {
-      if ((k === 'r' || k === 'R') && !e.repeat) start();
+      if ((k === 'r' || k === 'R') && !e.repeat) start(true);
       else if (k === 'Escape') showMenu();
-      else if ((k === 'Enter' || k === ' ') && document.activeElement === document.body) { e.preventDefault(); start(); }
+      else if ((k === 'Enter' || k === ' ') && document.activeElement === document.body) { e.preventDefault(); start(true); }
     }
   });
   addEventListener('blur', soltarBotones);
@@ -1088,13 +1108,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let last = performance.now(), manual = false;
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    if (!manual) update(now, dt);
+    // frenado (hitstop): se dibuja sin avanzar nada; `last` ya quedó al día, así que el tiempo frenado no se acumula
+    if (!manual && !frenado(now)) update(now, dt);
     draw(now);
     requestAnimationFrame(frame);
   }
   showMenu();
   requestAnimationFrame(frame);
-  if (CC && CC.pedirApodo) setTimeout(() => CC.pedirApodo(), 600);
   // para probar desde la consola: __esgrima.manual(true) frena el reloj y paso(dt) avanza a mano
   window.__esgrima = { get G() { return G; }, parar, start, manual: v => { manual = v; }, paso(dt, dibujar = true) { const n = performance.now(); update(n, dt); if (dibujar) draw(n); } };
 })();

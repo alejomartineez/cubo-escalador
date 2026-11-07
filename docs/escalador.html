@@ -187,9 +187,8 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .row .primary { grid-column: 1 / -1; font-size: 20px; padding: 16px 10px; }
 .row small { font-size: 12px; opacity: .6; margin-left: 4px; }
-.exp { font-size: 14px; font-weight: 600; text-align: center; }
-.exp b { font-family: var(--display); font-weight: 400; font-size: 20px; }
-.exp span { display: block; margin-top: 2px; }
+.fin { width: 100%; }
+.fin:empty { display: none; }
 .dif-h { margin: 0 0 -8px; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .dif-h-sub { letter-spacing: .02em; text-transform: none; font-weight: 700; }
 .dif-h-sub::before { content: "· "; }
@@ -342,11 +341,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="num" id="eNum">0</span>
       <span class="sub" id="eSub"></span>
       <span class="badge" id="eBadge" hidden>Nuevo récord</span>
-      <span class="exp" id="eXp" hidden></span>
+      <div class="fin" id="eFin"></div>
     </div>
     <div class="row">
       <button class="btn primary" id="btnAgain" type="button">↻ Otra vez <small>R</small></button>
     </div>
+    <div class="fin" id="eFin2"></div>
     <div class="end-dif"><span>Dificultad para la próxima</span><div id="difs2"></div></div>
     <div class="row">
       <button class="btn" id="btnRank2" type="button">🏆 Ranking</button>
@@ -406,8 +406,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'Sin reloj. Subí hasta el espacio y más allá.': 'No clock. Climb to space and beyond.',
     'La lava sube cada vez más rápido. ¡Que no te alcance!': "The lava rises faster and faster. Don't let it catch you!",
     'Mareo de medio segundo y ves todos los escalones.': 'Half a second of dizziness, and you see every step.',
-    'Mareo de 1 segundo, ves 4 escalones y si te quedás quieto 2 s, el escalón se rompe. XP ×3.': 'One second of dizziness, you see 4 steps, and if you stand still for 2 s the step breaks. XP ×3.',
-    'Ves 3 escalones, un error termina la partida y el escalón se rompe a los 1,6 s. XP ×4.': 'You see 3 steps, one mistake ends the run, and the step breaks after 1.6 s. XP ×4.',
+    'Mareo de 1 segundo, ves 4 escalones y si te quedás quieto 2 s, el escalón se rompe.': 'One second of dizziness, you see 4 steps, and if you stand still for 2 s the step breaks.',
+    'Ves 3 escalones, un error termina la partida y el escalón se rompe a los 1,6 s.': 'You see 3 steps, one mistake ends the run, and the step breaks after 1.6 s.',
     'subir': 'climb',
     'dificultad <kbd>1</kbd>–<kbd>4</kbd> modo': 'difficulty <kbd>1</kbd>–<kbd>4</kbd> mode',
     'otra vez': 'again',
@@ -445,8 +445,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'récord {r}': 'best {r}',
     'No te quedes quieto: el escalón se rompe.': "Don't stand still: the step breaks.",
     'En Maestro el Sprint tiene que salir perfecto.': 'In Master, the Sprint has to be perfect.',
-    'Extremo ×3': 'Extreme ×3',
-    'Maestro ×4': 'Master ×4',
     'Logros: {l}': 'Achievements: {l}',
     '{t} s (Sprint 100)': '{t} s (Sprint 100)',
     '{n} esc. en 30 s': '{n} steps in 30 s',
@@ -506,8 +504,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const LOCAL = { normal: '', extremo: 'X', maestro: 'M' };
   const NOTAS = {
     normal: T('Mareo de medio segundo y ves todos los escalones.'),
-    extremo: T('Mareo de 1 segundo, ves 4 escalones y si te quedás quieto 2 s, el escalón se rompe. XP ×3.'),
-    maestro: T('Ves 3 escalones, un error termina la partida y el escalón se rompe a los 1,6 s. XP ×4.'),
+    extremo: T('Mareo de 1 segundo, ves 4 escalones y si te quedás quieto 2 s, el escalón se rompe.'),
+    maestro: T('Ves 3 escalones, un error termina la partida y el escalón se rompe a los 1,6 s.'),
   };
   const ZONES = [
     ['#ff7a95', '#d94a6c'], ['#ffad4d', '#d9801c'], ['#3fdca8', '#16a676'],
@@ -695,7 +693,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const anterior = recDe(G.mode, G.dif);
     const isRec = guardarLocal(G.mode, G.dif, valor);
     const r = cerrar(valor, G.mode === 'sprint' && G.errors === 0 ? ['escalador-limpio'] : []);
-    if (!isRec && anterior) sub += ' · ' + T('récord {r}', { r: G.mode === 'sprint' ? fmtS(anterior) + ' s' : anterior });
+    if (!r && !isRec && anterior) sub += ' · ' + T('récord {r}', { r: G.mode === 'sprint' ? fmtS(anterior) + ' s' : anterior });
     sub += finSombra(valor);
     pintarFin(title, num, sub, isRec, r);
     if (DIA) DIA.fin(r, $('btnAgain'), [$('difs2').parentNode, $('btnModes')]);
@@ -848,7 +846,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (G.mode === 'sprint') {
       num = G.i + ' / ' + SPRINT_GOAL;
       sub = T(por === 'derrumbe' ? 'No te quedes quieto: el escalón se rompe.' : 'En Maestro el Sprint tiene que salir perfecto.');
-      if (CC && G.i > 0) CC.sumarXP(G.i / 6);
+      // cuenta como partida (XP por los escalones, tiempo jugado, misiones), pero no es récord: no llegaste arriba
+      if (CC && !G.demo && G.i > 0) {
+        try { r = CC.partida({ juego: 'escalador', tabla: tabla('sprint', G.dif), valor: G.i, sinRecord: true, xp: G.i / 6 }); } catch (e) { r = null; }
+      }
     } else {
       num = valor;
       const seg = G.started ? ((now - G.t0) / 1000).toFixed(1) : '0';
@@ -856,7 +857,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const anterior = recDe(G.mode, G.dif);
       isRec = valor > 0 && guardarLocal(G.mode, G.dif, valor);
       r = cerrar(valor);
-      if (!isRec && anterior) sub += ' · ' + T('récord {r}', { r: anterior });
+      if (!r && !isRec && anterior) sub += ' · ' + T('récord {r}', { r: anterior });
       sub += finSombra(valor);
     }
     if (por === 'lava') { beep(110, 0.5, 'sawtooth', 0.07, 0.5); beep(70, 0.6, 'square', 0.05); }
@@ -867,9 +868,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function pintarFin(title, num, sub, isRec, r) {
     $('eTitle').textContent = title; $('eNum').textContent = num; $('eSub').textContent = sub;
-    $('eBadge').hidden = !isRec;
-    $('eXp').hidden = !r;
-    if (r) $('eXp').innerHTML = `<b>+${r.xp} XP</b>` + (G.dif === 'extremo' ? ' · ' + T('Extremo ×3') : G.dif === 'maestro' ? ' · ' + T('Maestro ×4') : '') + (r.logros.length ? `<span>${T('Logros: {l}', { l: r.logros.map(x => T(x)).join(', ') })}</span>` : '');
+    // con la librería, el récord (o qué tan cerca quedaste), la XP, el próximo premio, los logros y las misiones los arma
+    // CC.finDePartida; sin ella, el récord de este dispositivo
+    $('eBadge').hidden = !!r || !isRec;
+    $('eFin').replaceChildren(); $('eFin2').replaceChildren();
+    if (CC && r) CC.finDePartida($('eFin'), r, { abajo: $('eFin2'), reintentar: $('btnAgain') });
   }
 
   // ---------- pantallas ----------
@@ -1566,8 +1569,20 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
   }
 
+  // ?jugar=sprint | 30 | libre | lava: arranca esa partida apenas carga, sin pasar por el menú (lo usa el inicio para
+  // que la primera vez se juegue con un solo toque). Va en la dificultad guardada (o Normal); con ?diario=1 es el
+  // desafío del día (30 segundos en Normal), como si tocaras Jugar en su cartel.
+  const JUGAR = { sprint: 'sprint', '30': 'time', time: 'time', libre: 'free', free: 'free', lava: 'lava' };
+  function arranqueDirecto() {
+    let q = null;
+    try { q = new URLSearchParams(location.search).get('jugar'); } catch (e) {}
+    const mode = q && JUGAR[q.toLowerCase()];
+    if (mode) start(DIA ? 'time' : mode);
+  }
+
   showMenu();
   if (DUELO) conectarDuelo();
+  else arranqueDirecto();
   requestAnimationFrame(frame);
 })();
 </script>

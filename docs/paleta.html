@@ -186,17 +186,8 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .result .num { font-family: var(--display); font-size: 64px; line-height: 1; font-variant-numeric: tabular-nums; }
 .result .sub { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .lbl-dif { margin: 0 0 -6px; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: center; }
-.xp {
-  font-family: var(--display); font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums;
-  background: var(--cube); border: 2px solid var(--ink); border-radius: 999px; padding: 5px 14px; margin-top: 4px;
-}
-.badge {
-  font-weight: 800; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
-  background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
-}
-.logros { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 2px; }
-.logro { font-weight: 800; font-size: 13px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 4px 10px; }
-.logro::before { content: "★ "; color: #e0a000; }
+.fin { width: 100%; }
+.fin:empty { display: none; }
 .row { display: flex; gap: 10px; }
 .row > * { flex: 1; }
 .btn {
@@ -279,12 +270,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <h2 id="eTitle">¡Partido!</h2>
       <span class="num" id="eNum">0</span>
       <span class="sub" id="eSub"></span>
-      <span class="badge" id="eBadge" hidden>Nuevo récord</span>
       <span class="sub" id="eSub2"></span>
-      <span class="xp" id="eXP" hidden>+0 XP</span>
-      <div class="logros" id="eLogros" hidden></div>
+      <div class="fin" id="eFin"></div>
     </div>
     <button class="btn primary big" id="btnAgain" type="button">↻ Otra vez <kbd class="kbd-only">R</kbd></button>
+    <div class="fin" id="eFin2"></div>
     <p class="lbl-dif" id="eDifL">Dificultad</p>
     <div id="difs2"></div>
     <div class="row">
@@ -341,8 +331,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'Paleta ancha, pelota lenta y 5 vidas.': 'Wide paddle, slow ball and 5 lives.',
     '3 vidas. Cada 3 puntos viene un rival mejor.': '3 lives. Every 3 points a better rival shows up.',
     'Pelota más rápida y paleta más chica.': 'Faster ball and smaller paddle.',
-    'Rapidísima, paleta corta y 2 vidas. XP ×3.': 'Super fast, short paddle and 2 lives. XP ×3.',
-    'Una sola vida y la pelota vuela. XP ×4.': 'Just one life and the ball flies. XP ×4.',
+    'Rapidísima, paleta corta y 2 vidas.': 'Super fast, short paddle and 2 lives.',
+    'Una sola vida y la pelota vuela.': 'Just one life and the ball flies.',
     'El Profe': 'The Prof',
     // en el juego (canvas)
     '¡Rival nuevo: {n}!': 'New rival: {n}!',
@@ -392,8 +382,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     facil: T('Paleta ancha, pelota lenta y 5 vidas.'),
     normal: T('3 vidas. Cada 3 puntos viene un rival mejor.'),
     dificil: T('Pelota más rápida y paleta más chica.'),
-    extremo: T('Rapidísima, paleta corta y 2 vidas. XP ×3.'),
-    maestro: T('Una sola vida y la pelota vuela. XP ×4.'),
+    extremo: T('Rapidísima, paleta corta y 2 vidas.'),
+    maestro: T('Una sola vida y la pelota vuela.'),
   };
   const RIVALES = [
     { n: 'Tito', c: '#ff7a59' }, { n: 'Lola', c: '#8f6bff' }, { n: 'Rulo', c: '#3fc1c9' }, { n: 'Mora', c: '#ff6fae' },
@@ -573,7 +563,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     // saca el que perdió el punto
     G.saca = ganoAbajo ? 'arriba' : 'abajo';
     const termino = G.modo === 'cpu' ? G.vidas <= 0 : G.score >= META_DOS || G.contra >= META_DOS;
-    if (termino) { G.done = true; G.fase = 'fin'; setTimeout(terminar, 650); }
+    if (termino) {
+      G.done = true; G.fase = 'fin'; setTimeout(terminar, 650);
+      if (G.modo === 'cpu' && !G.red) CC?.morir();   // personajes con muerte propia (Geo se parte en pedazos), al perder la última
+    }
   }
 
   // ---------- actualizar ----------
@@ -660,22 +653,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       $('eNum').textContent = `${G.score} – ${G.contra}`;
       $('eSub').textContent = T('abajo – arriba · a {n} puntos · {d}', { n: META_DOS, d: G.D.name });
       $('eSub2').textContent = T(G.mejorRally === 1 ? 'Rally más largo: {n} golpe' : 'Rally más largo: {n} golpes', { n: G.mejorRally });
-      $('eBadge').hidden = true; $('eXP').hidden = true; $('eLogros').hidden = true;
+      $('eFin').replaceChildren(); $('eFin2').replaceChildren();
       if (CC) CC.sumarXP(10);   // un poco de XP por jugar con alguien
     } else {
-      CC?.morir();
       const r = settle();
       $('eTitle').textContent = T(G.score >= 15 ? '¡Partidazo!' : G.score >= 6 ? '¡Buena paleta!' : '¡Se terminó!');
       $('eNum').textContent = G.score;
       $('eSub').textContent = T(G.score === 1 ? 'punto · {d} · llegaste al rival {n}' : 'puntos · {d} · llegaste al rival {n}', { d: G.D.name, n: G.nivel + 1 });
-      $('eSub2').textContent = T(G.mejorRally === 1 ? 'Rally más largo: {n} golpe' : 'Rally más largo: {n} golpes', { n: G.mejorRally }) +
-        (r && !r.record && r.textoAnterior ? ' · ' + T('récord: {r}', { r: r.textoAnterior }) : '');
-      $('eBadge').hidden = !(r && r.record);
-      if (r) $('eBadge').textContent = r.primera ? T('Primer récord') : T('Nuevo récord');
-      $('eXP').hidden = !r; if (r) $('eXP').textContent = `+${r.xp} XP`;
-      const lg = (r && r.logros) || [];
-      $('eLogros').hidden = !lg.length;
-      $('eLogros').replaceChildren(...lg.map(n => Object.assign(document.createElement('span'), { className: 'logro', textContent: n })));
+      $('eSub2').textContent = T(G.mejorRally === 1 ? 'Rally más largo: {n} golpe' : 'Rally más largo: {n} golpes', { n: G.mejorRally });
+      // el récord (o qué tan cerca quedaste), la XP, el próximo premio, los logros y las misiones: CC.finDePartida
+      $('eFin').replaceChildren(); $('eFin2').replaceChildren();
+      if (CC && r) CC.finDePartida($('eFin'), r, { abajo: $('eFin2'), reintentar: $('btnAgain') });
       if (DIA) DIA.fin(r, $('btnAgain'), [$('difs2'), $('eDifL')]);
     }
     $('btnRank2').hidden = dos || !CC;
@@ -1151,7 +1139,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   showMenu();
   if (DUELO) conectarDuelo();
   requestAnimationFrame(frame);
-  if (CC && CC.pedirApodo && !DUELO) setTimeout(() => CC.pedirApodo(), 600);
 })();
 </script>
 

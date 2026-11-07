@@ -228,19 +228,12 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .diff[aria-checked="true"] { background: var(--cube); transform: translateY(2px); box-shadow: 0 2px 0 var(--ink); }
 .diff[aria-checked="true"] small { color: var(--ink); }
 .diff:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
-.xp {
-  font-family: var(--display); font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums;
-  background: var(--cube); border: 2px solid var(--ink); border-radius: 999px; padding: 5px 14px; margin-top: 4px;
-}
 .badge {
   font-weight: 800; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
   background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
 }
-.logros { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 2px; }
-.logro {
-  font-weight: 800; font-size: 13px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 4px 10px;
-}
-.logro::before { content: "★ "; color: #e0a000; }
+.fin { width: 100%; }
+.fin:empty { display: none; }
 .row { display: flex; gap: 10px; }
 .row > * { flex: 1; }
 .btn {
@@ -340,11 +333,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="sub" id="eSub"></span>
       <span class="badge" id="eBadge" hidden>Nuevo récord</span>
       <span class="sub" id="eSub2"></span>
-      <span class="xp" id="eXP" hidden>+0 XP</span>
-      <span class="sub" id="eXPd" hidden></span>
-      <div class="logros" id="eLogros" hidden></div>
+      <div class="fin" id="eFin"></div>
     </div>
     <button class="btn primary big" id="btnAgain" type="button">↻ Otra vez <kbd class="kbd-only">R</kbd></button>
+    <div class="fin" id="eFin2"></div>
     <p class="lbl-dif" id="eDifL">Dificultad</p>
     <div id="diffs2"></div>
     <div class="row">
@@ -403,8 +395,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'Tres vidas y bloques más lentos. Ideal para aprender.': 'Three lives and slower blocks. Great for learning.',
     'Arranca con ritmo y cada 15 s pasa algo: monedas o ráfagas.': 'Starts at a good pace, and every 15 s something happens: coins or rushes.',
     'Arranca rápido y con filas de a tres desde el principio.': 'Starts fast, with rows of three right from the start.',
-    'Velocidad al tope y filas pegadas desde el segundo 0. XP ×3.': 'Top speed and tight rows from second 0. XP ×3.',
-    'Más rápido que Extremo, sin monedas y te tenés que mover en cada fila. XP ×4.': 'Faster than Extreme, no coins, and you have to move on every row. XP ×4.',
+    'Velocidad al tope y filas pegadas desde el segundo 0.': 'Top speed and tight rows from second 0.',
+    'Más rápido que Extremo, sin monedas y te tenés que mover en cada fila.': 'Faster than Extreme, no coins, and you have to move on every row.',
     // en el juego (canvas)
     '¡Esquivá!': 'Dodge!',
     '¡Última vida!': 'Last life!',
@@ -425,9 +417,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     '{n} moneda': '{n} coin',
     '{n} monedas': '{n} coins',
     'récord en {d}: {n}': 'best on {d}: {n}',
-    '×{x} por {d}': '×{x} for {d}',
-    '+25 % por récord': '+25% for new best',
-    'incluye logros': 'includes achievements',
   });
   const T = (s, v) => (CC && CC.T ? CC.T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s);
   const LOCALE = (CC && CC.LOCALE) || 'es-AR';
@@ -464,8 +453,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     facil: T('Tres vidas y bloques más lentos. Ideal para aprender.'),
     normal: T('Arranca con ritmo y cada 15 s pasa algo: monedas o ráfagas.'),
     dificil: T('Arranca rápido y con filas de a tres desde el principio.'),
-    extremo: T('Velocidad al tope y filas pegadas desde el segundo 0. XP ×3.'),
-    maestro: T('Más rápido que Extremo, sin monedas y te tenés que mover en cada fila. XP ×4.'),
+    extremo: T('Velocidad al tope y filas pegadas desde el segundo 0.'),
+    maestro: T('Más rápido que Extremo, sin monedas y te tenés que mover en cada fila.'),
   };
   // XP por partida (antes del multiplicador): 6 para una floja (unos 30 s en Normal), 60 para una de experto (unos 2:40 en Normal)
   const XP_MALO = 100, XP_EXPERTO = 1300;
@@ -636,23 +625,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('eTitle').textContent = TITLES[Math.floor(Math.random() * TITLES.length)];
     $('eNum').textContent = fmtN(G.score);
     $('eSub').textContent = T('puntos · {t} s · nivel {n} · {d}', { t: G.t.toFixed(1), n: G.level, d: D.name });
-    $('eBadge').hidden = !r.record;
+    // con la librería, el récord (o qué tan cerca quedaste), la XP, el próximo premio, los logros y las misiones los
+    // arma CC.finDePartida; sin ella, el récord de este dispositivo
+    $('eBadge').hidden = !!CC || !r.record;
     $('eBadge').textContent = r.record && r.anterior ? T('Nuevo récord · antes {n}', { n: fmtN(r.anterior) }) : T('Nuevo récord');
     $('eSub2').textContent = T(G.dodged === 1 ? '{n} bloque esquivado' : '{n} bloques esquivados', { n: G.dodged }) + ' · ' +
       T(G.coinsN === 1 ? '{n} moneda' : '{n} monedas', { n: G.coinsN }) +
-      (r.record || !bestFor(G.diff) ? '' : ' · ' + T('récord en {d}: {n}', { d: D.name, n: fmtN(bestFor(G.diff)) }));
-    $('eXP').hidden = $('eXPd').hidden = !CC;
-    $('eXP').textContent = `+${fmtN(r.xp)} XP`;
-    const dm = CC && CC.DIFS.find(x => x.id === G.diff);
-    const parts = [];
-    if (dm && dm.xp !== 1) parts.push(T('×{x} por {d}', { x: dm.xp.toLocaleString(LOCALE), d: D.name }));
-    if (r.record && r.anterior != null) parts.push(T('+25 % por récord'));
-    if (r.logros.length) parts.push(T('incluye logros'));
-    $('eXPd').textContent = parts.join(' · ');
-    $('eXPd').hidden = !parts.length;
-    const lg = $('eLogros');
-    lg.replaceChildren(...r.logros.map(n => { const s = document.createElement('span'); s.className = 'logro'; s.textContent = n; return s; }));
-    lg.hidden = !r.logros.length;
+      (CC || r.record || !bestFor(G.diff) ? '' : ' · ' + T('récord en {d}: {n}', { d: D.name, n: fmtN(bestFor(G.diff)) }));
+    $('eFin').replaceChildren(); $('eFin2').replaceChildren();
+    if (CC && r) CC.finDePartida($('eFin'), r, { abajo: $('eFin2'), reintentar: $('btnAgain') });
     if (DIA) DIA.fin(r, $('btnAgain'), [$('diffs2'), $('eDifL')]);
     setTimeout(() => { if (G && G.done && state === 'play') showEnd(); }, 700);
   }

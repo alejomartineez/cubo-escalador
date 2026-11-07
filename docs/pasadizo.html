@@ -176,17 +176,8 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .result .num small { font-size: .5em; }
 .result .sub { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .lbl-dif { margin: 0 0 -6px; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: center; }
-.xp {
-  font-family: var(--display); font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums;
-  background: var(--cube); border: 2px solid var(--ink); border-radius: 999px; padding: 5px 14px; margin-top: 4px;
-}
-.badge {
-  font-weight: 800; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
-  background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
-}
-.logros { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 2px; }
-.logro { font-weight: 800; font-size: 13px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 4px 10px; }
-.logro::before { content: "★ "; color: #e0a000; }
+.fin { width: 100%; }
+.fin:empty { display: none; }
 .row { display: flex; gap: 10px; }
 .row > * { flex: 1; }
 .btn {
@@ -235,7 +226,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   <div class="card">
     <button class="ter smallbtn back" id="btnBack" type="button">← Juegos</button>
     <div class="brand"><div class="logo" aria-hidden="true"></div><h1>Pasadizo</h1></div>
-    <p class="intro">Tu cubo se pega a las paredes. <b>Mantené ◀ o ▶</b> para cargar y <b>soltá</b> para saltar: cuanto más cargás, más alto llegás. Ojo con los pinches, los huecos y las paredes que se rompen.</p>
+    <p class="intro" data-t>Tu cubo se pega a las paredes. <b>Mantené ◀ o ▶</b> para cargar y <b>soltá</b> para saltar: cuanto más cargás, más alto llegás. Ojo con los pinches, los huecos y las paredes que se rompen.</p>
     <div id="difs"></div>
     <div class="go">
       <span class="best">Récord<b id="mBest">—</b></span>
@@ -255,12 +246,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <h2 id="eTitle">¡Te caíste!</h2>
       <span class="num" id="eNum">0</span>
       <span class="sub" id="eSub"></span>
-      <span class="badge" id="eBadge" hidden>Nuevo récord</span>
       <span class="sub" id="eSub2"></span>
-      <span class="xp" id="eXP" hidden>+0 XP</span>
-      <div class="logros" id="eLogros" hidden></div>
+      <div class="fin" id="eFin"></div>
     </div>
     <button class="btn primary big" id="btnAgain" type="button">↻ Otra vez <kbd class="kbd-only">R</kbd></button>
+    <div class="fin" id="eFin2"></div>
     <p class="lbl-dif" id="eDifL">Dificultad</p>
     <div id="difs2"></div>
     <div class="row">
@@ -278,8 +268,37 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const cv = document.getElementById('cv');
   const ctx = cv.getContext('2d');
   const $ = id => document.getElementById(id);
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const CC = window.CuboComun; // perfil compartido (XP, personaje, récords); si no está, el juego anda solo
+  // «Reducir movimiento» de Opciones (si nunca se tocó, sigue al sistema): sin temblor y chispas chicas
+  const reduceMotion = (CC && CC.menosMovimiento) ?? matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const frenar = ms => { if (CC && CC.frenar) CC.frenar(ms); };
+  const frenado = now => !!(CC && CC.frenado && CC.frenado(now));
+  // Textos en inglés (la clave es el texto en español; ver «idioma» en cubo-comun.js)
+  if (CC && CC.textos) CC.textos({
+    'Pasadizo': 'Passage', 'altura': 'height', 'zona {n}': 'zone {n}', 'Volver al menú (Esc)': 'Back to menu (Esc)', 'Menú': 'Menu',
+    'Reiniciar (R)': 'Restart (R)', 'Izquierda': 'Left', 'Derecha': 'Right',
+    'Cargar salto a la izquierda': 'Charge a jump to the left', 'Cargar salto a la derecha': 'Charge a jump to the right',
+    'Tu cubo se pega a las paredes. <b>Mantené ◀ o ▶</b> para cargar y <b>soltá</b> para saltar: cuanto más cargás, más alto llegás. Ojo con los pinches, los huecos y las paredes que se rompen.':
+      'Your cube sticks to the walls. <b>Hold ◀ or ▶</b> to charge and <b>let go</b> to jump: the more you charge, the higher you go. Watch out for spikes, gaps and walls that crumble.',
+    'Récord': 'Best', 'Jugar': 'Play', 'Sonido: sí': 'Sound: on', 'Sonido: no': 'Sound: off', 'Otra vez': 'Again',
+    'Nuevo récord': 'New best', 'Primer récord': 'First best', 'Récord: {r}': 'Best: {r}',
+    'cargar y saltar': 'charge and jump', 'Mantené ◀ o ▶ y soltá para saltar': 'Hold ◀ or ▶ and let go to jump',
+    'MÁX': 'MAX', '¡Se pasó!': 'Too much!', '¡Récord!': 'Best!',
+    // dificultades
+    'Carga lenta, arco guía hasta donde caés y paredes que aguantan.': 'Slow charge, a guide arc all the way to where you land, and sturdy walls.',
+    'El arco guía te muestra dónde vas a caer. Sin apuro.': 'The guide arc shows where you will land. No rush.',
+    'Guía corta, la carga se pasa de rosca y la cámara sube sola.': 'Short guide, the charge overshoots and the camera rises on its own.',
+    'Casi sin guía, más trampas y la cámara más rápida.': 'Almost no guide, more traps and a faster camera.',
+    'Sin guía: medí la carga a ojo.': 'No guide: judge the charge by eye.',
+    // zonas
+    'Mina': 'Mine', 'Cristales': 'Crystals', 'Hielo': 'Ice', 'Magma': 'Magma', 'Cielo': 'Sky', 'Espacio': 'Space',
+    '¡Mina!': 'Mine!', '¡Cristales!': 'Crystals!', '¡Hielo!': 'Ice!', '¡Magma!': 'Magma!', '¡Cielo!': 'Sky!', '¡Espacio!': 'Space!',
+    // fin de partida
+    '¡Pinchado!': 'Spiked!', '¡Al vacío!': 'Into the void!', '¡Te caíste!': 'You fell!', '¡Qué subida!': 'What a climb!', '¡Se terminó!': 'Game over!',
+    '{n} salto': '{n} jump', '{n} saltos': '{n} jumps',
+    'Te pinchaste': 'You got spiked', 'Caíste al vacío': 'You fell into the void',
+  });
+  const T = (s, v) => (CC && CC.T ? CC.T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s);
   // desafío del día (?diario=1): Normal, 3 intentos y el pasadizo sale de la semilla del día (igual para todos)
   const DIA = CC && CC.diarioDe ? CC.diarioDe('pasadizo') : null;
   let azar = Math.random;
@@ -306,8 +325,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     facil: 'Carga lenta, arco guía hasta donde caés y paredes que aguantan.',
     normal: 'El arco guía te muestra dónde vas a caer. Sin apuro.',
     dificil: 'Guía corta, la carga se pasa de rosca y la cámara sube sola.',
-    extremo: 'Casi sin guía, más trampas y la cámara más rápida. XP ×3.',
-    maestro: 'Sin guía: medí la carga a ojo. XP ×4.',
+    extremo: 'Casi sin guía, más trampas y la cámara más rápida.',
+    maestro: 'Sin guía: medí la carga a ojo.',
   };
   const XP_MALO = 10, XP_EXPERTO = 260;
   const MUESTRAS = 32;   // cuántas cargas distintas prueba el generador para cada lado
@@ -768,6 +787,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     lanzar(G.M, p, k.dir, k.c, false);
     p.estado = 'vuelo'; p.rect = null; p.estirar = 1; p.aplastar = 0; p.mirar = k.dir; p.cabeza = false;
     G.acc = 0; G.carga = null; G.guia = null; G.saltos++; G.empezo = true;
+    if (!G.demo) sinGuia();
     // polvito donde estaba apoyado
     if (rect0) polvo(p.x + (lado ? lado * HALF : 0), p.y - (lado ? 0 : HALF), lado ? -lado : 0, lado ? 0 : 1, 5, zonaEn(p.y).borde);
     if (!G.demo) { cortarTono(); sfxSalto(k.c); CC?.vibrar(6); }
@@ -789,7 +809,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     r.tipo = 'hueco'; r.roto = true; r.rompio = G.t;
     const z = zonaEn(r.y0), cara = r.lado < 0 ? r.x1 : r.x0;
     for (let y = r.y0 + 0.2; y < r.y1; y += 0.35) {
-      for (let k = 0; k < 2; k++) particles.push({ x: cara - r.lado * (0.1 + Math.random() * 0.6), y, vx: -r.lado * (1 + Math.random() * 2), vy: Math.random() * 2,
+      for (let k = 0; k < (reduceMotion ? 1 : 2); k++) particles.push({ x: cara - r.lado * (0.1 + Math.random() * 0.6), y, vx: -r.lado * (1 + Math.random() * 2) * (reduceMotion ? 0.3 : 1), vy: Math.random() * 2,
         g: 22, life: 0.6 + Math.random() * 0.5, age: 0, s: 0.14 + Math.random() * 0.18, c: Math.random() < 0.5 ? z.roca : '#e3c08f', rot: Math.random() * 6 });
     }
     const p = G.p;
@@ -801,6 +821,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     G.done = true; G.muerte = tipo; G.carga = null; G.guia = null;
     cortarTono(); pintarBotones();
     const p = G.p;
+    if (!G.demo) frenar(tipo === 'pinches' ? 140 : tipo === 'vacio' ? 120 : 90);   // frenito al morir
     if (tipo === 'pinches') {
       if (!G.demo) { sfxPinches(); shake = reduceMotion ? 0 : 12; CC?.vibrar(60); }
       p.oculto = true;
@@ -809,6 +830,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     } else if (tipo === 'vacio') {
       p.vacio = { t: 0, dir: r ? r.lado : 1, x: p.x, y: p.y };
       if (!G.demo) { sfxVacio(); CC?.vibrar(40); }
+      // los personajes con muerte propia (Geo se parte en pedazos) revientan ahí mismo, en vez de irse al hueco
+      if (CC && !G.demo && CC.morir(cv)) p.oculto = true;
     } else if (!G.demo) { sfxCaida(); CC?.vibrar(40); }
     if (G.demo) { const g = G; setTimeout(() => { if (G === g && state === 'menu') newRun(true); }, 1300); }
     else setTimeout(terminar, tipo === 'caida' ? 450 : 950);
@@ -822,7 +845,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       G.proxMarca += 25; sfxMarca();
     }
     const z = zonaIdx(m);
-    if (z !== G.zona) { G.zona = z; banner = { text: `¡${ZONAS[z].nombre}!`, t: performance.now() }; sfxZona(); hudCache = ''; }
+    if (z !== G.zona) { G.zona = z; banner = { text: T(`¡${ZONAS[z].nombre}!`), t: performance.now() }; sfxZona(); hudCache = ''; }
     if (marca) marca.ver(m);
   }
 
@@ -899,8 +922,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     shake = Math.max(0, shake - dt * 40);
   }
   function polvo(x, y, nx, ny, n, color) {
+    if (reduceMotion) n = Math.ceil(n / 3);
     for (let k = 0; k < n; k++) {
-      const a = (Math.random() - 0.5) * 2.2, sp = 1 + Math.random() * 2.6;
+      const a = (Math.random() - 0.5) * 2.2, sp = (1 + Math.random() * 2.6) * (reduceMotion ? 0.3 : 1);
       // sale para afuera de la superficie, abriéndose
       const vx = nx ? nx * sp * Math.cos(a * 0.5) : Math.sin(a) * sp * 1.4;
       const vy = ny ? ny * sp * 0.6 * Math.abs(Math.cos(a)) : Math.sin(a) * sp;
@@ -909,8 +933,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
   }
   function chispas(x, y, color, n) {
+    if (reduceMotion) n = Math.ceil(n / 3);
     for (let k = 0; k < n; k++) {
-      const a = Math.random() * Math.PI * 2, sp = 3 + Math.random() * 6;
+      const a = Math.random() * Math.PI * 2, sp = (3 + Math.random() * 6) * (reduceMotion ? 0.3 : 1);
       particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, g: 14, life: 0.35 + Math.random() * 0.35, age: 0, s: 0.1 + Math.random() * 0.12, c: color });
     }
   }
@@ -931,17 +956,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (!G || state !== 'play') return;
     ponerMarca(false);
     const r = settle(), m = Math.floor(G.max);
-    $('eTitle').textContent = m >= 150 ? '¡Qué subida!' : TITULOS[G.muerte] || '¡Se terminó!';
+    $('eTitle').textContent = T(m >= 150 ? '¡Qué subida!' : TITULOS[G.muerte] || '¡Se terminó!');
     $('eNum').innerHTML = `${m} <small>m</small>`;
-    $('eSub').textContent = `${G.D.name} · ${ZONAS[zonaIdx(m)].nombre} · ${G.saltos} ${G.saltos === 1 ? 'salto' : 'saltos'}`;
-    $('eSub2').textContent = (m >= 150 ? (G.muerte === 'pinches' ? 'Te pinchaste' : G.muerte === 'vacio' ? 'Caíste al vacío' : 'Te caíste') : '') +
-      (r && !r.record && r.textoAnterior ? `${m >= 150 ? ' · ' : ''}Récord: ${r.textoAnterior}` : '');
-    $('eBadge').hidden = !(r && r.record);
-    if (r) $('eBadge').textContent = r.primera ? 'Primer récord' : 'Nuevo récord';
-    $('eXP').hidden = !r; if (r) $('eXP').textContent = `+${r.xp} XP`;
-    const lg = (r && r.logros) || [];
-    $('eLogros').hidden = !lg.length;
-    $('eLogros').replaceChildren(...lg.map(n => Object.assign(document.createElement('span'), { className: 'logro', textContent: n })));
+    $('eSub').textContent = `${T(G.D.name)} · ${T(ZONAS[zonaIdx(m)].nombre)} · ${T(G.saltos === 1 ? '{n} salto' : '{n} saltos', { n: G.saltos })}`;
+    $('eSub2').textContent = m >= 150 ? T(G.muerte === 'pinches' ? 'Te pinchaste' : G.muerte === 'vacio' ? 'Caíste al vacío' : 'Te caíste') : '';
+    // el récord (o qué tan cerca quedaste), la XP, el próximo premio, los logros y las misiones: CC.finDePartida
+    $('eFin').replaceChildren(); $('eFin2').replaceChildren();
+    if (CC && r) CC.finDePartida($('eFin'), r, { abajo: $('eFin2'), reintentar: $('btnAgain') });
     if (DIA) DIA.fin(r, $('btnAgain'), [$('difs2'), $('eDifL')]);
     $('btnRank2').hidden = !CC;
     showEnd();
@@ -1113,7 +1134,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       ctx.lineWidth = lw;
       if (k.c > 0.005) { ctx.beginPath(); ctx.arc(cx, cy, R, a0, a0 + Math.PI * 2 * Math.min(1, k.c)); ctx.stroke(); }
       if (k.rosca || max) {
-        texto(k.rosca ? '¡Se pasó!' : 'MÁX', cx, cy - R - S * 0.45, Math.round(Math.max(14, S * 0.42)), k.rosca ? '#ff5d7d' : '#fffaf0');
+        texto(T(k.rosca ? '¡Se pasó!' : 'MÁX'), cx, cy - R - S * 0.45, Math.round(Math.max(14, S * 0.42)), k.rosca ? '#ff5d7d' : '#fffaf0');
       }
     }
   }
@@ -1182,7 +1203,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const y = sy(G.record);
       ctx.save(); ctx.setLineDash([S * 0.3, S * 0.2]); ctx.strokeStyle = 'rgba(255,250,240,.75)'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); ctx.restore();
-      texto(G.max >= G.record ? '🏁 ¡Récord!' : '🏁 Récord', W / 2, y - S * 0.42, Math.round(Math.max(13, S * 0.36)));
+      texto('🏁 ' + T(G.max >= G.record ? '¡Récord!' : 'Récord'), W / 2, y - S * 0.42, Math.round(Math.max(13, S * 0.36)));
     }
     // el pasadizo
     const vis = visibles(), L = [], R = [], sal = [];
@@ -1216,7 +1237,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (!G.demo && state === 'play') {
       if (!G.empezo) {
         const t = Math.round(Math.max(15, Math.min(22, S * 0.46)));
-        texto('Mantené ◀ o ▶ y soltá para saltar', W / 2, sy(4.6), t);
+        texto(T('Mantené ◀ o ▶ y soltá para saltar'), W / 2, sy(4.6), t);
       }
       if (banner && now - banner.t < 1600) {
         const k = (now - banner.t) / 1600;
@@ -1237,8 +1258,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (k === hudCache) return;
     hudCache = k;
     $('hScore').innerHTML = `${m} <small>m</small>`;
-    $('hZona').textContent = ZONAS[G.zona].nombre;
-    $('hSub').textContent = `zona ${G.zona + 1}`;
+    $('hZona').textContent = T(ZONAS[G.zona].nombre);
+    $('hSub').textContent = T('zona {n}', { n: G.zona + 1 });
   }
   // los botones se llenan con la carga
   let botonesCache = '';
@@ -1262,13 +1283,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     sel = CC.selectorDif($('difs'), { juego: 'pasadizo', notas: NOTAS, alCambiar: () => renderMenu() });
     CC.selectorDif($('difs2'), { juego: 'pasadizo', compacto: true, alCambiar: () => renderMenu() });
     if (DIA) DIA.menu($('difs'), []);
-    CC.leyendaTeclas($('leyenda'), { jugar: 'cargar y saltar', extra: [['R', 'reiniciar']] });
+    CC.leyendaTeclas($('leyenda'), { jugar: T('cargar y saltar'), extra: [['R', T('reiniciar')]] });
   } else { $('difs').hidden = true; $('difs2').hidden = true; $('eDifL').hidden = true; }
   function renderMenu() {
     const best = CC ? CC.perfil().mejores['pasadizo:' + dif()] : rec[dif()];
     $('mBest').textContent = best ? `${best} m` : '—';
     $('btnRank').hidden = !CC;
-    $('btnMute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí');
+    $('btnMute').textContent = T(muted ? 'Sonido: no' : 'Sonido: sí');
   }
   let marca = null;
   function ponerMarca(on) {
@@ -1280,14 +1301,20 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     for (const b of document.querySelectorAll('.pad button')) b.classList.remove('on');
     if (G && !G.demo) cancelarCarga();
   }
+  // primeras partidas (CC.guia): los botones laten uno y otro con una manito hasta el primer salto (el cartel de
+  // «Mantené ◀ o ▶ y soltá» ya dice qué hacer)
+  let guia = null;
+  const sinGuia = () => { if (guia) { guia.listo(); guia = null; } };
   function start() {
     if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); }
+    sinGuia();
+    guia = CC && CC.guia ? CC.guia('pasadizo', [$('bL'), $('bR')], { ms: 9000 }) : null;
     state = 'play';
     $('menu').hidden = true; $('end').hidden = true; $('hud').hidden = false;
     $('pad').classList.remove('off');
     resize();
     newRun(false, dif());
-    $('hDif').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + G.D.name;
+    $('hDif').innerHTML = (CC ? CC.iconoDif(G.diff, 16) : '') + T(G.D.name);
     soltarTeclas(); hudCache = ''; botonesCache = 'x'; pintarBotones();
     ponerMarca(true);
     if (CC && CC.grabar) CC.grabar();   // la repetición (se sube sola si la partida es récord)
@@ -1301,7 +1328,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showMenu() {
     if (CC && CC.grabar) setTimeout(() => CC.grabar(false));   // si quedó una grabación sin partida, se tira
-    cortar(); ponerMarca(false); cortarTono();
+    cortar(); ponerMarca(false); cortarTono(); sinGuia();
     state = 'menu';
     resize();
     newRun(true);
@@ -1312,6 +1339,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function showEnd() {
     state = 'end';
+    sinGuia();
     $('end').hidden = false; $('hud').hidden = true;
     $('pad').classList.add('off');
     soltarTeclas();
@@ -1377,13 +1405,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    update(now, dt); draw(now);
+    // frenado (hitstop): se dibuja sin avanzar nada; `last` ya quedó al día, así que el tiempo frenado no se acumula
+    if (!frenado(now)) update(now, dt);
+    draw(now);
     requestAnimationFrame(frame);
   }
   resize();
   showMenu();
   requestAnimationFrame(frame);
-  if (CC && CC.pedirApodo) setTimeout(() => CC.pedirApodo(), 600);
 })();
 </script>
 
