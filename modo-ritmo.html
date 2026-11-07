@@ -895,6 +895,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       // «¡Justo!»: cada 8 perfectos seguidos (con al menos 1,2 s entre uno y otro); solo sensación, no suma nada
       const justo = perfect && G.racha % 8 === 0 && p - G.justoT > 1200;
       G.score += (perfect ? 100 : 50) * mult() * (n.raf ? 2 : 1);
+      if (marca) marca.ver(G.score);
       G.life = Math.min(100, G.life + G.D.heal[perfect ? 0 : 1]);
       G.hitP = p;
       playLead(n.m, perfect);
@@ -948,6 +949,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   function gameOver() {
     G.over = true; state = 'over';
+    ponerMarca(false);
     if (CC && CC.frenar) CC.frenar(120); // solo visual: la pantalla de fin igual tarda 1,1 s
     if (guia) { guia.listo(); guia = null; }
     if (CC) CC.morir();   // personajes con muerte propia (Geo se parte en pedazos)
@@ -1049,6 +1051,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function terminarCancion() {
     G.over = true; state = 'over';
+    ponerMarca(false);
     if (bus) { const b = bus; bus = null; b.gain.setTargetAtTime(0, actx.currentTime, 0.3); setTimeout(() => { try { b.disconnect(); } catch (e) {} }, 2000); }
     sfxUp();
     finCancion(true);
@@ -1180,6 +1183,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (CC && CC.grabar) setTimeout(() => CC.grabar(false));   // si quedó una grabación sin partida, se tira
     if (enCurso()) cerrarPartida();
     state = 'start';
+    ponerMarca(false);
     if (bus) { try { bus.disconnect(); } catch (e) {} bus = null; }
     if (actx && actx.state === 'suspended') actx.resume();
     G = null;
@@ -1191,6 +1195,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     layout();
   }
   let cargando = false, guia = null;
+  // marca de "hasta acá llegaste la otra vez": una barrita arriba que se llena hasta tu récord (cubo-comun.js),
+  // como en Lluvia y Paleta. Solo en Infinito: las canciones no tienen récord en la tabla.
+  let marca = null;
+  function ponerMarca(on) {
+    if (marca) { marca.quitar(); marca = null; }
+    if (on && CC && CC.sombra && G && !G.cancion) marca = CC.sombra.marca('ritmo', G.diff);
+  }
   function start() {
     if (!ensureAudio() || cargando) return;
     if (rec.calibrado !== 2 && rec.calSalteado !== 2) { abrirCalib(true); return; } // la primera vez, antes de jugar
@@ -1224,6 +1235,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       banner = { text: '🎵 ' + c.nombre, t: performance.now() };
     }
     blur(); schedule();
+    ponerMarca(true);
     if (CC && CC.grabar) CC.grabar();   // la repetición (se sube sola si la partida es récord)
   }
   const verRanking = () => CC.verRanking({ juego: 'ritmo', tabla: diff });
@@ -1448,7 +1460,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   $('btnQuit').addEventListener('click', showStart);
   $('btnMute').addEventListener('click', toggleMute);
   $('btnMute2').addEventListener('click', toggleMute);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+  // al ocultar la pestaña: la misma regla que los otros juegos (CC.pausa en cubo-comun.js), con la pausa propia de
+  // Ritmo (suspende el audio y tiene Menú y Seguir); sin la librería, directo
+  if (CC && CC.pausa) CC.pausa({ activa: () => state === 'play', pausar: pauseGame });
+  else document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
 
   // ---------- efectos ----------
   const lerp = (a, b, t) => a + (b - a) * t;

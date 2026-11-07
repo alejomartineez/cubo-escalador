@@ -695,7 +695,9 @@
     esqui: [250, 1000, 2500, 5000],
     pulseada: [2, 5, 9, 14],
     guardia: [500, 2000, 5000, 10000],
-    esgrima: [1, 3, 6, 10],
+    // Esgrima era [1, 3, 6, 10]: la plata salía con el bronce en la primera partida buena. Ahora la plata pide ganarle a
+    // Bastión (el 4.º, mano pesada), el oro pasar al jefe y el diamante entrar a la segunda vuelta.
+    esgrima: [1, 4, 7, 11],
     pasadizo: [25, 80, 200, 400],
   };
   const NOMBRES_TIER = ['Primeros pasos', 'Le agarraste la mano', 'Crack', 'Leyenda'];
@@ -7068,9 +7070,92 @@ button.cc-sw.cc-sw-on::after{background:#3fcf8e radial-gradient(circle at calc(1
   }
   // Frenar el juego un instante (hitstop): al chocar o perder, la imagen se queda quieta unos ms y el golpe se siente.
   // El juego llama CC.frenar(ms) y en su frame, si CC.frenado(now), dibuja sin avanzar la física.
-  let frenadoHasta = 0;
+  // En pausa (CC.pausa, abajo) también da true: así todos los juegos se quedan quietos sin tocar su bucle.
+  let frenadoHasta = 0, pausaAct = null;
   function frenar(ms = 90) { frenadoHasta = Math.max(frenadoHasta, performance.now() + ms); }
-  const frenado = (now = performance.now()) => now < frenadoHasta;
+  const frenado = (now = performance.now()) => now < frenadoHasta || !!pausaAct;
+  // Pausa automática al ocultar la pestaña (cambiaste de app, bloqueaste el celu, otra pestaña). Cada juego la pide una vez:
+  //   CC.pausa({ activa: () => state === 'play' && !G.done, alSeguir: ms => { G.t0 += ms; } })
+  // activa(): si en este momento hay una partida que pausar (no en menús, ni en el fin, ni en un duelo online).
+  // Mientras dura, CC.frenado() da true (el juego dibuja sin avanzar), las teclas no le llegan al juego y hay un cartel
+  // «Pausa» con Seguir. Seguir (el botón, Enter, Espacio o Esc; con joystick, A o B) cuenta 3·2·1 en 0,9 s y sigue.
+  // alSeguir(ms) recibe cuánto estuvo parado, para correr los relojes del juego que van con performance.now().
+  // R cierra la pausa sin seguir y deja pasar la tecla: el juego reinicia como siempre.
+  // Si el juego ya tiene su propia pausa (Ritmo), pasa pausar() y se usa esa en vez del cartel.
+  let pausaCfg = null;
+  function pausa(o) {
+    pausaCfg = o || null;
+    return { pausada: () => !!pausaAct };
+  }
+  {
+    const quitar = () => { if (pausaAct && pausaAct.el) pausaAct.el.remove(); };
+    const cerrar = sigue => {
+      const a = pausaAct;
+      if (!a) return;
+      clearInterval(a.timer); quitar(); pausaAct = null;
+      if (sigue && pausaCfg && pausaCfg.alSeguir) { try { pausaCfg.alSeguir(performance.now() - a.desde); } catch (e) { console.error(e); } }
+    };
+    const seguir = () => {
+      const a = pausaAct;
+      if (!a || a.cuenta) return;
+      a.cuenta = 3;
+      const card = a.el.querySelector('.cc-pausa-card');
+      card.innerHTML = '<b class="cc-pausa-n">3</b>';
+      a.timer = setInterval(() => {
+        if (--a.cuenta <= 0) return cerrar(true);
+        card.firstChild.textContent = a.cuenta;
+      }, 300);
+    };
+    const pausar = () => {
+      if (!pausaCfg || pausaAct) return;
+      let ok = false;
+      try { ok = pausaCfg.activa(); } catch (e) {}
+      if (!ok) return;
+      if (pausaCfg.pausar) { pausaCfg.pausar(); return; }
+      textos({
+        'Pausa': 'Pause', 'El juego te espera donde lo dejaste.': 'The game is waiting right where you left it.',
+        'Seguir': 'Resume', '<kbd>Enter</kbd> sigue · <kbd>R</kbd> reinicia': '<kbd>Enter</kbd> resume · <kbd>R</kbd> restart',
+      });
+      if (!document.getElementById('cc-pausa-css')) {
+        const st = document.createElement('style');
+        st.id = 'cc-pausa-css';
+        st.textContent = `
+.cc-pausa{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:16px;background:rgba(29,35,64,.5);touch-action:none}
+.cc-pausa-card{zoom:var(--ui,1);width:min(320px,100%);min-height:150px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  background:#fffaf0;color:${INK};border:3px solid ${INK};border-radius:22px;box-shadow:0 8px 0 ${INK};padding:20px 18px;text-align:center;font:600 15px/1.35 system-ui,sans-serif}
+.cc-pausa-card h2{margin:0;font:400 34px/1 "Lilita One","Trebuchet MS",sans-serif}
+.cc-pausa-card p{margin:0;color:#4a5170}
+.cc-pausa-card button{width:100%;margin-top:4px;padding:12px;border-radius:14px;background:#ffcc29;color:${INK};border:3px solid ${INK};box-shadow:0 6px 0 ${INK};
+  font:400 24px/1 "Lilita One","Trebuchet MS",sans-serif;cursor:pointer}
+.cc-pausa-card button:active{transform:translateY(4px);box-shadow:0 2px 0 ${INK}}
+.cc-pausa-card small{color:#4a5170;font-size:12px}
+.cc-pausa-card kbd{font:800 11px system-ui,sans-serif;border:2px solid ${INK};border-bottom-width:3px;border-radius:6px;padding:0 4px;background:#fff}
+.cc-pausa-n{font:400 64px/1 "Lilita One","Trebuchet MS",sans-serif}`;
+        document.head.appendChild(st);
+      }
+      const el = document.createElement('div');
+      el.className = 'cc-pausa'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', T('Pausa'));
+      const tactil = matchMedia('(pointer: coarse)').matches;
+      el.innerHTML = `<div class="cc-pausa-card"><h2>${T('Pausa')}</h2><p>${T('El juego te espera donde lo dejaste.')}</p>` +
+        `<button type="button">▶ ${T('Seguir')}</button>` + (tactil ? '' : `<small>${T('<kbd>Enter</kbd> sigue · <kbd>R</kbd> reinicia')}</small>`) + '</div>';
+      // los toques no le llegan al juego (los botones de abajo quedan tapados); solo el botón sigue
+      for (const ev of ['pointerdown', 'pointerup', 'touchstart', 'click']) el.addEventListener(ev, e => { if (!e.target.closest('button')) e.preventDefault(); e.stopPropagation(); });
+      el.querySelector('button').addEventListener('click', seguir);
+      document.body.appendChild(el);
+      pausaAct = { desde: performance.now(), el, cuenta: 0, timer: 0 };
+      if (pausaCfg.alPausar) { try { pausaCfg.alPausar(); } catch (e) {} }
+      setTimeout(() => { const b = el.querySelector('button'); if (b) b.focus({ preventScroll: true }); }, 50);
+    };
+    document.addEventListener('visibilitychange', () => { if (document.hidden) pausar(); });
+    // en pausa las teclas son del cartel (va en captura, antes que las del juego)
+    addEventListener('keydown', e => {
+      if (!pausaAct) return;
+      const k = e.key;
+      if (k === 'r' || k === 'R') { if (!pausaAct.cuenta) cerrar(false); return; }
+      e.stopImmediatePropagation(); e.preventDefault();
+      if (!e.repeat && (k === 'Enter' || k === ' ' || k === 'Escape')) seguir();
+    }, true);
+  }
   // Guía de los primeros segundos, sin leer: los botones ← → laten uno y otro con una manito, en las primeras
   // partidas de cada juego (o siempre, con o.siempre). Se va sola al primer toque (guia.listo()) o a los o.ms.
   //   const guia = CC.guia('lluvia', [btnIzq, btnDer]);  …  al primer toque: guia.listo();
@@ -7190,6 +7275,7 @@ html.cc-quieto .cc-guia-dedo{animation:none;opacity:1;transform:translate(-50%,0
   };
   // Duelos 1v1 (cubo-duelo.js): usa la misma conexión a Supabase y escucha las invitaciones en todas las páginas.
   window.CuboComun.RANKING = RANKING;
+  window.CuboComun.pausa = pausa;   // pausa al ocultar la pestaña (sección «sensación de juego»)
   const cargarDuelo = () => {
     if (!rankingActivo() || window.CuboDuelo || document.querySelector('script[src$="cubo-duelo.js"]')) return;
     const s = document.createElement('script'); s.src = 'cubo-duelo.js'; s.async = true; document.head.appendChild(s);

@@ -241,7 +241,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'MÁX': 'MAX', '¡Se pasó!': 'Too much!', '¡Récord!': 'Best!',
     // dificultades
     'Carga lenta, arco guía hasta donde caés y paredes que aguantan.': 'Slow charge, a guide arc all the way to where you land, and sturdy walls.',
-    'El arco guía te muestra dónde vas a caer. Sin apuro.': 'The guide arc shows where you will land. No rush.',
+    'El arco guía te muestra dónde vas a caer. Si te quedás quieto, la cámara sube.': 'The guide arc shows where you will land. If you stand still, the camera rises.',
     'Guía corta, la carga se pasa de rosca y la cámara sube sola.': 'Short guide, the charge overshoots and the camera rises on its own.',
     'Casi sin guía, más trampas y la cámara más rápida.': 'Almost no guide, more traps and a faster camera.',
     'Sin guía: medí la carga a ojo.': 'No guide: judge the charge by eye.',
@@ -271,20 +271,30 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // sube: la cámara sube sola (unidades por segundo) · racha: qué tan ancha es, como mínimo, la carga que sirve
   const DIFS = {
     facil:   { name: 'Fácil',   carga: 1.1,  rosca: 0,    guia: 1,    fragil: 2.6, peligro: 0.55, sube: 0,    racha: 5 },
-    normal:  { name: 'Normal',  carga: 0.95, rosca: 0,    guia: 1,    fragil: 1.9, peligro: 1,    sube: 0,    racha: 4 },
+    normal:  { name: 'Normal',  carga: 0.95, rosca: 0,    guia: 1,    fragil: 1.9, peligro: 1,    sube: 0,    racha: 4, quieto: true },
     dificil: { name: 'Difícil', carga: 0.85, rosca: 0.45, guia: 0.5,  fragil: 1.5, peligro: 1.25, sube: 0.3,  racha: 3 },
     extremo: { name: 'Extremo', carga: 0.75, rosca: 0.3,  guia: 0.25, fragil: 1.2, peligro: 1.5,  sube: 0.45, racha: 3 },
     maestro: { name: 'Maestro', carga: 0.7,  rosca: 0.2,  guia: 0,    fragil: 1.0, peligro: 1.7,  sube: 0.55, racha: 2 },
   };
   const NOTAS = {
     facil: 'Carga lenta, arco guía hasta donde caés y paredes que aguantan.',
-    normal: 'El arco guía te muestra dónde vas a caer. Sin apuro.',
+    normal: 'El arco guía te muestra dónde vas a caer. Si te quedás quieto, la cámara sube.',
     dificil: 'Guía corta, la carga se pasa de rosca y la cámara sube sola.',
     extremo: 'Casi sin guía, más trampas y la cámara más rápida.',
     maestro: 'Sin guía: medí la carga a ojo.',
   };
   const XP_MALO = 10, XP_EXPERTO = 260;
   const MUESTRAS = 32;   // cuántas cargas distintas prueba el generador para cada lado
+  // Ventana mínima de soltado: entre la primera y la última carga que sirven tiene que haber por lo menos 50 ms de
+  // mantener. Con `racha` muestras seguidas la ventana segura es (racha − 1) / MUESTRAS × carga: en Maestro
+  // (racha 2, carga 0,7 s) eran 22 ms, imposible de acertar seguido. Ahora la racha sube hasta cubrir los 50 ms:
+  // Maestro y Extremo piden 4 muestras (66 y 70 ms), Difícil 3 (53 ms); Fácil y Normal ya pasaban (≥ 89 ms).
+  const SOLTAR_MIN = 0.05;
+  const rachaMin = D => Math.max(D.racha, 1 + Math.ceil(SOLTAR_MIN * MUESTRAS / D.carga));
+  // Normal no tiene cámara que sube sola, pero si te quedás pegado QUIETO segundos sin saltar (después del primer
+  // salto), empieza a subir despacio: 0,25 m/s, llegando de a poco en 1,5 s. Saltar la frena de nuevo. Es para que
+  // no se pueda pensar cada salto eterno; con el cubo a un tercio de la pantalla quedan unos 15 a 20 s antes de caerte.
+  const QUIETO = 4, SUBE_QUIETO = 0.25;
 
   // zonas: el color cambia a medida que subís
   const ZONAS = [
@@ -501,7 +511,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
   }
   function avanzarRuta(M) {
-    const need = M.demo ? 3 : M.D.racha;
+    const need = M.demo ? 3 : rachaMin(M.D);
     for (let vuelta = 0; vuelta < 8; vuelta++) {
       const R = M.ruta;
       const cands = [];
@@ -741,7 +751,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const lado = p.lado, rect0 = p.rect;
     lanzar(G.M, p, k.dir, k.c, false);
     p.estado = 'vuelo'; p.rect = null; p.estirar = 1; p.aplastar = 0; p.mirar = k.dir; p.cabeza = false;
-    G.acc = 0; G.carga = null; G.guia = null; G.saltos++; G.empezo = true;
+    G.acc = 0; G.carga = null; G.guia = null; G.saltos++; G.empezo = true; G.quieto = 0;
     if (!G.demo) sinGuia();
     // polvito donde estaba apoyado
     if (rect0) polvo(p.x + (lado ? lado * HALF : 0), p.y - (lado ? 0 : HALF), lado ? -lado : 0, lado ? 0 : 1, 5, zonaEn(p.y).borde);
@@ -864,6 +874,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (p.estado === 'pegado') G.camT = Math.max(G.camT, p.y - vh * 0.3);
       else if (p.y > G.cam + vh * 0.7) G.camT = Math.max(G.camT, p.y - vh * 0.7);
       if (G.empezo && G.D.sube && !G.demo) G.camT += G.D.sube * (1 + Math.min(0.6, G.max / 400)) * dt;
+      // Normal: quieto mucho rato, la cámara se empieza a mover (ver QUIETO)
+      if (G.empezo && G.D.quieto && !G.demo && p.estado === 'pegado') {
+        G.quieto = (G.quieto || 0) + dt;
+        if (G.quieto > QUIETO) G.camT += SUBE_QUIETO * Math.min(1, (G.quieto - QUIETO) / 1.5) * dt;
+      }
       G.cam += (G.camT - G.cam) * Math.min(1, dt * 3.2);
       if (p.y + HALF < G.cam - 0.05) morir('caida');
     }
@@ -1357,6 +1372,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   document.addEventListener('visibilitychange', () => { if (document.hidden) soltarTeclas(); });
 
   // ---------- arranque ----------
+  // pausa al ocultar la pestaña (cubo-comun.js). Va con G.t; la carga que tenías se cancela al ocultarse (soltarTeclas).
+  if (CC && CC.pausa) CC.pausa({ activa: () => state === 'play' && G && !G.demo && !G.done });
+
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;

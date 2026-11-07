@@ -1363,6 +1363,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
 
   // ---------- bucle ----------
+  // pausa al ocultar la pestaña (cubo-comun.js). Todo va con G.t: no hay relojes que correr.
+  if (CC && CC.pausa) CC.pausa({ activa: () => state === 'play' && G && !G.demo && !G.done });
+
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
