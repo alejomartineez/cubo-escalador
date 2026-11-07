@@ -666,7 +666,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (v > (rec[G.diff] || 0)) { rec[G.diff] = v; saveRec(); }
     if (!CC) return null;
     G.r = CC.partida({ juego: 'guardia', tabla: G.diff, valor: v, texto: T('{n} pts · {d}', { n: v, d: G.D.name }),
-      xp: CC.xpEscala(v, XP_MALO, XP_EXPERTO), marcas: G.mejorCombo >= 50 ? ['guardia-combo'] : [], diario: DIA || undefined });
+      xp: CC.xpEscala(v, XP_MALO, XP_EXPERTO), marcas: [G.mejorCombo >= 50 && 'guardia-combo', G.mejorCombo >= 20 && 'guardia-combo20'].filter(Boolean), diario: DIA || undefined });
     return G.r;
   }
   function terminar() {

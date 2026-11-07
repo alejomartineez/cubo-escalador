@@ -38,6 +38,9 @@ button { font: inherit; color: var(--ink); }
 .diario small { font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .diario .d-racha { flex: none; font: 400 17px/1 var(--display); padding: 6px 8px; border-radius: 12px; background: #fff; border: 2.5px solid var(--ink); }
 .diario .d-racha[hidden] { display: none; }
+.diario .d-racha { cursor: pointer; white-space: nowrap; }
+.diario .d-racha .d-hielo { margin-left: 4px; }
+.diario .d-racha .d-hielo:first-child { margin-left: 0; }
 .diario .play { height: 44px; padding: 0 14px 0 12px; font-size: 19px; box-shadow: 0 3px 0 var(--ink); }
 .diario .play[disabled] { background: #e6e2d6; color: var(--muted); cursor: default; box-shadow: none; transform: none; }
 /* una rayita por juego, llena si ya lo jugaste hoy */
@@ -259,6 +262,11 @@ button { font: inherit; color: var(--ink); }
 .preview b { font-family: var(--display); font-weight: 400; font-size: 24px; display: block; line-height: 1.05; }
 .preview .sub { font-size: 13px; font-weight: 600; color: var(--muted); line-height: 1.35; margin-top: 4px; }
 .preview .bar { width: 100%; margin-top: 8px; height: 10px; }
+.col-tot { margin-top: 6px; font-size: 12.5px; font-weight: 800; color: var(--ink); }
+.col-tot:empty { display: none; }
+.col-tot .col-n { display: block; }
+.col-tot .col-b { display: block; margin-top: 4px; height: 6px; border-radius: 99px; background: #e5dfcf; overflow: hidden; }
+.col-tot .col-b i { display: block; height: 100%; background: #9b6bff; }
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 4px; background: #ece8dc; border: 2.5px solid var(--ink); border-radius: 14px; }
 .seg button { height: 40px; border: 0; border-radius: 10px; background: transparent; font-weight: 800; font-size: 14px; cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--paper); box-shadow: inset 0 0 0 2.5px var(--ink); }
@@ -416,6 +424,11 @@ button:disabled { cursor: not-allowed; opacity: .55; box-shadow: none; transform
 .tramo h4 .mini i { display: block; height: 100%; background: #ff9a2e; }
 .tramo h4 small { font-family: var(--body); font-size: 12px; font-weight: 800; color: var(--muted); }
 .tramo.hecho h4 small { color: #1f9e6e; }
+.tramo.estrellas h4 small { margin-left: auto; }
+.est-fila { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #fff8dc; border: 2.5px solid var(--ink); border-radius: 14px; }
+.est-fila .est-ico { font-size: 26px; flex: none; }
+.est-fila b { display: block; font-size: 14px; }
+.est-fila small { display: block; font-size: 12px; font-weight: 600; color: var(--muted); line-height: 1.35; }
 ol.pase { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 ol.pase li { position: relative; display: flex; align-items: center; gap: 10px; }
 ol.pase li::before { content: ""; position: absolute; left: 21px; top: -10px; bottom: -10px; width: 4px; background: #d8d2c2; z-index: 0; }
@@ -475,7 +488,9 @@ ol.pase li.lock .pr.pase canvas { filter: none; opacity: .8; }
 .mi.ok { background: #e6f9ef; border-color: #1f9e6a; }
 .mi.ok .mi-t::before { content: "✓ "; color: #1f9e6a; }
 .mi.ok .mi-xp { background: #bdf0d6; }
-ol.pase .pr.boostpr { cursor: default; background: linear-gradient(160deg, #eef5ff, #cfe2ff); }
+.mi .mi-cambiar { flex: none; height: 26px; padding: 0 9px; border-radius: 99px; border: 2px solid var(--ink); background: #fffaf0; font: 800 11.5px var(--font, inherit); color: var(--ink); cursor: pointer; }
+.mi .mi-cambiar:hover { background: var(--cube); }
+.mi .mi-cb { flex: none; font-style: normal; font-size: 11px; color: var(--muted); }ol.pase .pr.boostpr { cursor: default; background: linear-gradient(160deg, #eef5ff, #cfe2ff); }
 ol.pase .pr.boostpr .tt-ico { background: #fff; }
 ol.pase .pr.leg { background: linear-gradient(160deg, #fbe8ff, #d9c4ff); }
 .diario .d-ev { color: #b35000; }
@@ -835,6 +850,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
           <div class="sub" id="bigLvl"></div>
           <div class="bar"><i id="bigBar" style="width:0%"></i></div>
           <div class="sub" id="bigNext"></div>
+          <div class="col-tot" id="bigCol"></div>
           <button class="mini" type="button" id="miPerfilBtn" style="margin-top:8px;height:34px;padding:0 12px">👤 Ver mi perfil</button>
         </div>
       </div>
@@ -1143,6 +1159,19 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     'Doble XP en tus próximas {n} partidas': 'Double XP on your next {n} games',
     'Misiones del día': 'Daily missions',
     'nuevas en {t}': 'new in {t}',
+    // cambiar una misión, estrellas de temporada, congelador de racha y colección
+    'cambiada': 'swapped', 'Cambiar': 'Swap', 'Cambiar esta misión por otra (una vez por día)': 'Swap this mission for another (once a day)',
+    'Misión nueva': 'New mission', '¡Completa!': 'Complete!',
+    '{a} / {b} XP a la próxima': '{a} / {b} XP to the next', 'Después del {n}': 'After {n}', '{n} en total': '{n} in total',
+    'Cada {n} XP después del nivel {m}, otra. Se cuentan en tu perfil.': 'Another one every {n} XP after level {m}. They show on your profile.',
+    '1 congelador de racha': '1 streak freeze', '{n} congeladores de racha': '{n} streak freezes', 'Congelador de racha': 'Streak freeze',
+    'Tenés 1 congelador: si un día no jugás, se gasta solo y la racha sigue.': 'You have 1 freeze: if you skip a day, it’s used up on its own and your streak lives on.',
+    'Tenés {n} congeladores: si un día no jugás, se gasta uno solo y la racha sigue.': 'You have {n} freezes: if you skip a day, one is used up on its own and your streak lives on.',
+    'Si un día no jugás, un congelador 🧊 cuida la racha.': 'If you skip a day, a freeze 🧊 saves your streak.',
+    'Tenés el máximo ({n}).': 'You have the maximum ({n}).', 'Ya ganaste el de esta semana: el lunes podés ganar otro.': 'You already earned this week’s: on Monday you can earn another.',
+    'Se gana terminando {m} desafíos en la semana: llevás {n} de {m}.': 'You earn one by finishing {m} challenges in a week: {n} of {m} so far.',
+    'Colección: {a} de {b}': 'Collection: {a} of {b}',
+    'Personajes {a}/{b} · efectos {c}/{d} · títulos {e}/{f} · brillos {g}/{h}': 'Characters {a}/{b} · effects {c}/{d} · titles {e}/{f} · glows {g}/{h}',
     'De la semana': 'Weekly',
     'Toda la XP que ganás suma a la temporada. Los premios de la temporada se ganan <b>solo mientras dura</b>: después quedan para quien los tiene. El nivel 30 es una legendaria exclusiva.':
       'All the XP you earn counts toward the season. Season rewards can only be earned <b>while it lasts</b>: after that, whoever has them keeps them. Level 30 is an exclusive legendary.',
@@ -1665,9 +1694,12 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     const falta = T('nuevos en {t}', { t: CC.faltaTexto(h.quedanMs) });
     $('dSub').textContent = !sig ? T('¡Los hiciste todos!') + ' · ' + falta
       : h.jugados ? T('Sigue: {juego}', { juego: sig.nombre }) + ' · ' + falta : T('Uno por juego') + ' · ' + falta;
-    $('dRacha').hidden = !h.racha;
-    $('dRacha').textContent = `🔥 ${h.racha}`;
-    $('dRacha').title = h.racha === 1 ? T('1 día jugando desafíos') : T('{n} días seguidos jugando desafíos', { n: h.racha });
+    // la racha y, al lado, los congeladores 🧊 (si te perdés un día, se gasta uno solo y la racha sigue)
+    $('dRacha').hidden = !h.racha && !h.hielos;
+    $('dRacha').innerHTML = (h.racha ? `🔥 ${h.racha}` : '') + (h.hielos ? `<span class="d-hielo">🧊${h.hielos > 1 ? ' ' + h.hielos : ''}</span>` : '');
+    $('dRacha').title = (h.racha ? (h.racha === 1 ? T('1 día jugando desafíos') : T('{n} días seguidos jugando desafíos', { n: h.racha })) : '') +
+      (h.hielos ? (h.racha ? ' · ' : '') + (h.hielos === 1 ? T('1 congelador de racha') : T('{n} congeladores de racha', { n: h.hielos })) : '');
+    $('dRacha').setAttribute('aria-label', $('dRacha').title);
     $('dJugar').innerHTML = sig ? `${ICO_PLAY}<span>${T('Jugar')}</span>` : `✓<span> ${T('Listo')}</span>`;
     $('dJugar').disabled = !sig;
     $('dJugar').setAttribute('aria-label', sig ? T('Jugar el desafío de {juego}', { juego: sig.nombre }) : T('Ya jugaste todos los desafíos de hoy'));
@@ -1687,6 +1719,19 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     if (ev) $('dEv').textContent = '⚡ ' + T('{nombre}: {texto} · quedan {t}', { nombre: ev.nombre, texto: ev.texto, t: CC.faltaTexto(ev.quedanMs) });
   }
   $('dJugar').addEventListener('click', () => { const sig = proximoDiario(CC.diario()); if (sig) location.href = sig.archivo; });
+  // Tocando la racha: qué es y cómo va el congelador de esta semana
+  function explicarRacha() {
+    const h = CC.diario();
+    const hielo = h.hielos ? (h.hielos === 1 ? T('Tenés 1 congelador: si un día no jugás, se gasta solo y la racha sigue.') : T('Tenés {n} congeladores: si un día no jugás, se gasta uno solo y la racha sigue.', { n: h.hielos }))
+      : T('Si un día no jugás, un congelador 🧊 cuida la racha.');
+    const como = h.hielos >= h.hieloMax ? T('Tenés el máximo ({n}).', { n: h.hieloMax })
+      : h.hieloEstaSemana ? T('Ya ganaste el de esta semana: el lunes podés ganar otro.')
+      : T('Se gana terminando {m} desafíos en la semana: llevás {n} de {m}.', { n: h.hieloProg, m: h.hieloMeta });
+    CC.avisar(`<div><b>${h.racha ? `🔥 ${h.racha === 1 ? T('1 día jugando desafíos') : T('{n} días seguidos jugando desafíos', { n: h.racha })}` : '🧊 ' + T('Congelador de racha')}</b><span>${hielo} ${como}</span></div>`, 5200);
+  }
+  $('dRacha').setAttribute('role', 'button'); $('dRacha').tabIndex = 0;
+  $('dRacha').addEventListener('click', explicarRacha);
+  $('dRacha').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); explicarRacha(); } });
   pintarDiario();
   setInterval(pintarDiario, 60000);
   addEventListener('pageshow', pintarDiario);
@@ -1937,6 +1982,12 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     $('bigBar').style.width = Math.round(100 * p.enNivel / p.paraSiguiente) + '%';
     const todos = [...CC.SKINS, ...CC.EFECTOS].filter(i => !i.logro && !i.codigo && i.nivel > p.nivel).sort((a, b) => a.nivel - b.nivel);
     $('bigNext').textContent = todos.length ? T('En nivel {n} desbloqueás {cosas}.', { n: todos[0].nivel, cosas: todos.filter(i => i.nivel === todos[0].nivel).map(i => i.nombre).join(T(' y ')) }) : T('Ya desbloqueaste todo lo que da el nivel.');
+    // la colección entera: personajes, efectos, títulos y brillos (CC.coleccion)
+    if (CC.coleccion) {
+      const c = CC.coleccion(), pt = c.partes;
+      $('bigCol').innerHTML = `<span class="col-n">🧩 ${T('Colección: {a} de {b}', { a: c.tengo, b: c.total })} · ${c.pct} %</span><span class="col-b"><i style="width:${c.pct}%"></i></span>`;
+      $('bigCol').title = T('Personajes {a}/{b} · efectos {c}/{d} · títulos {e}/{f} · brillos {g}/{h}', { a: pt.skin.tengo, b: pt.skin.total, c: pt.efecto.tengo, d: pt.efecto.total, e: pt.titulo.tengo, f: pt.titulo.total, g: pt.marco.tengo, h: pt.marco.total });
+    }
     // el apodo va en su propio span (con el color de la legendaria): si fuera todo el renglón, los efectos del nombre
     // (la arañita de Noctámbulo) caminarían también por arriba del título
     CC.estilos();
@@ -1988,18 +2039,37 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
   let caminoPase = CC.temporada ? 'temporada' : 'nivel';
   for (const b of document.querySelectorAll('[data-ps]')) b.addEventListener('click', () => { caminoPase = b.dataset.ps; abrirPase(); });
   const diasTexto = ms => (ms >= 2 * 864e5 ? T('{n} días', { n: Math.ceil(ms / 864e5) }) : CC.faltaTexto(ms));
-  function filaMision(x) {
+  // cambiar: la misión del día se puede cambiar por otra (una vez por día, CC.cambiarMision)
+  function filaMision(x, cambiar) {
     const el = document.createElement('div');
     el.className = 'mi' + (x.hecha ? ' ok' : '');
     el.innerHTML = `<span class="mi-t"></span><span class="mi-xp">+${x.xp} XP</span><span class="mi-b"><span><i style="width:${Math.round(100 * x.prog / x.meta)}%"></i></span>${x.hecha ? T('¡Cumplida!') : `${x.prog.toLocaleString(LOCALE)} / ${x.meta.toLocaleString(LOCALE)}`}</span>`;
     el.querySelector('.mi-t').textContent = x.txt;
+    if (x.cambiada) el.querySelector('.mi-b').insertAdjacentHTML('beforeend', `<em class="mi-cb">↻ ${T('cambiada')}</em>`);
+    if (cambiar && !x.hecha && CC.cambiarMision) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'mi-cambiar';
+      b.innerHTML = `↻<span> ${T('Cambiar')}</span>`;
+      b.setAttribute('aria-label', T('Cambiar esta misión por otra (una vez por día)'));
+      b.title = T('Cambiar esta misión por otra (una vez por día)');
+      b.addEventListener('click', () => {
+        const nueva = CC.cambiarMision(x.lugar);
+        if (!nueva) return;
+        CC.vibrar(10);
+        CC.avisar(`<div><b>↻ ${T('Misión nueva')}</b><span>${nueva.txt}</span></div>`, 2600);
+        pintarTemporada();
+      });
+      el.querySelector('.mi-b').appendChild(b);
+    }
     return el;
   }
   function pintarTemporada() {
     const tp = CC.temporada(), M = CC.misiones(), p = CC.perfil(), box = $('tempBox');
     box.innerHTML = `<div class="temp-hero" style="--tc:${tp.color};--tc2:${tp.color2}">
         <small>${T('Temporada {n} · termina en {t}', { n: tp.n, t: diasTexto(tp.quedanMs) })}</small><b></b><span></span>
-        <div class="ph-bar"><i style="width:${Math.round(100 * tp.enNivel / tp.porNivel)}%"></i><span>${T('Nivel {n} de {max}', { n: tp.nivel, max: tp.max })} · ${tp.nivel >= tp.max ? T('¡completa!') : `${tp.enNivel} / ${tp.porNivel} XP`}</span></div>
+        ${tp.nivel >= tp.max && tp.porEstrella
+          ? `<div class="ph-bar"><i style="width:${Math.round(100 * tp.enEstrella / tp.porEstrella)}%"></i><span>${T('¡Completa!')} ⭐ ${tp.estrellas} · ${T('{a} / {b} XP a la próxima', { a: tp.enEstrella, b: tp.porEstrella })}</span></div>`
+          : `<div class="ph-bar"><i style="width:${Math.round(100 * tp.enNivel / tp.porNivel)}%"></i><span>${T('Nivel {n} de {max}', { n: tp.nivel, max: tp.max })} · ${tp.nivel >= tp.max ? T('¡completa!') : `${tp.enNivel} / ${tp.porNivel} XP`}</span></div>`}
         ${tp.boost ? `<em>⚡ ${tp.boost === 1 ? T('Doble XP en tu próxima partida') : T('Doble XP en tus próximas {n} partidas', { n: tp.boost })}</em>` : ''}</div>
       <section class="mis"><h4>${T('Misiones del día')}<small>${T('nuevas en {t}', { t: CC.faltaTexto(M.quedanDia) })}</small></h4></section>
       <section class="mis"><h4>${T('De la semana')}<small>${T('nuevas en {t}', { t: diasTexto(M.quedanSemana) })}</small></h4></section>
@@ -2008,8 +2078,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     box.querySelector('.temp-hero b').textContent = tp.nombre;
     box.querySelector('.temp-hero > span').textContent = tp.desc;
     const [secD, secS] = box.querySelectorAll('.mis');
-    M.diarias.forEach(x => secD.appendChild(filaMision(x)));
-    M.semanales.forEach(x => secS.appendChild(filaMision(x)));
+    M.diarias.forEach(x => secD.appendChild(filaMision(x, M.puedeCambiar)));    M.semanales.forEach(x => secS.appendChild(filaMision(x)));
     const camino = box.querySelector('#tempCamino');
     for (let d = 0; d < tp.premios.length; d += 10) {
       const tramo = tp.premios.slice(d, d + 10), hechos = tramo.filter(n => n.listo).length;
@@ -2040,6 +2109,13 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
         }
         ol.appendChild(li);
       }
+      camino.appendChild(sec);
+    }
+    // después del 30: una estrella de temporada cada 500 XP, todas las veces que quieras
+    if (tp.porEstrella) {
+      const sec = document.createElement('section'); sec.className = 'tramo estrellas' + (tp.estrellas ? ' hecho' : '');
+      sec.innerHTML = `<h4>${T('Después del {n}', { n: tp.max })}<small>⭐ ${tp.estrellas}${tp.estrellasTotal > tp.estrellas ? ' · ' + T('{n} en total', { n: tp.estrellasTotal }) : ''}</small></h4>
+        <div class="est-fila"><span class="est-ico" aria-hidden="true">⭐</span><span><b>${T('Estrella de temporada')}</b><small>${T('Cada {n} XP después del nivel {m}, otra. Se cuentan en tu perfil.', { n: tp.porEstrella.toLocaleString(LOCALE), m: tp.max })}</small></span></div>`;
       camino.appendChild(sec);
     }
   }

@@ -760,7 +760,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (v > (rec[G.diff] || 0)) { rec[G.diff] = v; saveRec(); }
     if (!CC) return null;
     G.r = CC.partida({ juego: 'esgrima', tabla: G.diff, valor: v, texto: `${v} ${v === 1 ? 'rival' : 'rivales'} (${G.D.name})`,
-      xp: CC.xpEscala(v + G.toques / TOQUES * 0.8, XP_MALO, XP_EXPERTO), marcas: G.mejorRacha >= 10 ? ['esgrima-racha'] : [],
+      xp: CC.xpEscala(v + G.toques / TOQUES * 0.8, XP_MALO, XP_EXPERTO), marcas: [G.mejorRacha >= 10 && 'esgrima-racha', G.perfectas >= 3 && 'esgrima-perfectas3'].filter(Boolean),
       diario: DIA || undefined });
     return G.r;
   }

@@ -1008,7 +1008,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     let r = null;
     if (CC) {
       r = CC.partida({ juego: 'ritmo', tabla: d, valor: G.score, texto: `${fmt(G.score)} pts (${G.D.name})`,
-        xp: CC.xpEscala(G.score, XP_MALO, XP_EXPERTO), diario: DIA || undefined });
+        xp: CC.xpEscala(G.score, XP_MALO, XP_EXPERTO), marcas: G.maxCombo >= 50 ? ['ritmo-combo50'] : [], diario: DIA || undefined });
       G.rDia = r;
       isRec = r.record; prev = r.textoAnterior;
     }
