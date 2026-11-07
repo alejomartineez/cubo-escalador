@@ -242,7 +242,7 @@
     'Sin brillo': 'No glow', 'Bronce': 'Bronze', 'Plata': 'Silver', 'Platino': 'Platinum',
     // juegos, modos y unidades
     'Escalador': 'Climber', 'Lluvia': 'Rain', 'Ritmo': 'Rhythm', 'Vóley': 'Volley', 'Paleta': 'Paddle', 'Esquí': 'Ski',
-    'Pulseada': 'Arm Wrestling', '30 segundos': '30 seconds', 'Libre': 'Endless', 'Sprint 100 Extremo': 'Sprint 100 Extreme',
+    'Pulseada': 'Arm Wrestling', 'Guardia': 'Guard', 'Esgrima': 'Fencing', 'Pasadizo': 'Passage', '30 segundos': '30 seconds', 'Libre': 'Endless', 'Sprint 100 Extremo': 'Sprint 100 Extreme',
     '30 segundos Extremo': '30 seconds Extreme', 'Libre Extremo': 'Endless Extreme', 'Lava Extremo': 'Lava Extreme',
     'Sprint 100 Maestro': 'Sprint 100 Master', '30 segundos Maestro': '30 seconds Master', 'Libre Maestro': 'Endless Master',
     'Lava Maestro': 'Lava Master', 'esc.': 'steps', 'rivales': 'rivals',
@@ -317,6 +317,17 @@
     // temporadas, eventos de XP y misiones
     // (los patrones se prueban en orden: el más específico va primero)
     'Neón': 'Neon', 'Hielo': 'Ice', 'Selva': 'Jungle', 'Temporada {t}: nivel {n}': 'Season {t}: level {n}', 'Temporada {n}': 'Season {n}',
+    'Temporada {t}: estrella {n}': 'Season {t}: star {n}', 'Estrella de temporada': 'Season star', 'Tenés 1 en {t}': 'You have 1 in {t}',
+    'Tenés {n} en {t}': 'You have {n} in {t}',
+    // congelador de racha y volver
+    ' · 🧊 <strong>¡Ganaste un congelador de racha!</strong> Si un día no jugás, la cuida solo': ' · 🧊 <strong>You earned a streak freeze!</strong> If you skip a day, it saves your streak',
+    'Tu congelador cuidó la racha': 'Your freeze saved your streak', 'Tus congeladores cuidaron la racha': 'Your freezes saved your streak',
+    'Ayer no jugaste y seguís con 🔥 {n}': 'You skipped yesterday and you’re still on 🔥 {n}',
+    'Faltaste {d} días y seguís con 🔥 {n}': 'You missed {d} days and you’re still on 🔥 {n}',
+    '¡Volviste!': 'Welcome back!', 'Tus próximas {n} partidas dan doble XP': 'Your next {n} games give double XP',
+    // misiones de habilidad
+    'Hacé un Sprint 100 sin errores en Escalador': 'Do a Sprint 100 with no mistakes in Climber', 'Hacé un combo de 20 en Guardia': 'Get a 20 combo in Guard',
+    'Hacé 3 paradas perfectas en una partida de Esgrima': 'Make 3 perfect parries in one Fencing game', 'Hacé un combo de 50 en Ritmo': 'Get a 50 combo in Rhythm',
     'Luces, visores y brillo de ciudad de noche.': 'Lights, visors and the glow of the city at night.',
     'Copos, gorritos y un frío que quema.': 'Snowflakes, beanies and a biting cold.',
     'Hojas, capas de aventurero y un rey de la selva.': 'Leaves, adventurer capes and a king of the jungle.',
@@ -695,7 +706,9 @@
     esqui: [250, 1000, 2500, 5000],
     pulseada: [2, 5, 9, 14],
     guardia: [500, 2000, 5000, 10000],
-    esgrima: [1, 3, 6, 10],
+    // Esgrima era [1, 3, 6, 10]: la plata salía con el bronce en la primera partida buena. Ahora la plata pide ganarle a
+    // Bastión (el 4.º, mano pesada), el oro pasar al jefe y el diamante entrar a la segunda vuelta.
+    esgrima: [1, 4, 7, 11],
     pasadizo: [25, 80, 200, 400],
   };
   const NOMBRES_TIER = ['Primeros pasos', 'Le agarraste la mano', 'Crack', 'Leyenda'];
@@ -908,20 +921,42 @@
     return el;
   }
 
-  // XP para pasar del nivel n al n+1. La curva 2 (noviembre de 2026) es más dura que la primera (80 + 40·(n−1)): el nivel 2
-  // pide 100, el 10 unos 690, el 50 unos 4.500 y el 100 unos 11.900 (antes 440, 2.040 y 4.000).
-  const xpPara = n => 100 + 60 * (n - 1) + Math.round(0.6 * (n - 1) * (n - 1));
+  // XP para pasar del nivel n al n+1.
+  // · Curva 1 (hasta octubre de 2026): 80 + 40·(n−1).
+  // · Curva 2 (noviembre de 2026): 100 + 60·(n−1) + 0,6·(n−1)². El 100 pedía unas 492.000 XP en total: ~400 h a 20 XP
+  //   por minuto, demasiado.
+  // · Curva 3 (la de ahora): igual a la 2 hasta el nivel 19 y desde el 20 crece de a poco, 8 XP por nivel (el 20 pide
+  //   1.457, el 50 1.697, el 99 2.089). El 100 queda en unas 155.000 XP: ~150 h a 15–20 XP por minuto. Se dobla en el
+  //   20 y no en el 40 porque la 2 ya pide 3.246 en el 39: para llegar a 150 h desde ahí los niveles tendrían que
+  //   abaratarse de golpe después del 40.
+  const xpParaV2 = n => 100 + 60 * (n - 1) + Math.round(0.6 * (n - 1) * (n - 1));
+  const CURVA_DESDE = 20, CURVA_PASO = 8;
+  const xpPara = n => (n < CURVA_DESDE ? xpParaV2(n) : xpParaV2(CURVA_DESDE) + CURVA_PASO * (n - CURVA_DESDE));
   const xpParaViejo = n => 80 + 40 * (n - 1);
-  // Nadie baja de nivel con la curva nueva: la XP guardada con la curva vieja se pasa a la nueva conservando el nivel y lo
-  // que tenías hecho del siguiente (en proporción). La marca 'curva2' en `marcas` dice que ya está pasada; va en marcas
-  // porque las versiones viejas del juego la conservan y la nube la junta por unión (un campo nuevo lo perderían y la XP
-  // se volvería a pasar dos veces).
-  function xpCurvaNueva(xp) {
+  // Pasa XP de una curva a otra conservando el nivel y lo que tenías hecho del siguiente (en proporción): nadie baja de nivel.
+  function cambiarCurva(xp, de, a) {
     let n = 1, resto = Math.max(0, +xp || 0), total = 0;
-    while (resto >= xpParaViejo(n)) { resto -= xpParaViejo(n); total += xpPara(n); n++; }
-    return Math.round(total + resto / xpParaViejo(n) * xpPara(n));
+    while (resto >= de(n)) { resto -= de(n); total += a(n); n++; }
+    return Math.round(total + resto / de(n) * a(n));
   }
-  const conCurva = p => (p && p.marcas && p.marcas.curva2 ? Math.max(0, +p.xp || 0) : xpCurvaNueva(p && p.xp));
+  const xpCurvaNueva = xp => cambiarCurva(xp, xpParaViejo, xpParaV2);
+  // En qué curva está la XP guardada lo dicen las marcas (van en `marcas` porque las versiones viejas del juego las
+  // conservan y la nube las junta por unión; un campo nuevo lo perderían):
+  // · sin `curva2`: curva 1. · `curva2: 3`: curva 3 (lo escribe esta versión cada vez que guarda).
+  // · `curva2: 1` (una versión vieja pone 1 al leer): curva 2, salvo que tenga `curva3`, que es la XP (en curva 3) de la
+  //   última vez que la guardó esta versión. Ahí la tocó una versión vieja: si la XP subió poco jugó un rato (se deja
+  //   así); si subió mucho es que juntó con la nube la XP de un dispositivo viejo, en curva 2, y se pasa.
+  // `perfil_publico` (supabase.sql) devuelve solo `marcas.curva2`, que alcanza para la tarjeta de los demás.
+  function xpGuardada(p) {
+    const m = (p && p.marcas && typeof p.marcas === 'object') ? p.marcas : {}, x = Math.max(0, +(p && p.xp) || 0);
+    if (!m.curva2) return cambiarCurva(xpCurvaNueva(x), xpParaV2, xpPara);
+    if (+m.curva2 === 3) return x;
+    const c3 = m.curva3 != null && isFinite(+m.curva3) ? Math.max(0, +m.curva3) : null;
+    if (c3 == null) return cambiarCurva(x, xpParaV2, xpPara);
+    if (x - c3 <= 2000) return Math.max(x, c3);
+    return Math.max(c3, cambiarCurva(x, xpParaV2, xpPara));
+  }
+  const conCurva = xpGuardada;
 
   // ---------- perfil guardado ----------
   function leer() {
@@ -940,7 +975,7 @@
       tiempo: obj(p.tiempo),   // segundos jugados en cada juego (ver «tiempo jugado»)
       total: +p.total || 0,
       logros: obj(p.logros),
-      marcas: { ...obj(p.marcas), curva2: 1 },
+      marcas: { ...obj(p.marcas), curva2: 3 },
       extremo: obj(p.extremo),
       maestro: obj(p.maestro),
       codigos: Array.isArray(p.codigos) ? p.codigos.filter(c => typeof c === 'string') : [],
@@ -972,7 +1007,11 @@
         return { boostG: g, boostU: u, boost: Math.max(0, g - u) };
       })(),
       misiones: obj(p.misiones),
-      eleccion: +p.eleccion || 0,   // cuándo elegiste personaje, efecto, título o brillo (gana el más nuevo al juntar perfiles)
+      // cuándo jugaste la última partida con puntos (ms) y de qué ausencia ya te dimos la bienvenida (ver revisarVuelta).
+      // Los perfiles de antes no lo tienen: sale del último día con misiones (que avanzan con cada partida).
+      jugado: +p.jugado > 0 ? +p.jugado : +p.total > 0 && p.misiones && typeof p.misiones.dia === 'string' ? Date.parse(p.misiones.dia + 'T12:00:00') || 0 : 0,
+      volvio: +p.volvio || 0,
+      eleccion: +p.eleccion || 0,  // cuándo elegiste personaje, efecto, título o brillo (gana el más nuevo al juntar perfiles)
       // los logros que elegiste mostrar en tu tarjeta de perfil (ids, hasta VITRINA_MAX)
       vitrina: Array.isArray(p.vitrina) ? [...new Set(p.vitrina.filter(s => typeof s === 'string'))].slice(0, VITRINA_MAX) : [],
     };
@@ -980,9 +1019,10 @@
   let datos = leer();
   // Cada vez que se guarda, el progreso se sube solo a la nube un rato después (ver «progreso en la nube» más abajo).
   const nube = { timer: 0, sincronizando: false, ya: false };
-  const guardar = () => { try { localStorage.setItem(KEY, JSON.stringify(datos)); } catch (e) {} programarNube(); };
+  // `curva3` = la XP de ahora, para darse cuenta si después una versión vieja la toca (ver xpGuardada)
+  const guardar = () => { datos.marcas.curva2 = 3; datos.marcas.curva3 = datos.xp; try { localStorage.setItem(KEY, JSON.stringify(datos)); } catch (e) {} programarNube(); };
   // si recién se pasó a la curva nueva, que quede guardado (y se suba) ya
-  try { const crudo = JSON.parse(localStorage.getItem(KEY)); if (crudo && !(crudo.marcas && crudo.marcas.curva2)) guardar(); } catch (e) {}
+  try { const crudo = JSON.parse(localStorage.getItem(KEY)); if (crudo && !(crudo.marcas && +crudo.marcas.curva2 === 3)) guardar(); } catch (e) {}
   if (!datos.id) {
     datos.id = crypto.randomUUID ? crypto.randomUUID()
       : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
@@ -1046,6 +1086,21 @@
     const porNivelDe = (lista, tipo) => lista.filter(i => i.nivel && !i.logro && !i.codigo && i.id !== 'ninguno').map(it => ({ tipo, it }));
     const todos = [...porNivelDe(SKINS, 'skin'), ...porNivelDe(EFECTOS, 'efecto'), ...porNivelDe(MARCOS, 'marco'), ...porNivelDe(TITULOS, 'titulo')];
     return Array.from({ length: PASE_MAX }, (_, k) => ({ nivel: k + 1, listo: n >= k + 1, premios: todos.filter(x => x.it.nivel === k + 1) }));
+  }
+  // Cuánto de la colección tenés (personajes con sus formas, efectos, títulos y brillos): lo que tenés más lo que todavía
+  // se puede ganar. No cuentan los «Sin efecto» / «Sin brillo», los de códigos que no tenés (exclusivos) ni los de otras
+  // temporadas que no tenés (las pasadas ya no se ganan; las que vienen, todavía no se ven).
+  function coleccion(p = leer()) {
+    const tn = temporadaDe().n, partes = {};
+    let tengo = 0, total = 0;
+    for (const [tipo, lista] of [['skin', SKINS], ['efecto', EFECTOS], ['titulo', TITULOS], ['marco', MARCOS]]) {
+      const xs = lista.filter(i => i.id !== 'ninguno').map(i => ({ i, si: libre(i, p) }))
+        .filter(x => x.si || (!x.i.codigo && (!x.i.temporada || x.i.temporada === tn)));
+      const t = xs.filter(x => x.si).length;
+      partes[tipo] = { tengo: t, total: xs.length };
+      tengo += t; total += xs.length;
+    }
+    return { tengo, total, pct: total ? Math.floor(100 * tengo / total) : 0, partes };
   }
   function perfil() {
     datos = leer(); // otro juego pudo haberlo cambiado
@@ -1251,7 +1306,8 @@
     datos = leer();
     const seg = tiempoDePartida(o);   // primero: lee el reloj y lo pone en cero
     const nivelAntes = nivelDe(datos.xp).nivel, xpAntes = datos.xp;
-    const misAntes = fotoMisiones(), tempAntes = (() => { try { return temporada().nivel; } catch (e) { return 0; } })();
+    const misAntes = fotoMisiones(), tAntes = (() => { try { return temporada(); } catch (e) { return null; } })();
+    const tempAntes = tAntes ? tAntes.nivel : 0, estAntes = tAntes ? tAntes.estrellas : 0;
     const tb = tablaDe(o.juego, o.tabla);
     const clave = o.juego + ':' + o.tabla;
     const dif = DIFS.find(d => d.id === (o.dif || (tb && tb.dif))) || null;
@@ -1269,6 +1325,7 @@
     if (jugada) {
       datos.partidas[o.juego] = (datos.partidas[o.juego] || 0) + 1;
       datos.total++;
+      datos.jugado = ahoraDiario();   // (con ?dia= de prueba, esa fecha)
       if (dif && DURAS.includes(dif.id)) datos.extremo[o.juego] = 1;
       if (dif && dif.id === 'maestro') datos.maestro[o.juego] = 1;
       // hora capicúa (se lee igual al revés): 11:11, 12:21, 20:02… son 16 minutos por día
@@ -1297,8 +1354,10 @@
       }
     }
     if (boost) avisar(`<b>⚡ ${T('Doble XP (te quedan {n})', { n: datos.boost })}</b>`, 2600, 'boost');
-    // «Superá un récord» pide que haya habido una marca anterior: la primera partida en una tabla nueva no supera nada.
-    const cumplidas = !jugada ? [] : avanzarMisiones({ partida: { juego: o.juego, dif: dif ? dif.id : null, record: record && anterior != null, valor, diario: !!dia } });
+    // «Superá un récord» pide que haya habido una marca anterior (la primera partida en una tabla nueva no supera nada) y
+    // que la partida dé al menos la XP de una floja (RECORD_XP_MIN), así no se farmea con 1 punto y después 2.
+    const cumplidas = !jugada ? [] : avanzarMisiones({ partida: { juego: o.juego, dif: dif ? dif.id : null,
+      record: record && anterior != null && pedida >= RECORD_XP_MIN, valor, diario: !!dia, marcas: Array.isArray(o.marcas) ? o.marcas : [] } });
     guardar();
     const r = sumarSolo(xp);
     const logros = revisarLogros();
@@ -1334,7 +1393,8 @@
       eventoTexto: ev ? ev.texto : null, boostQuedan: boost ? datos.boost : null, multDif: dif ? dif.xp : 1, difNombre: dif ? dif.nombre : null,
       logrosDetalle: logros.map(l => ({ id: l.id, nombre: l.nombre, medalla: l.medalla, xp: MEDALLAS[l.medalla].xp })),
       premios: nuevosPremios, misiones: avanzadas,
-      temporada: tempAhora && tempAhora.nivel > tempAntes ? { nombre: tempAhora.nombre, color: tempAhora.color, desde: tempAntes, nivel: tempAhora.nivel } : null,
+      temporada: tempAhora && (tempAhora.nivel > tempAntes || tempAhora.estrellas > estAntes) ? { nombre: tempAhora.nombre, color: tempAhora.color, desde: tempAntes, nivel: tempAhora.nivel,
+        estrellas: tempAhora.estrellas > estAntes ? tempAhora.estrellas : 0 } : null,
     };
     // los avisos guardados viajan con el resultado (sin verse en JSON) para que CC.finDePartida los dé por mostrados
     Object.defineProperty(res, 'avisos', { value: avisos, enumerable: false });
@@ -1356,14 +1416,22 @@
   // ---------- desafío del día ----------
   // Cada juego tiene su desafío, todos los días: se juega en Normal y con la semilla de la fecha y el juego, así los
   // niveles salen idénticos para todo el mundo. 3 intentos por juego, cuenta el mejor, y cada uno tiene su ranking del
-  // día (tabla `d20261104` de ese juego). Jugar al menos un desafío por día arma la racha 🔥. El día cambia a las 00:00
-  // UTC: es el mismo en todos lados. Los juegos lo abren con ?diario=1: `diarioDe(juego)` da la semilla, cuenta el
-  // intento y dibuja el cartel. Todos los juegos de JUEGOS tienen que llamar a diarioDe (el inicio les pone el botón).
+  // día (tabla `d20261104` de ese juego). Jugar al menos un desafío por día arma la racha 🔥. El día cambia a la
+  // medianoche de cada uno, como en Wordle: el desafío del 4 de noviembre (semilla y tabla) es el mismo para todos, cada
+  // uno en su 4 de noviembre. Antes cambiaba a las 00:00 UTC (las 21 en Argentina): al pasar a la hora de cada uno, el
+  // último día jugado puede haber quedado un día adelante de tu fecha, por eso la racha compara con ≥ (ver sumarRacha).
+  // Los juegos lo abren con ?diario=1: `diarioDe(juego)` da la semilla, cuenta el intento y dibuja el cartel. Todos los
+  // juegos de JUEGOS tienen que llamar a diarioDe (el inicio les pone el botón).
   const DIARIO_INTENTOS = 3;
   const DIARIO_VIEJO = ['escalador', 'lluvia', 'paleta', 'esqui', 'voley', 'ritmo', 'pulseada'];   // la rotación de antes (un juego por día)
   const DIARIO_TABLA = { escalador: 'time' };   // la tabla normal que se juega en el desafío (si no está acá, 'normal')
   const DIA_MS = 864e5;
   const fechaDia = n => new Date(n * DIA_MS).toISOString().slice(0, 10);
+  // Los días van numerados por la fecha de tu calendario (n = días desde el 1/1/1970 hasta esa fecha), así fechaDia(n)
+  // es tu fecha. inicioDia(n) es tu medianoche al empezar ese día y nDeFecha('2026-11-04') el número de esa fecha.
+  const diaLocal = (ahora = Date.now()) => { const d = new Date(ahora); return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DIA_MS); };
+  const inicioDia = n => { const [y, m, d] = fechaDia(n).split('-').map(Number); return new Date(y, m - 1, d).getTime(); };
+  const nDeFecha = f => Math.floor(Date.parse(f + 'T12:00:00Z') / DIA_MS);
   const fechaLinda = f => new Date(f + 'T12:00:00Z').toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', timeZone: 'UTC' });
   // Generador con semilla (mulberry32, el mismo de los duelos) y la semilla de cada desafío sacada de la fecha y el juego (FNV-1a).
   function azar(semilla) {
@@ -1377,7 +1445,10 @@
   }
   // Para probar otro día: ?dia=2026-11-05 en la URL hace de cuenta que hoy es esa fecha (también para la racha).
   function ahoraDiario() {
-    try { const f = new URLSearchParams(location.search).get('dia'); if (f && /^\d{4}-\d{2}-\d{2}$/.test(f)) return Date.parse(f + 'T12:00:00Z'); } catch (e) {}
+    try {
+      const f = new URLSearchParams(location.search).get('dia');
+      if (f && /^\d{4}-\d{2}-\d{2}$/.test(f)) { const [y, m, d] = f.split('-').map(Number); return new Date(y, m - 1, d, 12).getTime(); }
+    } catch (e) {}
     return Date.now();
   }
   // Lo jugado en la fecha f, por juego: { [juego]: { intentos, mejor, premio } }. datos.diario es
@@ -1388,7 +1459,7 @@
     if (!js) {
       js = {};
       if (d.fecha === f && (+d.intentos || d.mejor != null)) {
-        const jid = d.juego || DIARIO_VIEJO[Math.floor(Date.parse(f + 'T12:00:00Z') / DIA_MS) % DIARIO_VIEJO.length];
+        const jid = d.juego || DIARIO_VIEJO[nDeFecha(f) % DIARIO_VIEJO.length];
         js[jid] = { intentos: Math.max(0, +d.intentos || 0), mejor: d.mejor != null ? +d.mejor : null, premio: d.premio === f };
       }
     }
@@ -1408,20 +1479,24 @@
       tabla, tablaRanking: 'd' + fecha.replace(/-/g, ''), semilla: semillaDe('twofingers:' + fecha + ':' + jid),
       intentos, quedan, maxIntentos: DIARIO_INTENTOS, jugado: intentos > 0, hecho: !quedan,
       mejor, texto: mejor != null ? formato(mejor, tablaDe(jid, tabla)) : null,
-      racha: d.ultimo === fecha || d.ultimo === fechaDia(n - 1) ? +d.racha || 0 : 0, jugadoHoy: d.ultimo === fecha,
-      mejorRacha: +d.mejorRacha || 0, quedanMs: (n + 1) * DIA_MS - Date.now(),
+      racha: rachaViva(d, n), jugadoHoy: !!d.ultimo && d.ultimo >= fecha,
+      mejorRacha: +d.mejorRacha || 0, quedanMs: inicioDia(n + 1) - Date.now(), ...infoHielo(d, n),
     };
   }
   // diario(juego): el desafío de hoy de ese juego. diario(): el de todos los juegos juntos (para el inicio), con
   // `juegos` (la lista), `jugados` (con al menos un intento), `hechos` (sin intentos), la racha y cuánto falta.
   function diario(jid, ahora = ahoraDiario()) {
-    const n = Math.floor(ahora / DIA_MS), d = leer().diario;
+    const n = diaLocal(ahora);
+    datos = leer();
+    if (cuidarRacha(datos.diario, n)) guardar();   // por si la página quedó abierta de un día para el otro
+    const d = datos.diario;
     if (jid) return infoDiario(jid, n, d);
     const juegos = JUEGOS.map(j => infoDiario(j.id, n, d)), r = juegos[0], fecha = fechaDia(n);
     return {
       fecha, fechaLinda: fechaLinda(fecha), juegos, total: juegos.length, maxIntentos: DIARIO_INTENTOS,
       jugados: juegos.filter(x => x.jugado).length, hechos: juegos.filter(x => x.hecho).length,
       racha: r.racha, jugadoHoy: r.jugadoHoy, mejorRacha: r.mejorRacha, quedanMs: r.quedanMs,
+      ...infoHielo(d, n),
     };
   }
   // "5 h" / "40 min": cuánto falta para los próximos desafíos
@@ -1429,12 +1504,52 @@
     const min = Math.max(1, Math.ceil(ms / 60000));
     return min >= 60 ? Math.floor(min / 60) + ' h' : min + ' min';
   }
-  // Racha 🔥: el primer día con un desafío jugado con puntos suma uno (o vuelve a 1 si ayer no jugaste).
+  // La racha de hoy: la del último día jugado si fue hoy o ayer (o «mañana», ver arriba); si no, 0.
+  const rachaViva = (d, n) => (d.ultimo && d.ultimo >= fechaDia(n - 1) ? Math.max(0, +d.racha || 0) : 0);
+  // Racha 🔥: el primer día con un desafío jugado con puntos suma uno (o vuelve a 1 si ayer no jugaste y no había
+  // congelador). Si el último día jugado es hoy o «mañana» (de cuando el día cambiaba a las 00:00 UTC), ya está contado.
   function sumarRacha(d, f) {
-    if (d.ultimo === f) return;
-    const n = Math.floor(Date.parse(f + 'T12:00:00Z') / DIA_MS);
+    if (d.ultimo && d.ultimo >= f) return;
+    const n = nDeFecha(f);
+    cuidarRacha(d, n);
     d.racha = d.ultimo === fechaDia(n - 1) ? (+d.racha || 0) + 1 : 1;
     d.ultimo = f; d.mejorRacha = Math.max(+d.mejorRacha || 0, d.racha);
+  }
+  // Congelador de racha 🧊: se gana terminando con puntos HIELO_META desafíos en la semana (cada uno cuenta una vez por
+  // día, con el mismo intento que da el premio de XP), como mucho uno por semana y hasta HIELO_MAX guardados. Si te
+  // perdés días y tenés congeladores para cubrirlos, se gastan solos y la racha sigue (los días congelados no suman).
+  // Va en datos.diario: hieloG / hieloU (ganados / usados: solo suben, así juntar dos dispositivos no los regenera),
+  // hieloSem (la semana del último ganado), hieloN ({ s: semana, n: desafíos con puntos esa semana }), congelados (los
+  // días que cubrió) y hieloAviso (el día en que se gastó, para avisarlo).
+  const HIELO_META = 3, HIELO_MAX = 2;
+  const hielos = d => Math.max(0, (+d.hieloG || 0) - (+d.hieloU || 0));
+  const semanaDe = n => 's' + Math.floor((n + 3) / 7);   // las semanas empiezan el lunes (igual que las misiones)
+  function infoHielo(d, n) {
+    const sem = semanaDe(n), h = d.hieloN && d.hieloN.s === sem ? Math.max(0, +d.hieloN.n || 0) : 0;
+    return { hielos: hielos(d), hieloMax: HIELO_MAX, hieloMeta: HIELO_META, hieloProg: Math.min(HIELO_META, h), hieloEstaSemana: d.hieloSem === sem,
+      // los días que cubrió el congelador, si se gastó hoy (para avisarlo)
+      hieloUsado: d.hieloAviso === fechaDia(n) && Array.isArray(d.congelados) ? d.congelados.filter(x => x < fechaDia(n)).slice(-HIELO_MAX) : [] };
+  }
+  // Si desde el último día jugado se perdieron días y alcanzan los congeladores, los gasta: la racha queda viva, como si
+  // hubieras jugado ayer. Devuelve cuántos gastó.
+  function cuidarRacha(d, n) {
+    if (!d.ultimo || !(+d.racha > 0)) return 0;
+    const faltan = n - nDeFecha(d.ultimo) - 1;
+    if (faltan < 1 || faltan > hielos(d)) return 0;
+    const dias = Array.from({ length: faltan }, (_, k) => fechaDia(n - faltan + k));
+    d.hieloU = (+d.hieloU || 0) + faltan;
+    d.congelados = [...new Set([...(Array.isArray(d.congelados) ? d.congelados : []), ...dias])].slice(-10);
+    d.ultimo = fechaDia(n - 1);
+    d.hieloAviso = fechaDia(n);
+    return faltan;
+  }
+  // Un desafío terminado con puntos por primera vez hoy: cuenta para el congelador de la semana. true si ganaste uno.
+  function contarHielo(d, f) {
+    const sem = semanaDe(nDeFecha(f));
+    d.hieloN = { s: sem, n: (d.hieloN && d.hieloN.s === sem ? +d.hieloN.n || 0 : 0) + 1 };
+    if (d.hieloN.n < HIELO_META || d.hieloSem === sem || hielos(d) >= HIELO_MAX) return false;
+    d.hieloG = (+d.hieloG || 0) + 1; d.hieloSem = sem;
+    return true;
   }
   // Fin de una partida del desafío (lo llama partida): guarda la mejor de hoy de ese juego, la manda a su ranking del
   // día y da el premio de XP la primera vez de cada juego cada día (un poco más con la racha), si el intento tuvo puntos.
@@ -1448,13 +1563,13 @@
     if (nueva) { g.mejor = valor; if (datos.apodo) encolar(o.juego, o.diario.tablaRanking, valor); }
     // la racha y el premio, con el primer intento con puntos del día (salir al instante no los da)
     if (jugada) sumarRacha(d, f);
-    let premio = 0;
-    if (jugada && !g.premio) { g.premio = true; premio = 15 + 2 * Math.min(5, Math.max(0, (+d.racha || 1) - 1)); }
+    let premio = 0, hielo = false;
+    if (jugada && !g.premio) { g.premio = true; premio = 15 + 2 * Math.min(5, Math.max(0, (+d.racha || 1) - 1)); hielo = contarHielo(d, f); }
     const jugados = Object.values(d.juegos).filter(x => x && +x.intentos > 0).length;
     return { nueva, mejor: g.mejor ?? null, texto: g.mejor != null ? formato(g.mejor, tablaDe(o.juego, o.diario.tabla)) : '—',
       // la racha viva: la de hoy si ya jugaste con puntos, la de ayer si todavía no (y 0 si se cortó)
       intentos: +g.intentos || 0, quedan: Math.max(0, DIARIO_INTENTOS - (+g.intentos || 0)), premio,
-      racha: d.ultimo === f || d.ultimo === fechaDia(Math.floor(Date.parse(f + 'T12:00:00Z') / DIA_MS) - 1) ? +d.racha || 0 : 0,
+      racha: rachaViva(d, nDeFecha(f)), hielo, hielos: hielos(d),
       jugados, total: JUEGOS.length };
   }
   function diarioDe(jid) {
@@ -1482,6 +1597,7 @@
           t = T('Intento {n} de {m} · tu mejor de hoy: <strong>{v}</strong>', { n: r.intentos, m: DIARIO_INTENTOS, v: r.texto }) +
             (r.nueva && r.intentos > 1 ? T(' (¡mejoraste!)') : '');
           if (r.premio) t += T(' · <strong>+{n} XP</strong> por jugarlo', { n: r.premio });
+          if (r.hielo) t += T(' · 🧊 <strong>¡Ganaste un congelador de racha!</strong> Si un día no jugás, la cuida solo');
           if (!r.quedan) t += r.jugados < r.total ? T(' · jugaste {n} de {m} desafíos de hoy: los otros te esperan en el inicio', { n: r.jugados, m: r.total })
             : T(' · ¡jugaste los {m} desafíos de hoy! Mañana hay otros (en {t})', { m: r.total, t: faltaTexto(i.quedanMs) });
         } else {
@@ -1493,7 +1609,8 @@
         }
         el.querySelector('.txt').innerHTML = t;
         const racha = fin && r ? r.racha : i.racha;
-        el.querySelector('.racha').textContent = racha > 0 ? T(racha === 1 ? '🔥 {n} día' : '🔥 {n} días seguidos', { n: racha }) : '';
+        el.querySelector('.racha').textContent = (racha > 0 ? T(racha === 1 ? '🔥 {n} día' : '🔥 {n} días seguidos', { n: racha }) : '') +
+          (i.hielos ? (racha > 0 ? ' · ' : '') + '🧊 ' + i.hielos : '');
       }
     }
     // el texto del botón "Otra vez" (cada juego lo arma distinto)
@@ -1507,7 +1624,7 @@
       // Al empezar cada partida: cuenta el intento (y la racha). false = no quedan intentos o ya cambió el día.
       empezar() {
         datos = leer();
-        const n = Math.floor(ahoraDiario() / DIA_MS);
+        const n = diaLocal(ahoraDiario());
         if (fechaDia(n) !== info.fecha) return false;
         const d = datos.diario, js = diaDe(d, info.fecha, true), g = js[jid] = js[jid] || { intentos: 0, mejor: null };
         if ((+g.intentos || 0) >= DIARIO_INTENTOS) return false;
@@ -1574,17 +1691,28 @@
       return { nivel: k + 1, items, boost: !items.length };
     });
   }
+  // Después del nivel 30: cada TEMP_ESTRELLA de XP, una ⭐ estrella de temporada (de prestigio: no da nada más que
+  // contarse en el pase y en el perfil). Salen de la XP de la temporada, no se guardan aparte.
+  const TEMP_ESTRELLA = 500;
+  const estrellasDe = xp => Math.max(0, Math.floor((Math.max(0, +xp || 0) - TEMP_NIVELES * TEMP_XP) / TEMP_ESTRELLA));
+  // todas las de todas las temporadas (para el perfil)
+  const estrellasTotal = temporadas => Object.values(temporadas && typeof temporadas === 'object' ? temporadas : {})
+    .reduce((a, t) => a + estrellasDe(t && t.xp), 0);
   function temporada() {
-    const T = temporadaDe(), st = leer().temporadas[T.n] || {};
-    const xp = Math.max(0, +st.xp || 0), nivel = Math.min(TEMP_NIVELES, Math.floor(xp / TEMP_XP));
+    const T = temporadaDe(), p = leer(), st = p.temporadas[T.n] || {};
+    const xp = Math.max(0, +st.xp || 0), nivel = Math.min(TEMP_NIVELES, Math.floor(xp / TEMP_XP)), estrellas = estrellasDe(xp);
     return { ...T, xp, nivel, max: TEMP_NIVELES, enNivel: nivel >= TEMP_NIVELES ? TEMP_XP : xp - nivel * TEMP_XP, porNivel: TEMP_XP,
-      quedanMs: T.fin - Date.now(), premios: premiosTemporada(T.n).map(p => ({ ...p, listo: nivel >= p.nivel })), boost: leer().boost };
+      // las estrellas: cuántas tenés en esta temporada, en todas, y lo hecho de la próxima (si ya completaste el 30)
+      estrellas, estrellasTotal: estrellasTotal(p.temporadas), porEstrella: TEMP_ESTRELLA,
+      enEstrella: nivel >= TEMP_NIVELES ? xp - TEMP_NIVELES * TEMP_XP - estrellas * TEMP_ESTRELLA : 0,
+      quedanMs: T.fin - Date.now(), premios: premiosTemporada(T.n).map(p => ({ ...p, listo: nivel >= p.nivel })), boost: p.boost };
   }
   // XP que entra a la temporada (va adentro de sumarSolo y revisarLogros, con `datos` ya cargado). Devuelve los niveles nuevos.
   function sumarTemporada(n) {
     if (!(n > 0)) return [];
     const T = temporadaDe();
     const st = datos.temporadas[T.n] = { xp: 0, cobrado: 0, ...datos.temporadas[T.n] };
+    const estAntes = estrellasDe(st.xp);
     st.xp = (+st.xp || 0) + n;
     const nivel = Math.min(TEMP_NIVELES, Math.floor(st.xp / TEMP_XP)), nuevos = [];
     const premios = premiosTemporada(T.n);
@@ -1594,9 +1722,15 @@
       nuevos.push(p);
     }
     st.cobrado = Math.max(+st.cobrado || 0, nivel);
+    const est = estrellasDe(st.xp);
+    if (est > estAntes) nuevos.push({ estrella: est });
     return nuevos;
   }
   function avisoTemporada(niveles) {
+    if (!niveles.length) return;
+    const e = niveles.find(x => x.estrella);
+    if (e) avisar(`<b>⭐ ${tr('Estrella de temporada')}</b><br>${tr(e.estrella === 1 ? 'Tenés 1 en {t}' : 'Tenés {n} en {t}', { n: e.estrella, t: temporadaDe().nombre })}`, 3600, 'temporada');
+    niveles = niveles.filter(x => !x.estrella);
     if (!niveles.length) return;
     const p = niveles[niveles.length - 1], T = temporadaDe();
     // (acá `T` es la temporada: la función de traducir es `tr`)
@@ -1628,7 +1762,19 @@
     { id: 'distintos', txt: 'Jugá 3 juegos distintos', meta: 3, xp: 120 },
     { id: 'record', txt: 'Superá un récord tuyo', meta: 1, xp: 150 },
     { id: 'marca', txt: 'Hacé {v} en {j} (Normal o más)', meta: 1, xp: 150 },
+    { id: 'habil', txt: '', meta: 1, xp: 150 },
   ];
+  // Misiones de habilidad: algo que hacés dentro de una partida. El juego lo avisa pasando la marca en `marcas` a
+  // CC.partida (las marcas también quedan guardadas en el perfil, como las de los logros).
+  const HABILIDADES = [
+    { juego: 'escalador', marca: 'escalador-limpio', txt: 'Hacé un Sprint 100 sin errores en Escalador' },
+    { juego: 'guardia', marca: 'guardia-combo20', txt: 'Hacé un combo de 20 en Guardia' },
+    { juego: 'esgrima', marca: 'esgrima-perfectas3', txt: 'Hacé 3 paradas perfectas en una partida de Esgrima' },
+    { juego: 'ritmo', marca: 'ritmo-combo50', txt: 'Hacé un combo de 50 en Ritmo' },
+  ];
+  // «Superá un récord» solo cuenta si la partida llegó al menos a la XP mínima de una partida floja de ese juego (la
+  // `min` de xpEscala): así no se farmea en una tabla nueva haciendo 1 punto y después 2.
+  const RECORD_XP_MIN = 6;
   const MIS_SEMANA = [
     { id: 'partidas', txt: 'Jugá 30 partidas', meta: 30, xp: 400 },
     { id: 'xp', txt: 'Ganá 2.500 XP', meta: 2500, xp: 500 },
@@ -1647,25 +1793,39 @@
   }
   // p: el perfil (para la marca de «Hacé V en X»); g: el progreso guardado de ese período. Al cumplirse, la marca queda
   // fija en g['v:' + clave], así la misión cumplida sigue mostrando la que pediste y no la del logro siguiente.
+  // Una misión del día se puede cambiar una vez por día (ver cambiarMision): g.cambio es su lugar + 1, y en ese lugar va
+  // otra del resto de la lista, elegida con su propio azar (así las otras dos no cambian).
   function armarMisiones(pool, clave, cuantas, p, g) {
     const r = azar(semillaDe('misiones:' + clave)), lista = pool.slice(), out = [];
     while (out.length < cuantas && lista.length) out.push(lista.splice(Math.floor(r() * lista.length), 1)[0]);
-    return out.map((m, k) => {
-      const x = { ...m, clave: clave + ':' + k + ':' + m.id, txt: T(m.txt) };
+    const armar = (m, k, rr, extra = '') => {
+      const x = { ...m, lugar: k, clave: clave + ':' + k + extra + ':' + m.id, txt: T(m.txt) };
       if (m.id === 'juego' || m.id === 'marca') {
         const opciones = m.id === 'marca' ? JUEGOS.filter(j => UMBRALES[j.id]) : JUEGOS;
-        const j = opciones[Math.floor(r() * opciones.length)];
+        const j = opciones[Math.floor(rr() * opciones.length)];
         x.juego = j.id;
         if (m.id === 'marca') x.valor = g && +g['v:' + x.clave] > 0 ? +g['v:' + x.clave] : umbralMision(p, j.id);
         x.txt = T(m.txt, { j: j.nombre, v: m.id === 'marca' ? formato(x.valor, j.tablas[1]) : '' });
       }
+      if (m.id === 'habil') {
+        const h = HABILIDADES[Math.floor(rr() * HABILIDADES.length)];
+        x.juego = h.juego; x.marca = h.marca; x.txt = T(h.txt);
+      }
       if (m.id === 'distintos' && !m.meta) x.meta = JUEGOS.length;
       return x;
-    });
+    };
+    const res = out.map((m, k) => armar(m, k, r));
+    const cb = g ? Math.floor(+g.cambio || 0) : 0;
+    if (cb >= 1 && cb <= res.length && lista.length) {
+      const r2 = azar(semillaDe('cambio:' + clave));
+      res[cb - 1] = { ...armar(lista[Math.floor(r2() * lista.length)], cb - 1, r2, 'c'), cambiada: true };
+    }
+    return res;
   }
-  function claves(ahora = Date.now()) {
-    const n = Math.floor(ahora / DIA_MS), semana = Math.floor((n + 3) / 7);   // las semanas empiezan el lunes
-    return { dia: fechaDia(n), semana: 's' + semana, finDia: (n + 1) * DIA_MS, finSemana: ((semana + 1) * 7 - 3) * DIA_MS };
+  // El día y la semana de las misiones, en tu hora (como el desafío del día; con ?dia= también, para probar).
+  function claves(ahora = ahoraDiario()) {
+    const n = diaLocal(ahora), semana = Math.floor((n + 3) / 7);   // las semanas empiezan el lunes
+    return { dia: fechaDia(n), semana: 's' + semana, finDia: inicioDia(n + 1), finSemana: inicioDia((semana + 1) * 7 - 3) };
   }
   function misiones() {
     const c = claves(), p = leer(), m = p.misiones;
@@ -1676,7 +1836,21 @@
       diarias: ver(armarMisiones(MIS_DIA, c.dia, 3, p, gd), gd),
       semanales: ver(armarMisiones(MIS_SEMANA, c.semana, 3, p, gs), gs),
       quedanDia: c.finDia - Date.now(), quedanSemana: c.finSemana - Date.now(),
+      puedeCambiar: !(gd && +gd.cambio),   // todavía no cambiaste ninguna hoy
     };
+  }
+  // Cambia la misión del día que está en el lugar k (0, 1 o 2) por otra. Una vez por día y solo si no está cumplida.
+  function cambiarMision(k) {
+    datos = leer();
+    const c = claves(), m = datos.misiones = { ...datos.misiones };
+    if (m.dia !== c.dia) { m.dia = c.dia; m.d = {}; }
+    m.d = { ...m.d };
+    if (+m.d.cambio) return false;
+    const x = armarMisiones(MIS_DIA, c.dia, 3, datos, m.d)[k];
+    if (!x || m.d['ok:' + x.clave]) return false;
+    m.d.cambio = k + 1;
+    guardar();
+    return misiones().diarias[k];
   }
   // Suma a las misiones lo que pasó (con `datos` ya cargado). ev: { partida: {juego, dif, record, valor, diario} } o { xp }.
   // Devuelve las que se cumplieron recién (la XP la da quien llama, después de guardar).
@@ -1697,6 +1871,7 @@
           else if (x.id === 'dificil' && DIFICILES.includes(p.dif)) suma = 1;
           else if (x.id === 'record' && p.record) suma = 1;
           else if (x.id === 'marca' && p.juego === x.juego && p.dif && p.dif !== 'facil' && p.valor >= x.valor) suma = 1;
+          else if (x.id === 'habil' && p.juego === x.juego && (p.marcas || []).includes(x.marca)) suma = 1;
           else if (x.id === 'diario' && p.diario) {
             // la del día: con una partida alcanza; la de la semana cuenta días distintos
             if (x.meta === 1) suma = 1;
@@ -1722,6 +1897,44 @@
     for (const x of cumplidas) avisar(`<b>🎯 ${T('Misión cumplida')}</b><br>${x.txt} · +${x.xp} XP`, 3200, 'mision');
     sumarSolo(xp, false, true);
     return xp;
+  }
+
+  // ---------- al volver ----------
+  // Si pasaron VOLVER_DIAS días o más desde tu última partida con puntos, tus próximas VOLVER_PARTIDAS partidas dan doble
+  // XP (las mismas partidas de doble XP que da la temporada). Una vez por ausencia: `volvio` guarda de qué última partida
+  // ya se dio. También, si un congelador cuidó tu racha, se avisa al entrar (en cualquier página).
+  const VOLVER_DIAS = 3, VOLVER_PARTIDAS = 3;
+  function revisarVuelta() {
+    datos = leer();
+    if (!(datos.total > 0) || !(datos.jugado > 0) || datos.volvio >= datos.jugado || ahoraDiario() - datos.jugado < VOLVER_DIAS * DIA_MS) return 0;
+    datos.boostG += VOLVER_PARTIDAS; datos.boost += VOLVER_PARTIDAS; datos.volvio = datos.jugado;
+    guardar();
+    return Math.floor((ahoraDiario() - datos.jugado) / DIA_MS);
+  }
+  {
+    let vuelta = 0, hielo = 0, racha = 0;
+    try {
+      vuelta = revisarVuelta();
+      datos = leer();
+      const n = diaLocal(ahoraDiario()), d = datos.diario;
+      // Una sola vez, al pasar del día UTC al de tu hora: si el último día jugado quedó «mañana» (jugaste después de las
+      // 00:00 UTC, que en tu hora todavía era hoy), pasa a hoy. Así mañana la racha suma como siempre.
+      if (!d.diaLocal) {
+        if (d.ultimo && d.ultimo === fechaDia(n + 1)) d.ultimo = fechaDia(n);
+        d.diaLocal = 1;
+        guardar();
+      }
+      hielo = cuidarRacha(d, n);
+      if (hielo) guardar();
+      racha = +datos.diario.racha || 0;
+    } catch (e) {}
+    if (vuelta || hielo) {
+      const avisos = () => setTimeout(() => {
+        if (hielo) avisar(`<b>🧊 ${T(hielo === 1 ? 'Tu congelador cuidó la racha' : 'Tus congeladores cuidaron la racha')}</b><br>${T(hielo === 1 ? 'Ayer no jugaste y seguís con 🔥 {n}' : 'Faltaste {d} días y seguís con 🔥 {n}', { n: racha, d: hielo })}`, 5200);
+        if (vuelta) avisar(`<b>👋 ${T('¡Volviste!')}</b><br>${T('Tus próximas {n} partidas dan doble XP', { n: VOLVER_PARTIDAS })}`, 5200);
+      }, 900);
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avisos); else avisos();
+    }
   }
 
   // ---------- ranking online ----------
@@ -1884,7 +2097,7 @@
   // pisa nada. Lo que es de cada dispositivo (id, clave, amigos, cola del ranking, lo ya visto) no se sube.
   const NUBE_KEY = 'cubo-nube';   // lo último que se subió, para no subir dos veces lo mismo
   const DE_LA_NUBE = ['xp', 'skin', 'efecto', 'titulo', 'marco', 'eleccion', 'records', 'mejores', 'partidas', 'total', 'logros',
-    'marcas', 'extremo', 'maestro', 'codigos', 'diario', 'temporadas', 'boostG', 'boostU', 'misiones', 'tiempo', 'vitrina'];
+    'marcas', 'extremo', 'maestro', 'codigos', 'diario', 'temporadas', 'boostG', 'boostU', 'misiones', 'tiempo', 'vitrina', 'jugado', 'volvio'];
   // `maestria` (el nivel de maestría de cada juego) no se guarda: sale de lo jugado y viaja para que el ranking la muestre
   const progreso = p => { const o = {}; for (const k of DE_LA_NUBE) o[k] = p[k]; o.maestria = maestrias(p); return o; };
   const objDe = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
@@ -1892,17 +2105,18 @@
   // Junta dos perfiles (a = este dispositivo, ya pasado por leer(); b = la nube) quedándose con lo mejor de cada lado.
   function mezclar(a, b) {
     const o = { ...a };
-    o.xp = Math.max(a.xp, conCurva(b));   // b puede venir de una versión con la curva vieja
+    o.xp = Math.max(a.xp, xpGuardada(b));   // b puede venir de una versión con otra curva
     o.total = Math.max(a.total, +b.total || 0);
     o.partidas = maxObj(a.partidas, b.partidas);
     o.tiempo = maxObj(a.tiempo, b.tiempo);
     o.boostG = Math.max(a.boostG, Math.floor(+b.boostG || 0)); o.boostU = Math.max(a.boostU, Math.floor(+b.boostU || 0));
     o.boost = Math.max(0, o.boostG - o.boostU);
+    o.jugado = Math.max(a.jugado, +b.jugado || 0); o.volvio = Math.max(a.volvio, +b.volvio || 0);
     // logros: la fecha más vieja de cada uno; marcas y "jugado en Extremo/Maestro": la unión
     const lb = objDe(b.logros);
     o.logros = { ...lb, ...a.logros };
     for (const [k, v] of Object.entries(lb)) if (+v && +v < +o.logros[k]) o.logros[k] = v;
-    o.marcas = { ...objDe(b.marcas), ...a.marcas }; o.extremo = { ...objDe(b.extremo), ...a.extremo }; o.maestro = { ...objDe(b.maestro), ...a.maestro };
+    o.marcas = { ...objDe(b.marcas), ...a.marcas, curva2: 3, curva3: o.xp }; o.extremo = { ...objDe(b.extremo), ...a.extremo }; o.maestro = { ...objDe(b.maestro), ...a.maestro };
     o.codigos = [...new Set([...a.codigos, ...(Array.isArray(b.codigos) ? b.codigos.filter(c => typeof c === 'string') : [])])];
     // récords: la mejor marca de cada tabla; el texto del récord de cada juego, del lado que tenía la mejor marca
     const rb = objDe(b.records);
@@ -1924,6 +2138,14 @@
     // cada juego (los dos lados pasan antes al formato por juego, por si alguno es de antes)
     const da = { ...a.diario }, db = { ...objDe(b.diario) }, d = { ...da };
     d.mejorRacha = Math.max(+da.mejorRacha || 0, +db.mejorRacha || 0);
+    // congeladores: los contadores, el máximo; la semana del último ganado, la más nueva; los días cubiertos, la unión
+    d.hieloG = Math.max(+da.hieloG || 0, +db.hieloG || 0); d.hieloU = Math.max(+da.hieloU || 0, +db.hieloU || 0);
+    if (String(db.hieloSem || '') > String(da.hieloSem || '')) d.hieloSem = db.hieloSem;
+    const ha = objDe(da.hieloN), hb = objDe(db.hieloN);
+    if (hb.s && (String(hb.s) > String(ha.s || '') || (hb.s === ha.s && +hb.n > +ha.n))) d.hieloN = { s: hb.s, n: +hb.n || 0 };
+    const cg = [...(Array.isArray(da.congelados) ? da.congelados : []), ...(Array.isArray(db.congelados) ? db.congelados : [])].filter(x => typeof x === 'string');
+    if (cg.length) d.congelados = [...new Set(cg)].sort().slice(-10);
+    if (String(db.hieloAviso || '') > String(da.hieloAviso || '')) d.hieloAviso = db.hieloAviso;
     if (String(db.ultimo || '') > String(da.ultimo || '')) { d.ultimo = db.ultimo; d.racha = +db.racha || 0; }
     else if (db.ultimo && db.ultimo === da.ultimo) d.racha = Math.max(+da.racha || 0, +db.racha || 0);
     const ja = da.fecha ? diaDe(da, da.fecha) : {}, jb = db.fecha ? diaDe(db, db.fecha) : {};
@@ -2872,7 +3094,9 @@ button.cc-sw.cc-sw-on::after{background:#3fcf8e radial-gradient(circle at calc(1
       const el = document.createElement('p');
       el.className = 'cc-fin-temp';
       el.style.setProperty('--tc', r.temporada.color || '#ffcc29');
-      el.textContent = '🏆 ' + T('Temporada {t}: nivel {n}', { t: r.temporada.nombre, n: r.temporada.nivel });
+      el.textContent = r.temporada.estrellas && r.temporada.nivel <= r.temporada.desde
+        ? '⭐ ' + T('Temporada {t}: estrella {n}', { t: r.temporada.nombre, n: r.temporada.estrellas })
+        : '🏆 ' + T('Temporada {t}: nivel {n}', { t: r.temporada.nombre, n: r.temporada.nivel });
       bajo.appendChild(el);
     }
     const ap = filaApodo(r, o);
@@ -3128,7 +3352,7 @@ button.cc-sw.cc-sw-on::after{background:#3fcf8e radial-gradient(circle at calc(1
       if (el) marcasJ.push(el);
     }
     const logros = LOGROS.filter(l => q.logros[l.id]);
-    const d = objDe(p.diario), n = Math.floor(ahoraDiario() / DIA_MS);
+    const d = objDe(p.diario), n = diaLocal(ahoraDiario());
     const T = temporadaDe(), xpT = Math.max(0, +objDe(q.temporadas[T.n]).xp || 0);
     const fechas = [x.creado ? Date.parse(x.creado) : NaN, ...Object.values(q.logros).map(Number)].filter(v => isFinite(v) && v > 1.5e12);
     return {
@@ -3141,8 +3365,8 @@ button.cc-sw.cc-sw-on::after{background:#3fcf8e radial-gradient(circle at calc(1
       total: Math.max(+p.total || 0, juegos.reduce((a, g) => a + g.n, 0)), segundos: juegos.reduce((a, g) => a + g.s, 0),
       juegos, marcas: marcasJ, logros, diamantes: logros.filter(l => l.medalla === 'diamante'),
       legendarias: [...SKINS.map(it => ({ tipo: 'skin', it })), ...EFECTOS.map(it => ({ tipo: 'efecto', it }))].filter(i => i.it.legendaria && libre(i.it, q)),
-      racha: d.ultimo === fechaDia(n) || d.ultimo === fechaDia(n - 1) ? Math.max(0, +d.racha || 0) : 0, mejorRacha: Math.max(0, +d.mejorRacha || 0),
-      temporada: T, nivelT: Math.min(TEMP_NIVELES, Math.floor(xpT / TEMP_XP)),
+      racha: rachaViva(d, n), mejorRacha: Math.max(0, +d.mejorRacha || 0),
+      temporada: T, nivelT: Math.min(TEMP_NIVELES, Math.floor(xpT / TEMP_XP)), estrellas: estrellasTotal(q.temporadas),
       desde: fechas.length ? Math.min(...fechas) : null,
     };
   }
@@ -3383,7 +3607,7 @@ button.cc-sw.cc-sw-on::after{background:#3fcf8e radial-gradient(circle at calc(1
         const chip = (ico, valor, txt) => `<div class="pf-chip"><span class="pf-ico" aria-hidden="true">${ico}</span><b>${valor}</b><small>${txt}</small></div>`;
         h.push(`<div class="pf-chips">${chip('⏱️', horasTexto(v.segundos), 'jugadas')}${chip('🎮', v.total.toLocaleString('es-AR'), v.total === 1 ? 'partida' : 'partidas')}
           ${chip('🏅', `${v.logros.length}/${LOGROS.length}`, 'logros')}${chip('🔥', v.racha, `racha del día · mejor ${v.mejorRacha}`)}
-          ${chip('⭐', `Lvl ${v.nivelT}`, `temporada ${v.temporada.nombre}`)}${chip('📅', desde, 'juega desde')}</div>`);
+          ${chip('⭐', `Lvl ${v.nivelT}${v.estrellas ? ` · 🌟 ${v.estrellas}` : ''}`, `temporada ${v.temporada.nombre}`)}${chip('📅', desde, 'juega desde')}</div>`);
         h.push(vitrinaHTML(v));
         if (fav) {
           const fm = fav.m, falta = fm.max ? 1 : (fm.puntos - fm.desde) / Math.max(1, fm.hasta - fm.desde);
@@ -7068,9 +7292,92 @@ button.cc-sw.cc-sw-on::after{background:#3fcf8e radial-gradient(circle at calc(1
   }
   // Frenar el juego un instante (hitstop): al chocar o perder, la imagen se queda quieta unos ms y el golpe se siente.
   // El juego llama CC.frenar(ms) y en su frame, si CC.frenado(now), dibuja sin avanzar la física.
-  let frenadoHasta = 0;
+  // En pausa (CC.pausa, abajo) también da true: así todos los juegos se quedan quietos sin tocar su bucle.
+  let frenadoHasta = 0, pausaAct = null;
   function frenar(ms = 90) { frenadoHasta = Math.max(frenadoHasta, performance.now() + ms); }
-  const frenado = (now = performance.now()) => now < frenadoHasta;
+  const frenado = (now = performance.now()) => now < frenadoHasta || !!pausaAct;
+  // Pausa automática al ocultar la pestaña (cambiaste de app, bloqueaste el celu, otra pestaña). Cada juego la pide una vez:
+  //   CC.pausa({ activa: () => state === 'play' && !G.done, alSeguir: ms => { G.t0 += ms; } })
+  // activa(): si en este momento hay una partida que pausar (no en menús, ni en el fin, ni en un duelo online).
+  // Mientras dura, CC.frenado() da true (el juego dibuja sin avanzar), las teclas no le llegan al juego y hay un cartel
+  // «Pausa» con Seguir. Seguir (el botón, Enter, Espacio o Esc; con joystick, A o B) cuenta 3·2·1 en 0,9 s y sigue.
+  // alSeguir(ms) recibe cuánto estuvo parado, para correr los relojes del juego que van con performance.now().
+  // R cierra la pausa sin seguir y deja pasar la tecla: el juego reinicia como siempre.
+  // Si el juego ya tiene su propia pausa (Ritmo), pasa pausar() y se usa esa en vez del cartel.
+  let pausaCfg = null;
+  function pausa(o) {
+    pausaCfg = o || null;
+    return { pausada: () => !!pausaAct };
+  }
+  {
+    const quitar = () => { if (pausaAct && pausaAct.el) pausaAct.el.remove(); };
+    const cerrar = sigue => {
+      const a = pausaAct;
+      if (!a) return;
+      clearInterval(a.timer); quitar(); pausaAct = null;
+      if (sigue && pausaCfg && pausaCfg.alSeguir) { try { pausaCfg.alSeguir(performance.now() - a.desde); } catch (e) { console.error(e); } }
+    };
+    const seguir = () => {
+      const a = pausaAct;
+      if (!a || a.cuenta) return;
+      a.cuenta = 3;
+      const card = a.el.querySelector('.cc-pausa-card');
+      card.innerHTML = '<b class="cc-pausa-n">3</b>';
+      a.timer = setInterval(() => {
+        if (--a.cuenta <= 0) return cerrar(true);
+        card.firstChild.textContent = a.cuenta;
+      }, 300);
+    };
+    const pausar = () => {
+      if (!pausaCfg || pausaAct) return;
+      let ok = false;
+      try { ok = pausaCfg.activa(); } catch (e) {}
+      if (!ok) return;
+      if (pausaCfg.pausar) { pausaCfg.pausar(); return; }
+      textos({
+        'Pausa': 'Pause', 'El juego te espera donde lo dejaste.': 'The game is waiting right where you left it.',
+        'Seguir': 'Resume', '<kbd>Enter</kbd> sigue · <kbd>R</kbd> reinicia': '<kbd>Enter</kbd> resume · <kbd>R</kbd> restart',
+      });
+      if (!document.getElementById('cc-pausa-css')) {
+        const st = document.createElement('style');
+        st.id = 'cc-pausa-css';
+        st.textContent = `
+.cc-pausa{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:16px;background:rgba(29,35,64,.5);touch-action:none}
+.cc-pausa-card{zoom:var(--ui,1);width:min(320px,100%);min-height:150px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  background:#fffaf0;color:${INK};border:3px solid ${INK};border-radius:22px;box-shadow:0 8px 0 ${INK};padding:20px 18px;text-align:center;font:600 15px/1.35 system-ui,sans-serif}
+.cc-pausa-card h2{margin:0;font:400 34px/1 "Lilita One","Trebuchet MS",sans-serif}
+.cc-pausa-card p{margin:0;color:#4a5170}
+.cc-pausa-card button{width:100%;margin-top:4px;padding:12px;border-radius:14px;background:#ffcc29;color:${INK};border:3px solid ${INK};box-shadow:0 6px 0 ${INK};
+  font:400 24px/1 "Lilita One","Trebuchet MS",sans-serif;cursor:pointer}
+.cc-pausa-card button:active{transform:translateY(4px);box-shadow:0 2px 0 ${INK}}
+.cc-pausa-card small{color:#4a5170;font-size:12px}
+.cc-pausa-card kbd{font:800 11px system-ui,sans-serif;border:2px solid ${INK};border-bottom-width:3px;border-radius:6px;padding:0 4px;background:#fff}
+.cc-pausa-n{font:400 64px/1 "Lilita One","Trebuchet MS",sans-serif}`;
+        document.head.appendChild(st);
+      }
+      const el = document.createElement('div');
+      el.className = 'cc-pausa'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', T('Pausa'));
+      const tactil = matchMedia('(pointer: coarse)').matches;
+      el.innerHTML = `<div class="cc-pausa-card"><h2>${T('Pausa')}</h2><p>${T('El juego te espera donde lo dejaste.')}</p>` +
+        `<button type="button">▶ ${T('Seguir')}</button>` + (tactil ? '' : `<small>${T('<kbd>Enter</kbd> sigue · <kbd>R</kbd> reinicia')}</small>`) + '</div>';
+      // los toques no le llegan al juego (los botones de abajo quedan tapados); solo el botón sigue
+      for (const ev of ['pointerdown', 'pointerup', 'touchstart', 'click']) el.addEventListener(ev, e => { if (!e.target.closest('button')) e.preventDefault(); e.stopPropagation(); });
+      el.querySelector('button').addEventListener('click', seguir);
+      document.body.appendChild(el);
+      pausaAct = { desde: performance.now(), el, cuenta: 0, timer: 0 };
+      if (pausaCfg.alPausar) { try { pausaCfg.alPausar(); } catch (e) {} }
+      setTimeout(() => { const b = el.querySelector('button'); if (b) b.focus({ preventScroll: true }); }, 50);
+    };
+    document.addEventListener('visibilitychange', () => { if (document.hidden) pausar(); });
+    // en pausa las teclas son del cartel (va en captura, antes que las del juego)
+    addEventListener('keydown', e => {
+      if (!pausaAct) return;
+      const k = e.key;
+      if (k === 'r' || k === 'R') { if (!pausaAct.cuenta) cerrar(false); return; }
+      e.stopImmediatePropagation(); e.preventDefault();
+      if (!e.repeat && (k === 'Enter' || k === ' ' || k === 'Escape')) seguir();
+    }, true);
+  }
   // Guía de los primeros segundos, sin leer: los botones ← → laten uno y otro con una manito, en las primeras
   // partidas de cada juego (o siempre, con o.siempre). Se va sola al primer toque (guia.listo()) o a los o.ms.
   //   const guia = CC.guia('lluvia', [btnIzq, btnDer]);  …  al primer toque: guia.listo();
@@ -7186,10 +7493,11 @@ html.cc-quieto .cc-guia-dedo{animation:none;opacity:1;transform:translate(-50%,0
     temporada, misiones, eventoXP, TEMP_XP, sincronizarNube, menosMovimiento, frenar, frenado, guia, T, Tsin: Tlit, textos, idioma, IDIOMAS, ponerIdioma, LOCALE, traducirNodo,
     verPerfil, perfilPublico, horasTexto, empezar, grabar, verRepeticion,
     RAREZAS, rarezaTitulo, pintarTitulo, rangoLogro, medallaLogro, NOMBRE_RANGO, maestria, maestrias, insigniaMaestria, RANGOS_MAESTRIA,
-    vitrinaDe, elegirVitrina, VITRINA_MAX,
+    vitrinaDe, elegirVitrina, VITRINA_MAX, cambiarMision, coleccion,
   };
   // Duelos 1v1 (cubo-duelo.js): usa la misma conexión a Supabase y escucha las invitaciones en todas las páginas.
   window.CuboComun.RANKING = RANKING;
+  window.CuboComun.pausa = pausa;   // pausa al ocultar la pestaña (sección «sensación de juego»)
   const cargarDuelo = () => {
     if (!rankingActivo() || window.CuboDuelo || document.querySelector('script[src$="cubo-duelo.js"]')) return;
     const s = document.createElement('script'); s.src = 'cubo-duelo.js'; s.async = true; document.head.appendChild(s);

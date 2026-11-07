@@ -791,6 +791,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       yo: G.i / SPRINT_GOAL, el: Du.el / SPRINT_GOAL, txtYo: G.i, txtEl: Du.el });
   }
   // Gana el primero que llega arriba. Si llegaron casi juntos, se comparan los tiempos de cada uno.
+  // XP de los duelos (y de jugar de a dos): por CC.partida como cualquier partida, con la tabla 'duelo', que no existe:
+  // sin récord ni ranking ni multiplicador de dificultad, pero con el tope de XP por duración (8 + 0,7 por segundo) y
+  // la regla de partida sin puntos (valor 0: no jugaste, no hay XP). Antes iba directo a CC.sumarXP y se salteaba las dos.
+  const xpDuelo = (valor, xp, ms) => CC.partida({ juego: 'escalador', tabla: 'duelo', valor, xp, ms, sinRecord: true });
   function finDuelo() {
     const Du = G.duelo;
     let gane = null;
@@ -803,7 +807,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('pad').hidden = true;
     barraDuelo();
     const quien = DUELO.rival.apodo.replace(/</g, '&lt;');
-    if (!repetir && Du.mio == null && CC && G.i > 0) CC.sumarXP(G.i / 6);
+    // si llegaste arriba, la XP ya salió por cerrar(); si no, lo que subiste (valor: escalones)
+    if (!repetir && Du.mio == null && CC) xpDuelo(G.i, G.i / 6, performance.now() - G.t0);
     CD.resultado(sala, {
       gane,
       texto: gane ? T('Llegaste arriba en <b>{t} s</b>', { t: fmtS(Du.mio) }) + (Du.suyo != null ? ` · ${quien}: ${fmtS(Du.suyo)} s` : ' · ' + T('{q} iba por el {n}', { q: quien, n: Du.el }))
@@ -1216,6 +1221,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
     ctx.closePath();
   }
+
+  // pausa al ocultar la pestaña (cubo-comun.js): no en el duelo. El reloj de la partida, la lava, el escalón que se
+  // rompe y el mareo van con performance.now(), así que al seguir se corren lo que duró la pausa.
+  if (CC && CC.pausa) CC.pausa({
+    activa: () => state === 'play' && G && !G.demo && !G.done && !G.duelo,
+    alSeguir: ms => {
+      G.t0 += ms; G.pisado += ms; G.crujido += ms; G.bonkT += ms;
+      if (isFinite(G.stunUntil)) G.stunUntil += ms;
+      G.moves = G.moves.map(t => t + ms);
+    },
+  });
 
   // ---------- bucle ----------
   let last = performance.now();

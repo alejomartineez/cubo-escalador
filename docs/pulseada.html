@@ -461,7 +461,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'otra vez': 'again',
     'Fácil': 'Easy', 'Normal': 'Normal', 'Difícil': 'Hard', 'Extremo': 'Extreme', 'Maestro': 'Master',
     'El primer rival pide unos 3,5 toques/s. Ideal para aprender.': 'The first rival needs about 3.5 taps/s. Great for learning.',
-    'Arranca en casi 5 toques/s y cada 5 rivales viene un jefe.': 'Starts at almost 5 taps/s, and every 5 rivals there\'s a boss.',
+    'Arranca en casi 5 toques/s, cada 5 rivales viene un jefe y repetir flecha te frena un poco.': 'Starts at almost 5 taps/s, every 5 rivals there\'s a boss, and repeating an arrow sets you back a bit.',
     'Arrancan en 6 toques/s y repetir flecha te hace retroceder.': 'Starts at 6 taps/s, and repeating an arrow pushes you back.',
     'Arrancan en 8 toques/s y cada error te hunde.': 'Starts at 8 taps/s, and every mistake sinks you.',
     'Casi 10 toques/s desde el primero, sin ayuda y cada error pesa el doble.': 'Almost 10 taps/s from the first rival, no help, and every mistake counts double.',
@@ -514,16 +514,21 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
   // Cada rival pide base + inc × (rivales ya vencidos) toques por segundo; cada 5.º es un jefe que pide `jefe` más.
   // Referencia: alternando con dos dedos un promedio hace 6 a 8, alguien bueno 9 o 10 y uno de élite 12 o más.
-  // pen: cuánto te hace retroceder repetir la flecha. ayuda: el botón que toca se resalta ("¡Ahora!").
+  // pen: cuánto te hace retroceder repetir la flecha (la barra va de −1 a 1). En Normal también, pero apenas
+  // (0,012: 10 repetidas son medio segundo de 1 toque/s de ventaja), para que machacar un botón no salga gratis;
+  // en Difícil 0,025, en Extremo 0,05. ayuda: el botón que toca se resalta ("¡Ahora!").
   const DIFS = {
     facil:   { name: 'Fácil',   base: 3.5, inc: 0.4,  jefe: 0.4, pen: 0,     round: 8,   ayuda: true },
-    normal:  { name: 'Normal',  base: 4.8, inc: 0.45, jefe: 0.5, pen: 0,     round: 7,   ayuda: true },
+    normal:  { name: 'Normal',  base: 4.8, inc: 0.45, jefe: 0.5, pen: 0.012, round: 7,   ayuda: true },
     dificil: { name: 'Difícil', base: 6.2, inc: 0.45, jefe: 0.6, pen: 0.025, round: 7,   ayuda: true },
     extremo: { name: 'Extremo', base: 8,   inc: 0.45, jefe: 0.6, pen: 0.05,  round: 6.5, ayuda: true },
     maestro: { name: 'Maestro', base: 9.6, inc: 0.4,  jefe: 0.6, pen: 0.12,  round: 6,   ayuda: false },
   };
   const DIFF_IDS = Object.keys(DIFS);
-  const K = 0.16;                     // cuánto se mueve la barra por segundo por cada toque/s de ventaja
+  // cuánto se mueve la barra por segundo por cada toque/s de ventaja. Era 0,16: con 1 toque/s de ventaja tardabas
+  // 6,3 s en tumbarlo y las rondas (6 a 8 s) se iban casi siempre al tiempo. Con 0,24 son ~4,2 s (y 2,1 s con 2 de
+  // ventaja): la ronda se define por fuerza y el «¡Se acabó el tiempo!» queda para las parejas de verdad.
+  const K = 0.24;
   const TAU1 = 0.5, TAU2 = 0.25;      // suavizado de la fuerza (igual para vos y para el rival)
   const ANG = 1.15;                   // inclinación máxima de los brazos (rad)
   // la presentación del primer rival es tranquila; de ahí en más, más corta para no cortar el ritmo
@@ -786,7 +791,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (G.phase !== 'fight') return;
     if (G.next !== 0 && d !== G.next) {
       G.wrong++;
-      G.p = Math.max(-1, G.p - DIFS[G.diff].pen);
+      // en el duelo online no: la barra la decide el host y el invitado no le manda sus errores (sería desparejo)
+      if (!G.duelo) G.p = Math.max(-1, G.p - DIFS[G.diff].pen);
       bad(d); sfxBad(); CC?.vibrar(25);
       if (now - G.lastBad > 450) { G.lastBad = now; floats.push({ text: T('¡Alterná!'), x: CX + d * U * 2.2, y: Y0 + 3.6 * U, t: now, c: '#ff4f5e' }); }
       return;
@@ -812,6 +818,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const Dd = G.dos;
     if (Dd.next !== 0 && d !== Dd.next) {
       Dd.wrong++;
+      G.p = Math.min(1, G.p + DIFS.normal.pen);   // de a dos se juega en Normal: el mismo castigo para los dos
       bad(d, true); sfxBad(); CC?.vibrar(25);
       if (now - Dd.lastBad > 450) { Dd.lastBad = now; floats.push({ text: T('¡Alterná!'), x: CX + U * 2.6, y: Y0 + 3.6 * U, t: now, c: '#ff4f5e' }); }
       return;
@@ -1003,14 +1010,18 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (gane) Du.yo++; else Du.el++;
     if (gane) winRound(now); else loseRound(now);
   }
+  // XP de los duelos (y de jugar de a dos): por CC.partida como cualquier partida, con la tabla 'duelo', que no existe:
+  // sin récord ni ranking ni multiplicador de dificultad, pero con el tope de XP por duración (8 + 0,7 por segundo) y
+  // la regla de partida sin puntos (valor 0: no jugaste, no hay XP). Antes iba directo a CC.sumarXP y se salteaba las dos.
   function finRonda() {
     const Du = G.duelo;
     if (Du.yo < RONDAS && Du.el < RONDAS) { Du.ronda++; G.timeout = false; enterIntro(); return; }
     if (Du.fin) return;
     Du.fin = true; state = 'duelo';
     $('pad').classList.add('off'); $('cartel').hidden = true; showTip(false);
-    const gane = Du.yo > Du.el, xp = gane ? 40 : 15;
-    if (CC) CC.sumarXP(xp);
+    const gane = Du.yo > Du.el;
+    // valor: tus toques buenos en todo el duelo (si no tocaste nada, no hay XP)
+    const xp = CC ? CC.partida({ juego: 'pulseada', tabla: 'duelo', valor: G.valid, xp: gane ? 40 : 15, sinRecord: true }).xp : 0;
     CD.resultado(sala, { gane, texto: T('Rondas: <b>{a} – {b}</b>', { a: Du.yo, b: Du.el }), nota: `+${xp} XP · ` + T('Tu mejor ritmo: {n} toques/s', { n: fmt1(G.best) }) });
   }
   function conectarDuelo() {
@@ -1043,7 +1054,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // selector común; sin la librería, uno mínimo con los mismos ids
   const NOTAS = {
     facil: T('El primer rival pide unos 3,5 toques/s. Ideal para aprender.'),
-    normal: T('Arranca en casi 5 toques/s y cada 5 rivales viene un jefe.'),
+    normal: T('Arranca en casi 5 toques/s, cada 5 rivales viene un jefe y repetir flecha te frena un poco.'),
     dificil: T('Arrancan en 6 toques/s y repetir flecha te hace retroceder.'),
     extremo: T('Arrancan en 8 toques/s y cada error te hunde.'),
     maestro: T('Casi 10 toques/s desde el primero, sin ayuda y cada error pesa el doble.'),
@@ -1259,6 +1270,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
 
   // ---------- bucle ----------
+  // pausa al ocultar la pestaña (cubo-comun.js): contra la máquina, la sombra y de a dos; el duelo online no se
+  // puede parar. La pelea va con G.ft; solo los toques del ritmo (ventana de 2 s) llevan la hora, y se corren.
+  if (CC && CC.pausa) CC.pausa({
+    activa: () => state === 'play' && G && !G.duelo,
+    alSeguir: ms => { for (const q of [G, G.dos]) if (q && q.taps) q.taps = q.taps.map(t => t + ms); },
+  });
+
   let last = performance.now(), hudCache = '', menuT = 0;
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;

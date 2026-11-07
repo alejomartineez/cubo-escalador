@@ -546,10 +546,14 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const p3 = ev ? 0 : Math.max(0, Math.min(0.3, (t - 35) * 0.005)) + (D.p3Add || 0);
     const p2 = Math.min(0.55, 0.12 + t * 0.007);
     const r = azar(), n = r < p3 ? 3 : r < p3 + p2 ? 2 : 1;
-    // carril libre garantizado, a no más de 2 del anterior para que siempre se pueda llegar (en Maestro, nunca el mismo)
-    let safe;
-    do safe = Math.max(0, Math.min(LANES - 1, G.safe + Math.floor(azar() * 5) - 2));
-    while (D.mover && safe === G.safe);
+    // carril libre garantizado: a no más de 2 del libre anterior (el camino seguro sigue siendo continuo) Y a no más
+    // de 2 de donde está el cubo ahora. Antes solo miraba el anterior: si te ibas a buscar una moneda a otro carril
+    // libre, la fila siguiente podía dejarte el hueco a 3 carriles, con bloques en el medio. Con 4 carriles los dos
+    // rangos siempre se cruzan (están a 3 como mucho), así que siempre hay candidatos. En Maestro, nunca el mismo.
+    const desde = Math.max(G.safe, G.lane) - 2, hasta = Math.min(G.safe, G.lane) + 2;
+    const cand = [];
+    for (let l = Math.max(0, desde); l <= Math.min(LANES - 1, hasta); l++) if (!(D.mover && l === G.safe)) cand.push(l);
+    const safe = cand[Math.floor(azar() * cand.length)];
     G.safe = safe;
     const others = [0, 1, 2, 3].filter(l => l !== safe).sort(() => azar() - 0.5);
     const blocked = others.slice(0, n);
@@ -840,6 +844,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
     ctx.closePath();
   }
+
+  // pausa al ocultar la pestaña (cubo-comun.js). La partida va con G.t; solo la invulnerabilidad de Fácil va con el reloj.
+  if (CC && CC.pausa) CC.pausa({
+    activa: () => state === 'play' && G && !G.demo && !G.done && !G.wait,
+    alSeguir: ms => { G.invUntil += ms; },
+  });
 
   // ---------- bucle ----------
   let last = performance.now();

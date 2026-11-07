@@ -1,5 +1,5 @@
 // Generado por build.mjs
-const CACHE = 'cubo-746a9ef083';
+const CACHE = 'cubo-eab7730fe3';
 const FUENTES = 'twofingers-fuentes';
 const ARCHIVOS = ["index.html","escalador.html","lluvia.html","ritmo.html","voley.html","paleta.html","esqui.html","pulseada.html","guardia.html","esgrima.html","pasadizo.html","cubo-comun.js","cubo-duelo.js","icono-180.png","icono-192.png","icono-512.png","manifest.webmanifest"];
 // Cloudflare Pages redirige escalador.html → /escalador. Una respuesta que vino de una redirección no se puede
