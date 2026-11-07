@@ -164,11 +164,10 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .result .num { font-family: var(--display); font-size: 64px; line-height: 1; font-variant-numeric: tabular-nums; }
 .result .sub { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .result .sub b { color: var(--ink); }
-.xp {
-  font-family: var(--display); font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums;
-  background: var(--cube); border: 2px solid var(--ink); border-radius: 999px; padding: 5px 14px; margin-top: 4px;
-}
+.bloque-fin { width: 100%; }
+.bloque-fin:empty { display: none; }
 .badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.badges:empty { display: none; }
 .badge {
   font-weight: 800; font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
   background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
@@ -311,10 +310,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="sub" id="eSub"></span>
       <span class="sub" id="eSub2"></span>
       <span class="sub" id="eSub3"></span>
-      <span class="xp" id="eXP" hidden>+0 XP</span>
       <div class="badges" id="eBadges"></div>
+      <div class="bloque-fin" id="eFin"></div>
     </div>
     <button class="btn primary big" id="btnAgain" type="button">↻ Otra vez<kbd class="kbd-only">R</kbd></button>
+    <div class="bloque-fin" id="eFin2"></div>
     <div class="difbox" id="eDifBox"><span>Dificultad</span><div id="eDifs"></div></div>
     <div class="row">
       <button class="btn small" id="btnRankEnd" type="button">🏆 Ranking</button>
@@ -800,7 +800,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('eSub').textContent = T('rondas · izquierda – derecha');
     $('eSub2').innerHTML = T('Mejor ritmo: izquierda <b>{a}</b> · derecha <b>{b}</b> toques/s', { a: G.best > 0 ? fmt1(G.best) : '—', b: Dd.best > 0 ? fmt1(Dd.best) : '—' });   // — : rondas muy cortas para medirlo
     $('eSub3').textContent = T('Flechas repetidas: izquierda {a} · derecha {b}', { a: G.wrong, b: Dd.wrong });
-    $('eXP').hidden = true; $('eBadges').innerHTML = '';
+    $('eFin').replaceChildren(); $('eFin2').replaceChildren(); $('eBadges').innerHTML = '';
     $('eDifBox').hidden = true; $('btnRankEnd').hidden = true; $('btnSombraEnd').hidden = true;
     state = 'end';
     $('end').hidden = false; $('pad').classList.add('off'); $('cartel').hidden = true; showTip(false);
@@ -879,16 +879,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('eSub2').innerHTML = res.best > 0
       ? T('Tu ritmo máximo: <b>{n} toques/s</b> · mejor {m}', { n: fmt1(res.best), m: fmt1(rec.bestTps || res.best) })
       : T('Aguantá un segundo y pico alternando para medir tu ritmo');
-    $('eSub3').textContent = T(G.wrong === 1 ? '{d} · {n} flecha repetida' : '{d} · {n} flechas repetidas', { d: D.name, n: G.wrong }) +
-      (r && r.textoAnterior && !r.record ? ' · ' + T('récord {p}', { p: r.textoAnterior }) : '');
-    $('eXP').hidden = !r;
-    if (r) $('eXP').textContent = `+${r.xp} XP`;
+    $('eSub3').textContent = T(G.wrong === 1 ? '{d} · {n} flecha repetida' : '{d} · {n} flechas repetidas', { d: D.name, n: G.wrong });
+    // los de la Pulseada (ritmo); el récord (o qué tan cerca quedaste), la XP, el próximo premio, los logros y las
+    // misiones los arma CC.finDePartida
     const b = [];
-    if (r && r.record) b.push(`<span class="badge">${T(r.primera ? 'Primer récord' : 'Nuevo récord')}</span>`);
     if (res.tpsRec) b.push(`<span class="badge tps">${T('Mejor ritmo')}</span>`);
     if (res.best >= 10) b.push(`<span class="badge tps">${T('+10 toques/s')}</span>`);
-    for (const l of (r && r.logros) || []) b.push(`<span class="badge">${T('Logro: {n}', { n: l }).replace(/</g, '&lt;')}</span>`);
     $('eBadges').innerHTML = b.join('');
+    $('eFin').replaceChildren(); $('eFin2').replaceChildren();
+    if (CC && r) CC.finDePartida($('eFin'), r, { abajo: $('eFin2'), reintentar: $('btnAgain') });
     state = 'end';
     $('end').hidden = false; $('pad').classList.add('off'); $('cartel').hidden = true; showTip(false);
     botonSombraFin();
@@ -904,7 +903,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('eSub').textContent = T('toques/s en la ronda');
     $('eSub2').innerHTML = T('Tu sombra: <b>{n} toques/s</b>', { n: fmt1(ritmoSombra(G.sombra)) });
     $('eSub3').textContent = G.sombraNueva ? T('Esta ronda queda como tu nueva sombra.') : T(G.wrong === 1 ? '{n} flecha repetida' : '{n} flechas repetidas', { n: G.wrong });
-    $('eXP').hidden = true;
+    $('eFin').replaceChildren(); $('eFin2').replaceChildren();
     $('eBadges').innerHTML = res.tpsRec ? `<span class="badge tps">${T('Mejor ritmo')}</span>` : '';
     state = 'end';
     $('end').hidden = false; $('pad').classList.add('off'); $('cartel').hidden = true; showTip(false);

@@ -142,9 +142,8 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .row .primary { grid-column: 1 / -1; font-size: 20px; padding: 16px 10px; }
 .row small { font-size: 12px; opacity: .6; margin-left: 4px; }
-.exp { font-size: 14px; font-weight: 600; text-align: center; }
-.exp b { font-family: var(--display); font-weight: 400; font-size: 20px; }
-.exp span { display: block; margin-top: 2px; }
+.fin { width: 100%; }
+.fin:empty { display: none; }
 .dif-h { margin: 0 0 -8px; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .dif-h-sub { letter-spacing: .02em; text-transform: none; font-weight: 700; }
 .dif-h-sub::before { content: "· "; }
@@ -297,11 +296,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="num" id="eNum">0</span>
       <span class="sub" id="eSub"></span>
       <span class="badge" id="eBadge" hidden>Nuevo récord</span>
-      <span class="exp" id="eXp" hidden></span>
+      <div class="fin" id="eFin"></div>
     </div>
     <div class="row">
       <button class="btn primary" id="btnAgain" type="button">↻ Otra vez <small>R</small></button>
     </div>
+    <div class="fin" id="eFin2"></div>
     <div class="end-dif"><span>Dificultad para la próxima</span><div id="difs2"></div></div>
     <div class="row">
       <button class="btn" id="btnRank2" type="button">🏆 Ranking</button>
@@ -428,11 +428,6 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'Se fue': 'They left',
   });
   const T = (s, v) => (CC && CC.T ? CC.T(s, v) : v ? s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m)) : s);
-  // «Extremo ×2»: el multiplicador sale de CC.DIFS, el mismo que usa la XP
-  const difXP = id => {
-    const d = CC && CC.DIFS && CC.DIFS.find(x => x.id === id);
-    return d ? `${T(d.nombre)} ×${CC.idioma === 'en' ? d.xp : String(d.xp).replace('.', ',')}` : '';
-  };
   const cv = document.getElementById('cv');
   const ctx = cv.getContext('2d');
   const $ = id => document.getElementById(id);
@@ -653,7 +648,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const anterior = recDe(G.mode, G.dif);
     const isRec = guardarLocal(G.mode, G.dif, valor);
     const r = cerrar(valor, G.mode === 'sprint' && G.errors === 0 ? ['escalador-limpio'] : []);
-    if (!isRec && anterior) sub += ' · ' + T('récord {r}', { r: G.mode === 'sprint' ? fmtS(anterior) + ' s' : anterior });
+    if (!r && !isRec && anterior) sub += ' · ' + T('récord {r}', { r: G.mode === 'sprint' ? fmtS(anterior) + ' s' : anterior });
     sub += finSombra(valor);
     pintarFin(title, num, sub, isRec, r);
     if (DIA) DIA.fin(r, $('btnAgain'), [$('difs2').parentNode, $('btnModes')]);
@@ -817,7 +812,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const anterior = recDe(G.mode, G.dif);
       isRec = valor > 0 && guardarLocal(G.mode, G.dif, valor);
       r = cerrar(valor);
-      if (!isRec && anterior) sub += ' · ' + T('récord {r}', { r: anterior });
+      if (!r && !isRec && anterior) sub += ' · ' + T('récord {r}', { r: anterior });
       sub += finSombra(valor);
     }
     if (por === 'lava') { beep(110, 0.5, 'sawtooth', 0.07, 0.5); beep(70, 0.6, 'square', 0.05); }
@@ -828,9 +823,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
   function pintarFin(title, num, sub, isRec, r) {
     $('eTitle').textContent = title; $('eNum').textContent = num; $('eSub').textContent = sub;
-    $('eBadge').hidden = !isRec;
-    $('eXp').hidden = !r;
-    if (r) $('eXp').innerHTML = `<b>+${r.xp} XP</b>` + (G.dif === 'extremo' || G.dif === 'maestro' ? ' · ' + difXP(G.dif) : '') + (r.logros.length ? `<span>${T('Logros: {l}', { l: r.logros.map(x => T(x)).join(', ') })}</span>` : '');
+    // con la librería, el récord (o qué tan cerca quedaste), la XP, el próximo premio, los logros y las misiones los arma
+    // CC.finDePartida; sin ella, el récord de este dispositivo
+    $('eBadge').hidden = !!r || !isRec;
+    $('eFin').replaceChildren(); $('eFin2').replaceChildren();
+    if (CC && r) CC.finDePartida($('eFin'), r, { abajo: $('eFin2'), reintentar: $('btnAgain') });
   }
 
   // ---------- pantallas ----------

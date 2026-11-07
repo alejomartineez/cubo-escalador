@@ -131,17 +131,8 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .result .num small { font-size: .5em; }
 .result .sub { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .lbl-dif { margin: 0 0 -6px; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: center; }
-.xp {
-  font-family: var(--display); font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums;
-  background: var(--cube); border: 2px solid var(--ink); border-radius: 999px; padding: 5px 14px; margin-top: 4px;
-}
-.badge {
-  font-weight: 800; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
-  background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
-}
-.logros { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 2px; }
-.logro { font-weight: 800; font-size: 13px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 4px 10px; }
-.logro::before { content: "★ "; color: #e0a000; }
+.fin { width: 100%; }
+.fin:empty { display: none; }
 .row { display: flex; gap: 10px; }
 .row > * { flex: 1; }
 .btn {
@@ -210,12 +201,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <h2 id="eTitle">¡Te caíste!</h2>
       <span class="num" id="eNum">0</span>
       <span class="sub" id="eSub"></span>
-      <span class="badge" id="eBadge" hidden>Nuevo récord</span>
       <span class="sub" id="eSub2"></span>
-      <span class="xp" id="eXP" hidden>+0 XP</span>
-      <div class="logros" id="eLogros" hidden></div>
+      <div class="fin" id="eFin"></div>
     </div>
     <button class="btn primary big" id="btnAgain" type="button">↻ Otra vez <kbd class="kbd-only">R</kbd></button>
+    <div class="fin" id="eFin2"></div>
     <p class="lbl-dif" id="eDifL">Dificultad</p>
     <div id="difs2"></div>
     <div class="row">
@@ -924,14 +914,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('eTitle').textContent = T(m >= 150 ? '¡Qué subida!' : TITULOS[G.muerte] || '¡Se terminó!');
     $('eNum').innerHTML = `${m} <small>m</small>`;
     $('eSub').textContent = `${T(G.D.name)} · ${T(ZONAS[zonaIdx(m)].nombre)} · ${T(G.saltos === 1 ? '{n} salto' : '{n} saltos', { n: G.saltos })}`;
-    $('eSub2').textContent = (m >= 150 ? T(G.muerte === 'pinches' ? 'Te pinchaste' : G.muerte === 'vacio' ? 'Caíste al vacío' : 'Te caíste') : '') +
-      (r && !r.record && r.textoAnterior ? `${m >= 150 ? ' · ' : ''}${T('Récord: {r}', { r: r.textoAnterior })}` : '');
-    $('eBadge').hidden = !(r && r.record);
-    if (r) $('eBadge').textContent = T(r.primera ? 'Primer récord' : 'Nuevo récord');
-    $('eXP').hidden = !r; if (r) $('eXP').textContent = `+${r.xp} XP`;
-    const lg = (r && r.logros) || [];
-    $('eLogros').hidden = !lg.length;
-    $('eLogros').replaceChildren(...lg.map(n => Object.assign(document.createElement('span'), { className: 'logro', textContent: n })));
+    $('eSub2').textContent = m >= 150 ? T(G.muerte === 'pinches' ? 'Te pinchaste' : G.muerte === 'vacio' ? 'Caíste al vacío' : 'Te caíste') : '';
+    // el récord (o qué tan cerca quedaste), la XP, el próximo premio, los logros y las misiones: CC.finDePartida
+    $('eFin').replaceChildren(); $('eFin2').replaceChildren();
+    if (CC && r) CC.finDePartida($('eFin'), r, { abajo: $('eFin2'), reintentar: $('btnAgain') });
     if (DIA) DIA.fin(r, $('btnAgain'), [$('difs2'), $('eDifL')]);
     $('btnRank2').hidden = !CC;
     showEnd();
@@ -1382,6 +1368,5 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   resize();
   showMenu();
   requestAnimationFrame(frame);
-  if (CC && CC.pedirApodo) setTimeout(() => CC.pedirApodo(), 600);
 })();
 </script>

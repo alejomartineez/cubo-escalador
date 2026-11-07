@@ -2069,7 +2069,7 @@ button.brand { padding: 0; border: 0; background: none; cursor: pointer; text-al
     if (sig) {
       const x = sig.premios.find(q => q.it.pase) || sig.premios[0];
       let falta = p.paraSiguiente - p.enNivel;
-      for (let n = p.nivel + 1; n < sig.nivel; n++) falta += 80 + 40 * (n - 1);
+      for (let n = p.nivel + 1; n < sig.nivel; n++) falta += CC.xpPara(n);   // la curva de XP actual (la misma de la pantalla de fin)
       sb.innerHTML = (x.tipo === 'titulo' ? '<span class="tt-ico">🏷️</span>' : '<canvas width="112" height="124"></canvas>') +
         `<div><small>${T('Próximo premio · nivel {n}', { n: sig.nivel })}</small><b></b><span>${T('Te faltan {n} XP', { n: falta.toLocaleString(LOCALE) })}</span></div>`;
       sb.querySelector('b').textContent = sig.premios.map(q => q.it.nombre).join(' + ');

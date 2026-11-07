@@ -156,16 +156,8 @@ kbd { font: 800 12px var(--body); border: 2px solid var(--ink); border-bottom-wi
 .result .num { font-family: var(--display); font-size: 64px; line-height: 1; font-variant-numeric: tabular-nums; }
 .result .sub { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .back { align-self: flex-start; }
-.xp {
-  font-family: var(--display); font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums;
-  background: var(--cube); border: 2px solid var(--ink); border-radius: 999px; padding: 5px 14px; margin-top: 4px;
-}
-.badge {
-  font-weight: 800; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
-  background: var(--good); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 12px;
-}
-.logros { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
-.logros span { font-weight: 800; font-size: 12px; background: #fff; border: 2px solid var(--ink); border-radius: 999px; padding: 3px 10px; }
+.fin { width: 100%; }
+.fin:empty { display: none; }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .row .sombra { grid-column: 1 / -1; }
 .btn {
@@ -252,11 +244,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       <span class="num" id="eNum">0 m</span>
       <span class="sub" id="eSub"></span>
       <span class="sub" id="eSub2"></span>
-      <span class="xp" id="eXP" hidden>+0 XP</span>
-      <span class="badge" id="eBadge" hidden>Nuevo récord</span>
-      <div class="logros" id="eLogros" hidden></div>
+      <div class="fin" id="eFin"></div>
     </div>
     <button class="btn primary" id="btnAgain" type="button">↻ Otra vez<kbd class="kbd-only">R</kbd></button>
+    <div class="fin" id="eFin2"></div>
     <div class="difbox"><span>Dificultad</span><div id="eDifs"></div></div>
     <div class="row">
       <button class="btn" id="btnRank2" type="button">🏆 Ranking</button>
@@ -641,12 +632,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('eNum').textContent = fmtN(G.y) + ' m';
     $('eSub').textContent = tr(G.passed === 1 ? '{d} · {n} puerta · racha máx. {r} · {t} s' : '{d} · {n} puertas · racha máx. {r} · {t} s',
       { d: G.D.nombre, n: G.passed, r: G.bestStreak, t: G.t.toFixed(0) });
-    $('eSub2').textContent = [r && !r.record && r.textoAnterior ? tr('Tu récord en {d}: {r}', { d: G.D.nombre, r: r.textoAnterior }) : '', linea].filter(Boolean).join(' · ');
-    $('eXP').hidden = !r; if (r) $('eXP').textContent = `+${r.xp} XP`;
-    $('eBadge').hidden = !(r && r.record); if (r) $('eBadge').textContent = r.primera ? tr('Primer récord') : tr('Nuevo récord');
-    const lg = r && r.logros && r.logros.length ? r.logros : [];
-    $('eLogros').hidden = !lg.length;
-    $('eLogros').innerHTML = lg.map(n => `<span>🏅 ${n.replace(/</g, '&lt;')}</span>`).join('');
+    $('eSub2').textContent = linea;
+    // el récord (o qué tan cerca quedaste), la XP, el próximo premio, los logros y las misiones: CC.finDePartida
+    $('eFin').replaceChildren(); $('eFin2').replaceChildren();
+    if (CC && r) CC.finDePartida($('eFin'), r, { abajo: $('eFin2'), reintentar: $('btnAgain') });
     if (DIA) DIA.fin(r, $('btnAgain'));
     setTimeout(() => { if (G && G.done && state === 'play') showEnd(); }, 900);
   }
