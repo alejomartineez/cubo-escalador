@@ -273,6 +273,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const TOQUES = 3, PISTA = 4, PASO = 0.62, L_PISTA = 6.3;
   // el amague: se tira apenas (lo bastante corto para que se note si esperás) y vuelve
   const AMAGUE_IDA = 0.13, AMAGUE_VUELTA = 0.24;
+  // Tiempos muertos (s), recortados ~40 % para que el duelo no se corte tanto:
+  // T_TOQUE: el toque anotado (lamparita, cartel, el rival se dobla); era 1,15. T_GUARDIA: el «¡En guardia!» antes de
+  // cada asalto; era 1,0. Los dos juntos: 2,15 → 1,3 s entre un toque y el ataque siguiente.
+  // T_INTRO: la presentación de cada rival (nombre, estilo y consejo: tres renglones cortos); era 2,4.
+  // T_VENCIDO: el «¡Venciste a…!» antes del rival nuevo; era 1,3. T_INTRO_R: el primer rival al reintentar (ya lo viste).
+  const T_TOQUE = 0.7, T_GUARDIA = 0.6, T_INTRO = 1.5, T_VENCIDO = 1.0, T_INTRO_R = 1.0;
   const DIFS = {
     facil:   { name: 'Fácil',   activa: 0.42, perf: 0.13,  recup: 0.22, vel: 1.3,  finta: 0.55, aguante: 4 },
     normal:  { name: 'Normal',  activa: 0.34, perf: 0.10,  recup: 0.26, vel: 1.0,  finta: 1.0,  aguante: 3 },
@@ -446,7 +452,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     P.parada = null; P.recupHasta = 0; P.contra = null; P.ia = null; P.off = 0;
     // al reintentar, el primer rival se presenta corto (1 s): ya lo viste
     G.fase = 'guardia'; G.intro = !!intro && !G.demo;
-    G.faseT = G.faseT0 = G.demo ? 0.6 : intro && !(G.rapido && G.nivel === 0) ? 2.4 : 1.0;
+    G.faseT = G.faseT0 = G.demo ? 0.6 : !intro ? T_GUARDIA : G.rapido && G.nivel === 0 ? T_INTRO_R : T_INTRO;
     hudCache = '';
   }
 
@@ -618,7 +624,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // se anota un toque: se prende la lamparita y se vuelve a empezar (o se termina el duelo)
   function toque(yo, texto) {
     if (yo) G.toques++; else G.recibidos++;
-    G.fase = 'toque'; G.faseT = 1.15;
+    G.fase = 'toque'; G.faseT = T_TOQUE;
     if (yo) G.el.mareo = 1;
     if (!G.demo) {
       banner = { text: texto, t: performance.now() };
@@ -640,7 +646,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       if (marca) marca.ver(G.score);
       sfxVictoria(); CC?.vibrar([20, 40, 20]);
       banner = { text: T('¡Venciste a {n}!', { n: G.el.info.n }), t: performance.now() };
-      G.fase = 'vencido'; G.faseT = 1.3;
+      G.fase = 'vencido'; G.faseT = T_VENCIDO;
       hudCache = '';
       return;
     }
@@ -703,7 +709,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     } else if (G.fase === 'toque' || G.fase === 'vencido') {
       if (R.f === 'toca') actualizarRival(dt);
       if (R.f === 'tocado') { R.ft += dt; R.off = R.offDesde - 0.5 * Math.min(1, R.ft / 0.25); }
-      if (G.fase === 'toque' && G.faseT < 0.5) { P.off = sigue(P.off, 0, 8, dt); }
+      if (G.fase === 'toque' && G.faseT < 0.4) { P.off = sigue(P.off, 0, 10, dt); }
       G.faseT -= dt;
       if (G.faseT <= 0) { if (G.fase === 'vencido') nuevoRival(true); else finDeToque(); }
     }
@@ -714,7 +720,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     const R = G.el, P = G.yo, k = 38;
     let hy = -0.6, a = -0.3;
     if (P.parada) { hy = P.parada.alto ? -1.05 : -0.6; a = P.parada.alto ? -0.62 : 0.36; }
-    if (G.fase === 'contra' || (P.contra && G.fase === 'toque' && G.toques && G.faseT > 0.5)) { hy = -0.8; a = -0.05; }
+    if (G.fase === 'contra' || (P.contra && G.fase === 'toque' && G.toques && G.faseT > 0.3)) { hy = -0.8; a = -0.05; }
     P.hy = sigue(P.hy, hy, k, dt); P.ang = sigue(P.ang, a, k, dt);
 
     let rhx = -0.82, rhy = -0.6, ra = -0.3, lean = 0, squash = 1;
@@ -899,7 +905,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       const tam = Math.round(Math.min(40, S * 1.05));
       if (G.fase === 'guardia') {
         if (G.intro) {
-          const k = G.faseT0 < 2 ? 1 : Math.min(1, (G.faseT0 - G.faseT) / 0.25);   // la corta aparece de una
+          const k = G.faseT0 <= T_INTRO_R ? 1 : Math.min(1, (G.faseT0 - G.faseT) / 0.15);   // la corta aparece de una
           ctx.globalAlpha = k;
           texto(T('Rival {n}', { n: R.info.nivel + 1 }) + ' · ' + T(R.E.nombre), W / 2, zonaY(0.14), Math.round(tam * 0.55));
           texto(R.info.n, W / 2, zonaY(0.38), Math.round(tam * 1.2), R.info.c || '#c9d3e3');
@@ -1060,6 +1066,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   addEventListener('blur', soltarBotones);
 
   // ---------- arranque ----------
+  // pausa al ocultar la pestaña (cubo-comun.js). El duelo va con G.t: no hay relojes que correr.
+  if (CC && CC.pausa) CC.pausa({ activa: () => state === 'play' && G && !G.demo && !G.done });
+
   let last = performance.now(), manual = false;
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;

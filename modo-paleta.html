@@ -325,6 +325,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // La mesa mide FW × FH (en "unidades"); vos abajo, el rival arriba. Cada 3 puntos que hacés llega un rival mejor.
   const FW = 10, FH = 16, R_BOLA = 0.32, PALETA_Y = 1.15, VEL_PALETA = 13;
   const PUNTOS_RIVAL = 3, META_DOS = 7;
+  // La pelota nunca va de costado más rápido que 0,9 de tu paleta (13 × 0,9 = 11,7 u/s). Antes, con la velocidad al
+  // tope (27 en Maestro) y el ángulo máximo (1,1 rad), iba a ~24 u/s de costado: pelotas imposibles de alcanzar.
+  // Si el golpe pide más, se cierra el ángulo y la pelota sale más derecha, con la misma velocidad total.
+  const VX_MAX = VEL_PALETA * 0.9;
+  const angTope = (ang, vel) => { const m = Math.asin(Math.min(1, VX_MAX / vel)); return Math.max(-m, Math.min(m, ang)); };
   // base y tope: velocidad de la pelota (unidades/s) · hw: media paleta · ia: velocidad del rival · err: cuánto le erra al principio
   const DIFS = {
     facil:   { name: T('Fácil'),   base: 6.5,  tope: 15, crece: 1.03,  hw: 1.5,  ia: 5,    err: 2.1, vidas: 5 },
@@ -464,6 +469,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     let ang = off * 1.0 + Math.max(-0.25, Math.min(0.25, p.v * 0.012));
     ang = Math.max(-1.1, Math.min(1.1, ang));
     b.vel = Math.min(G.D.tope, b.vel * G.D.crece);
+    ang = angTope(ang, b.vel);
     b.vx = b.vel * Math.sin(ang); b.vy = dir * b.vel * Math.cos(ang);
     b.y = p.y + dir * (R_BOLA + 0.02);
     p.golpe = G.t; G.rally++; G.golpes++;
@@ -609,7 +615,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       $('eSub').textContent = T('abajo – arriba · a {n} puntos · {d}', { n: META_DOS, d: G.D.name });
       $('eSub2').textContent = T(G.mejorRally === 1 ? 'Rally más largo: {n} golpe' : 'Rally más largo: {n} golpes', { n: G.mejorRally });
       $('eFin').replaceChildren(); $('eFin2').replaceChildren();
-      if (CC) CC.sumarXP(10);   // un poco de XP por jugar con alguien
+      if (CC) xpDuelo(G.score + G.contra, 10);   // un poco de XP por jugar con alguien
     } else {
       const r = settle();
       $('eTitle').textContent = T(G.score >= 15 ? '¡Partidazo!' : G.score >= 6 ? '¡Buena paleta!' : '¡Se terminó!');
@@ -958,8 +964,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // la pone donde dice el anfitrión. Sin puntos: eso lo decide él.
   function rebote(b, p, dir, sonar) {
     const off = lim((b.x - p.x) / (p.hw + R_BOLA), -1, 1);
-    const ang = lim(off + lim(p.v * 0.012, -0.25, 0.25), -1.1, 1.1);
     b.vel = Math.min(G.D.tope, b.vel * G.D.crece);
+    const ang = angTope(lim(off + lim(p.v * 0.012, -0.25, 0.25), -1.1, 1.1), b.vel);
     b.vx = b.vel * Math.sin(ang); b.vy = dir * b.vel * Math.cos(ang);
     b.y = p.y + dir * (R_BOLA + 0.02);
     if (!sonar) return;
@@ -1038,6 +1044,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     }
     if (d.f === 'fin' && !G.done) { G.done = true; setTimeout(terminar, 650); }
   }
+  // XP de los duelos (y de jugar de a dos): por CC.partida como cualquier partida, con la tabla 'duelo', que no existe:
+  // sin récord ni ranking ni multiplicador de dificultad, pero con el tope de XP por duración (8 + 0,7 por segundo) y
+  // la regla de partida sin puntos (valor 0: no jugaste, no hay XP). Antes iba directo a CC.sumarXP y se salteaba las dos.
+  // valor: los puntos que se jugaron (de los dos); ms: lo que duró, del reloj de la mesa
+  const xpDuelo = (valor, xp) => CC.partida({ juego: 'paleta', tabla: 'duelo', valor, xp, ms: G.t * 1000, sinRecord: true });
   function finRed() {
     const R = G.red;
     if (R.cerrado) return;
@@ -1046,7 +1057,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     $('hud').hidden = true; $('pad').classList.add('off');
     if (R.host) sala.enviar('fin', { k: R.k, m: [G.score, G.contra] });
     const gane = G.score > G.contra;
-    if (CC) CC.sumarXP(gane ? 15 : 10);
+    if (CC) xpDuelo(G.score + G.contra, gane ? 15 : 10);
     CD.resultado(sala, { gane,
       texto: `Vos <b>${G.score}</b> · ${esc(DUELO.rival.apodo)} <b>${G.contra}</b>`,
       nota: `Rally más largo: ${G.mejorRally} ${G.mejorRally === 1 ? 'golpe' : 'golpes'}` });
@@ -1083,6 +1094,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
 
   // ---------- arranque ----------
+  // pausa al ocultar la pestaña (cubo-comun.js): contra la máquina y de a dos; el duelo online no se puede parar.
+  // Todo va con G.t, así que no hay relojes que correr.
+  if (CC && CC.pausa) CC.pausa({ activa: () => state === 'play' && G && !G.demo && !G.done && !G.red });
+
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;

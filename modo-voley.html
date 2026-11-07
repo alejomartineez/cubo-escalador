@@ -614,9 +614,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       burst(b.x, b.y, smash ? '#ffcc29' : '#fffaf0', smash ? 12 : 6, smash ? 1.1 : 0.6);
       recalc();
       if (G.red) { toqueRed(1); return; }
-      // ¿llega el rival? depende de su destreza, de qué tan bueno fue el tiro y de cuánto viene durando el rally
-      const quality = smash ? 1.35 + 0.6 * au : 0.55 + 0.6 * au;
-      const q = Math.min(0.8, G.qBase * quality * (1 + 0.12 * (G.rally - 1)));
+      // ¿llega el rival? depende de su destreza, de qué tan bueno fue el tiro y de cuánto viene durando el rally.
+      // El tiro pesa más que antes: globito al centro ×0,45, al borde ×1,2; remate al centro ×1,25, al borde ×2,3
+      // (antes 0,55–1,15 y 1,35–1,95). Y hay un piso que no depende del rival: con el rival al tope (destreza 0,95–1,
+      // qBase ≈ 0,04–0,06) los puntos salían casi solo de la suerte. Piso: 2 % el globito al centro, 12 % al borde,
+      // 9 % el remate al centro y 19 % el remate al borde. Así en una partida larga un buen remate cruzado sigue
+      // ganando el punto 1 de cada 5 veces, y pegarle siempre con el centro no alcanza.
+      const quality = smash ? 1.25 + 1.05 * au : 0.45 + 0.75 * au;
+      const piso = 0.02 + 0.1 * au + (smash ? 0.07 : 0);
+      const q = Math.min(0.8, Math.max(piso, G.qBase * quality * (1 + 0.12 * (G.rally - 1))));
       G.rMiss = G.contact.x > NET && azar() < q;
       G.rTarget = planReturn('r', G.rMiss, (azar() - 0.5) * 0.5);
       G.rWait = G.time + G.rdelay;
@@ -654,6 +660,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (winner === 'p') {
       const pts = G.oro ? 2 : 1, antes = G.score;
       G.score += pts; setSkill(); G.server = 'r';
+      if (marca) marca.ver(G.score);
       if (G.oro) { G.oros++; setTimeout(() => [784, 988, 1175, 1568].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'triangle', 0.06), i * 70)), 90); burst(b.x, 0.5, '#ffcc29', 18, 1.2); }
       else setTimeout(sfxPoint, 90);
       floats.push({ text: '+' + pts, x: b.x, y: 1.4, t: now });
@@ -749,6 +756,13 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (toGames && CC) CC.volver(); else showMenu();
   }
   let tipOn = false, tipT = 0, guia = null;
+  // marca de "hasta acá llegaste la otra vez": una barrita arriba que se llena hasta tu récord (cubo-comun.js),
+  // como en Lluvia y Paleta. No en el duelo (no tiene récord).
+  let marca = null;
+  function ponerMarca(on) {
+    if (marca) { marca.quitar(); marca = null; }
+    if (on && CC && CC.sombra && G && !G.demo && !G.red) marca = CC.sombra.marca('voley', G.diff);
+  }
   function soltarGuia() { if (guia) { guia.listo(); guia = null; } }
   function start() {
     if (DIA) { if (!DIA.empezar()) return DIA.normal(); azar = DIA.azar(); }
@@ -763,6 +777,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (CC && CC.guia) guia = CC.guia('voley', [$('bL'), $('bR')]);
     G.pista = CC && CC.perfil ? (CC.perfil().partidas.voley || 0) < 3 : !rec.ayuda;
     if (CC && CC.grabar) CC.grabar();   // la repetición (se sube sola si la partida es récord)
+    ponerMarca(true);
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   }
   function hideTip() {
@@ -772,6 +787,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function showMenu() {
     if (CC && CC.grabar) setTimeout(() => CC.grabar(false));   // si quedó una grabación sin partida, se tira
     state = 'menu';
+    ponerMarca(false);
     newRun(true, dif());
     renderMenu();
     hideTipQuiet();
@@ -781,6 +797,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   function hideTipQuiet() { tipOn = false; $('tip').hidden = true; soltarGuia(); }
   function showEnd() {
     state = 'end';
+    ponerMarca(false);
     hideTipQuiet();
     renderAgain();
     $('end').hidden = false; $('pad').classList.add('off');
@@ -911,6 +928,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   }
 
   // ---------- bucle ----------
+  // pausa al ocultar la pestaña (cubo-comun.js): no en el duelo online. Todo va con G.time: no hay relojes que correr.
+  if (CC && CC.pausa) CC.pausa({ activa: () => state === 'play' && G && !G.demo && !G.done && !G.red });
+
   let last = performance.now(), hudCache = '';
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -1542,13 +1562,17 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (!held) corregir(nb, true);
   }
 
+  // XP de los duelos (y de jugar de a dos): por CC.partida como cualquier partida, con la tabla 'duelo', que no existe:
+  // sin récord ni ranking ni multiplicador de dificultad, pero con el tope de XP por duración (8 + 0,7 por segundo) y
+  // la regla de partida sin puntos (valor 0: no jugaste, no hay XP). Antes iba directo a CC.sumarXP y se salteaba las dos.
   function finDuelo() {
     const R = G.red;
     if (!R || R.fin) return;
     R.fin = true; G.done = true;
     state = 'duelo'; $('pad').classList.add('off'); hideTipQuiet();
-    const gane = G.score > R.el, xp = gane ? 40 : 15;
-    if (CC) CC.sumarXP(xp);
+    const gane = G.score > R.el;
+    // valor: tus toques de pelota (si no la tocaste nunca, no hay XP); ms: lo que duró, del reloj del partido
+    const xp = CC ? CC.partida({ juego: 'voley', tabla: 'duelo', valor: G.toques, xp: gane ? 40 : 15, ms: G.time * 1000, sinRecord: true }).xp : 0;
     CD.resultado(sala, {
       gane,
       texto: T('Vos <b>{a}</b> – <b>{b}</b> {q}', { a: G.score, b: R.el, q: apodoRival() }),

@@ -78,6 +78,9 @@ body {
 }
 .pad button svg { width: 36px; height: 36px; flex: none; }
 .pad button.on { transform: translateY(5px); box-shadow: 0 2px 0 var(--ink); background: var(--cube); }
+/* tocaste mareado: el botón se pone gris y se sacude (el golpe no sale) */
+.pad button.mareo { background: #c9cfdd; animation: mareoBtn .22s; }
+@keyframes mareoBtn { 25% { translate: -6px 0; } 75% { translate: 6px 0; } }
 
 .overlay {
   position: fixed; inset: 0; display: flex; overflow-y: auto; touch-action: pan-y;
@@ -230,6 +233,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     'Con casco: necesitan dos golpes.': 'Helmets: they take two hits.',
     'Saltarines: amagan y cambian de lado.': 'Jumpers: they fake and switch sides.',
     '¡Jefe! Pegale cuando baja el escudo.': 'Boss! Hit it when the shield is down.',
+    '¡Mareado!': 'Dizzy!', '¡Perfecto!': 'Perfect!',
     '¡Jefe!': 'Boss!', '¡Al aire!': 'Whiff!', '¡Muy pronto!': 'Too early!', '¡Bloqueó!': 'Blocked!', '¡Auch!': 'Ouch!',
     '¡Última vida!': 'Last life!', '¡Te quedan {n}!': '{n} left!', 'Combo perdido': 'Combo lost', 'combo': 'combo', '¡Jefe abatido!': 'Boss down!',
     '{n} pts · {d}': '{n} pts · {d}', 'puntos · {d} · llegaste a la oleada {n}': 'points · {d} · you reached wave {n}',
@@ -284,6 +288,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   const gapOla = (D, w) => D.gap * Math.max(0.72, 1 - 0.03 * (w - 1));
   const cuantosOla = w => Math.min(18, 6 + 2 * w);
   const multDe = c => (c >= 100 ? 5 : c >= 50 ? 4 : c >= 25 ? 3 : c >= 10 ? 2 : 1);
+  // golpe perfecto: el frente del enemigo está en el medio de la franja, a no más de PERFECTO de la mitad de su ancho
+  // del centro (la franja mide ~0,26 L en Normal: el perfecto es una ventana de ~0,05 L, unos 125 ms con un común de la
+  // oleada 1 y unos 80 ms con un rápido). Da 1,5 veces los puntos y suma 2 al combo en vez de 1. Un combo de 50
+  // (Muralla) sigue pidiendo 25 golpes perfectos seguidos como mínimo.
+  const PERFECTO = 0.2, PERF_PTS = 1.5, PERF_COMBO = 2;
   const XP_MALO = 150, XP_EXPERTO = 6000;
 
   // ---------- récords y sonido ----------
@@ -442,7 +451,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   // ---------- golpes ----------
   function golpear(lado) {
     if (!G || G.done || G.fase === 'cuenta') return;
-    if (G.torpe > 0) return;   // mareado: no te sale nada
+    if (G.torpe > 0) return mareado(lado);   // mareado: no te sale nada (pero te avisa)
     if (!G.demo) sinGuia();
     G.mirar = lado;
     G.ataque = { lado, t: ahora() };
@@ -458,7 +467,20 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       return errar(lado, cerca ? '¡Muy pronto!' : '¡Al aire!');
     }
     if (blanco.tipo === 'jefe' && escudoArriba(blanco)) return errar(lado, '¡Bloqueó!', true);
-    pegar(blanco);
+    const centro = (CONTACTO + al) / 2, medio = (al - CONTACTO) / 2;
+    pegar(blanco, Math.abs(frente(blanco) - centro) <= medio * PERFECTO);
+  }
+  // tocar durante el mareo: antes se perdía sin aviso. Ahora el botón se pone gris y se sacude, sale «¡Mareado!»
+  // (uno cada 0,4 s como mucho) y suena un toc sordo. No te castiga más: el mareo dura lo mismo.
+  function mareado(lado) {
+    if (G.demo) return;
+    const b = lado < 0 ? $('bL') : $('bR');
+    b.classList.remove('mareo'); void b.offsetWidth; b.classList.add('mareo');
+    clearTimeout(b._mareo); b._mareo = setTimeout(() => b.classList.remove('mareo'), 260);
+    if (ahora() - (G.mareoT || 0) < 400) return;
+    G.mareoT = ahora();
+    floatTexto(T('¡Mareado!'), lado * 0.2, 0.56, '#c9cfdd');   // más arriba que el «¡Al aire!» que lo causó
+    beep(110, 0.06, 'triangle', 0.05, 0.8);
   }
   function escudoArriba(e) { return (e.ciclo % ESCUDO_CICLO) > ESCUDO_CICLO - ESCUDO_ARRIBA; }
   function escudoAviso(e) { const c = e.ciclo % ESCUDO_CICLO; return c > ESCUDO_CICLO - ESCUDO_ARRIBA - ESCUDO_AVISO && !escudoArriba(e); }
@@ -471,17 +493,24 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     if (bloqueo) { sfxBloqueo(); chispas(lado * (CONTACTO + 0.15), 0.14, '#dfe6f5', 8, 0.8); } else sfxAire();
     CC?.vibrar(18);
   }
-  function pegar(e) {
+  function pegar(e, perfecto) {
     const tp = TIPOS[e.tipo], lado = e.lado, xi = lado * frente(e), yi = e.tam * 0.55;
     e.hp--; e.golpeT = ahora();
-    G.combo++; G.mejorCombo = Math.max(G.mejorCombo, G.combo); G.comboT = ahora();
-    const mult = multDe(G.combo);
-    if (!G.demo && [10, 25, 50, 100].includes(G.combo)) {
+    const antes = G.combo;
+    G.combo += perfecto ? PERF_COMBO : 1; G.mejorCombo = Math.max(G.mejorCombo, G.combo); G.comboT = ahora();
+    const mult = multDe(G.combo), extra = perfecto ? PERF_PTS : 1;
+    if (perfecto && !G.demo) {
+      floatTexto(T('¡Perfecto!'), lado * 0.2, 0.5, '#ffe14d');
+      chispas(xi, yi, '#fff1b8', 10, 1.2);
+      beep(1568, 0.08, 'triangle', 0.05, 1.2, 0.03);
+    }
+    // con el perfecto el combo salta de a 2: el cartel sale al cruzar 10, 25, 50 o 100, no solo al caer justo
+    if (!G.demo && [10, 25, 50, 100].some(m => antes < m && G.combo >= m)) {
       G.banner = { text: `${T('combo')} ×${mult}!`, t: ahora(), grande: true }; sfxCombo(mult); CC?.vibrar(25);
     }
     if (e.hp <= 0) {
       // ¡afuera! sale volando para su lado, girando
-      const pts = tp.pts * mult;
+      const pts = Math.round(tp.pts * mult * extra);
       G.kills++;
       e.est = 'muerto';
       G.voladores.push({ kind: 'enemigo', e, x: lado * e.d, y: 0, vx: lado * (1.5 + Math.random() * 0.9) * (e.tipo === 'jefe' ? 0.6 : 1),
@@ -509,7 +538,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         if (!G.demo) sfxCasco();
       }
       if (!G.demo) {
-        if (e.tipo === 'jefe') { G.score += 5 * mult; floatTexto('+' + 5 * mult, lado * (e.d - 0.05), e.tam + 0.15, '#fffaf0'); hudCache = ''; if (marca) marca.ver(G.score); }
+        if (e.tipo === 'jefe') { const p = Math.round(5 * mult * extra); G.score += p; floatTexto('+' + p, lado * (e.d - 0.05), e.tam + 0.15, '#fffaf0'); hudCache = ''; if (marca) marca.ver(G.score); }
         sfxGolpe(G.combo); CC?.vibrar(10);
       }
       shake = reduceMotion ? 0 : 3;
@@ -738,6 +767,11 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
         ctx.globalAlpha = 0.12 + 0.12 * Math.sin(now / 60);
         ctx.fillStyle = '#fff'; rr(ctx, xa, GY - 1, w, h, 3); ctx.fill(); ctx.globalAlpha = 1;
       }
+      // el centro de la franja (golpe perfecto): una zona más clara en el medio
+      const pc = (CONTACTO + al) / 2, pm = (al - CONTACTO) / 2 * PERFECTO;
+      const p0 = px(lado * (pc - pm)), p1 = px(lado * (pc + pm));
+      ctx.fillStyle = hay ? 'rgba(255,250,240,.95)' : 'rgba(255,250,240,.55)';
+      rr(ctx, Math.min(p0, p1), GY + 1, Math.abs(p1 - p0), h - 4, 2); ctx.fill();
     }
   }
   // enemigos: bloques con cara de malos, cada tipo con lo suyo
@@ -1103,6 +1137,9 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   });
 
   // ---------- arranque ----------
+  // pausa al ocultar la pestaña (cubo-comun.js). Las oleadas van con G.t; la hora solo se usa para animaciones.
+  if (CC && CC.pausa) CC.pausa({ activa: () => state === 'play' && G && !G.demo && !G.done });
+
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
